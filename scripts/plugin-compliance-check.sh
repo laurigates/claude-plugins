@@ -2536,8 +2536,16 @@ check_skill_when_to_use() {
 # (the skill-splitter workflow's candidate selector) reads
 # SKILL_SIZE_WARN_CHARS from this exact `NAME=<digits>` line, so the splitter
 # processes the skills this gate warns about. Keep the assignment on one line.
+#
+# Exception marker (#2954): a SKILL.md whose body a check, test or rule pins in
+# place carries `<!-- skill-size-exception: <pinning check> -->`. The WARN band
+# is skipped for it (the ERROR ceiling still applies). The marker must name the
+# pinning check, so an empty or whitespace-only name keeps the WARN and says why.
+# scripts/select-split-candidates.sh applies the same regex, so the splitter
+# skips exactly the skills this gate exempts.
 SKILL_SIZE_WARN_CHARS=10000
 SKILL_SIZE_ERROR_CHARS=26000
+SKILL_SIZE_EXCEPTION_RE='<!--[ \t]*skill-size-exception:[ \t]*([^\n]*?)[ \t]*-->'
 check_skill_size() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -2553,17 +2561,29 @@ check_skill_size() {
     local skill_name
     skill_name=$(basename "$(dirname "$skill_file")")
 
-    local char_count est_tokens
+    local char_count est_tokens size_marker
     # Decoded UTF-8 characters, locale-independent (see the note above).
     # surrogateescape keeps a malformed byte as one character instead of raising.
-    char_count=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()))' "$skill_file")
+    # Second field: the exception marker's state — none, valid, or empty.
+    read -r char_count size_marker < <(python3 -c '
+import re, sys
+text = open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()
+m = re.search(sys.argv[2], text)
+print(len(text), "none" if m is None else ("valid" if m.group(1).strip() else "empty"))
+' "$skill_file" "$SKILL_SIZE_EXCEPTION_RE")
     est_tokens=$(( char_count / 4 ))
 
     if [ "$char_count" -gt "$SKILL_SIZE_ERROR_CHARS" ]; then
       issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_ERROR_CHARS} ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
       has_errors=true
     elif [ "$char_count" -gt "$SKILL_SIZE_WARN_CHARS" ]; then
-      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — consider extracting to REFERENCE.md or scripts/ (ceiling: ${SKILL_SIZE_ERROR_CHARS} chars / ~6500 tokens)")
+      if [ "$size_marker" = "valid" ]; then
+        continue
+      elif [ "$size_marker" = "empty" ]; then
+        recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — its skill-size-exception marker names no pinning check, so it does not exempt the skill (#2954)")
+      else
+        recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — consider extracting to REFERENCE.md or scripts/ (ceiling: ${SKILL_SIZE_ERROR_CHARS} chars / ~6500 tokens)")
+      fi
       has_warnings=true
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)

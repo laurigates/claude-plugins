@@ -112,6 +112,20 @@ make_straddle_skill() {
 }
 make_straddle_skill straddle 25600 200
 
+# #2954: the size-exception marker. A skill whose body a check pins carries
+# `<!-- skill-size-exception: <pinning check> -->`; the WARN goes quiet for it.
+# The marker must name the check, so an empty one does not suppress, and it
+# never lifts the ERROR ceiling.
+make_marked_skill() {
+  # make_marked_skill <skill-name> <body-char-count> <marker-line>
+  make_skill "$1" "$2"
+  printf '\n%s\n' "$3" >> "$tmp/sizetest-plugin/skills/$1/SKILL.md"
+}
+make_marked_skill marked 15000 '<!-- skill-size-exception: scripts/check-loop-integrity.sh -->'
+make_marked_skill emptymark 15000 '<!-- skill-size-exception: -->'
+make_marked_skill blankmark 15000 '<!-- skill-size-exception:    -->'
+make_marked_skill markedtoobig 30000 '<!-- skill-size-exception: scripts/check-loop-integrity.sh -->'
+
 straddle_file="$tmp/sizetest-plugin/skills/straddle/SKILL.md"
 straddle_bytes=$(wc -c < "$straddle_file" | tr -d ' ')
 straddle_chars=$(char_count "$straddle_file")
@@ -149,6 +163,20 @@ assert_contains "size line reports the CHARACTER count (#2135)" "$out" \
   "straddle: SKILL.md is ${straddle_chars} chars"
 assert_absent "size line does not report the BYTE count (#2135)" "$out" \
   "straddle: SKILL.md is ${straddle_bytes} chars"
+
+# --- #2954: skill-size-exception marker --------------------------------------
+assert_absent "a marker naming its pinning check silences the WARN (marked)" "$out" \
+  "marked: SKILL.md is"
+assert_matches "an empty marker does not silence the WARN (emptymark)" "$out" \
+  'emptymark: SKILL.md is [0-9]+ chars \(~[0-9]+ tokens, >10000\)'
+assert_matches "a whitespace-only marker does not silence the WARN (blankmark)" "$out" \
+  'blankmark: SKILL.md is [0-9]+ chars \(~[0-9]+ tokens, >10000\)'
+assert_contains "the WARN names the invalid marker (emptymark)" "$out" \
+  "emptymark: SKILL.md is"
+assert_matches "...and says the marker names no check" "$out" \
+  'emptymark: .*skill-size-exception marker names no pinning check'
+assert_matches "a marker never lifts the ERROR ceiling (markedtoobig)" "$out" \
+  'markedtoobig: SKILL.md is [0-9]+ chars \(~[0-9]+ tokens, >26000 ceiling\)'
 
 echo "---"
 echo "passed: $pass, failed: $fail"

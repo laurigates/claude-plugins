@@ -11,6 +11,8 @@ argument-hint: "[scope-path]"
 name: meta-context-diet
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (meta-context-diet block) -->
+
 # meta-context-diet
 
 Audit always-loaded context — `CLAUDE.md` files and `.claude/rules/*.md` — for material that would be cheaper and clearer as an **on-demand skill**, then migrate approved candidates — per-candidate confirmation for lossy edits, batched approval for the safe ones.
