@@ -321,6 +321,37 @@ narrow), `MODEL_MODE=preserve` with `MODEL_PINS=21` (the count of emitted
 pins), `AGENTS_WITH_NESTING=1`, and `DROPPED_TOOLS=` / `DROPPED_KEYS=` naming
 each loss per agent.
 
+#### Read-only agents that gain a shell (`READONLY_WIDENED=`)
+
+The widening matters most for agents that are read-only by construction: they
+grant no `Write` and no `Edit`, so a scoped `Bash` is their only mutation path,
+and after projection that path is an unrestricted `bash`. The exporter names
+them in `READONLY_WIDENED=` (#2645). They are exported anyway, as an accepted
+widening: pi's `tools:` takes tool names only, so a scoped grant cannot be
+narrowed, and dropping `bash` would stop each agent doing its job. The nine
+today:
+
+<!-- readonly-widened:start -->
+| Agent | Scoped `Bash(...)` grants | What the shell is for |
+|---|---|---|
+| `testing-plugin/agents/test-runner.md` | 12 | test runners (`npm test`, `pytest`, `cargo test`, `go test`, `just`, …) |
+| `agents-plugin/agents/dependency-audit.md` | 10 | `npm audit`, `pip-audit`, `cargo audit`, `snyk`, package listings |
+| `agents-plugin/agents/performance.md` | 9 | `hyperfine`, `py-spy`, `perf`, benchmark runs, `git diff` |
+| `agents-plugin/agents/security-audit.md` | 9 | `semgrep`, `bandit`, `trufflehog`, `gitleaks`, `git log`/`diff` |
+| `agents-plugin/agents/review.md` | 8 | `git diff`/`log`/`show`, `gh pr`, test runs |
+| `kubernetes-plugin/agents/k8s-diagnostics.md` | 5 | `kubectl`, `helm`, `kustomize`, `git diff` |
+| `evaluate-plugin/agents/eval-grader.md` | 4 | `cat`, `jq`, `wc`, `find` over eval results |
+| `evaluate-plugin/agents/eval-analyzer.md` | 3 | `cat`, `jq`, `find` over eval results |
+| `evaluate-plugin/agents/eval-comparator.md` | 2 | `cat`, `find` over eval results |
+<!-- readonly-widened:end -->
+
+`scripts/tests/test-export-pi-agents.sh` (case L) runs the exporter on the
+corpus and fails when `READONLY_WIDENED=` differs from this table, so an agent
+that adds a scoped `Bash` without `Write`/`Edit` must be listed here before it
+ships. A command-scoped `tools:` entry upstream in pi-subagents is the only fix
+that keeps both the posture and the capability; until then, prefer running
+these agents on trusted input in pi.
+
 `WebFetch`/`WebSearch` *can* be reached as `ext:pi-web-search/web_search`, but a
 single `ext:` entry flips pi's extension tools into explicit-allowlist mode — the
 agent would silently lose everything else the adapter exposes, `search_skills`
