@@ -1003,6 +1003,11 @@
           "type": "json",
           "path": "/.claude-plugin/marketplace.json",
           "jsonpath": "$.plugins[?(@.name=='cloud-plugin')].version"
+        },
+        {
+          "type": "json",
+          "path": "/.claude-plugin/marketplace.json",
+          "jsonpath": "$.plugins[?(@.name=='kernel-plugin')].version"
         }
       ],
       "changelog-sections": [
