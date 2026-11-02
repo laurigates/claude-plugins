@@ -41,6 +41,8 @@
 #      CLAUDE.md, a rule or a local skill is flagged (ERROR bundled_skill_pointer);
 #      a non-colliding local skill and a prose mention of the bundled name without
 #      the slash are NOT flagged (#3185)
+#   M. the check-docs-index pre-commit `files:` trigger selects a plugin
+#      README.md, the surface Checks 7 and 8 audit, and no nested README (#3164)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -516,6 +518,41 @@ strict_rc=$?
 assert "--strict should exit 1 on a bundled-name collision" \
   "$([ "$strict_rc" = "1" ] && echo true || echo false)"
 rm -rf "$bs_fx"
+
+echo "=== TEST M: the check-docs-index pre-commit trigger fires on a plugin README (#3164) ==="
+# Checks 7 and 8 audit <plugin>/README.md, but before #3164 the hook's `files:`
+# pattern did not match that path, so a README-only commit got no local signal.
+precommit_match() {
+  # precommit_match <candidate-path> — "true" when the check-docs-index hook selects it
+  python3 - "$repo_root/.pre-commit-config.yaml" "$1" <<'PY'
+import re, sys, yaml
+cfg_path, candidate = sys.argv[1], sys.argv[2]
+cfg = yaml.safe_load(open(cfg_path))
+hooks = [h for r in cfg["repos"] for h in r.get("hooks") or [] if h.get("id") == "check-docs-index"]
+if len(hooks) != 1:
+    print("ERROR: expected exactly 1 check-docs-index hook, found %d" % len(hooks))
+    raise SystemExit(0)
+include = hooks[0].get("files", "")
+exclude = hooks[0].get("exclude") or cfg.get("exclude") or "^$"
+try:
+    from pre_commit.commands.run import filter_by_include_exclude as filt
+    hit = bool(list(filt([candidate], include, exclude)))
+except Exception:
+    hit = bool(re.search(include, candidate)) and not re.search(exclude, candidate)
+print("true" if hit else "false")
+PY
+}
+not_true() { [ "$1" = "false" ] && echo true || echo false; }
+assert "pre-commit selects a plugin README (the Check 7/8 surface)" \
+  "$(precommit_match 'git-plugin/README.md')"
+# Guard integrity: the pattern must not widen to every README or every file.
+assert "pre-commit still selects a plugin skill (existing trigger kept)" \
+  "$(precommit_match 'git-plugin/skills/git-commit/SKILL.md')"
+assert "pre-commit still selects the root README.md" "$(precommit_match 'README.md')"
+assert "pre-commit ignores a README nested in a plugin's non-catalogue directory" \
+  "$(not_true "$(precommit_match 'git-plugin/hooks/README.md')")"
+assert "pre-commit ignores a README in a non-plugin directory" \
+  "$(not_true "$(precommit_match 'docs/README.md')")"
 
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"
