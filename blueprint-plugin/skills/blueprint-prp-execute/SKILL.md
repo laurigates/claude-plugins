@@ -4,7 +4,7 @@ args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-11-02
 reviewed: 2026-09-02
 name: blueprint-prp-execute
 ---
@@ -54,12 +54,15 @@ Execute the complete PRP implementation workflow:
 1. Read PRP file: `docs/prps/{prp-name}.md`
 2. Extract confidence score from frontmatter
 3. If confidence < 7 → Error: "PRP confidence too low. Run `/blueprint:prp-create {prp-name}` to refine"
-4. If confidence >= 9 → Offer delegation: "This PRP has high confidence. Execute now (current session) or create work-order for delegation?"
+4. **Check content quality with a fresh reader** (issue #3002). The confidence score and the structural hook (`check-prp-readiness.sh`) do not judge whether the content can be implemented, and the agent about to execute the PRP has a stake in calling it ready (`.claude/rules/loop-integrity.md` Pillar 1). Dispatch one `Task` agent (`subagent_type: general-purpose`) and give it only the PRP file path and the reader prompt in [REFERENCE.md](REFERENCE.md#prp-content-quality-check): no session context, no plan. It judges specific requirements, testable acceptance criteria, edge cases, and bounded scope, and returns a JSON verdict.
+   - `{"ok": true}` → continue
+   - `{"ok": false, "reason": ...}` → stop before any execution or delegation, print the reason, and suggest `/blueprint:prp-create {prp-name}` to refine the PRP
+5. If confidence >= 9 → Offer delegation: "This PRP has high confidence. Execute now (current session) or create work-order for delegation?"
    - If work-order chosen → Run `/blueprint:work-order --from-prp {prp-name}` and exit
    - If delegation to multiple subagents chosen → Create focused work-orders per module from Implementation Blueprint and exit
-5. Continue to Step 2 if executing now OR confidence 7-8
-6. Load all referenced curated rule entries (`.claude/rules/`) for context
-7. Parse the Implementation Blueprint into an ordered task checklist (dependencies first); track it with `TodoWrite` when the session has the task tools, otherwise carry it as a checklist in the response (see `.claude/rules/agentic-permissions.md` § Task-tool availability)
+6. Continue to Step 2 if executing now OR confidence 7-8
+7. Load all referenced curated rule entries (`.claude/rules/`) for context
+8. Parse the Implementation Blueprint into an ordered task checklist (dependencies first); track it with `TodoWrite` when the session has the task tools, otherwise carry it as a checklist in the response (see `.claude/rules/agentic-permissions.md` § Task-tool availability)
 
 ### Step 2: Establish baseline with validation gates
 

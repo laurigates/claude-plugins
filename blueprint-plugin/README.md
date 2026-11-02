@@ -636,7 +636,10 @@ when the registry actually changed.
 The former PRP content-quality **agent** hook is gone. It was registered on
 `Skill(prp-execute)` and never ran; on the bare `Skill` matcher it would start an
 agent for every skill call, and a hook `if` condition does not match Skill
-specifiers.
+specifiers. The evaluation now runs inside `/blueprint:prp-execute` itself: Step 1
+dispatches a fresh reader that sees only the PRP and judges specific
+requirements, testable acceptance criteria, edge cases and bounded scope, and a
+failed verdict stops execution (#3002).
 
 ### Behavioral Cues (command)
 
