@@ -65,8 +65,9 @@ from pathlib import Path
 AUTHOR_DEFAULT = "Lauri Gates"
 PUBLISHER_DEFAULT = "laurigates"
 
-# Pinned tool versions — kept in ONE place so a pin can never drift between
-# biome.json, the CI setup-biome step, and the justfile.
+# Pinned tool versions, emitted into package.json only. biome.json takes its
+# $schema from node_modules and CI runs biome via `bun run lint`, so the biome
+# pin has no second copy in the generated repo to drift from.
 #
 # Each must equal the pin in templates/foundryvtt-module/ or
 # test-template-parity.sh fails. Renovate bumps the template's package.json via
@@ -303,7 +304,7 @@ TSCONFIG = """\
 
 BIOME_JSON = """\
 {
-  "$schema": "https://biomejs.dev/schemas/@@BIOME_VERSION@@/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "includes": ["**"] },
   "formatter": {
@@ -432,14 +433,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          # Pin to the schema version declared in biome.json. Bump in lockstep
-          # via `biome migrate` when upgrading.
-          version: @@BIOME_VERSION@@
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      # Biome comes from package.json, the one place its version is pinned, so
+      # CI lints with the same biome as `bun run lint` and a Renovate bump is
+      # exercised by this job.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
       - name: Biome check
-        run: biome check .
+        run: bun run lint
 
   typecheck-build:
     name: Typecheck & build (Vite)
