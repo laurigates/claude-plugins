@@ -13,6 +13,11 @@ the exceptions listed in this file. Read it when syncing that rule.
   `scripts/merge-chain.sh` and [merge-shepherd.md](merge-shepherd.md). SKILL.md
   sits at the 10,000-character band that `test-no-force-stack.sh` pins, so new
   text goes in `references/`.
+- Skill-only, not in `pr-merge-hazards.md`: §4's multi-PR routing sentence (a
+  ruleset requiring up-to-date branches sends a batch to `scripts/merge-chain.sh`;
+  the `Repository rule violations found` tell is in
+  [serial-merge-chain.md](serial-merge-chain.md), #3285). Mirror it into the
+  chezmoi rule and its stub's §4 copy, or the next sync removes it from this skill.
 - Skill-only, not in `pr-merge-hazards.md`: §6, §4's merge-endpoint pointer, and
   the three §2 bullets **Check the base first**, **No-force alternative** and
   **Delta-apply**. The chezmoi rule does not carry those three §2 bullets yet. Mirror them there, or the

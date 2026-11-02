@@ -1940,6 +1940,25 @@ check "skill: rebase fallback kept" yes "$(has "$SF" 'git rebase --onto origin/m
 check "skill: §6 names a retarget as a second bot trigger" yes "$(has "$SF" 'gh pr edit --base')"
 check "control: a body without the retarget trigger fails the pin" no \
     "$(has "$sandbox/reversed-skill.md" 'gh pr edit --base')"
+# §4 must route a multi-PR merge under an up-to-date ruleset to the serial
+# chain: consecutive plain merges leave every later PR BEHIND (#3285). The
+# routing is pinned inside §4, not anywhere in the body, because the Merge
+# shepherd section already names merge-chain.sh.
+section_of() { awk -v start="^## $2\\\\." -v stop="^## $3\\\\." '$0 ~ start {f=1; next} $0 ~ stop {f=0} f' "$1"; }
+section_of "$SF" 4 5 > "$sandbox/section4.md"
+section_of "$SF" 5 6 > "$sandbox/section5.md"
+check "skill: §4 routes a multi-PR merge to scripts/merge-chain.sh" yes \
+    "$(has "$sandbox/section4.md" 'scripts/merge-chain.sh')"
+check "skill: §4 names the up-to-date ruleset condition" yes "$(has "$sandbox/section4.md" 'up to date')"
+check "control: the §4 extract is non-empty (carries its UNSTABLE text)" yes "$(has "$sandbox/section4.md" 'UNSTABLE')"
+check "control: the §4 extract does not reach §5's text" no "$(has "$sandbox/section4.md" 'negated')"
+check "control: §5 does not carry the merge-chain routing" no "$(has "$sandbox/section5.md" 'scripts/merge-chain.sh')"
+check "serial-merge-chain: quotes the BEHIND tell under a strict ruleset" yes \
+    "$(has "$REF_DIR/serial-merge-chain.md" 'Repository rule violations found')"
+check "serial-merge-chain: quotes the expected-checks line of that error" yes \
+    "$(has "$REF_DIR/serial-merge-chain.md" 'required status checks are expected')"
+check "sync-notes: §4's multi-PR routing sentence is listed as skill-only" yes \
+    "$(has "$SNF" "§4's multi-PR routing sentence")"
 check "sync-notes: §1's REVIEW-bucket sentence is listed as skill-only" yes \
     "$(has "$SNF" "§1's REVIEW-bucket sentence")"
 check "control: a sync-notes file without that entry fails the pin" no \
