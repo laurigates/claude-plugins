@@ -18,6 +18,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate-drift-probe.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync-evaluate-skill-workflow.sh\"",
+            "timeout": 5
           }
         ]
       }
