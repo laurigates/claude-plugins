@@ -99,7 +99,7 @@ prose-plugin/skills/prose-distill/SKILL.md	1
 python-plugin/skills/python-code-quality/SKILL.md	1
 rust-plugin/skills/cargo-generate/SKILL.md	1
 session-plugin/skills/session-distill/SKILL.md	2
-session-plugin/skills/session-end/SKILL.md	4
+session-plugin/skills/session-end/SKILL.md	1
 session-plugin/skills/session-spinup/SKILL.md	2
 session-plugin/skills/session-wrap/SKILL.md	2
 software-design-plugin/skills/design-patterns/SKILL.md	1

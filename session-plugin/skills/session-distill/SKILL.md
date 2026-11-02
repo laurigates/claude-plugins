@@ -2,10 +2,10 @@
 name: session-distill
 description: "This session's durable learnings, each routed to one home: a rule, recipe, local skill, or plugin PR. Use when a session taught something worth keeping, or asked to distill or codify it."
 allowed-tools: Bash(bash *), Bash(mkdir *), Bash(mktemp *), Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git clone *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
-argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
-args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
+argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run | --orchestrated"
+args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run] [--orchestrated]"
 created: 2026-02-11
-modified: 2026-09-23
+modified: 2026-11-02
 reviewed: 2026-07-14
 ---
 
@@ -52,6 +52,7 @@ text; in that case run the three `find` commands yourself before Step 1.
 | `--process` | Only analyze potential process/methodology captures (script+recipe or project-local `.claude/skills/` skill) |
 | `--all` | Analyze all categories (default) |
 | `--dry-run` | Show proposals without applying changes |
+| `--orchestrated` | Set by `session-plugin:session-end`. Apply `[UPDATE]` / `[NEW]` without any `AskUserQuestion`, whatever the permission mode; return each `[PROMOTE]` and `[REDUNDANT]` proposal as a `DEFERRED: <proposal>` line in the Step 5 report instead of asking — session-end confirms them in its single question |
 
 ## Tool Call Efficiency
 
@@ -115,7 +116,9 @@ applies is in [references/promote.md](references/promote.md#when-to-promote).
 
 ### Step 4: Apply changes
 
-If `--dry-run`: skip this step.
+If `--dry-run`: skip this step. If `--orchestrated`: apply `[UPDATE]` / `[NEW]`
+directly and defer `[PROMOTE]` / `[REDUNDANT]` as `DEFERRED:` lines — no
+`AskUserQuestion` in this step.
 
 Apply per the active permission mode — auto mode applies directly but **retains
 `AskUserQuestion` for destructive `[REDUNDANT]` removals**; manual mode confirms

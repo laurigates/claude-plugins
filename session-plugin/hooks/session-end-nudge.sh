@@ -122,6 +122,6 @@ if [ "$has_open_tasks" = 1 ]; then
     task_cue=" Also mention that a taskwarrior state-sync pass looks worth offering."
 fi
 
-reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt.${task_cue} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."
+reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, runs the reversible end-of-session passes (session-wrap loose-thread capture, session-distill durable learnings, updates to tasks the session touched) and asks once at the end for outward-facing items such as /feedback:session issues.${task_cue} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."
 
 jq -nc --arg r "$reason" '{decision: "block", reason: $r}'

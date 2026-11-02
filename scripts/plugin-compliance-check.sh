@@ -827,6 +827,47 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: session-end used to ask before doing anything (and the
+    # sub-skills asked again), so a user who ran it and walked away came back
+    # to a pending prompt and a cold cache; it also offered to walk the whole
+    # untouched taskwarrior backlog, declined 20 of 29 times across 62 runs.
+    # Invariants: (1) the Act lane (reversible work) runs in Step 3, BEFORE the
+    # single Ask-lane question in Step 4; (2) the taskwarrior pass qualifies on
+    # session-linked tasks, never on a bare OPEN_TASKS count, and the backlog
+    # is reported not walked; (3) the no-second-prompt contract reaches the
+    # sub-skills (--orchestrated to wrap/distill, --confirmed to feedback).
+    if [ "$skill_name" = "session-end" ]; then
+      act_line=$(grep -n '^### Step 3: Run the Act lane' "$skill_file" | head -1 | cut -d: -f1)
+      ask_line=$(grep -n '^### Step 4: One question' "$skill_file" | head -1 | cut -d: -f1)
+      if [ -z "$act_line" ] || [ -z "$ask_line" ] || [ "$act_line" -gt "$ask_line" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must run the Act lane (Step 3) before the single Ask-lane question (Step 4) — asking first stalls an unattended run")
+        has_errors=true
+      fi
+      tw_row=$(grep '^| Taskwarrior sync |' "$skill_file" || true)
+      if ! grep -q 'session-linked' <<<"$tw_row" || grep -q 'OPEN_TASKS` ≥ 1' <<<"$tw_row"; then
+        issues+=("❌ ${plugin}/${skill_name}: the Taskwarrior sync qualify row must require a session-linked task, not an OPEN_TASKS count (backlog walks were declined 20/29)")
+        has_errors=true
+      fi
+      for token in "Backlog is reported, never walked" "session-wrap\` with \`--orchestrated" "session-distill\` with \`--orchestrated" "feedback-session --confirmed"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (single-question contract with the sub-skills)")
+          has_errors=true
+        fi
+      done
+    fi
+    if [ "$skill_name" = "session-wrap" ] || [ "$skill_name" = "session-distill" ]; then
+      for token in "--orchestrated" "DEFERRED:"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (session-end defers outward items instead of a second prompt)")
+          has_errors=true
+        fi
+      done
+    fi
+    if [ "$skill_name" = "feedback-session" ] && ! grep -qF -- "--confirmed" "$skill_file"; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '--confirmed' (session-end's single question already confirmed the set)")
+      has_errors=true
+    fi
+
     # Regression (PR #2987 review): session-spinup must not hide a truncated
     # zero. DISCUSSIONS_UNANSWERED=0 with DISCUSSIONS_TRUNCATED=true is a floor
     # over the first 100 threads, not a clean queue.

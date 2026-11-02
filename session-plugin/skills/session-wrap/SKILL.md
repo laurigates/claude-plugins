@@ -2,8 +2,10 @@
 name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
+args: "[--orchestrated]"
+argument-hint: "--orchestrated (set by session-end)"
 created: 2026-05-12
-modified: 2026-10-06
+modified: 2026-11-02
 reviewed: 2026-06-24
 ---
 
@@ -86,6 +88,12 @@ earns its existence when it carries something the PR or issue does **not**:
 Check a candidate's PR/issue number against `PRS` / `GITHUB_DRIFT` before
 adding — a hit means annotate, not add. Same test for journal todos.
 
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `--orchestrated` | Set by `session-plugin:session-end`. Apply the taskwarrior items in Step 4 without the Step 3 preview/confirm, and do **not** ask about journal writes, GitHub issues or upstream candidates: list each as a `DEFERRED: <destination> — <item>` line in the Step 5 report for session-end's single question |
+
 ## Execution
 
 Execute this wrap workflow:
@@ -136,6 +144,9 @@ and operate on UUIDs — IDs shift when any task completes.
 
 ### Step 3: Preview and confirm
 
+Under `--orchestrated`, skip this step: taskwarrior items apply directly in
+Step 4 and every other item becomes a `DEFERRED:` line.
+
 Show a compact preview of everything about to be written (per-destination
 blocks; one block per project if several were touched).
 
@@ -155,7 +166,8 @@ Taskwarrior: `task <uuid> done` / `task <uuid> annotate "..."` /
 mechanics in [REFERENCE.md](REFERENCE.md). GitHub: one issue per
 follow-up, then edit the PR description to link them.
 
-**Upstream candidates**: route each one with an **AskUserQuestion** —
+**Upstream candidates** (under `--orchestrated`, a `DEFERRED:` line each —
+session-end asks): route each one with an **AskUserQuestion** —
 two equal-weight options (no default lean):
 
 - *Track for later* → `task add project:<name> +upstream '<desc — name
@@ -180,7 +192,8 @@ two equal-weight options (no default lean):
 ### Step 5: Report
 
 One paragraph: what was written where, plus the count of items skipped
-as noise so the user can sanity-check the filter.
+as noise so the user can sanity-check the filter. Under `--orchestrated`,
+end with the `DEFERRED:` lines, one per item.
 
 ## Auto-surfacing
 

@@ -281,7 +281,8 @@ make_session_wrap_fixture() {
     printf 'below reads: an open PR or assigned issue is its own tracker,\n'
     printf 'so annotate the existing task instead of adding a duplicate.\n'
     printf 'Track an upstream candidate with +upstream, or route it through\n'
-    printf 'workflow-verify-before-filing before filing anything.\n\n'
+    printf 'workflow-verify-before-filing before filing anything.\n'
+    printf 'Under --orchestrated, list outward items as DEFERRED: lines.\n\n'
     if [ -n "$extra" ]; then
       printf '%s\n' "$extra"
     fi
@@ -336,7 +337,10 @@ rm -rf "${root:?}/$PLUGIN/skills/session-wrap"
 # fail, so the fixture below carries prose naming "enabled" beside a gate line
 # that omits the check from the filter itself.
 make_session_end_skill() {
+  # make_session_end_skill <gate-line> [lanes-body]  — lanes-body defaults to
+  # the compliant Act-before-Ask shape so the #2358 cases test only the gate.
   local gate_line="$1"
+  local lanes="${2-$SESSION_END_LANES_OK}"
   local dir="$root/$PLUGIN/skills/session-end"
   mkdir -p "$dir"
   {
@@ -352,9 +356,23 @@ make_session_end_skill() {
     printf 'Blueprint tracker-sync qualifies when UNDRAINED_COUNT >= 1 and delegates\n'
     printf 'via --drain-wave. The gate checks the manifest'"'"'s enabled field.\n\n'
     printf 'Upstream candidates always route through workflow-verify-before-filing.\n\n'
-    printf '```sh\n%s\n```\n' "$gate_line"
+    printf '```sh\n%s\n```\n\n' "$gate_line"
+    printf '%s\n' "$lanes"
   } > "$dir/SKILL.md"
 }
+
+SESSION_END_LANES_OK='| Taskwarrior sync | at least one session-linked task |
+
+#### Backlog is reported, never walked
+
+### Step 3: Run the Act lane now
+
+Run `session-plugin:session-wrap` with `--orchestrated`, then
+`session-plugin:session-distill` with `--orchestrated`.
+
+### Step 4: One question for the Ask lane
+
+Run `feedback-plugin:feedback-session --confirmed "<findings>"`.'
 
 # --- The regression: old two-field form (no enabled check) must FAIL --------
 rm -rf "${root:?}/$PLUGIN/skills/headingonly"
@@ -373,6 +391,42 @@ run_check; out_threefield="$OUT"; rc_threefield="$RC"
 assert_eq "three-field gate exits 0" "$rc_threefield" "0"
 assert_absent "three-field gate raises no auto-drain gate issue" \
   "$out_threefield" "blueprint auto-drain jq gate"
+
+# --------------------------------------------------------------------------
+# session-end: reversible work first, one question last, no backlog walk.
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the Act lane (Step 3) precedes the single
+# Ask-lane question (Step 4); the taskwarrior pass qualifies on a
+# session-linked task, never on an OPEN_TASKS count. The compliant shape is
+# the three-field case above (exit 0); each mutation below must exit 1 and be
+# named.
+GATE3='jq -r '"'"'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end'"'"' docs/blueprint/manifest.json 2>/dev/null'
+
+# --- Ask before Act (the old preview-then-confirm order) must FAIL ----------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/\#\#\# Step 3: Run the Act lane now/### Step 5: Run the Act lane now}"
+run_check; out_order="$OUT"; rc_order="$RC"
+assert_eq "session-end: Ask before Act exits 1" "$rc_order" "1"
+assert_contains "session-end: Ask before Act is named" \
+  "$out_order" "must run the Act lane (Step 3) before the single Ask-lane question (Step 4)"
+
+# --- Backlog-count qualifier (the old OPEN_TASKS row) must FAIL --------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/at least one session-linked task/\`OPEN_TASKS\` ≥ 1}"
+run_check; out_backlog="$OUT"; rc_backlog="$RC"
+assert_eq "session-end: OPEN_TASKS qualifier exits 1" "$rc_backlog" "1"
+assert_contains "session-end: OPEN_TASKS qualifier is named" \
+  "$out_backlog" "must require a session-linked task, not an OPEN_TASKS count"
+
+# --- Dropping --orchestrated from the wrap hand-off must FAIL ----------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/session-wrap\` with \`--orchestrated/session-wrap\`}"
+run_check; out_orch="$OUT"; rc_orch="$RC"
+assert_eq "session-end: wrap hand-off without --orchestrated exits 1" "$rc_orch" "1"
+assert_contains "session-end: missing wrap --orchestrated is named" \
+  "$out_orch" "single-question contract with the sub-skills"
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3"
 
 # ---------------------------------------------------------------------------
 # #2699: license/author metadata gate (and the #2698 data it keeps fixed).
