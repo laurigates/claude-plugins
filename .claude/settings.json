@@ -96,6 +96,7 @@
     "health-plugin@laurigates-claude-plugins": true,
     "home-assistant-plugin@laurigates-claude-plugins": true,
     "hooks-plugin@laurigates-claude-plugins": true,
+    "kernel-plugin@laurigates-claude-plugins": true,
     "kubernetes-plugin@laurigates-claude-plugins": true,
     "langchain-plugin@laurigates-claude-plugins": true,
     "linux-plugin@laurigates-claude-plugins": true,

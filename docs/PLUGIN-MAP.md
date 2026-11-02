@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 48 plugins and 380+ skills. Start here.
+Navigation guide for 49 plugins and 380+ skills. Start here.
 
 ## Quick Start
 
@@ -191,6 +191,7 @@ Install based on your project's tech stack and domain.
 | langchain-plugin | Building AI agents with LangChain/LangGraph |
 | home-assistant-plugin | Home Assistant configuration management |
 | linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives |
+| kernel-plugin | Investigating or reporting Linux kernel behaviour — source history across tags, lore research, standalone reproducers, mailing-list reports |
 | macos-plugin | macOS-specific operational tooling — kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage, and a repeatable threshold-scored benchmark suite |
 | blog-plugin | Writing project logs or technical posts |
 | youtube-plugin | Uploading and editing YouTube videos via the Data API v3, and org-only sharing in YouTube Studio |

@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 45 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -524,6 +524,27 @@
         "prose-style"
       ],
       "category": "automation"
+    },
+    {
+      "name": "kernel-plugin",
+      "source": "./kernel-plugin",
+      "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "linux",
+        "kernel",
+        "lore",
+        "mailing-list",
+        "git-send-email",
+        "reproducer",
+        "bug-report",
+        "maintainers"
+      ],
+      "category": "development"
     },
     {
       "name": "kubernetes-plugin",
