@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.49.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.2...blueprint-plugin-v3.49.0) (2026-11-02)
+
+
+### Features
+
+* **blueprint-plugin:** check PRP content quality with a fresh reader in prp-execute ([5c4e617](https://github.com/laurigates/claude-plugins/commit/5c4e6177c3a4780bdb523e370f7a80489f82435e)), closes [#3002](https://github.com/laurigates/claude-plugins/issues/3002)
+* **scripts:** guard placement phrases in the positional-reference check ([22be666](https://github.com/laurigates/claude-plugins/commit/22be666dccbff2f319055b78db28d3cdb76b51ae)), closes [#2955](https://github.com/laurigates/claude-plugins/issues/2955)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** record the plugin version in created_by.blueprint_plugin ([4f15218](https://github.com/laurigates/claude-plugins/commit/4f1521868ee069f90cf5212e153453092f49b434)), closes [#2950](https://github.com/laurigates/claude-plugins/issues/2950)
+* **blueprint-plugin:** stop check-manifest-schema reporting OK when nothing was validated ([6b222d7](https://github.com/laurigates/claude-plugins/commit/6b222d7590ea52ed95d7e38a5e9c6579eb13c1d7)), closes [#3177](https://github.com/laurigates/claude-plugins/issues/3177)
+* **session-plugin:** gate the session-end nudge on the user's own last message ([10ecbb4](https://github.com/laurigates/claude-plugins/commit/10ecbb4c6dca15a8de073f4f54814dc9e15fda3b)), closes [#3180](https://github.com/laurigates/claude-plugins/issues/3180)
+
 ## [3.48.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.1...blueprint-plugin-v3.48.2) (2026-10-29)
 
 

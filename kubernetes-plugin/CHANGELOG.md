@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.10.2](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.10.1...kubernetes-plugin-v1.10.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** strip multi-line quoted strings before the kubectl context check ([#3310](https://github.com/laurigates/claude-plugins/issues/3310)) ([29ef65c](https://github.com/laurigates/claude-plugins/commit/29ef65c017335eea410aa2b53b00e8f550f0070d)), closes [#3286](https://github.com/laurigates/claude-plugins/issues/3286)
+
+
+### Documentation
+
+* **kubernetes-plugin:** note that -o json omits managedFields ([#3329](https://github.com/laurigates/claude-plugins/issues/3329)) ([487c10e](https://github.com/laurigates/claude-plugins/commit/487c10e2f64bebb3fd40ce97b39551aed85c4663))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.10.0...kubernetes-plugin-v1.10.1) (2026-10-22)
 
 

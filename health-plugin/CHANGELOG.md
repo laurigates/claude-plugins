@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.24.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.6...health-plugin-v1.24.0) (2026-11-02)
+
+
+### Features
+
+* **health-plugin:** flag project-scope plugin installs that lag user scope ([e5e26a2](https://github.com/laurigates/claude-plugins/commit/e5e26a2c3f6aa38897dd0b7eba0aed05e1e5000f)), closes [#3220](https://github.com/laurigates/claude-plugins/issues/3220)
+
+
+### Bug Fixes
+
+* **health-plugin:** read enabledMcpjsonServers as an array in check-mcp.sh ([#3350](https://github.com/laurigates/claude-plugins/issues/3350)) ([261db07](https://github.com/laurigates/claude-plugins/commit/261db074c77a690205653a2f3a86730769ee20cd)), closes [#3320](https://github.com/laurigates/claude-plugins/issues/3320)
+
 ## [1.23.6](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.5...health-plugin-v1.23.6) (2026-10-20)
 
 

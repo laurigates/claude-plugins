@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.42.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.41.1...configure-plugin-v1.42.0) (2026-11-02)
+
+
+### Features
+
+* **configure-plugin:** add configure-completions standard ([#3316](https://github.com/laurigates/claude-plugins/issues/3316)) ([e993740](https://github.com/laurigates/claude-plugins/commit/e99374083e5f46e1fd7472fa4705e2ec40191e2b))
+* **configure-plugin:** add machine-readable repo baseline policy and validator ([#3319](https://github.com/laurigates/claude-plugins/issues/3319)) ([8859ee4](https://github.com/laurigates/claude-plugins/commit/8859ee43baffe415cdc6cadf81b23a6427372cce))
+* **health-plugin:** flag project-scope plugin installs that lag user scope ([e5e26a2](https://github.com/laurigates/claude-plugins/commit/e5e26a2c3f6aa38897dd0b7eba0aed05e1e5000f)), closes [#3220](https://github.com/laurigates/claude-plugins/issues/3220)
+
+
+### Bug Fixes
+
+* **configure-plugin:** pin the rustdoc Pages example toolchain instead of floating stable ([#3349](https://github.com/laurigates/claude-plugins/issues/3349)) ([39a0eb9](https://github.com/laurigates/claude-plugins/commit/39a0eb9d648397862fcac12064841460f49f9f62))
+* **configure-plugin:** set initial-version when bootstrapping a release-please manifest ([2cb3f84](https://github.com/laurigates/claude-plugins/commit/2cb3f84826cc7b27d7cad31345670ecf0a6b7e7a)), closes [#3301](https://github.com/laurigates/claude-plugins/issues/3301)
+
 ## [1.41.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.41.0...configure-plugin-v1.41.1) (2026-10-29)
 
 

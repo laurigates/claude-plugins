@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.68.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.4...git-plugin-v2.68.0) (2026-11-02)
+
+
+### Features
+
+* **agent-patterns-plugin:** drafts state why they are drafts ([#3315](https://github.com/laurigates/claude-plugins/issues/3315)) ([ff2681b](https://github.com/laurigates/claude-plugins/commit/ff2681b4997435ed48a6f8ec50e938a6267ac071))
+
+
+### Bug Fixes
+
+* **git-plugin:** point worktree examples at &lt;repo&gt;/.claude/worktrees/ ([32d3577](https://github.com/laurigates/claude-plugins/commit/32d3577955f8b20fbbda9bcfcae88dfcfa2fc3d4))
+
+
+### Documentation
+
+* **git-plugin:** route multi-PR merges under a strict ruleset to the serial chain ([d4f2c16](https://github.com/laurigates/claude-plugins/commit/d4f2c16ea0f25f1567719d912daf5ce4148092e0)), closes [#3285](https://github.com/laurigates/claude-plugins/issues/3285)
+
 ## [2.67.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.3...git-plugin-v2.67.4) (2026-10-29)
 
 
