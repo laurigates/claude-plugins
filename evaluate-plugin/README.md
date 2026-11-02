@@ -147,6 +147,15 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
 | `scripts/model-compare/` | Compare models on the same work: two synthetic task sets with hidden graders (`basic/`, `hard/`, each with a `validate.sh` that proves its graders), `run_cell.sh` for lean headless cells, `run_issue.sh` for real issues in per-model worktrees, and a blind-review prompt; see its README |
 | `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
 
+## Hooks
+
+Both run on `SessionStart`.
+
+| Hook | Purpose |
+|------|---------|
+| `hooks/evaluate-drift-probe.sh` | Reports skills edited after their last `eval-results/` run (drift nudge pointing at `/evaluate:report`) |
+| `hooks/sync-evaluate-skill-workflow.sh` | Copies the bundled `evaluate-skill` workflow template to `~/.claude/workflows/evaluate-skill.workflow.js` when the copy is missing or differs, so `evaluate-plugin-batch` can resolve it by name. Silent and fail-open; a changed copy takes effect from the next session. See [`docs/dynamic-workflow-registration.md`](../docs/dynamic-workflow-registration.md) |
+
 ## Context Engineering
 
 `/evaluate:context-engineering` measures the corpus against Anthropic's

@@ -45,10 +45,11 @@ workflows (empty `args` makes `evaluate-skill` abort before any `agent()` call):
 
 So the script path works only when the session runs inside this checkout, and
 fails for anyone who installed the plugin. Adding the plugin cache to
-`permissions.additionalDirectories` would lift that; whether to grant it is
-open in [#2829](https://github.com/laurigates/claude-plugins/issues/2829).
-Until it is decided, the registered name is the only route that works from a
-plugin install.
+`permissions.additionalDirectories` would lift that, at the cost of a broad
+standing read grant over every cached plugin that each consumer must replicate.
+[#2829](https://github.com/laurigates/claude-plugins/issues/2829) decided
+against the grant: the registered name stays, and a SessionStart hook keeps the
+saved copy in step (see "Installing the registration").
 
 ## Where a registered workflow lives
 
@@ -69,8 +70,8 @@ merging with it.
 **This repo does not commit a `.claude/workflows/` copy**, and deliberately so:
 the bundled `workflows/*.workflow.js` file is the single source of truth, and a
 second committed copy would be a fleet-drift surface with nothing keeping the two
-in step (`.claude/rules/generated-fleet-drift.md`). Registration is an
-**install-time** act performed against a checkout, not a second tracked file.
+in step (`.claude/rules/generated-fleet-drift.md`). Registration is a copy
+written at session start by `evaluate-plugin`'s hook, not a second tracked file.
 
 The one file this repo does track there, `.claude/workflows/model-suitability-audit.workflow.js`,
 is not a copy: it is a repo-internal audit harness with no bundled twin, so it
@@ -80,15 +81,29 @@ returns `{abort: true}` before its first `agent()` call when `args` are empty
 
 ## Installing the registration
 
-Neither directory exists by default (verified 2026-09-20: `~/.claude/workflows`
-and `<repo>/.claude/workflows` were both absent on a clean machine). Create it
-and copy the bundled template in, keeping the **basename in step with
+`evaluate-plugin` ships a SessionStart hook,
+`evaluate-plugin/hooks/sync-evaluate-skill-workflow.sh` (#2829), that does the
+install. On every session start it compares the bundled template with
+`~/.claude/workflows/evaluate-skill.workflow.js` and, when the copy is missing
+or differs, creates the directory and copies the template in. It writes nothing
+to the session and exits 0 on every path, including an unwritable target. Its
+regression test is `evaluate-plugin/hooks/test-sync-evaluate-skill-workflow.sh`.
+
+**A changed copy takes effect from the next session.** The workflow registry is
+not re-read when the file lands (see step 4 below), so the session in which the
+hook first installs or updates the copy still resolves the previous one, or
+none. Start a new session after installing the plugin, or after an update that
+changed the template.
+
+The hook targets user scope only. Neither directory exists by default (verified
+2026-09-20: `~/.claude/workflows` and `<repo>/.claude/workflows` were both
+absent on a clean machine). Where the hook cannot run, for example with plugin
+hooks disabled, install by hand, keeping the **basename in step with
 `meta.name`**:
 
 ```bash
 mkdir -p ~/.claude/workflows
-cp evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js \
-   ~/.claude/workflows/evaluate-skill.workflow.js
+cp evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js ~/.claude/workflows/evaluate-skill.workflow.js
 ```
 
 The identity that `workflow('evaluate-skill', …)` resolves is the workflow's
@@ -108,9 +123,9 @@ about the runner's home directory. Verify it by hand, in this order:
 2. `grep -n "name: 'evaluate-skill'" ~/.claude/workflows/evaluate-skill.workflow.js`
    — the installed copy declares the name the caller uses.
 3. `diff evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js ~/.claude/workflows/evaluate-skill.workflow.js`
-   — the installed copy has not drifted from the bundled source of truth. Re-run
-   this after any edit to the bundled file; a stale registered copy is a silent
-   fork.
+   — the installed copy has not drifted from the bundled source of truth. The
+   hook re-syncs it at each session start; a difference here means the hook
+   has not run since the bundled file changed.
 4. In a session, check that `evaluate-skill` appears in `/workflows`. The
    registry is not re-read the moment the file lands: on 2026-09-25 the session
    that installed it still got `no workflow with that name. Available:
@@ -177,7 +192,8 @@ that happens:
 3. Update `.claude/rules/workflow-vs-skill.md` § "Layout convention", which
    currently states the rule as "register a name **only** when another harness
    must call it by name".
-4. Extend the install snippet and the verification steps above.
+4. Extend the sync hook (or add a sibling in the template's plugin), the manual
+   install snippet, and the verification steps above.
 
 ## Related
 
