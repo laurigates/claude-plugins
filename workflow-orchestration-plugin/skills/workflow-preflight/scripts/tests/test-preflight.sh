@@ -4,9 +4,11 @@
 # Encodes the script's structured-output contract (the semantic invariant the
 # skill depends on): the =/STATUS/ISSUE_COUNT envelope, the ahead/behind +
 # uncommitted + stash + conflict facts, and the fixed recommendation decision
-# tree (resolve-conflicts > commit-or-stash > rebase > ready). All cases run
-# against a local fixture repo with --no-fetch --base main, so the test is
-# hermetic (no remote, no gh).
+# tree (already-addressed > existing-pr > resolve-conflicts > commit-or-stash >
+# rebase > ready). All cases run against a local fixture repo with --no-fetch
+# --base main, and every gh call goes to a stub on PATH, so the test is
+# hermetic (no remote, no real gh). Also carries the #1558 cases from the
+# retired test-workflow-preflight.sh (#3148).
 #
 # Exit 0 on success, non-zero on first failure.
 
@@ -153,6 +155,9 @@ case "$1 $2" in
   "auth status") exit "${STUB_GH_AUTH_RC:-0}" ;;
   "secret list") printf '%s\n' ${STUB_GH_SECRETS:-} ;;
   "api repos/{owner}/{repo}/environments") printf '%s\n' ${STUB_GH_ENVS:-} ;;
+  # --issue lookups record the cwd gh ran from (gh resolves the repo from it).
+  "issue view") pwd -P >> "${STUB_GH_CWD_LOG:-/dev/null}"; echo "${STUB_GH_ISSUE_STATE:-OPEN}" ;;
+  "pr list") pwd -P >> "${STUB_GH_CWD_LOG:-/dev/null}"; printf '%s' "${STUB_GH_PRS:-}" ;;
   "--version ") echo "STUB_GH_SENTINEL" ;;
   *) exit 1 ;;
 esac
@@ -233,6 +238,57 @@ grep -q "^PERMISSION_MODE_SOURCE=project$" <<<"$out10" || fail "expected PERMISS
 rm -rf "$r10"
 pass "recon, project defaultMode under home dir -> source project"
 
-rm -rf "$stub_bin" "$fake_home"
+# -----------------------------------------------------------------------------
+# --issue cases (#3148): the stub gh logs its cwd, and the script is invoked
+# from an unrelated directory, so a gh call that does not cd into
+# --project-dir is caught.
+# -----------------------------------------------------------------------------
+elsewhere="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+issue_run() {
+  local repo="$1"; shift
+  (cd "$elsewhere" && PATH="$stub_bin:$PATH" bash "$preflight" --no-fetch --base main --project-dir "$repo" "$@")
+}
+
+# Case 11: open PR on a clean tree -> existing-pr, gh ran from the repo root
+# (ported from the retired test-workflow-preflight.sh case (a), #1558).
+r11="$(make_repo)"
+r11_root="$(git -C "$r11" rev-parse --show-toplevel)"
+r11_root="$(cd "$r11_root" && pwd -P)"
+cwd_log="$(mktemp)" || { echo "mktemp failed" >&2; exit 1; }
+out11="$(STUB_GH_CWD_LOG="$cwd_log" STUB_GH_PRS="#99:OPEN:feature/issue-42" issue_run "$r11" --issue 42)"
+grep -q "^ISSUE=42$" <<<"$out11"                         || fail "expected ISSUE=42:\n$out11"
+grep -q "^ISSUE_STATE=OPEN$" <<<"$out11"                 || fail "expected ISSUE_STATE=OPEN:\n$out11"
+grep -q "^EXISTING_PRS=#99:OPEN:feature/issue-42$" <<<"$out11" || fail "expected EXISTING_PRS from stub:\n$out11"
+grep -q "^RECOMMENDATION=existing-pr$" <<<"$out11"       || fail "expected RECOMMENDATION=existing-pr:\n$out11"
+grep -q "^STATUS=WARN$" <<<"$out11"                      || fail "expected STATUS=WARN with an open PR:\n$out11"
+[ "$(grep -c . "$cwd_log")" -eq 2 ] || fail "expected 2 logged gh --issue calls, got:\n$(cat "$cwd_log")"
+while IFS= read -r gh_cwd; do
+  [ "$gh_cwd" = "$r11_root" ] || fail "gh --issue ran from '$gh_cwd', expected --project-dir root '$r11_root'"
+done < "$cwd_log"
+rm -rf "$r11" "$cwd_log"
+pass "--issue with open PR -> existing-pr; gh runs from --project-dir, not the caller's cwd"
+
+# Case 12: merged PR -> already-addressed (beats a dirty tree)
+r12="$(make_repo)"
+printf 'dirty\n' >> "$r12/file.txt"
+out12="$(STUB_GH_PRS="#98:MERGED:fix/42-thing" issue_run "$r12" --issue 42)"
+grep -q "^RECOMMENDATION=already-addressed$" <<<"$out12" || fail "expected already-addressed:\n$out12"
+rm -rf "$r12"
+pass "--issue with merged PR -> already-addressed"
+
+# Case 13: uncommitted changes plus a stash -> commit-or-stash
+# (ported from the retired test-workflow-preflight.sh case (c), #1558).
+r13="$(make_repo)"
+printf 'stashed\n' >> "$r13/file.txt"
+git -C "$r13" stash -q
+printf 'uncommitted\n' >> "$r13/file.txt"
+out13="$(run "$r13")"
+grep -q "^UNCOMMITTED=1$" <<<"$out13"                  || fail "expected UNCOMMITTED=1:\n$out13"
+grep -q "^STASH_COUNT=1$" <<<"$out13"                  || fail "expected STASH_COUNT=1:\n$out13"
+grep -q "^RECOMMENDATION=commit-or-stash$" <<<"$out13" || fail "expected commit-or-stash:\n$out13"
+rm -rf "$r13"
+pass "uncommitted + stash -> commit-or-stash"
+
+rm -rf "$stub_bin" "$fake_home" "$elsewhere"
 
 echo "ALL PASS"
