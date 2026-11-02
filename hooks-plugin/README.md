@@ -615,6 +615,9 @@ A `type: "prompt"` hook that evaluates subagent output completeness. Blocks vagu
 | Type | `prompt` (single-turn LLM call) |
 | Timeout | 30s |
 | Checks | Addresses original task, specificity, completeness |
+| Background wait | Output that says the subagent is waiting on its own background job or notification gets `ok: false` with a reason to collect that result (notification or task output) and finish the deliverable before stopping (#3194) |
+
+**Guard:** `bash scripts/check-subagent-stop-background-wait.sh --strict` pins the background-wait clause and the `ok`/`reason` contract.
 
 ### TaskCompleted — Implementation Verification (agent)
 
