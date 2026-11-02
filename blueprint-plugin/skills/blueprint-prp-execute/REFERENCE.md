@@ -1,6 +1,36 @@
 # Blueprint PRP Execute - Reference
 
-Detailed reference material for the PRP execution skill, including validation gates, deferred items workflow, feature tracker sync details, report templates, and error handling patterns.
+Detailed reference material for the PRP execution skill, including the content-quality check, validation gates, deferred items workflow, feature tracker sync details, report templates, and error handling patterns.
+
+## PRP Content-Quality Check
+
+SKILL.md Step 1 item 4 dispatches this check as a fresh `Task` agent before any execution or delegation (issue #3002). It replaces the agent hook that #2999 removed, which was registered on `"matcher": "Skill(prp-execute)"` and never fired. The reader gets the PRP path and the reader prompt in this section, and nothing from the executing session, so its verdict does not inherit the executor's stake in starting.
+
+Reader prompt (substitute the path):
+
+```text
+You are evaluating the content quality of a PRP (Product Requirement Prompt)
+before it is executed. A structural check has already confirmed the confidence
+score, the required sections, and the file references. Judge the content only.
+
+Read docs/prps/<prp-name>.md and nothing else. Check that:
+
+1. Requirements are specific enough to implement, not vague ("improve
+   performance", "make it robust").
+2. Acceptance criteria are testable and measurable.
+3. Edge cases and error scenarios are identified.
+4. The scope is bounded, not open-ended.
+
+Reply with exactly one JSON object and no other text:
+{"ok": true} if the PRP is ready for implementation, or
+{"ok": false, "reason": "<the specific content gaps to fix before execution>"}.
+```
+
+| Verdict | Action in SKILL.md |
+|---------|--------------------|
+| `{"ok": true}` | Continue with Step 1 |
+| `{"ok": false, "reason": "..."}` | Stop, print `reason`, suggest `/blueprint:prp-create <prp-name>` |
+| Not valid JSON, or no verdict | Re-dispatch the reader once; if it fails again, stop and report that the check did not run rather than treating it as a pass |
 
 ## Validation Gates
 
