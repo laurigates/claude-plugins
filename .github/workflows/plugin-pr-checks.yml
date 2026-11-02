@@ -260,6 +260,7 @@ jobs:
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
             --only 'scripts/tests/test-check-evals-abstention.sh' \
+            --only 'scripts/tests/test-check-friction-learner-fast-loop.sh' \
             --only 'scripts/tests/test-check-git-sandbox-guards.sh' \
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-hook-fail-closed.sh' \
@@ -371,6 +372,13 @@ jobs:
         # Whole-repo invariant, cheap, unconditional like the model check above;
         # the self-test in the scoped runner step proves the guard first.
         run: bash scripts/check-agent-turn-budget.sh
+
+      - name: Check friction-learner reads both fast-loop labels
+        # /feedback:session files positive findings under `positive-feedback`
+        # alone, so a Step 0 that fetches only `session-feedback` leaves them
+        # unread (#3346: 8 of 10 open positive-feedback issues). Cheap,
+        # unconditional; the self-test in the scoped runner step proves it first.
+        run: bash scripts/check-friction-learner-fast-loop.sh
 
       - name: Check agent frontmatter uses only fields Claude Code reads
         # Claude Code ignores an agent frontmatter key it does not recognize

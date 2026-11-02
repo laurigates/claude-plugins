@@ -10,6 +10,21 @@
 - Enhancements: `enhancement`
 - Positive: *(no label — omit the `--label` flag)*
 
+**The label is the routing key.** The weekly `friction-learner` agent
+(`feedback-plugin/agents/friction-learner.md`, Step 0) fetches open
+`session-feedback` issues as friction hypotheses and `positive-feedback` issues
+as stability markers, in two separate queries. A positive finding therefore
+carries `positive-feedback` alone; it does not need `session-feedback` to be
+read. A positive issue filed with no label (`$SKIP_SESSION_LABELS=true`) is
+invisible to that agent until the label is added.
+
+**After filing, a positive issue closes on its own.** The next weekly
+`friction-learner` run cites it in its PR's `## Fast-loop signal` section, then
+closes it with a comment naming that PR (closed = processed). Later runs keep
+reading positive issues in any state created in the last 6 months, so a closed
+one still protects the behaviour it praises. Leave it open after filing; do not
+close it by hand.
+
 **Body template**:
 ```markdown
 ## Skill

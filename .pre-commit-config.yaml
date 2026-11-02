@@ -166,6 +166,18 @@ repos:
         language: script
         files: '^scripts/(check-agent-turn-budget\.sh|tests/test-check-agent-turn-budget\.sh)$'
         pass_filenames: false
+      - id: check-friction-learner-fast-loop
+        name: friction-learner fetches session-feedback and positive-feedback (#3346)
+        entry: ./scripts/check-friction-learner-fast-loop.sh
+        language: script
+        files: '^(feedback-plugin/agents/friction-learner\.md|scripts/check-friction-learner-fast-loop\.sh)$'
+        pass_filenames: false
+      - id: test-check-friction-learner-fast-loop
+        name: friction-learner fast-loop guard regression
+        entry: ./scripts/tests/test-check-friction-learner-fast-loop.sh
+        language: script
+        files: '^(feedback-plugin/agents/friction-learner\.md|scripts/(check-friction-learner-fast-loop\.sh|tests/test-check-friction-learner-fast-loop\.sh))$'
+        pass_filenames: false
       - id: check-agent-frontmatter-keys
         name: agent frontmatter uses only fields Claude Code reads (#2646)
         entry: ./scripts/check-agent-frontmatter-keys.sh

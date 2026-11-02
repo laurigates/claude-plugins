@@ -12,7 +12,7 @@
 - Identified a missing pattern or integration
 - Found a more efficient approach than the skill recommends
 
-**Positive** (label: `positive-feedback`):
+**Positive** (label: `positive-feedback`; `friction-learner` reads these as stability markers):
 - Skill provided correct, effective guidance
 - Skill's agentic optimizations saved time
 - Skill's decision table correctly directed to the right tool
