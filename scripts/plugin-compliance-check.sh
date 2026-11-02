@@ -1453,6 +1453,25 @@ check_skill_body() {
           fi
         done
       fi
+      # Regression: cargo-worktree-builds said only the leaf crate differs per
+      # worktree and called the stale-rlib error transient ("`touch` + re-run").
+      # When parallel branches change a non-leaf workspace crate, one shared
+      # CARGO_TARGET_DIR gave a false E0599 that recurs while peers build, and
+      # can in principle give a false green (shore-recon, 2026-10-31; #3351).
+      # Pin the "When not to share" section, its own-target-dir remedy, and the
+      # brief-must-carry-the-gotcha line; forbid the unqualified leaf claim.
+      if [ "$skill_name" = "cargo-worktree-builds" ]; then
+        for token in '## When Not to Share' 'non-leaf' 'its own `CARGO_TARGET_DIR`' 'sccache' 'must carry the stale-rlib gotcha'; do
+          if ! grep -qF -- "$token" "$skill_file"; then
+            issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (a shared target dir is unsafe when worktrees change a non-leaf workspace crate; #3351)")
+            has_errors=true
+          fi
+        done
+        if grep -qF 'only the leaf crate differs per worktree.' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md claims only the leaf crate differs per worktree without the non-leaf qualification (#3351)")
+          has_errors=true
+        fi
+      fi
     fi
 
     # Regression: git-pr-watch wraps the native PR-activity subscription. Its body
