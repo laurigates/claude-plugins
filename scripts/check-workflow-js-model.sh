@@ -301,12 +301,22 @@ declare -a budget_rows=()
 
 # check_agent_budget <js> <rel> <framing-section-body>
 check_agent_budget() {
-    local js="$1" rel="$2" body="$3" decl est verdict estimate loose ints
-    decl=$(sed -n 's/.*\*\*Agent budget:\*\*[[:space:]]*//p' <<<"$body" | head -1)
+    local js="$1" rel="$2" body="$3" decl est verdict estimate loose ints tag
+    # A skill bundling several templates declares one line per file,
+    # '**Agent budget (<file>.workflow.js):**', so templates with different
+    # estimates need not agree (#3265). The first bare '**Agent budget:**' line
+    # is the fallback for a file with no per-file line. index() matches the
+    # tag literally, so the dots in the filename are not regex wildcards.
+    tag="**Agent budget (${js##*/}):**"
+    decl=$(awk -v tag="$tag" '(i = index($0, tag)) { print substr($0, i + length(tag)); exit }' <<<"$body")
+    if [ -z "$decl" ]; then
+        decl=$(sed -n 's/.*\*\*Agent budget:\*\*[[:space:]]*//p' <<<"$body" | head -1)
+    fi
+    decl="${decl#"${decl%%[![:space:]]*}"}"  # trim leading whitespace
     decl="${decl%% — *}"
     decl="${decl%"${decl##*[![:space:]]}"}"  # trim trailing whitespace
     if [ -z "$decl" ]; then
-        add_error "TYPE=missing_agent_budget FILE=$rel MSG=the '## Workflow harness (template)' section must declare '**Agent budget:** N' (every agent() site counted) or '**Agent budget:** C + k x <items>' (some are not) — run hooks-plugin/hooks/workflow-scale-estimate.py on the file for the numbers"
+        add_error "TYPE=missing_agent_budget FILE=$rel MSG=the '## Workflow harness (template)' section must declare '**Agent budget:** N' (every agent() site counted) or '**Agent budget:** C + k x <items>' (some are not); a skill with several templates may declare '**Agent budget (${js##*/}):**' per file — run hooks-plugin/hooks/workflow-scale-estimate.py on the file for the numbers"
         return
     fi
     [ "$python_ok" -eq 1 ] || return
