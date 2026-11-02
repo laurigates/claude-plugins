@@ -22,6 +22,9 @@
 #      configure-plugin/skills/**/*.md is in officialMarketplace.lspPlugins
 #      (pins the doc fix; a `<placeholder>@…` is not a token).
 #   5. Zero skill docs scanned is ERROR nothing_scanned, not a silent OK.
+#   6. No *-plugin/skills/**/*.md outside configure-plugin restates a policy
+#      mcpServers entry: a `"<server>": {` key, or a git+ line naming a policy
+#      server's package (#3321). Prose and manual-start lines stay allowed.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md).
@@ -83,6 +86,7 @@ policy_plugin_count=0
 lsp_count=0
 docs_scanned=0
 doc_refs=0
+mcp_docs_scanned=0
 
 if [ "$jq_available" = false ]; then
   add_issue ERROR missing_jq "jq is required to validate the repo baseline policy but is not installed"
@@ -171,6 +175,42 @@ else
       done < <(cd "$proj_dir" && grep -rHnoE --include='*.md' "[A-Za-z0-9._-]+@${official_re}" "$docs_rel")
     fi
   fi
+
+  # Check 6: skill docs outside configure-plugin do not restate a policy
+  # mcpServers entry (#3321). The policy owns those values; a copied entry
+  # (`"context7": {`) or a git+ registration of a policy server's package
+  # drifts when the policy changes. Prose and manual-start lines naming a
+  # package stay allowed. Relative paths from inside the root, as above.
+  mapfile -t mcp_servers < <(jq -r '(.mcpServers // {}) | keys[]' "$policy")
+  mapfile -t mcp_packages < <(
+    jq -r '(.mcpServers // {})[] | [.args[]? | select(startswith("-") | not)] | last // empty' "$policy" \
+      | sed -E 's/(.)@[^@\/]*$/\1/'
+  )
+  mapfile -t mcp_doc_files < <(
+    cd "$proj_dir" && find . -path './.claude' -prune -o -path './configure-plugin' -prune \
+      -o -type f -name '*.md' -path './*-plugin/skills/*' -print | sed 's|^\./||' | sort
+  )
+  mcp_docs_scanned=${#mcp_doc_files[@]}
+  if [ "$mcp_docs_scanned" -gt 0 ] && [ "${#mcp_servers[@]}" -gt 0 ]; then
+    for server in "${mcp_servers[@]}"; do
+      server_re="${server//./\\.}"
+      while IFS= read -r hit; do
+        [ -n "$hit" ] || continue
+        hit_file="${hit%%:*}"; hit_rest="${hit#*:}"; hit_line="${hit_rest%%:*}"
+        add_issue ERROR doc_restates_policy_server \
+          "$hit_file:$hit_line restates the '$server' entry that $policy_rel mcpServers owns; link the policy instead of copying it"
+      done < <(cd "$proj_dir" && grep -HnE "\"${server_re}\"[[:space:]]*:[[:space:]]*\\{" "${mcp_doc_files[@]}")
+    done
+    for pkg in "${mcp_packages[@]}"; do
+      [ -n "$pkg" ] || continue
+      while IFS= read -r hit; do
+        [ -n "$hit" ] || continue
+        hit_file="${hit%%:*}"; hit_rest="${hit#*:}"; hit_line="${hit_rest%%:*}"
+        add_issue ERROR doc_restates_policy_server \
+          "$hit_file:$hit_line registers $pkg from a git+ source; $policy_rel mcpServers registers it from its package index"
+      done < <(cd "$proj_dir" && grep -HnF "$pkg" "${mcp_doc_files[@]}" | grep -F 'git+')
+    done
+  fi
 fi
 
 # --- Status -------------------------------------------------------------------
@@ -196,6 +236,7 @@ echo "POLICY_PLUGINS=$policy_plugin_count"
 echo "LSP_PLUGINS=$lsp_count"
 echo "DOCS_SCANNED=$docs_scanned"
 echo "DOC_OFFICIAL_REFS=$doc_refs"
+echo "MCP_DOCS_SCANNED=$mcp_docs_scanned"
 echo "STATUS=$overall_status"
 if [ "$overall_status" != "OK" ]; then
   # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,

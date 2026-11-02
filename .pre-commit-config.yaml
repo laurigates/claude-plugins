@@ -636,7 +636,7 @@ repos:
         name: repo baseline policy names only real plugins (#3318)
         entry: bash ./scripts/check-repo-baseline-policy.sh --strict
         language: system
-        files: '^(configure-plugin/(policy/.*\.json|skills/.*\.md)|\.claude-plugin/marketplace\.json|scripts/check-repo-baseline-policy\.sh)$'
+        files: '^(configure-plugin/policy/.*\.json|[^/]+-plugin/skills/.*\.md|\.claude-plugin/marketplace\.json|scripts/check-repo-baseline-policy\.sh)$'
         pass_filenames: false
       - id: test-check-repo-baseline-policy
         name: repo baseline policy guard regression

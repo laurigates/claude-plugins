@@ -146,6 +146,33 @@ assert_has "two-finding output satisfies the structured-output contract" "$(vali
 assert_has "OK output satisfies the structured-output contract" "$(valid "$out_a")" "^true$"
 assert_lacks "OK output carries no REASON=" "$out_a" "^REASON="
 
+# --- TEST L: a skill doc outside configure-plugin restates a policy server (#3321)
+# mcp-management copied the context7/sequential-thinking entries and showed
+# pal in the git+ form the policy replaced; such copies drift with the policy.
+l="$tmp_root/l"
+make_fixture "$l" "$(policy_with '.')"
+mkdir -p "$l/agent-patterns-plugin/skills/mcp-demo"
+printf '%s\n' '```json' '{"mcpServers": {' '  "context7": {' '    "command": "bunx"' '  }' '}}' '```' \
+  > "$l/agent-patterns-plugin/skills/mcp-demo/REFERENCE.md"
+out_l="$(bash "$check" --project-dir "$l")"
+assert_has "a policy server key restated outside configure-plugin flagged doc_restates_policy_server" "$out_l" "TYPE=doc_restates_policy_server MSG=agent-patterns-plugin/skills/mcp-demo/REFERENCE.md:3"
+assert_strict_fails "a restated policy server fails --strict" "$l"
+l2="$tmp_root/l2"
+make_fixture "$l2" "$(policy_with '.')"
+mkdir -p "$l2/agent-patterns-plugin/skills/mcp-demo"
+printf '%s\n' '"args": ["--from", "git+https://github.com/owner/repo.git", "pal-mcp-server"]' \
+  > "$l2/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
+out_l2="$(bash "$check" --project-dir "$l2")"
+assert_has "a policy server package in a git+ registration flagged doc_restates_policy_server" "$out_l2" "TYPE=doc_restates_policy_server MSG=agent-patterns-plugin/skills/mcp-demo/SKILL.md:1"
+l3="$tmp_root/l3"
+make_fixture "$l3" "$(policy_with '.')"
+mkdir -p "$l3/agent-patterns-plugin/skills/mcp-demo"
+printf '%s\n' '"my-local-server": {' 'bunx -y @upstash/context7-mcp  # manual start' 'PAL registers as `uvx pal-mcp-server@latest`.' \
+  > "$l3/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
+out_l3="$(bash "$check" --project-dir "$l3")"
+assert_has "a placeholder server, a manual start line and a prose mention pass" "$out_l3" "^STATUS=OK$"
+assert_has "the outside-configure-plugin skill doc is counted" "$out_l3" "^MCP_DOCS_SCANNED=1$"
+
 echo ""
 echo "RESULTS: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
