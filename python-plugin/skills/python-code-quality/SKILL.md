@@ -53,7 +53,7 @@ repos:
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/astral-sh/ty
-    rev: v0.0.10
+    rev: 0.0.93
     hooks:
       - id: ty
 ```

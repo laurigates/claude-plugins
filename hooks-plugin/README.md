@@ -326,6 +326,14 @@ A public repo attracts drive-by PRs, and merge tooling is built for bulk-merging
 | Not determinable (no network, unresolvable `$var` selector, bad PR number, an argument that is not selector-shaped) | **Denied** — "cannot verify" is not "safe" |
 | Any non-merge command | Allowed, immediately |
 
+The author comes from `gh pr view`, which uses GraphQL. Where GraphQL is refused
+and REST works (Claude Code cloud sessions answer GraphQL with HTTP 403), the
+hook falls back to `gh api repos/OWNER/REPO/pulls/N` and
+`gh api repos/OWNER/REPO/pulls/N/files`, but only for an explicit `-R`/`--repo`
+(or the MCP tool's `owner`/`repo`) and a numeric PR. Without `-R`, gh resolves
+the repository from remotes and its default setting, which the hook does not
+guess, so the merge stays denied; name the repository and retry.
+
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge` (and `curl`
 on the same route), GraphQL `mergePullRequest` / `enablePullRequestAutoMerge`

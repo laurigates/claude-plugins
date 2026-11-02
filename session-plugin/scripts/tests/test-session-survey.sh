@@ -2949,6 +2949,39 @@ out=$(TASK_ALL_FIXTURE="$SANDBOX/c2-unlinked.json" TASK_BPID_FIXTURE="$SANDBOX/c
 check_line "C2 control: with no open sibling the full list returns" \
   "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_WOS=WO-045,WO-046,WO-050"
 
+# --- TEST WT: a linked worktree is named after the MAIN checkout (#3314) -----
+# `git rev-parse --show-toplevel` in a linked worktree is the worktree's own
+# directory, so a sibling `git worktree add ../shore-recon-progress` reported
+# PROJECT=shore-recon-progress, matched no task, and fell back to the
+# all-projects scope. The slug must be the main checkout's basename, the same
+# answer the main checkout gives. Claude Code's nested
+# `<repo>/.claude/worktrees/<name>` layout hits the same branch.
+WT_HOME="$SANDBOX/wt-home"
+WT_MAIN="$WT_HOME/shore-recon"
+mkrepo "$WT_MAIN"
+git -C "$WT_MAIN" worktree add -q -b feat/run-progress "$WT_HOME/shore-recon-progress" >/dev/null 2>&1
+git -C "$WT_MAIN" worktree add -q -b feat/nested "$WT_MAIN/.claude/worktrees/foo" >/dev/null 2>&1
+cat > "$SANDBOX/wt-tasks.json" <<'WTJSON'
+[{"uuid":"wt-1","id":1,"project":"shore-recon","status":"pending","description":"main-repo task","modified":"20260601T101010Z","urgency":1}]
+WTJSON
+# Control: the main checkout yields its own basename.
+out=$(TASK_ALL_FIXTURE="$SANDBOX/wt-tasks.json" run_at "$WT_MAIN" --home-dir "$WT_HOME")
+check_line "WT control: the main checkout uses its own basename" "$out" "PROJECT=shore-recon"
+check_line "WT control: via the basename guess" "$out" "DETECTION=cwd-repo-basename"
+check_line "WT control: scoped to that project" "$out" "TASK_SCOPE=project"
+# A sibling linked worktree with a different directory name.
+out=$(TASK_ALL_FIXTURE="$SANDBOX/wt-tasks.json" run_at "$WT_HOME/shore-recon-progress" --home-dir "$WT_HOME")
+check_line "WT: a sibling worktree is named after the main checkout" "$out" "PROJECT=shore-recon"
+check_line "WT: the derivation is still the basename guess" "$out" "DETECTION=cwd-repo-basename"
+check_line "WT: and finds the main repo's tasks" "$out" "TASK_SCOPE=project"
+check_absent "WT: the worktree dir name never becomes the slug" "$out" "PROJECT=shore-recon-progress"
+# A Claude-style nested worktree, run from a subdirectory of it.
+mkdir -p "$WT_MAIN/.claude/worktrees/foo/sub"
+out=$(TASK_ALL_FIXTURE="$SANDBOX/wt-tasks.json" run_at "$WT_MAIN/.claude/worktrees/foo/sub" --home-dir "$WT_HOME")
+check_line "WT: a nested .claude/worktrees worktree uses the main basename" "$out" "PROJECT=shore-recon"
+check_line "WT: nested, same derivation" "$out" "DETECTION=cwd-repo-basename"
+check_absent "WT: nested, the worktree name never becomes the slug" "$out" "PROJECT=foo"
+
 echo "---"
 echo "PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]

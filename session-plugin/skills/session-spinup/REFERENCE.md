@@ -46,7 +46,7 @@ queue:
 |---|---|
 | `override` | The caller passed `--project` — user-asserted, so it keeps `high` confidence even at zero |
 | `declared` | A `.claude/session.json` `.project` string found at the cwd or the repo root. Repo content, so it is validated as a plain single-line string; any other shape is rejected rather than flattened |
-| `cwd-repo-basename` | The repo directory basename (the guess) |
+| `cwd-repo-basename` | The repo directory basename (the guess). In a linked worktree, the **main checkout's** basename, not the worktree directory's |
 | `cwd-repo-basename-ancestor` | An ancestor repo's slug, adopted because the basename matched nothing (`TASK_SCOPE=ancestor-name`) |
 | `ambiguous` | No repo context at all |
 

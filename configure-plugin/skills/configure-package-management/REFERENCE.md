@@ -295,7 +295,7 @@ bun install
 ```yaml
 # GitHub Actions
 - name: Setup Bun
-  uses: oven-sh/setup-bun@v2
+  uses: oven-sh/setup-bun@v2.2.0
 
 - name: Install dependencies
   run: bun install
@@ -328,7 +328,7 @@ bun install
 
 ```yaml
 - name: Setup Bun
-  uses: oven-sh/setup-bun@v2
+  uses: oven-sh/setup-bun@v2.2.0
   with:
     bun-version: latest
 
