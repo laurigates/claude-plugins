@@ -528,6 +528,18 @@ repos:
         language: script
         files: '^scripts/(check-justfile-module-paths\.sh|tests/test-check-justfile-module-paths\.sh)$'
         pass_filenames: false
+      - id: check-justfile-expert-gotchas
+        name: justfile-expert links references/gotchas.md and keeps its five gotchas (#3305)
+        entry: ./scripts/check-justfile-expert-gotchas.sh
+        language: script
+        files: '^(tools-plugin/skills/justfile-expert/(SKILL\.md|references/gotchas\.md)|scripts/check-justfile-expert-gotchas\.sh)$'
+        pass_filenames: false
+      - id: check-justfile-expert-gotchas-test
+        name: justfile-expert gotchas check regression
+        entry: ./scripts/tests/test-check-justfile-expert-gotchas.sh
+        language: script
+        files: '^scripts/(check-justfile-expert-gotchas\.sh|tests/test-check-justfile-expert-gotchas\.sh)$'
+        pass_filenames: false
       - id: lint-mcp-tool-references
         name: lint skill files for references to unavailable MCP tools
         entry: ./scripts/lint-mcp-tool-references.sh
