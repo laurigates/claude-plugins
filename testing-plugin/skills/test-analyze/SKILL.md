@@ -50,7 +50,7 @@ Examples, a flow overview, output shape, and related commands: [references/usage
 
 ## Subagent Routing
 
-**This table is the single source of truth for delegation.** Every `subagent_type` this skill dispatches is listed here; no other section restates it. The values are plugin-qualified `plugin:agent` IDs — the form the `Task`/`Agent` tool resolves for plugin-provided agents (a bare name only resolves for user- or project-level agents in `~/.claude/agents/` or `.claude/agents/`).
+**This table is the single source of truth for delegation.** Every `subagent_type` this skill dispatches is listed in this table; no other section restates it. The values are plugin-qualified `plugin:agent` IDs — the form the `Task`/`Agent` tool resolves for plugin-provided agents (a bare name only resolves for user- or project-level agents in `~/.claude/agents/` or `.claude/agents/`).
 
 It is also the contract the workflow harness's `category` enum and `AGENT_FOR` map encode — **edit them together.** `scripts/check-subagent-types.sh` fails CI if any value here stops resolving to a real `agents-plugin/agents/*.md`.
 
@@ -94,7 +94,7 @@ than the linear pass. That floor is a hard bound, not a tunable knob. The steps 
 remain the authoritative description of *what* each stage must produce; the harness only
 fixes *how* the work is split.
 
-Two consequences worth stating inline:
+Two consequences of running the harness:
 
 - **The harness surrenders `mcp__pal__planner`.** A workflow script cannot reach MCP
   tools, so the dependency edges in the merged plan are *inferred by the group agents*,

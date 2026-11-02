@@ -129,7 +129,7 @@ Notes specific to this stack:
 ## FoundryVTT deltas
 
 Substitutions to apply while executing `comfyui-plugin:comfy-node` Phases 3 → 5.
-Everything the owner skill states that is not listed here applies verbatim.
+Everything the owner skill states that is not listed in this table applies verbatim.
 
 | Owner's step | FoundryVTT value |
 |---|---|
