@@ -7,7 +7,11 @@
   },
   "project": {
     "name": "claude-plugins",
-    "detected_stack": ["claude-code-plugin", "shell", "python"]
+    "detected_stack": [
+      "claude-code-plugin",
+      "shell",
+      "python"
+    ]
   },
   "structure": {
     "has_prds": true,
@@ -93,10 +97,12 @@
     "sync-ids": {
       "enabled": true,
       "auto_run": true,
-      "last_completed_at": null,
-      "last_result": null,
+      "last_completed_at": "2026-10-31T21:12:25Z",
+      "last_result": "ok",
       "schedule": "weekly",
-      "stats": {},
+      "stats": {
+        "runs": 1
+      },
       "context": {
         "rationale": "Deterministic id-registry sweep (blueprint-autorun.sh). The on-change registration is already handled by the auto-sync-id-registry.sh PostToolUse hook; the weekly runner sweep catches documents added outside Write/Edit (e.g. git operations)."
       }
@@ -154,5 +160,268 @@
         "sync-ids auto_run enabled as weekly deterministic sweep"
       ]
     }
-  ]
+  ],
+  "id_registry": {
+    "last_prd": 2,
+    "last_prp": 5,
+    "documents": {
+      "PRD-002": {
+        "created": "2026-01-25",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prds/reusable-github-workflows.md",
+        "status": "Draft",
+        "title": "Reusable GitHub Action Workflows - Product Requirements Document"
+      },
+      "PRD-001": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prds/automatic-document-management.md",
+        "status": "Draft",
+        "title": "Automatic Document Management - Product Requirements Document"
+      },
+      "ADR-0013": {
+        "created": "2026-01-12",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0013-project-and-blueprint-plugin-separation.md",
+        "status": "Accepted",
+        "title": "ADR-0013: Project and Blueprint Plugin Separation"
+      },
+      "ADR-0024": {
+        "created": "2026-10-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0024-blueprint-work-order-model-invocable.md",
+        "status": "Accepted",
+        "title": "ADR-0024: Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable"
+      },
+      "ADR-0008": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0008-semantic-versioning-with-manifest.md",
+        "status": "Accepted",
+        "title": "ADR-0008: Semantic Versioning with Manifest"
+      },
+      "ADR-0023": {
+        "created": "2026-09-20",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0023-adr-required-sections-narrowed.md",
+        "status": "Accepted",
+        "title": "ADR-0023: Narrow the ADR Schema's Required Sections to Context, Decision, Consequences"
+      },
+      "ADR-0005": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0005-blueprint-development-methodology.md",
+        "status": "Accepted",
+        "title": "ADR-0005: Blueprint Development Methodology"
+      },
+      "ADR-0009": {
+        "created": "2025-12-27",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0009-task-focused-agent-consolidation.md",
+        "status": "Accepted",
+        "title": "ADR-0009: Task-Focused Agent Consolidation"
+      },
+      "ADR-0016": {
+        "created": "2026-06-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0016-deterministic-script-extraction-for-token-efficiency.md",
+        "status": "Accepted",
+        "title": "ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts"
+      },
+      "ADR-0014": {
+        "created": "2026-01-25",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0014-reusable-workflows-in-repository.md",
+        "status": "Superseded",
+        "title": "ADR-0014: Reusable GitHub Workflows in Plugin Repository"
+      },
+      "ADR-0021": {
+        "created": "2026-07-12",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0021-open-knowledge-format-mapping-not-adopted.md",
+        "status": "Proposed",
+        "title": "ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence"
+      },
+      "ADR-0022": {
+        "created": "2026-07-17",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md",
+        "status": "Accepted",
+        "title": "ADR-0022: Adapter over Export — Runtime Skill Discovery for Foreign Harnesses"
+      },
+      "ADR-0002": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0002-domain-driven-plugin-organization.md",
+        "status": "Accepted",
+        "title": "ADR-0002: Domain-Driven Plugin Organization"
+      },
+      "ADR-0018": {
+        "created": "2026-06-16",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0018-health-usage-scope-from-session-telemetry.md",
+        "status": "Proposed",
+        "title": "ADR-0018: Usage-Telemetry Scope for `health-plugin`"
+      },
+      "ADR-0017": {
+        "created": "2026-06-13",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0017-hook-based-behavioral-cues-for-plugin-utilization.md",
+        "status": "Proposed",
+        "title": "ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization"
+      },
+      "ADR-0015": {
+        "created": "2026-02-07",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0015-agent-teams-adoption.md",
+        "status": "Accepted",
+        "title": "ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration"
+      },
+      "ADR-0007": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0007-namespace-based-command-organization.md",
+        "status": "Accepted",
+        "title": "ADR-0007: Namespace-Based Command Organization"
+      },
+      "ADR-0001": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0001-plugin-based-architecture.md",
+        "status": "Accepted",
+        "title": "ADR-0001: Plugin-Based Architecture"
+      },
+      "ADR-0011": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0011-blueprint-state-in-docs-directory.md",
+        "status": "Accepted",
+        "title": "ADR-0011: Blueprint State in docs/ Directory"
+      },
+      "ADR-0019": {
+        "created": "2026-06-28",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0019-skill-dry-via-library-templating-rejected.md",
+        "status": "Accepted",
+        "title": "ADR-0019: Reject a Shared-Library Plugin / @-Imports / Build-Time Templating for Skill DRY"
+      },
+      "ADR-0012": {
+        "created": "2026-01-10",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0012-blog-plugin-for-project-documentation.md",
+        "status": "Accepted",
+        "title": "ADR-0012: Blog Plugin for Project Documentation"
+      },
+      "ADR-0010": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0010-proactive-document-detection.md",
+        "status": "Proposed",
+        "title": "ADR-0010: Proactive Document Detection"
+      },
+      "ADR-0004": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0004-marketplace-registry-model.md",
+        "status": "Accepted",
+        "title": "ADR-0004: Marketplace Registry Model"
+      },
+      "ADR-0025": {
+        "created": "2026-10-26",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0025-visibility-gated-public-leak-nudge.md",
+        "status": "Accepted",
+        "title": "ADR-0025: Gate Public-Repo Leaks at the Write, Keyed on the Destination's Visibility"
+      },
+      "ADR-0006": {
+        "created": "2026-01-21",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0006-project-standards-enforcement.md",
+        "status": "Accepted",
+        "title": "ADR-0006: Project Standards Enforcement"
+      },
+      "ADR-0020": {
+        "created": "2026-07-05",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0020-blueprint-autonomy-levels.md",
+        "status": "Accepted",
+        "title": "ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model"
+      },
+      "ADR-0003": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/adrs/0003-auto-discovery-component-pattern.md",
+        "status": "Accepted",
+        "title": "ADR-0003: Auto-Discovery Component Pattern"
+      },
+      "PRP-002": {
+        "created": "2026-01-25",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prps/reusable-workflows-phase1-security.md",
+        "status": "complete",
+        "title": "PRP: Reusable Workflows Phase 1 - Security Foundation"
+      },
+      "PRP-003": {
+        "created": "2026-01-25",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prps/reusable-workflows-phase2-quality.md",
+        "status": "complete",
+        "title": "PRP: Reusable Workflows Phase 2 - Code Quality"
+      },
+      "PRP-005": {
+        "created": "2026-02-07",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prps/agent-teams-migration.md",
+        "status": "in-progress",
+        "title": "PRP: Agent Teams Migration"
+      },
+      "PRP-004": {
+        "created": "2026-01-25",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prps/reusable-workflows-phase3-a11y.md",
+        "status": "complete",
+        "title": "PRP: Reusable Workflows Phase 3 - Accessibility"
+      },
+      "PRP-001": {
+        "created": "2026-01-09",
+        "relates_to": [],
+        "github_issues": [],
+        "path": "docs/prps/automatic-document-management.md",
+        "status": "draft",
+        "title": "PRP: Automatic Document Management"
+      }
+    },
+    "github_issues": {}
+  }
 }
