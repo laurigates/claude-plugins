@@ -99,17 +99,6 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+_VERSION = \"(?<currentValue>[^\"]+)\""
       ],
       "depTypeTemplate": "devDependencies"
-    },
-    {
-      "customType": "regex",
-      "description": "Biome version in a scaffold template's biome.json $schema URL. The npm manager does not read biome.json, yet scaffold.py renders it from BIOME_VERSION, so a biome bump that misses it breaks template parity. (The CI setup-biome `version:` input needs no entry: the built-in github-actions manager already extracts it as a uses-with dependency.)",
-      "managerFilePatterns": ["/(^|/)[^/]+-plugin/templates/.+/biome\\.json$/"],
-      "matchStrings": [
-        "https://biomejs\\.dev/schemas/(?<currentValue>[^/\"]+)/schema\\.json"
-      ],
-      "depNameTemplate": "@biomejs/biome",
-      "datasourceTemplate": "npm",
-      "depTypeTemplate": "devDependencies"
     }
   ],
   "pre-commit": {
