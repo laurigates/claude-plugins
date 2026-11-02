@@ -4,7 +4,7 @@
 # not expansions.
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
-# Eight zero-false-positive checks:
+# Nine zero-false-positive checks:
 #   1. RULES INDEX  — every .claude/rules/*.md appears as the first cell of a
 #      table row inside the CLAUDE.md `## Rules` section (a row appended under
 #      another heading, or a prose mention, does not count — #2838 A-5),
@@ -61,6 +61,15 @@
 #      "roadmap", "future" or "todo" are exempt - they declare intent, not
 #      presence. EXACT match; a shorthand (`ground-response` for
 #      `prompt-engineering-ground-response`) is a finding. ERROR severity.
+#   9. LOCAL SKILL NAMES — no repo-local .claude/skills/<dir> takes, as its
+#      directory or frontmatter `name:`, a skill name Claude Code bundles
+#      (BUNDLED_SKILL_NAMES), and CLAUDE.md, .claude/rules/*.md and
+#      .claude/skills/**/*.md never invoke such a name as a backticked
+#      `/<name>`. A session started outside this repo resolves that name to the
+#      bundled skill, so the pointer loads an unrelated guide (#3185:
+#      `/marketplace-authoring` loaded Claude Code's mods guide). A prose mention of
+#      the bundled name without the slash is not a pointer and is not flagged.
+#      ERROR severity.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -99,6 +108,10 @@ rp_manifest="$proj_dir/.release-please-manifest.json"
 plugin_map="$proj_dir/docs/PLUGIN-MAP.md"
 diagram_d2="$proj_dir/docs/diagrams/plugin-relationships.d2"
 diagram_svg="$proj_dir/docs/diagrams/plugin-relationships.svg"
+
+# Skill names Claude Code ships as bundled skills (Check 9). Append a name when a
+# release notes a new bundled skill that could shadow a repo-local one.
+BUNDLED_SKILL_NAMES=(plugin-authoring)
 
 issue_count=0
 declare -a issues=()
@@ -475,6 +488,40 @@ while IFS= read -r p; do
   ' "$p_readme")
 done <<< "$disk_set"
 
+# --- Check 9: repo-local skill names vs Claude Code bundled skills -------------
+# See header (#3185). A repo-local skill sharing a bundled skill's name loses to
+# the bundled one in any session started outside this repo, so a `/<name>`
+# pointer in CLAUDE.md loads the wrong guide there.
+local_skills=0
+local_skills_dir="$proj_dir/.claude/skills"
+if [ -d "$local_skills_dir" ]; then
+  for ls_dir in "$local_skills_dir"/*/; do
+    [ -f "${ls_dir}SKILL.md" ] || continue
+    local_skills=$((local_skills + 1))
+    ls_base="$(basename "$ls_dir")"
+    ls_fm_name="$(awk 'NR==1 && $0!="---" {exit} NR>1 && $0=="---" {exit} NR>1 && /^name:/ {sub(/^name:[ \t]*/, ""); print; exit}' "${ls_dir}SKILL.md" | tr -d '\r')"
+    for bs_name in "${BUNDLED_SKILL_NAMES[@]}"; do
+      if [ "$ls_base" = "$bs_name" ] || [ "$ls_fm_name" = "$bs_name" ]; then
+        add_issue ERROR local_skill_name_collision \
+          ".claude/skills/$ls_base (name: ${ls_fm_name:-unset}) collides with the Claude Code bundled skill $bs_name; rename it"
+      fi
+    done
+  done
+fi
+for bs_name in "${BUNDLED_SKILL_NAMES[@]}"; do
+  bs_scan=()
+  [ -f "$claude_md" ] && bs_scan+=("CLAUDE.md")
+  while IFS= read -r bs_f; do
+    [ -n "$bs_f" ] && bs_scan+=("$bs_f")
+  done < <(cd "$proj_dir" && find .claude/rules .claude/skills -name '*.md' -type f 2>/dev/null | sort)
+  [ "${#bs_scan[@]}" -gt 0 ] || continue
+  while IFS= read -r bs_hit; do
+    [ -n "$bs_hit" ] || continue
+    add_issue ERROR bundled_skill_pointer \
+      "${bs_hit%%:*}:$(printf '%s' "$bs_hit" | cut -d: -f2): invokes \`/$bs_name\`, which resolves to the Claude Code bundled skill outside this repo"
+  done < <(cd "$proj_dir" && grep -HnF "\`/$bs_name\`" "${bs_scan[@]}" 2>/dev/null)
+done
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -503,7 +550,7 @@ if [ "$emit_issue_body" = true ]; then
       echo "| $sev | \`$typ\` | $msg |"
     done
     echo ""
-    echo "See \`.claude/rules\` and the Plugin Lifecycle section of the \`/plugin-authoring\` skill. Tracked under the recurring Layer 1 audit (#1460)."
+    echo "See \`.claude/rules\` and the Plugin Lifecycle section of the \`/marketplace-authoring\` skill. Tracked under the recurring Layer 1 audit (#1460)."
   fi
 else
   echo "=== DOCS INDEX AUDIT ==="
@@ -517,6 +564,7 @@ else
   echo "README_SKILL_ROWS=$readme_skill_rows"
   echo "README_ROW_PLUGINS=$readme_row_plugins"
   echo "README_TABLE_ROWS=$readme_table_rows"
+  echo "LOCAL_SKILLS=$local_skills"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
   if [ "$overall_status" != "OK" ]; then

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-10-22
+modified: 2026-11-02
 reviewed: 2026-09-16
 paths:
   - "**/.claude-plugin/**"
@@ -332,8 +332,12 @@ validate` lists each hook the mod registers at a gating site and whether it has
 a `.catch` (`gatingHooks` under `--json`, 2.1.290). Read the upstream
 [CHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
 before writing one. Claude Code's own mod guidance ships in a built-in skill
-named `plugin-authoring` (2.1.290, 2.1.295), the same name as this repo's
-`.claude/skills/plugin-authoring`.
+named `plugin-authoring` (2.1.290, 2.1.295). This repo's own authoring skill
+was renamed from that name to `.claude/skills/marketplace-authoring`, because a
+session started outside the repo resolved the old name's slash command to the
+bundled mods guide (#3185). `scripts/check-docs-index.sh` Check 9 fails on a repo-local
+skill named after a bundled one; add new bundled names to its
+`BUNDLED_SKILL_NAMES`.
 
 ## Version Management
 

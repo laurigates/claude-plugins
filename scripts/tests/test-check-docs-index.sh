@@ -35,6 +35,12 @@
 #      directory is flagged (ERROR readme_table_row_dangling); a row that
 #      resolves, a row under a "Planned" heading, and a non-skill table (Agent
 #      header) are NOT flagged (#3149)
+#   L. a repo-local `.claude/skills/<dir>` whose directory or frontmatter `name:`
+#      is a skill name Claude Code bundles is flagged (ERROR
+#      local_skill_name_collision), and a backticked `/<bundled-name>` pointer in
+#      CLAUDE.md, a rule or a local skill is flagged (ERROR bundled_skill_pointer);
+#      a non-colliding local skill and a prose mention of the bundled name without
+#      the slash are NOT flagged (#3185)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -475,6 +481,41 @@ strict_rc=$?
 assert "--strict should exit 1 on a phantom skill-table row" \
   "$([ "$strict_rc" = "1" ] && echo true || echo false)"
 rm -rf "$tbl_fx"
+
+echo "=== TEST L: local skill names vs Claude Code bundled skills (#3185) ==="
+bs_fx="$(mktemp -d)"
+if [ -z "$bs_fx" ] || [ ! -d "$bs_fx" ]; then echo "mktemp failed" >&2; exit 1; fi
+mkdir -p "$bs_fx/.claude/rules" "$bs_fx/.claude/skills/plugin-authoring" \
+  "$bs_fx/.claude/skills/renamed-dir" "$bs_fx/.claude/skills/marketplace-authoring"
+printf -- '---\nname: plugin-authoring\n---\n# x\n' > "$bs_fx/.claude/skills/plugin-authoring/SKILL.md"
+printf -- '---\nname: plugin-authoring\n---\n# x\n' > "$bs_fx/.claude/skills/renamed-dir/SKILL.md"
+printf -- '---\nname: marketplace-authoring\n---\n# x\n' > "$bs_fx/.claude/skills/marketplace-authoring/SKILL.md"
+# shellcheck disable=SC2016  # the backticks are literal markdown, not expansions
+printf -- '---\nreviewed: 2026-11-02\n---\n# r\nFollow `/plugin-authoring` here.\nClaude Code bundles a skill named `plugin-authoring`.\n' \
+  > "$bs_fx/.claude/rules/r.md"
+# shellcheck disable=SC2016  # the backticks are literal markdown, not expansions
+printf '## Authoring\n\nInvoke `/plugin-authoring` for the checklist.\n\n## Rules\n| Rule | Purpose |\n|------|---------|\n| `.claude/rules/r.md` | r |\n' \
+  > "$bs_fx/CLAUDE.md"
+bs_out="$(bash "$checker" --project-dir "$bs_fx")"
+assert "a local skill dir named after a bundled skill should be flagged local_skill_name_collision" \
+  "$(contains "$bs_out" "SEVERITY=ERROR TYPE=local_skill_name_collision MSG=.claude/skills/plugin-authoring ")"
+assert "a local skill whose frontmatter name collides should be flagged even under another dir" \
+  "$(contains "$bs_out" "TYPE=local_skill_name_collision MSG=.claude/skills/renamed-dir ")"
+assert "a non-colliding local skill should NOT be flagged" \
+  "$([ "$(contains "$bs_out" "local_skill_name_collision MSG=.claude/skills/marketplace-authoring")" = "false" ] && echo true || echo false)"
+assert "a CLAUDE.md /plugin-authoring pointer should be flagged bundled_skill_pointer" \
+  "$(contains "$bs_out" "SEVERITY=ERROR TYPE=bundled_skill_pointer MSG=CLAUDE.md:3:")"
+assert "a rule /plugin-authoring pointer should be flagged bundled_skill_pointer" \
+  "$(contains "$bs_out" "TYPE=bundled_skill_pointer MSG=.claude/rules/r.md:5:")"
+assert "a prose mention of the bundled name without the slash should NOT be flagged" \
+  "$([ "$(contains "$bs_out" "bundled_skill_pointer MSG=.claude/rules/r.md:6:")" = "false" ] && echo true || echo false)"
+assert "LOCAL_SKILLS should count the 3 local skills" \
+  "$([ "$(field "$bs_out" LOCAL_SKILLS)" = "3" ] && echo true || echo false)"
+bash "$checker" --project-dir "$bs_fx" --strict >/dev/null 2>&1
+strict_rc=$?
+assert "--strict should exit 1 on a bundled-name collision" \
+  "$([ "$strict_rc" = "1" ] && echo true || echo false)"
+rm -rf "$bs_fx"
 
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"

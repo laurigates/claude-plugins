@@ -1,14 +1,14 @@
 ---
-name: plugin-authoring
+name: marketplace-authoring
 description: Add, modify, or delete a skill or plugin in this repo — frontmatter shape, the seven metadata files a plugin touches, and the create/delete checklists. Use when creating a new skill or plugin, removing one, or asking which files a plugin change must update.
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash(mkdir *), Bash(jq *), Bash(git log *), Bash(bash scripts/check-docs-index.sh *), Bash(bash scripts/plugin-compliance-check.sh *), TodoWrite
 argument-hint: (no args)
 created: 2026-07-29
-modified: 2026-10-09
+modified: 2026-11-02
 reviewed: 2026-07-29
 ---
 
-# /plugin-authoring
+# /marketplace-authoring
 
 The authoring procedures for this marketplace: how to create a skill, how to
 create a plugin, what to update when either changes, and how to delete one
