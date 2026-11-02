@@ -10,7 +10,7 @@
 # token, and "Merge base and resolve additive conflicts" reads the App's
 # `workflows` permission before a merge that changes workflow files: without
 # `write` it aborts the merge, sets outcome=blocked_workflows, and comments on
-# the PR once.
+# the PR once, @-mentioning laurigates so the skip notifies someone (#3201).
 #
 # It EXTRACTS the shipped `run:` body with PyYAML and runs it in scratch
 # clones against a stub `gh`, so editing the workflow is what this tests.
@@ -66,7 +66,8 @@ else
 fi
 
 # Stub gh: `api apps/<slug>` prints $WF_PERM (FAIL makes it fail),
-# `pr view` prints $SEEN, `pr comment` appends one line to $work/comments.
+# `pr view` prints $SEEN, `pr comment` appends one line to $work/comments
+# and copies its --body-file to $work/comments.last-body.
 mkdir -p "$work/bin"
 cat > "$work/bin/gh" <<'STUB'
 #!/usr/bin/env bash
@@ -76,7 +77,14 @@ case "$1 ${2:-}" in
     [ "$WF_PERM" = "FAIL" ] && { echo "stub gh: HTTP 404" >&2; exit 1; }
     echo "$WF_PERM" ;;
   "pr view") echo "$SEEN" ;;
-  "pr comment") echo "comment $*" >> "$STUB_COMMENTS" ;;
+  "pr comment")
+    echo "comment $*" >> "$STUB_COMMENTS"
+    # Keep the last posted body so the mention can be asserted.
+    prev=""
+    for arg in "$@"; do
+      [ "$prev" = "--body-file" ] && cp "$arg" "$STUB_COMMENTS.last-body"
+      prev="$arg"
+    done ;;
   *) echo "stub gh: unexpected call: $*" >&2; exit 97 ;;
 esac
 STUB
@@ -147,6 +155,14 @@ check() { # <label> <expected outcome> <expected new comments> <branch> <perm> <
 : > "$work/comments"
 check "a conflicting merge that changes a workflow, App without workflows:write, is skipped and commented" \
   blocked_workflows 1 pr-wf none 0
+# #3201: the App keeps its permissions, so a skipped merge needs a person.
+# The one-time comment @-mentions laurigates so it notifies instead of
+# sitting unnoticed on the PR; the marker check above keeps it to one ping.
+if [ -f "$work/comments.last-body" ] && grep -qF '@laurigates' "$work/comments.last-body"; then
+  pass "the skipped-merge comment @-mentions laurigates"
+else
+  fail "the skipped-merge comment does not @-mention laurigates"
+fi
 check "the comment is not repeated once the PR carries it"       blocked_workflows 0 pr-wf none 1
 check "a clean merge that changes a workflow is skipped too"     blocked_workflows 1 pr-clean-wf read 0
 check "an App with workflows:write proceeds to the resolver"     llm 0 pr-wf write 0

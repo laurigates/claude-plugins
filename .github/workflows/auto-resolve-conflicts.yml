@@ -260,7 +260,9 @@ jobs:
                 --jq '[.comments[].body | select(contains("<!-- auto-resolve-conflicts: workflow-files -->"))] | length' 2>/dev/null || echo 0)
               if [ "$SEEN" = "0" ]; then
                 {
-                  echo "Merging \`$BASE_BRANCH\` into this branch changes workflow files, which the conflict resolver cannot push: the \`${APP_SLUG}\` GitHub App token lacks the Workflows: write permission. Merge \`$BASE_BRANCH\` locally and push, or grant the App that permission (#3201)."
+                  # The @-mention makes the skip notify instead of sitting
+                  # unnoticed; MARKER above keeps it to one comment per PR (#3201).
+                  echo "@laurigates Merging \`$BASE_BRANCH\` into this branch changes workflow files, which the conflict resolver cannot push: the \`${APP_SLUG}\` GitHub App token lacks the Workflows: write permission. Merge \`$BASE_BRANCH\` locally and push, or grant the App that permission (#3201)."
                   echo ""
                   # shellcheck disable=SC2016 # the backticks are Markdown code spans
                   echo "$WF_FILES" | sed 's/^/- `/; s/$/`/'
