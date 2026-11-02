@@ -1,6 +1,7 @@
 ---
 id: ADR-0013
 status: Accepted
+domain: organization
 deciders: Plugin Maintainers
 date: 2026-01-12
 created: 2026-01-12

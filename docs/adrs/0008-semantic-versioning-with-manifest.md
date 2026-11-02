@@ -2,10 +2,13 @@
 id: ADR-0008
 status: Accepted
 created: 2026-01-09
-modified: 2026-04-08
+modified: 2026-11-02
+domain: organization
 ---
 
 # ADR-0008: Semantic Versioning with Manifest
+
+> **Amended by [ADR-0011](0011-blueprint-state-in-docs-directory.md)**: the project-level manifest described below as `.manifest.json` now lives at `docs/blueprint/manifest.json`. Its `artifacts.commands` entries are historical; commands became skills ([ADR-0026](0026-commands-migrated-to-skills.md)).
 
 ## Status
 
