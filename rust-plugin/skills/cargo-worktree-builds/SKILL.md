@@ -1,7 +1,7 @@
 ---
 created: 2026-06-29
-modified: 2026-06-29
-reviewed: 2026-06-29
+modified: 2026-11-02
+reviewed: 2026-11-02
 name: cargo-worktree-builds
 description: "Share one CARGO_TARGET_DIR across parallel git-worktree agents so Rust deps compile once. Use when running cargo/clippy/test in several worktrees concurrently, when parallel agent builds rebuild dependencies N times, or when N worktrees blow up disk with N copies of target/."
 user-invocable: false
@@ -73,31 +73,58 @@ only each worktree's own crate is recompiled per build.
 
 ## Why It Works (and the one gotcha)
 
-- **Deps compile once.** The dependency graph is identical across worktrees, so
-  the shared dir reuses it; only the leaf crate differs per worktree.
+- **Deps compile once.** The external dependency graph is identical across
+  worktrees, so the shared dir reuses it. This holds while the branches change
+  only leaf crates; if one changes a crate others depend on, see
+  [When Not to Share](#when-not-to-share).
 - **Cargo's build lock serializes concurrent builds.** Two agents building at
   once won't corrupt the dir — cargo holds an exclusive lock on the target dir
   during a build, so the second waits. This also throttles total CPU/I/O, which
   is usually desirable when many agents run at once.
 - **Disk stays ≈ 1×.** One `target/` for all worktrees instead of N.
 
-### Gotcha: transient "method not found" / stale-rlib under contention
+### Gotcha: "method not found" / stale-rlib under contention
 
-Because builds serialize on the shared lock, an agent can occasionally read a
-**stale rlib** that a concurrent agent is mid-rebuild on, surfacing as a
-spurious compile error like `no method named X found` or a file-lock message —
-even though the code is correct. It is **not** a real error.
+Because builds serialize on the shared lock, an agent can read a **stale rlib**
+that a concurrent agent built from its own branch, surfacing as a compile error
+like `no method named X found` or a file-lock message, even though this
+worktree's code is correct.
 
-**Fix:** force a rebuild and re-run.
+When every branch changes only leaf crates, the error is transient. Force a
+rebuild and re-run:
 
 ```bash
 touch src/lib.rs                                 # or any source file in scope
 CARGO_TARGET_DIR="$SHARED_TARGET" just check
 ```
 
-Tell agents up front that an isolated, non-reproducing "method not found" right
-after a green peer build is the shared-target lock — `touch` + re-run, don't
-chase it as a code bug.
+When the branches change a **non-leaf** workspace crate (one that other crates
+depend on), it is not transient: the collision recurs each time a peer rebuilds
+that crate, so a re-run does not reliably clear it. The same swap can also go
+the other way, letting a gate compile and pass against a peer's version of the
+crate (a false green; inferred from the mechanism, not yet observed). Stop
+sharing for gate runs, per [When Not to Share](#when-not-to-share).
+
+A dispatch brief that tells agents to share a target dir
+must carry the stale-rlib gotcha: an isolated "method not found" right after a
+peer build is the shared target, not a code bug.
+
+## When Not to Share
+
+If the parallel branches modify any workspace crate that other crates depend
+on, not just leaf crates, give each worktree its own `CARGO_TARGET_DIR` for gate
+runs (clippy, tests, anything whose verdict you report). Keep dependency builds
+shared through `sccache` (`RUSTC_WRAPPER=sccache`) instead of the target dir:
+
+```bash
+CARGO_TARGET_DIR="$HOME/.cache/<repo>-target-<worktree>" RUSTC_WRAPPER=sccache just check
+```
+
+> Evidence (shore-recon, 2026-10-31): three worktree agents shared one target
+> dir while two branches changed `crates/core` differently. One worktree's
+> clippy failed with `E0599: no method named 'env'` although its source had the
+> method; with a private `CARGO_TARGET_DIR` the same tree passed clippy and
+> 250 tests. The orchestrator's brief had left out the stale-rlib gotcha.
 
 ## Agentic Optimizations
 
@@ -106,7 +133,8 @@ chase it as a code bug.
 | Define the shared dir | `export SHARED_TARGET="$HOME/.cache/<repo>-target"; mkdir -p "$SHARED_TARGET"` |
 | Pre-warm before fan-out | `CARGO_TARGET_DIR="$SHARED_TARGET" cargo build` |
 | Per-worktree gate | `CARGO_TARGET_DIR="$SHARED_TARGET" just check` |
-| Recover from a stale-rlib error | `touch src/<file>.rs && CARGO_TARGET_DIR="$SHARED_TARGET" cargo test` |
+| Recover from a stale-rlib error (leaf-only branches) | `touch src/<file>.rs && CARGO_TARGET_DIR="$SHARED_TARGET" cargo test` |
+| Gate when branches change a non-leaf crate | `CARGO_TARGET_DIR="$HOME/.cache/<repo>-target-<worktree>" RUSTC_WRAPPER=sccache just check` |
 | Inspect cache size | `du -sh "$SHARED_TARGET"` |
 
 ## Quick Reference
