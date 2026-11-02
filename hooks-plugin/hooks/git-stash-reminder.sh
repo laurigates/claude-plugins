@@ -96,6 +96,11 @@
 #      3rd-parent guard from filter 4 applies here too: a tracked-tree match
 #      says nothing about a `push -u` stash's untracked payload.
 #
+#   8. Opt-in checkpoints (#2652). auto-checkpoint.sh is off unless
+#      CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1, and this hook's checkpoint
+#      branch goes with it: without the flag, an `auto-checkpoint before …`
+#      entry is not reported. Hand-made stashes are judged as before.
+#
 # All new filters fail toward REPORTING: an unreadable `.reported` file, an
 # errored `git diff` or any failure in the committed-content walk leaves the
 # stash in the report. Silence is the safe degradation for a false ALARM
@@ -323,6 +328,12 @@ REPORTED_NOW=""
 # Set when at least one reported entry came from auto-checkpoint.sh, which
 # changes the remedy wording (#2686, filter 6).
 HAS_CHECKPOINT=0
+# Filter 8 (#2652): checkpoint entries are judged only when the session opted
+# in to auto-checkpoint.sh. Only the literal "1" counts, matching that hook.
+CHECKPOINTS_ENABLED=0
+if [ "${CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT:-}" = "1" ]; then
+  CHECKPOINTS_ENABLED=1
+fi
 
 while IFS='|' read -r hash ref ts subject; do
   [ -z "$hash" ] && continue
@@ -341,6 +352,16 @@ while IFS='|' read -r hash ref ts subject; do
   # stash, regardless of what the baseline does or does not contain.
   if [ "$SESSION_START" -gt 0 ] && [ "$ts" -lt "$SESSION_START" ]; then
     continue
+  fi
+
+  # Filter 8 (#2652): auto-checkpoint.sh is opt-in, and its reminder branch
+  # goes with it. Without CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1 a checkpoint
+  # entry (left by a peer session or subagent that opted in) is not reported;
+  # hand-made stashes are unaffected. Same subject match as filter 6 below.
+  if [ "$CHECKPOINTS_ENABLED" -eq 0 ]; then
+    case "$subject" in
+    "auto-checkpoint before "* | *": auto-checkpoint before "*) continue ;;
+    esac
   fi
 
   # Filter 5: already surfaced to the user earlier in this session. Reviewing

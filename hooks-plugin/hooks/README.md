@@ -380,7 +380,8 @@ A Stop hook that checks for git stashes **created during the current session**. 
 | Condition | Action |
 |-----------|--------|
 | Hand-made session stash | Block exit, recommend `git stash pop` |
-| `auto-checkpoint before …` session stash | Block exit, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| `auto-checkpoint before …` session stash, `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` | Block exit, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| `auto-checkpoint before …` session stash, flag unset (default) | Silent exit: `auto-checkpoint.sh` is opt-in and the reminder's checkpoint branch goes with it (#2652) |
 | Session stash whose tree equals the working tree | Silent exit — nothing to recover (#2686) |
 | Session stash already reported this session | Silent exit — the block is clearable by review, not only by deletion (#2686) |
 | `git stash push -u` stash with an untracked payload | Always reported, even when its tracked tree matches (#2686) |
@@ -401,7 +402,7 @@ A Stop hook that checks for git stashes **created during the current session**. 
 5. Loads the baseline file for this session (written by `git-stash-session-init.sh`)
 6. Filters out stashes whose commit hashes appear in the baseline
 7. Filters out stashes created **before** the session start
-8. Filters out stashes whose hashes are in the sibling `<baseline>.reported` file — this session has already surfaced them
+8. Unless `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1`, filters out `auto-checkpoint before …` entries (#2652); hand-made stashes are unaffected. It also filters out stashes whose hashes are in the sibling `<baseline>.reported` file — this session has already surfaced them
 9. Filters out **redundant** stashes: `git diff --quiet <stash-sha>` exits 0, i.e. the stash's tree already equals the working tree. A stash with a 3rd parent (untracked payload, only `git stash push -u`) is never judged this way, because `git diff` cannot see that payload
 10. Filters out stashes whose tree matches a commit already reachable from
     HEAD, the local branches, the remote refs or the tags (#2735) — the #2652
@@ -490,7 +491,9 @@ echo '{"cwd": "/tmp/test-stash", "session_id": "test-123", "stop_hook_active": t
 echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
   bash hooks/git-stash-reminder.sh
 
-# Test: a redundant auto-checkpoint (should exit 0, no output)
+# Test: a redundant auto-checkpoint (should exit 0, no output).
+# Checkpoint entries are judged only for a session that opted in (#2652).
+export CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1
 echo "checkpoint" > file.txt
 git stash store -m "auto-checkpoint before rm -rf (probe)" "$(git stash create)"
 echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \

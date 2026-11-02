@@ -94,7 +94,8 @@ A Stop hook that checks for git stashes **created during the current session**. 
 | Condition | Action |
 |-----------|--------|
 | Hand-made session stash | Block, recommend `git stash pop` |
-| `auto-checkpoint before …` session stash | Block, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| `auto-checkpoint before …` session stash, `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` | Block, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| `auto-checkpoint before …` session stash, flag unset (default) | Silent: the reminder's checkpoint branch is opt-in with `auto-checkpoint.sh` (#2652) |
 | Stash tree equals the working tree | Silent exit — it holds nothing the tree does not (#2686) |
 | Already reported earlier this session | Silent exit — reviewing and keeping a stash clears the block (#2686) |
 | Only pre-existing stashes | Silent exit (no block) |
@@ -463,7 +464,7 @@ The human-side counterpart lives in the `ghsq`/`ghrb` zsh wrappers (dotfiles): e
 
 ### auto-checkpoint.sh
 
-A PreToolUse hook that creates a git stash checkpoint before destructive operations.
+A PreToolUse hook that creates a git stash checkpoint before destructive operations. **Opt-in** since #2652: it does nothing unless `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1`. Every recorded instance across its issues was a false-positive stash (an `rm -rf` target outside the repo, git-ignored, or only quoted in a command's text) and none was a recovery. `repo-deletion-safety.sh` still blocks deleting a repo with unpushed work, and git's reflog covers `reset` and `checkout`.
 
 | Trigger | Checkpoint Created |
 |---------|-------------------|
@@ -476,7 +477,7 @@ A PreToolUse hook that creates a git stash checkpoint before destructive operati
 
 Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
 
-**Toggle:** `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1`
+**Toggle:** `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` enables it (only the literal `1`). The former opt-out `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` is no longer read. `git-stash-reminder.sh` reports `auto-checkpoint before …` entries only when the same flag is set.
 
 **Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`).
 
@@ -767,7 +768,6 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | branch-base-guard.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD=1` | Enabled |
 | worktree-location-guard.sh | `CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1` | Enabled |
 | external-pr-merge-guard.sh | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` | Enabled |
-| auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
@@ -777,6 +777,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 | no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |
+| auto-checkpoint.sh | `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` | **Disabled** (opt-in, #2652) |
 
 Example — disable branch protection for a session:
 

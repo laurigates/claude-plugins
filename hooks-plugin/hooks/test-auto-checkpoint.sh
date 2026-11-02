@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression tests for auto-checkpoint.sh (issue #2610)
+# Regression tests for auto-checkpoint.sh (issues #2610, #2652)
 #
 # Run: bash hooks-plugin/hooks/test-auto-checkpoint.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -10,7 +10,9 @@
 #   - Checkpoint stash created in `git stash list` before destructive operations
 #   - Untracked files still exist and are never deleted
 #   - Modified tracked files still exist with modifications intact
-#   - CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 disables checkpoint creation
+#   - Issue #2652: the hook is opt-in. With CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT
+#     unset (or anything but "1") no stash is created, even for an in-repo
+#     `rm -rf`; every other case below runs with the flag exported
 #   - Non-destructive commands (cat, git status) do not create a stash
 #   - Clean working tree does not create a stash
 #   - Other destructive commands trigger checkpointing (git reset, restore, etc.)
@@ -95,6 +97,29 @@ init_repo
 
 echo "Running auto-checkpoint regression tests..."
 
+# Test 0 (#2652): opt-in. With CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT unset, an
+# in-repo deletion creates no stash; a value other than "1" does not enable it.
+unset CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT
+setup_dirty_tree
+run_hook "$SANDBOX" "rm -rf ./src" "Bash" >/dev/null 2>&1 || true
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 0 ]; then
+  pass "default (flag unset): rm -rf ./src creates no stash"
+else
+  fail "default (flag unset): rm -rf ./src creates no stash" "found $stash_count stashes"
+fi
+setup_dirty_tree
+CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=true run_hook "$SANDBOX" "git reset --hard" "Bash" >/dev/null 2>&1 || true
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 0 ]; then
+  pass "CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=true (not 1) creates no stash"
+else
+  fail "CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=true (not 1) creates no stash" "found $stash_count stashes"
+fi
+
+# Every remaining case exercises the opted-in hook.
+export CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1
+
 # Test 1: Destructive command (rm -rf) creates checkpoint and preserves files
 setup_dirty_tree
 stderr_out=$(run_hook "$SANDBOX" "rm -rf dummy" "Bash" 2>&1)
@@ -133,15 +158,15 @@ else
   fail "modified tracked files still exist with modifications" "tracked file lost modifications"
 fi
 
-# Test 2: CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 disables checkpoint creation
+# Test 2 (#2652): CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=0 turns the hook back off
 setup_dirty_tree
-CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 run_hook "$SANDBOX" "rm -rf dummy" "Bash" >/dev/null 2>&1 || true
+CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=0 run_hook "$SANDBOX" "rm -rf dummy" "Bash" >/dev/null 2>&1 || true
 
 stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
 if [ "$stash_count" -eq 0 ]; then
-  pass "CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 creates no stash"
+  pass "CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=0 creates no stash"
 else
-  fail "CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 creates no stash" "found $stash_count stashes"
+  fail "CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=0 creates no stash" "found $stash_count stashes"
 fi
 
 # Test 3: Non-destructive command (cat file.txt) creates no stash
