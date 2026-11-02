@@ -908,12 +908,12 @@ repos:
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
         pass_filenames: false
       - id: check-comment-deliverable-assertions
-        name: comment-posting Claude steps assert delivery + upload their transcript (#2630, #2719)
+        name: comment-posting and issue-filing Claude steps assert delivery + upload their transcript (#2630, #2719, #2731)
         entry: bash ./scripts/check-comment-deliverable-assertions.sh
         language: system
         # Whole sweep, like tool-grants above: the Claude step and the assertion
         # step that follows it live in the same file and can change together.
-        files: '^(\.github/workflows/.*\.ya?ml|scripts/(check-comment-deliverable-assertions|assert-pr-comment-delivered)\.sh)$'
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/(check-comment-deliverable-assertions|assert-pr-comment-delivered|assert-issue-filed)\.sh)$'
         pass_filenames: false
       - id: test-check-comment-deliverable-assertions
         name: comment-deliverable assertion sweep regression
@@ -927,6 +927,13 @@ repos:
         entry: bash ./scripts/tests/test-assert-pr-comment-delivered.sh
         language: system
         files: '^scripts/(assert-pr-comment-delivered\.sh|tests/test-assert-pr-comment-delivered\.sh)$'
+        pass_filenames: false
+      # Stubs gh the same way; no network.
+      - id: test-assert-issue-filed
+        name: issue-filed assertion regression (#2731)
+        entry: bash ./scripts/tests/test-assert-issue-filed.sh
+        language: system
+        files: '^scripts/(assert-issue-filed\.sh|tests/test-assert-issue-filed\.sh)$'
         pass_filenames: false
       # The STATUS= contract (#2691): canonical OK|WARN|ERROR, ISSUE_COUNT=, and
       # REASON= on the non-OK path, swept across every scripts/check-*.sh. The
