@@ -370,6 +370,24 @@ run_chain 314
 expect_line "latest run cancelled -> CI_RED" "$(section 314)" "STATUS=CI_RED"
 expect_has "REASON names the cancelled check" "$(section 314)" "^REASON=check_failed: merge-method / Classify merge method$"
 expect_no "no merge over a latest-cancelled run" "$LOG" "pr merge"
+# A run cancelled before it started has no startedAt. It must sort as oldest, not
+# newest, or it would mask the later success (array order puts it last).
+mkpr 315 '.statusCheckRollup = [
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:36Z"},
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "CANCELLED", startedAt: null, completedAt: "2026-11-02T19:28:20Z"}]'
+run_chain 315
+expect_line "never-started cancelled run does not mask a success -> MERGED" "$(section 315)" "STATUS=MERGED"
+# startedAt has one-second resolution; on a tie completedAt decides, independent
+# of array order.
+mkpr 316 '.statusCheckRollup = [
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:36Z"},
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:24Z"}]'
+run_chain 316
+expect_line "startedAt tie decided by completedAt -> MERGED" "$(section 316)" "STATUS=MERGED"
 
 # BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
 mkpr 306 '._ms_seq = ["BEHIND"]'

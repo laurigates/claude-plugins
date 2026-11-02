@@ -166,14 +166,18 @@ wait_for_ci() {
     ms=$(jq -r '.mergeStateStatus // ""' <<<"$j")
     # The rollup lists every run of a check on the head, so a run cancelled by
     # workflow concurrency sits beside the run that superseded it. GitHub counts
-    # only the latest, so keep the latest CheckRun per (workflowName, name); an
-    # unstarted run sorts as newest. StatusContexts are already one per context.
+    # only the latest, so keep the latest CheckRun per (workflowName, name). A run
+    # that has not completed sorts as newest; a completed run with no start time
+    # (cancelled before it started) sorts as oldest; completedAt breaks a tie on
+    # startedAt's one-second resolution. StatusContexts are already one per context.
     j=$(jq '.statusCheckRollup = ((.statusCheckRollup // []) as $r
           | [$r[] | select(type != "object" or .__typename != "CheckRun")]
           + ([$r[] | select(type == "object" and .__typename == "CheckRun")]
              | group_by([.workflowName // "", .name])
-             | map(max_by((.startedAt // "") as $s
-                   | if $s == "" or ($s | startswith("0001-")) then "9999" else $s end))))' <<<"$j") ||
+             | map(max_by(
+                   ((.startedAt // "") | if startswith("0001-") then "" else . end) as $s
+                   | ((.completedAt // "") | if startswith("0001-") then "" else . end) as $c
+                   | if (.status // "COMPLETED") != "COMPLETED" then ["9999", ""] else [$s, $c] end))))' <<<"$j") ||
       { result ERROR "read_failed: could not evaluate superseded check runs"; return 1; }
     # CheckRun carries status/conclusion; StatusContext carries state.
     total=$(jq '[.statusCheckRollup // [] | .[]] | length' <<<"$j") || { result ERROR "read_failed: unparseable checks JSON"; return 1; }
