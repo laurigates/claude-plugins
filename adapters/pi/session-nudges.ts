@@ -35,7 +35,7 @@ export const END_TIMEOUT_MS = 10_000;
 
 /** session-end-nudge.sh gates, mirrored. */
 export const MIN_USER_TURNS = 6;
-export const RECENT_USER_WINDOW = 3;
+export const RECENT_USER_WINDOW = 1;
 export const WIND_DOWN_PATTERN =
   /\b(wrap up|wrap this|wrap the session|done for (today|now|the day)|calling it|good night|signing off|end of day|gotta go|heading out|i.?m done|thats it for|that.?s it for)\b/i;
 export const END_TASK_CUE =

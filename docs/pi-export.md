@@ -130,7 +130,7 @@ reads. The adapter runs both itself (`adapters/pi/session-nudges.ts`, #2661):
 | Nudge | pi event | Behaviour |
 |---|---|---|
 | Spinup | `session_start` | Runs `session-plugin/hooks/session-spinup-nudge.sh` unchanged with Claude Code's SessionStart stdin. pi's `startup` and `resume` pass through as the hook's `source`; `/fork` counts as a resume and `/new` as Claude Code's `/clear`, which the hook ignores. The hook's `additionalContext` is queued with `pi.sendMessage(..., { deliverAs: "nextTurn" })` |
-| End | `agent_settled` | The Stop hook's gates, reimplemented over pi's session entries: six user turns not counting `/skill:` expansions, a wind-down phrase in the last three, no `session-wrap`/`session-end`/`session-distill` already loaded (by `/skill:` or by a `read` of its `SKILL.md`), and taskwarrior on `PATH` or a `.claude/rules/` or justfile to capture into. pi has no Stop `block`, so the offer is a follow-up message that triggers one more turn |
+| End | `agent_settled` | The Stop hook's gates, reimplemented over pi's session entries: six user turns not counting `/skill:` expansions, a wind-down phrase in the latest genuine user message, no `session-wrap`/`session-end`/`session-distill` already loaded (by `/skill:` or by a `read` of its `SKILL.md`), and taskwarrior on `PATH` or a `.claude/rules/` or justfile to capture into. pi has no Stop `block`, so the offer is a follow-up message that triggers one more turn |
 
 Each fires at most once per session. The spinup hook keeps its own state file;
 the end offer is persisted in the session as a custom message, so a resumed

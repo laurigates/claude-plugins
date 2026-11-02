@@ -8,11 +8,13 @@
 # Fires at most once per session_id (state file). Conservative gates:
 #   - >= 6 genuine user turns (tool results and slash-command expansions are
 #     excluded from both the turn count and the wind-down scan)
-#   - a wind-down phrase in the last 3 genuine user messages
+#   - a wind-down phrase in the latest genuine user message (#3180)
 #   - something to capture into: taskwarrior on PATH, or a distillable
 #     surface (.claude/rules/ or a justfile) in the cwd's repo
 #   - silent when a session-wrap / session-end / session-distill invocation
 #     already appears in the transcript — the skill owns the flow from there
+#   - silent when the assistant's last message ends with a question or
+#     proposes a next step — the session is mid-flow, whatever matched (#3180)
 #
 # Regression context (see test-session-end-nudge.sh):
 #   - The old project-distill-nudge matched its wind-down regex against the
@@ -53,9 +55,23 @@ fi
 
 # Genuine user prompts only: drop tool_result lines (role=user but harness-
 # generated) and slash-command expansions (role=user but skill markdown).
+# Then drop harness-injected user-role content (#3180): a line whose origin
+# kind is human is always kept; otherwise isMeta records, any non-human
+# origin (task-notification, scheduled tasks, ...), and task-notification /
+# system-reminder / PR-activity wake / webhook / child-session bodies go.
+# Queued messages need no filter: they are "type":"queue-operation" records
+# without "role":"user", and a dequeued one arrives as an ordinary user record.
 user_lines=$(grep '"role":"user"' "$transcript" 2>/dev/null \
     | grep -v '"tool_use_id"' \
-    | grep -v 'command-name>' || true)
+    | grep -v 'command-name>' \
+    | awk '
+        /"origin":[{]"kind":"human"/ { print; next }
+        /"isMeta":true/ { next }
+        /"origin":[{]"kind":"/ { next }
+        /<(task-notification|system-reminder|webhook-payload|child-session-event)>/ { next }
+        /<wake[ >]/ { next }
+        { print }
+    ' || true)
 
 user_turns=$(printf '%s\n' "$user_lines" | grep -c '"role":"user"' || true)
 user_turns=${user_turns:-0}
@@ -107,10 +123,31 @@ elif [ -n "$cwd" ] && [ -d "$cwd" ]; then
 fi
 [ "$has_surface" = 0 ] && exit 0
 
-# Wind-down signal in the last 3 genuine user messages
-recent=$(printf '%s\n' "$user_lines" | tail -3)
+# Wind-down signal in the latest genuine user message (#3180: a 3-message
+# window kept an earlier "calling it X" live for two more turns)
+recent=$(printf '%s\n' "$user_lines" | tail -1)
 if ! grep -Eiq '\b(wrap up|wrap this|wrap the session|done for (today|now|the day)|calling it|good night|signing off|end of day|gotta go|heading out|i.?m done|thats it for|that.?s it for)\b' <<<"$recent"; then
     exit 0
+fi
+
+# Mid-flow guard (#3180): stay silent when the assistant's last text ends
+# with a question or proposes a next step. Reads the final text block of the
+# last assistant line (Claude Code shape .message.content, or bare .content).
+last_assistant=$(grep '"role":"assistant"' "$transcript" 2>/dev/null \
+    | grep '"type":"text"' | tail -1 \
+    | jq -r '(.message // .).content
+             | if type == "string" then .
+               else [.[]? | select(.type == "text") | .text] | last // "" end' \
+        2>/dev/null || true)
+if [ -n "$last_assistant" ]; then
+    tail_text=$(printf '%s\n' "$last_assistant" | grep -v '^[[:space:]]*$' | tail -5 || true)
+    last_line=$(printf '%s\n' "$tail_text" | tail -1 | sed 's/[[:space:]*_`)]*$//')
+    case "$last_line" in
+        *\?) exit 0 ;;
+    esac
+    if grep -Eiq '\b(next steps?|want me to|shall i|should i|would you like|which (option|one|way))\b' <<<"$tail_text"; then
+        exit 0
+    fi
 fi
 
 # Mark and emit. `decision: block` injects the reason as continued context so

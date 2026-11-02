@@ -364,13 +364,8 @@ describe("end nudge (agent_settled)", () => {
     expect(sent).toEqual([]);
   });
 
-  test("no wind-down phrase in the last three genuine messages: silent", async () => {
-    const early = [
-      user("that's it for today"),
-      user("actually one more"),
-      ...WINDING_DOWN.slice(1, 5),
-      user("and another"),
-    ];
+  test("wind-down phrase only before the latest genuine message: silent (#3180)", async () => {
+    const early = [...WINDING_DOWN, user("actually, one more thing")];
     const { execCalls, sent, fire } = register(endResponder({ task: true }));
     await fire("agent_settled", {}, ctxOf(early));
     expect(sent).toEqual([]);
