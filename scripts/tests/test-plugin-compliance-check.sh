@@ -368,11 +368,12 @@ SESSION_END_LANES_OK='| Taskwarrior sync | at least one session-linked task |
 ### Step 3: Run the Act lane now
 
 Run `session-plugin:session-wrap` with `--orchestrated`, then
-`session-plugin:session-distill` with `--orchestrated`.
+`session-plugin:session-distill` with `--orchestrated`, then
+`feedback-plugin:feedback-session --confirmed "<findings>"`.
 
 ### Step 4: One question for the Ask lane
 
-Run `feedback-plugin:feedback-session --confirmed "<findings>"`.'
+Ask once for the DEFERRED: lines.'
 
 # --- The regression: old two-field form (no enabled check) must FAIL --------
 rm -rf "${root:?}/$PLUGIN/skills/headingonly"
@@ -425,6 +426,17 @@ run_check; out_orch="$OUT"; rc_orch="$RC"
 assert_eq "session-end: wrap hand-off without --orchestrated exits 1" "$rc_orch" "1"
 assert_contains "session-end: missing wrap --orchestrated is named" \
   "$out_orch" "single-question contract with the sub-skills"
+# --- Feedback moved back behind the question (Step 4) must FAIL -----------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+fb_line='`feedback-plugin:feedback-session --confirmed "<findings>"`.'
+lanes_fb_late="${SESSION_END_LANES_OK/, then
+$fb_line/.}
+Then run $fb_line"
+make_session_end_skill "$GATE3" "$lanes_fb_late"
+run_check; out_fb="$OUT"; rc_fb="$RC"
+assert_eq "session-end: feedback behind the question exits 1" "$rc_fb" "1"
+assert_contains "session-end: feedback behind the question is named" \
+  "$out_fb" "feedback-session --confirmed must run in Step 3 (Act lane)"
 rm -rf "${root:?}/$PLUGIN/skills/session-end"
 make_session_end_skill "$GATE3"
 

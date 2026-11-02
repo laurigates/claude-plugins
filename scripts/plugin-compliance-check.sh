@@ -835,7 +835,9 @@ check_skill_body() {
     # single Ask-lane question in Step 4; (2) the taskwarrior pass qualifies on
     # session-linked tasks, never on a bare OPEN_TASKS count, and the backlog
     # is reported not walked; (3) the no-second-prompt contract reaches the
-    # sub-skills (--orchestrated to wrap/distill, --confirmed to feedback).
+    # sub-skills (--orchestrated to wrap/distill, --confirmed to feedback);
+    # (4) feedback files in the Act lane — its issues are triaged separately,
+    # so asking first only stalls the run (Lauri's decision on PR #3371).
     if [ "$skill_name" = "session-end" ]; then
       act_line=$(grep -n '^### Step 3: Run the Act lane' "$skill_file" | head -1 | cut -d: -f1)
       ask_line=$(grep -n '^### Step 4: One question' "$skill_file" | head -1 | cut -d: -f1)
@@ -846,6 +848,11 @@ check_skill_body() {
       tw_row=$(grep '^| Taskwarrior sync |' "$skill_file" || true)
       if ! grep -q 'session-linked' <<<"$tw_row" || grep -q 'OPEN_TASKS` ≥ 1' <<<"$tw_row"; then
         issues+=("❌ ${plugin}/${skill_name}: the Taskwarrior sync qualify row must require a session-linked task, not an OPEN_TASKS count (backlog walks were declined 20/29)")
+        has_errors=true
+      fi
+      act_section=$(awk '/^### Step 3: Run the Act lane/{f=1; next} /^### /{f=0} f' "$skill_file")
+      if ! grep -qF -- "feedback-session --confirmed" <<<"$act_section"; then
+        issues+=("❌ ${plugin}/${skill_name}: feedback-session --confirmed must run in Step 3 (Act lane), not wait for the Step 4 question (feedback issues are triaged separately)")
         has_errors=true
       fi
       for token in "Backlog is reported, never walked" "session-wrap\` with \`--orchestrated" "session-distill\` with \`--orchestrated" "feedback-session --confirmed"; do

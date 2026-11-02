@@ -31,8 +31,8 @@ tracker-sync — and what each captures are listed in
 ## Execution
 
 Execute this orchestration. **Not fully automatic by design**: filing
-GitHub issues, opening cross-repo PRs and writing a journal are not
-`git restore`-able, so those wait for the Step 4 question. Everything that
+third-party GitHub issues, opening cross-repo PRs and writing a journal
+are not `git restore`-able, so those wait for the Step 4 question. Everything that
 can be undone runs first, without asking.
 
 ### Step 1: Survey once
@@ -106,8 +106,8 @@ whether it runs now or waits for the one question in Step 4:
 
 | Lane | Items | Why |
 |---|---|---|
-| **Act** — run in Step 3, no question | Taskwarrior annotate / modify / add on session-linked tasks; close a task **with evidence** (merged PR, closed issue, commit on the default branch); Wrap's taskwarrior writes; Distill `[UPDATE]` / `[NEW]` edits in the current repo; Blueprint tracker-sync drain | Undoable: `task undo` or `task <uuid> modify status:pending`, and `git restore` for repo files |
-| **Ask** — confirmed once in Step 4 | Feedback issues; Wrap's GitHub follow-up issues, journal writes and upstream candidates; Distill `[PROMOTE]` PRs and `[REDUNDANT]` removals; a task add whose project slug is in doubt; closing a task without evidence | Outward-facing, destructive, or a guess — not `git restore`-able |
+| **Act** — run in Step 3, no question | Feedback issues; taskwarrior annotate / modify / add on session-linked tasks; close a task **with evidence** (merged PR, closed issue, commit on the default branch); Wrap's taskwarrior writes; Distill `[UPDATE]` / `[NEW]` edits in the current repo; Blueprint tracker-sync drain | Undoable (`task undo`, `task <uuid> modify status:pending`, `git restore`), or — for feedback issues — triaged and acted on separately, so filing one decides nothing |
+| **Ask** — confirmed once in Step 4 | Wrap's GitHub follow-up issues, journal writes and upstream candidates; Distill `[PROMOTE]` PRs and `[REDUNDANT]` removals; a task add whose project slug is in doubt; closing a task without evidence | Outward-facing, destructive, or a guess — not `git restore`-able |
 
 A task close without evidence is a guess, so it goes in the Ask lane or
 becomes an annotation.
@@ -168,29 +168,27 @@ taskwarrior sync), passing the Step 1 survey so it doesn't re-survey:
 4. `session-plugin:session-distill` with `--orchestrated` — applies
    `[UPDATE]` / `[NEW]` in the current repo and returns `[PROMOTE]` and
    `[REDUNDANT]` proposals as `DEFERRED:` lines.
-
-Feedback has no Act-lane work; its findings were collected in Step 1 and go
-straight to Step 4.
+5. **Feedback** — `feedback-plugin:feedback-session --confirmed "<findings>"`
+   with the findings collected in Step 1. It files the ones that survive
+   dedup without its own review step. If it cannot resolve the target repo
+   without asking, it returns the findings as `DEFERRED:` lines instead. If
+   the feedback plugin isn't installed, note it and skip.
 
 ### Step 4: One question for the Ask lane
 
-Gather the Ask-lane items: Feedback findings, every `DEFERRED:` line from
+Gather the Ask-lane items: every `DEFERRED:` line from
 Step 3, a Blueprint drain that did not pass the auto gate, and any
 low-confidence task add. If there are none, skip to Step 5 — no question.
 
 Otherwise print a short receipt of what Step 3 already did (so the user can
 undo it), then ask **one AskUserQuestion** call: up to 4 questions grouped
-by destination (feedback issues, other GitHub filings, `[PROMOTE]` PRs,
+by destination (GitHub filings, `[PROMOTE]` PRs,
 journal / removals), each `multiSelect`, each option one concrete item. The
 user picks any subset; "Other" covers adjustments. Never ask a second
 round — the sub-skills already received their decisions.
 
 Then run the approved items:
 
-- **Feedback** — `feedback-plugin:feedback-session --confirmed "<approved findings>"`.
-  `--confirmed` satisfies its own review step for exactly that set; it
-  re-asks only if dedup changes the set. If the feedback plugin isn't
-  installed, note it and skip.
 - **Wrap upstream candidates** — a *File now* candidate always routes
   through `workflow-orchestration-plugin:workflow-verify-before-filing` →
   `agent-patterns-plugin:cold-read-gate` → file; never blind. *Track for
