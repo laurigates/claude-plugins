@@ -164,6 +164,17 @@ wait_for_ci() {
     head=$(jq -r '.headRefOid // ""' <<<"$j")
     [ -n "$head" ] && PR_HEAD="$head"
     ms=$(jq -r '.mergeStateStatus // ""' <<<"$j")
+    # The rollup lists every run of a check on the head, so a run cancelled by
+    # workflow concurrency sits beside the run that superseded it. GitHub counts
+    # only the latest, so keep the latest CheckRun per (workflowName, name); an
+    # unstarted run sorts as newest. StatusContexts are already one per context.
+    j=$(jq '.statusCheckRollup = ((.statusCheckRollup // []) as $r
+          | [$r[] | select(type != "object" or .__typename != "CheckRun")]
+          + ([$r[] | select(type == "object" and .__typename == "CheckRun")]
+             | group_by([.workflowName // "", .name])
+             | map(max_by((.startedAt // "") as $s
+                   | if $s == "" or ($s | startswith("0001-")) then "9999" else $s end))))' <<<"$j") ||
+      { result ERROR "read_failed: could not evaluate superseded check runs"; return 1; }
     # CheckRun carries status/conclusion; StatusContext carries state.
     total=$(jq '[.statusCheckRollup // [] | .[]] | length' <<<"$j") || { result ERROR "read_failed: unparseable checks JSON"; return 1; }
     pending=$(jq '[.statusCheckRollup // [] | .[]

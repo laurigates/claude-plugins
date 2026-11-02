@@ -23,6 +23,8 @@
 #     GitHub (noreply@github.com): a conflict agent's merge of main is new code.
 #   - a head that moves after CI settled stops the PR (head_moved).
 #   - an unevaluable check rollup is ERROR, not "no failed checks".
+#   - a CANCELLED run superseded by a newer run of the same check is not a
+#     failure; a CANCELLED run that is the latest still is (PR #104 shape).
 #   - CI is settled only after two agreeing reads, and an empty rollup only
 #     after MC_MIN_EMPTY_POLLS reads; UNSTABLE is CI_RED; a draft is skipped.
 #
@@ -341,6 +343,33 @@ run_chain 312
 expect_line "no checks at all merges after the wait" "$(section 312)" "STATUS=MERGED"
 expect_line "four checks reads: three to trust the empty set, one to agree" \
   "$(grep -c 'pr view 312 .*statusCheckRollup' <<<"$LOG")" "4"
+
+# A check run cancelled by workflow concurrency and superseded by a newer run of
+# the same check on the same head is not a failure: GitHub's rollup counts only
+# the latest run (laurigates/repos-claude-config #104, 2026-11-02: CANCELLED at
+# 19:28:19Z, SUCCESS at 19:28:23Z, mergeStateStatus CLEAN, yet CI_RED here).
+mkpr 313 '.statusCheckRollup = [
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:19Z"},
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-11-02T19:28:23Z"},
+    {__typename: "CheckRun", workflowName: "Rules drift", name: "drift",
+     status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-11-02T19:28:22Z"},
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method",
+     status: "COMPLETED", conclusion: "NEUTRAL", startedAt: "2026-11-02T19:28:29Z"}]'
+run_chain 313
+expect_line "cancelled run superseded by a newer success -> MERGED" "$(section 313)" "STATUS=MERGED"
+# The latest run being the cancelled one still fails (order reversed in the array
+# so the test does not depend on rollup order).
+mkpr 314 '.statusCheckRollup = [
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:23Z"},
+    {__typename: "CheckRun", workflowName: "Merge Method", name: "merge-method / Classify merge method",
+     status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-11-02T19:28:19Z"}]'
+run_chain 314
+expect_line "latest run cancelled -> CI_RED" "$(section 314)" "STATUS=CI_RED"
+expect_has "REASON names the cancelled check" "$(section 314)" "^REASON=check_failed: merge-method / Classify merge method$"
+expect_no "no merge over a latest-cancelled run" "$LOG" "pr merge"
 
 # BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
 mkpr 306 '._ms_seq = ["BEHIND"]'
