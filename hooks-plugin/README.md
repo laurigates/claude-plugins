@@ -377,6 +377,9 @@ REST route whose owner/repo/number is not literal (`repos/$R/pulls/5/merge`).
 Command substitutions inside double quotes and inside an unquoted heredoc
 (`<<EOF`, where markdown backticks execute) are scanned as commands; a `<<<`
 herestring is a plain redirection, so the lines after it are still scanned.
+The rest of a heredoc body is prose: a body line such as `` `$GH api graphql` ``
+under `cat <<'EOF'` is not a command word, and the line after the closing
+delimiter is scanned as a command of its own (#3355).
 MCP `owner`/`repo`/`pullNumber` values carrying a newline or the hook's
 internal `\036`/`\037` separators are denied.
 
