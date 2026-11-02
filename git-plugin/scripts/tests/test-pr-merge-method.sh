@@ -38,7 +38,10 @@ expect() {
 
 echo "=== real PRs ==="
 expect pr-3182 squash in_pr_correction   # feat + fix to the file the feat added
-expect pr-3132 squash in_pr_correction   # same-scope fix, half its files already changed
+# pr-3132's third commit re-placed the ledger row its first commit appended; its
+# only overlap is docs/regression-ledger.md, which #3373 leaves out of rule 8.
+# It was hand-labelled squash; it now rebases, and merge:squash is the lever.
+expect pr-3132 rebase independent_commits
 expect pr-3117 squash fixup_or_review_churn  # "close review gaps"
 expect pr-2996 squash merge_commit       # synced main by merge
 expect pr-2940 rebase independent_commits
@@ -52,6 +55,28 @@ expect synthetic-bot-label rebase independent_commits
 expect synthetic-fixup squash fixup_or_review_churn
 expect synthetic-nonconventional squash non_conventional
 expect synthetic-single-concern squash single_concern
+
+echo "=== rule 8 ignores convention files (#3373) ==="
+# Two same-scope fixes sharing only the regression ledger and the plugin README
+# (2/4 files, the PR #3370 false positive) stay rebase; real code overlap still
+# flags; a merge=union path counts as convention only when .gitattributes lists it.
+expect synthetic-shared-docs rebase independent_commits
+expect synthetic-shared-docs-code-overlap squash in_pr_correction
+expect synthetic-union-path rebase independent_commits
+expect synthetic-union-path-unlisted squash in_pr_correction
+
+echo "=== union paths from .gitattributes ==="
+out=$(python3 - "$TOOL" <<'PY'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("pmm", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+text = "* text=auto eol=lf\n# docs/x.md merge=union\ndocs/regression-ledger.md merge=union\nlogs/*.log  merge=union -diff\n*.svg linguist-generated=true\n"
+print(m.union_paths(text))
+PY
+)
+[ "$out" = "['docs/regression-ledger.md', 'logs/*.log']" ] &&
+    ok "union_paths parses merge=union lines, skips comments" || notok "union_paths: $out"
 
 echo "=== OVERRIDE names the label ==="
 out=$(python3 "$TOOL" --fixture "$FX/synthetic-human-label.json")
