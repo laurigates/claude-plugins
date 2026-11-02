@@ -1,6 +1,6 @@
 ---
 created: 2026-02-04
-modified: 2026-10-07
+modified: 2026-11-02
 compatibility: claude-code
 reviewed: 2026-06-17
 description: "Claude Code health check — every environment check in one pass, names the broken layer, `--fix` repairs. Use when asked for a health check, or the install misbehaves and the cause is unknown."
@@ -64,6 +64,7 @@ Environment checks run regardless of `--scope`. They cover the baseline health o
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 bash "${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 bash "${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh" --home-dir "$HOME" --project-dir "$(pwd)"
@@ -71,7 +72,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh" --home-dir "$HOME" --project-dir
 
 Parse `STATUS=` and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`.
 
-Read the extra `check-settings.sh` keys (`PROJECT_DIR_RESOLVED=`, `PROJECT_DIR_HINT=`) and `check-mcp.sh` keys (`MCP_SOURCE_COUNT=`, `SERVER:`, `SERVER_SHADOWED:`) as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the config or `.mcp.json` file each finding came from.
+Read the extra `check-settings.sh` keys (`PROJECT_DIR_RESOLVED=`, `PROJECT_DIR_HINT=`), `check-mcp.sh` keys (`MCP_SOURCE_COUNT=`, `SERVER:`, `SERVER_SHADOWED:`), and `check-plugin-scope-lag.sh` `TYPE=scope_lag` rows as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the config or `.mcp.json` file each finding came from (for `scope_lag`, the project path and both versions).
 
 #### 1b–1e. SessionStart smoke test, pre-commit config, permissions coverage, marketplace enrollment
 

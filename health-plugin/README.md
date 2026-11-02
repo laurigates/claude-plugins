@@ -355,6 +355,7 @@ Prompt history now lives in `~/.claude/history.jsonl`. The `cleanupPeriodDays` s
 | Symptom | Likely Cause | Command |
 |---------|--------------|---------|
 | Plugin not working | Wrong projectPath in registry | `/health:check --scope=registry --fix` |
+| A fixed bug still fires in one project | Project-scope install pinned below the user-scope version (`scope_lag`, from `check-plugin-scope-lag.sh`) | `/health:check`, then the `plugin-registry` skill to repair the entry |
 | Irrelevant plugins enabled | No relevance audit done | `/health:check --scope=stack --fix` |
 | Permission denied | Missing allow pattern | Check settings-configuration skill |
 | Settings ignored | Invalid JSON | `/health:check` |

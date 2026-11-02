@@ -4,7 +4,7 @@ description: "Claude Code plugin registry structure, install scopes, and version
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-09-24
+modified: 2026-11-02
 compatibility: claude-code
 reviewed: 2026-09-17
 ---
@@ -145,6 +145,9 @@ CLAUDECODE= claude -p "reply ok" --debug plugins --debug-file /tmp/p.log
 ```
 
 Then read its `skillsPath:` lines for the version actually loaded.
+
+`/health:check` runs `check-plugin-scope-lag.sh`, which lists every project-scope
+entry below its user-scope version as a `scope_lag` WARN.
 
 Removing a lagging row is a **repair, not a fix** — the next session in that
 project re-creates it, so the lag returns after the next release. Measured on
