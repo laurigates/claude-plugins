@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015   # file-level: `cond && ok … || notok …` is the
+# deliberate assertion idiom (ok/notok both exit 0) — see test-check-schema.sh.
 # Regression tests for blueprint-autorun-probe.sh (ADR-0020 SessionStart rung).
 #
 # Pins the semantic contract:
@@ -7,6 +9,8 @@
 #   - level 1 emits one finding per due agent task, remediation /blueprint:<task>
 #   - level 2 emits one aggregated finding, remediation /blueprint:autopilot
 #   - TTL cache: a fresh cache re-emits findings WITHOUT re-invoking the runner
+#   - a run killed mid-flight (hook timeout) is reported next session as
+#     autorun_incomplete, and a completed re-run clears it (#3169)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,6 +33,10 @@ STUB="$work/stub-autorun.sh"
 cat > "$STUB" <<'EOF'
 #!/usr/bin/env bash
 echo "invoked $*" >> "$STUB_LOG"
+if [ -n "${STUB_HANG:-}" ]; then
+    : > "$STUB_HANG"
+    sleep 30
+fi
 cat <<'OUT'
 === BLUEPRINT AUTORUN ===
 MODE=apply
@@ -140,6 +148,56 @@ sig=$(signal_file sidG)
 [ "$(jq '.findings | length' "$sig")" = "1" ] && ok "G: single aggregated finding at level 2" || notok "G: findings=$(jq '.findings | length' "$sig")"
 remg=$(jq -r '.findings[0].remediation_skill' "$sig")
 [ "$remg" = "/blueprint:autopilot" ] && ok "G: autopilot remediation at level 2" || notok "G: remediation=$remg"
+rm -rf "$proj"
+
+# ---- Test H: a run killed by the hook timeout surfaces next session (#3169) ----
+# The harness kills the probe when the runner outlives the 5 s SessionStart
+# budget, so the killed session can report nothing. The probe writes a start
+# marker before the run and a done marker after it returns; a later session
+# that finds the start marker without the done marker reports
+# autorun_incomplete, instead of looking identical to "nothing due".
+proj=$(make_project 1)
+set -m
+printf '{"session_id": "sidH", "cwd": "%s"}' "$proj" \
+    | env STUB_LOG="$work/stub-invocations" STUB_HANG="$work/hang-mark" \
+          CLAUDE_DRIFT_SIGNALS_DIR="$work/signals" \
+          CLAUDE_BLUEPRINT_AUTORUN_CACHE_DIR="$work/cache-sidH" \
+          BLUEPRINT_AUTORUN_BIN="$STUB" \
+          bash "$PROBE" &
+probe_pid=$!
+set +m
+i=0
+while [ ! -e "$work/hang-mark" ] && [ "$i" -lt 100 ]; do
+    sleep 0.1
+    i=$((i + 1))
+done
+if [ -e "$work/hang-mark" ]; then
+    kill -TERM -- "-$probe_pid" 2>/dev/null
+    wait "$probe_pid" 2>/dev/null
+    ok "H: probe killed while the runner was still running"
+else
+    notok "H: runner never started"
+    wait "$probe_pid" 2>/dev/null
+fi
+rm -rf "$work/signals"
+before_runs=$(stub_count)
+run_probe "$proj" sidH
+sig=$(signal_file sidH)
+[ "$(stub_count)" = "$before_runs" ] && ok "H: fresh cache, runner not re-invoked" || notok "H: runner re-invoked ($(stub_count))"
+kindh=$(jq -r '[.findings[].kind] | join(",")' "$sig" 2>/dev/null)
+[ "$kindh" = "autorun_incomplete" ] && ok "H: next session reports autorun_incomplete" \
+    || notok "H: findings after a killed run: '$kindh'"
+remh=$(jq -r '.findings[0].remediation_skill' "$sig" 2>/dev/null)
+[ "$remh" = "/blueprint:sync-ids" ] && ok "H: remediation is /blueprint:sync-ids" || notok "H: remediation=$remh"
+
+# A run that completes clears the incomplete state.
+touch -t 202001010000 "$work/cache-sidH/"*.out
+rm -rf "$work/signals"
+run_probe "$proj" sidH
+sig=$(signal_file sidH)
+kindh=$(jq -r '[.findings[].kind] | join(",")' "$sig" 2>/dev/null)
+[ "$kindh" = "task_due,task_due" ] && ok "H: a completed re-run clears autorun_incomplete" \
+    || notok "H: findings after a completed re-run: '$kindh'"
 rm -rf "$proj"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
