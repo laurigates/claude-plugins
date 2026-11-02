@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-10-11
+modified: 2026-11-02
 reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
@@ -79,7 +79,7 @@ Display the current blueprint configuration status with three-layer architecture
    | `STATUS=OK` | Manifest matches the schema (or there is nothing to validate) |
    | `STATUS=ERROR` + `schema_violation` issues | Each issue names an `AT=<json-pointer>` and the offending key — surface all of them in the Step 5 report |
    | `STATUS=WARN` + `format_version_below_schema` | The manifest predates the schema's format version; recommend `/blueprint:upgrade` rather than reporting schema findings |
-   | `SOURCE=…:no_validator` | Neither `uv` nor an installed `jsonschema` is available — the check is skipped, not failed. Say so instead of claiming the manifest is clean |
+   | `STATUS=WARN` + `no_validator` (`SOURCE=…:no_validator`) | Neither `uv` nor an installed `jsonschema` is available, so nothing was validated (the script re-execs through `uv run --with jsonschema` whenever uv is on PATH). Say so instead of claiming the manifest is clean |
 
 2b. **Validate the feature tracker against its schema** (if one exists):
 

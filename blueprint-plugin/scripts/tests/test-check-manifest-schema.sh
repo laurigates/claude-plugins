@@ -22,6 +22,11 @@
 #   - an OPEN block (task_registry, custom_overrides) accepts unknown keys
 #   - the degradation contract: no manifest / older format_version / no
 #     jsonschema all stay exit-0 and never emit schema noise
+#   - a run that validated nothing is never STATUS=OK (issue #3177): without
+#     jsonschema the checker re-execs through `uv run --with jsonschema`, and
+#     only when uv is absent (or the re-exec still cannot import it) does it
+#     report STATUS=WARN + REASON=no_validator
+#   - a positional manifest path aliases --manifest; both together is an error
 set -u
 
 # Neutralize inherited git context (issue #1745) — no git ops here, but the
@@ -175,25 +180,72 @@ out="$(run_checker "$proj")"; rc=$?
 grep -q 'TYPE=json_parse' <<<"$out" && ok "J: reported as json_parse" || notok "J: wrong issue type"
 rm -rf "$proj"
 
-# ---- K: no jsonschema -> fail open (exit 0, no false ERROR) -----------------
-# Environment gap, not a manifest defect — the same shape as the sibling config
-# readers degrading on absent jq. Exercised through plain python3, which does
-# not resolve the PEP723 dependency.
-if command -v python3 >/dev/null 2>&1 && ! python3 -c 'import jsonschema' >/dev/null 2>&1; then
+# ---- K: no jsonschema -> re-exec through uv, else WARN (issue #3177) -------
+# A run that validated nothing must not read as a pass to a caller keyed on
+# STATUS=OK. `python3 -S` skips site-packages, so jsonschema is unimportable in
+# the first process whatever the host has installed; the uv child runs without
+# -S and gets jsonschema from `--with`.
+if command -v python3 >/dev/null 2>&1 && ! python3 -S -c 'import jsonschema' >/dev/null 2>&1; then
+    py3="$(command -v python3)"
+
+    # K1: uv on PATH -> the checker re-execs and really validates, so the typo
+    # is caught instead of being waved through as no_validator.
     proj="$(make_project)"
     seed_manifest "$proj" '.automation.autonomy_levle = 3 | del(.automation.autonomy_level)'
-    out="$(python3 "$CHECKER" --project-dir "$proj" 2>&1)"; rc=$?
-    [ "$rc" -eq 0 ] && ok "K: exit 0 without jsonschema" || notok "K: exit $rc"
-    [ "$(get_key STATUS "$out")" = "OK" ] && ok "K: STATUS=OK without jsonschema" || notok "K: STATUS=$(get_key STATUS "$out")"
-    case "$(get_key SOURCE "$out")" in
-      *":no_validator") ok "K: SOURCE marks the missing validator" ;;
-      *) notok "K: SOURCE=$(get_key SOURCE "$out")" ;;
+    out="$(python3 -S "$CHECKER" --project-dir "$proj" 2>&1)"; rc=$?
+    [ "$rc" -eq 1 ] && ok "K1: re-exec through uv validates (exit 1 on the typo)" || notok "K1: exit $rc (expected 1): $out"
+    [ "$(get_key SCHEMA_APPLICABLE "$out")" = "true" ] && ok "K1: SCHEMA_APPLICABLE=true after re-exec" || notok "K1: SCHEMA_APPLICABLE=$(get_key SCHEMA_APPLICABLE "$out")"
+    grep -q 'autonomy_levle' <<<"$out" && ok "K1: the re-exec'd run names the typo" || notok "K1: typo not reported after re-exec"
+    rm -rf "$proj"
+
+    # K2: uv masked from PATH -> WARN + REASON=no_validator, exit 0.
+    stub_bin="$(mktemp -d)" || { echo "FATAL: mktemp failed" >&2; exit 1; }
+    [ -n "$stub_bin" ] && [ -d "$stub_bin" ] || { echo "FATAL: bad stub dir" >&2; exit 1; }
+    ln -s "$py3" "$stub_bin/python3"
+    proj="$(make_project)"
+    seed_manifest "$proj" '.automation.autonomy_levle = 3 | del(.automation.autonomy_level)'
+    out="$(PATH="$stub_bin" "$stub_bin/python3" -S "$CHECKER" --project-dir "$proj" 2>&1)"; rc=$?
+    [ "$rc" -eq 0 ] && ok "K2: exit 0 without jsonschema or uv" || notok "K2: exit $rc: $out"
+    [ "$(get_key STATUS "$out")" = "WARN" ] && ok "K2: STATUS=WARN when nothing was validated" || notok "K2: STATUS=$(get_key STATUS "$out")"
+    case "$(get_key REASON "$out")" in
+      "no_validator: jsonschema not importable; run through uv"*) ok "K2: REASON names no_validator" ;;
+      *) notok "K2: REASON=$(get_key REASON "$out")" ;;
     esac
+    case "$(get_key SOURCE "$out")" in
+      *":no_validator") ok "K2: SOURCE marks the missing validator" ;;
+      *) notok "K2: SOURCE=$(get_key SOURCE "$out")" ;;
+    esac
+    [ "$(get_key SCHEMA_APPLICABLE "$out")" = "false" ] && ok "K2: SCHEMA_APPLICABLE=false" || notok "K2: SCHEMA_APPLICABLE=$(get_key SCHEMA_APPLICABLE "$out")"
+    if bash "$REPO_ROOT/scripts/check-structured-output-contract.sh" --validate - <<<"$out" >/dev/null 2>&1; then
+        ok "K2: WARN block satisfies the structured-output contract"
+    else
+        notok "K2: WARN block fails check-structured-output-contract.sh --validate"
+    fi
+    rm -rf "$proj" "$stub_bin"
+
+    # K3: the re-exec sentinel is honoured, so a child that still cannot import
+    # jsonschema reports WARN instead of re-execing forever.
+    proj="$(make_project)"
+    seed_manifest "$proj" '.'
+    out="$(CHECK_MANIFEST_SCHEMA_REEXEC=1 python3 -S "$CHECKER" --project-dir "$proj" 2>&1)"; rc=$?
+    [ "$rc" -eq 0 ] && ok "K3: sentinel set -> exit 0, no re-exec loop" || notok "K3: exit $rc"
+    [ "$(get_key STATUS "$out")" = "WARN" ] && ok "K3: sentinel set -> STATUS=WARN" || notok "K3: STATUS=$(get_key STATUS "$out")"
     rm -rf "$proj"
 else
-    printf 'ok   - K: skipped (jsonschema importable from python3, or no python3)\n'
+    printf 'ok   - K: skipped (jsonschema importable from python3 -S, or no python3)\n'
     pass=$((pass + 1))
 fi
+
+# ---- L: positional manifest path aliases --manifest (issue #3177) -----------
+proj="$(make_project)"
+seed_manifest "$proj" '.automation.autonomy_levle = 3 | del(.automation.autonomy_level)'
+out="$(uv run --quiet --script "$CHECKER" "$proj/docs/blueprint/manifest.json" 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && ok "L: positional manifest path is validated" || notok "L: positional exit $rc: $out"
+[ "$(get_key MANIFEST "$out")" = "$proj/docs/blueprint/manifest.json" ] && ok "L: positional path is the manifest checked" || notok "L: MANIFEST=$(get_key MANIFEST "$out")"
+out="$(uv run --quiet --script "$CHECKER" "$proj/docs/blueprint/manifest.json" --manifest "$proj/docs/blueprint/manifest.json" 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && ok "L: positional plus --manifest exits non-zero" || notok "L: positional plus --manifest accepted"
+grep -q 'not both' <<<"$out" && ok "L: the error says to pass one form" || notok "L: unclear error: $out"
+rm -rf "$proj"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
