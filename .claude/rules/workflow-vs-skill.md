@@ -250,6 +250,26 @@ Two clauses every template that dispatches `isolation:'worktree'` agents must
 > Push, PR creation, and GitHub mutations happen **only** in the single sequential
 > finalise stage, never inside a fanned-out agent.
 
+## Agent-output schemas
+
+An `agent()` schema exists to force a determinate verdict, not to budget prose.
+Schema rejections were the largest new friction signature in the W32–W38
+readings (#2280): unparseable 11–49 KB payloads, `maxLength` overflows, and
+agents missing a `required` field their brief never mentioned, often resent
+unchanged after the rejection.
+
+- **Size each constraint to the job or omit it.** A verdict field takes an
+  `enum`. A prose field takes no `maxLength`: a tight cap is where the overflows
+  clustered, and a generous one only moves the cliff.
+- **Put large prose in a file and return the path.** Anything long, or carrying
+  paths or code, goes to a file the agent writes; the JSON field holds the path.
+  Multi-KB strings with unescaped backslashes caused the parse failures.
+- **State every `required` field and every `additionalProperties: false` in the
+  prose brief.** The agent sees the brief, and a contract only the validator
+  knows can be met only by guessing.
+- **Tell the agent that a rejection means shrink or restructure, not resend.**
+  An identical retry fails identically.
+
 ## Landing discipline
 
 - **Each template lands in the same commit as its `SKILL.md` framing section**
