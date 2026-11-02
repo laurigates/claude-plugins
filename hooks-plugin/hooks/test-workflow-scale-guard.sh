@@ -208,7 +208,7 @@ trap 'rm -rf "$BIN" "$STUBS"' EXIT
 mkdir -p "$STUBS/crash" "$STUBS/hang" "$STUBS/cold"
 printf '#!/usr/bin/env bash\nexit 3\n' > "$STUBS/crash/node"
 printf '#!/usr/bin/env bash\nexec sleep 5\n' > "$STUBS/hang/node"
-# Cold start: the first call hangs past the 4 s timeout, later calls run node.
+# Cold start: the first call hangs past the 2 s timeout, later calls run node.
 printf '#!/usr/bin/env bash\nif [ ! -e "%s" ]; then : > "%s"; exec sleep 5; fi\nexec "%s" "$@"\n' \
     "$STUBS/cold/first" "$STUBS/cold/first" "$REAL_NODE" > "$STUBS/cold/node"
 chmod +x "$STUBS/crash/node" "$STUBS/hang/node" "$STUBS/cold/node"
@@ -226,7 +226,7 @@ fi
 
 echo
 echo "== CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT sets each parser attempt (#3005, #2975) =="
-# The per-attempt limit: 4 s by default and on any value that is not a positive
+# The per-attempt limit: 2 s by default and on any value that is not a positive
 # finite number; scripts/check-workflow-js-model.sh raises it for CI.
 read_timeout() {
     python3 -c 'import importlib.util as u, sys; s = u.spec_from_file_location("e", sys.argv[1]); m = u.module_from_spec(s); s.loader.exec_module(m); print(m.parse_timeout())' "$ESTIMATOR"
@@ -238,9 +238,9 @@ got=$(for v in unset "" 30 0.5 abc 0 -3 nan inf; do
         CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT="$v" read_timeout
     fi
 done | tr '\n' ' ')
-if [ "$got" = "4.0 4.0 30.0 0.5 4.0 4.0 4.0 4.0 4.0 " ]; then ok "parse timeout: default 4, valid values honoured, invalid ones ignored"; else bad "parse timeout values: $got"; fi
+if [ "$got" = "2.0 2.0 30.0 0.5 2.0 2.0 2.0 2.0 2.0 " ]; then ok "parse timeout: default 2, valid values honoured, invalid ones ignored"; else bad "parse timeout values: $got"; fi
 # And the estimator applies it: a 1 s limit gives up on the hanging parser in
-# about 2 s (two attempts), where the 4 s default would take about 8 s.
+# about 2 s (two attempts), where the 2 s default would take about 4 s.
 start=$SECONDS
 got=$(printf '%s' "$UNBOUNDED_SCRIPT" | CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=1 PATH="$STUBS/hang:$PATH" python3 "$ESTIMATOR" 10 | grep -m1 '^VERDICT=')
 elapsed=$((SECONDS - start))
@@ -248,6 +248,23 @@ if [ "$got" = "VERDICT=ANALYSIS_ERROR" ] && [ "$elapsed" -lt 6 ]; then
     ok "estimator honours CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT (${elapsed}s)"
 else
     bad "CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=1: $got after ${elapsed}s"
+fi
+
+# The default fits the hook's 5 s budget (plugin.json "timeout": 5), and a
+# double timeout fails closed (#3093). Under the old 4 s default two attempts
+# took about 8 s, the runtime killed the hook at 5 s, and the Workflow call
+# went ahead with no ask. `timeout 5` stands in for that kill: a hook that
+# outlasts it prints nothing, which reads as silent here.
+OUT=$(printf '%s' "$(payload_for "$UNBOUNDED_SCRIPT")" | env \
+    -u CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD \
+    -u CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS \
+    -u CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH \
+    -u CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT \
+    PATH="$STUBS/hang:$PATH" timeout 5 bash "$HOOK" 2>/dev/null || true)
+if [ "$(decision_of "$OUT")" = ask ] && grep -qF 'could not analyse' <<<"$OUT"; then
+    ok "default timeout: a parser that hangs twice asks (ANALYSIS_ERROR) inside the 5 s hook budget"
+else
+    bad "default timeout vs the 5 s hook budget: ${OUT:-<killed or silent>}"
 fi
 
 echo
