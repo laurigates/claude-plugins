@@ -12,9 +12,9 @@ scripts, and full configuration-pattern examples.
 ```json
 {
   "mcpServers": {
-    "context7": {
+    "my-local-server": {
       "command": "bunx",
-      "args": ["-y", "@upstash/context7-mcp"]
+      "args": ["-y", "<npm-package>"]
     }
   }
 }
@@ -191,20 +191,11 @@ Since 2.1.274, a `"type": "sdk"` entry in `.mcp.json`, settings, a plugin or an 
 Store in `.mcp.json` at project root. Add to `.gitignore` for personal configs
 or track for team configs.
 
-```json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "bunx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    }
-  }
-}
-```
+The baseline server set, and the exact form of each entry, lives in the
+`mcpServers` key of the repo baseline policy,
+[`configure-plugin/policy/repo-baseline.json`](https://github.com/laurigates/claude-plugins/blob/main/configure-plugin/policy/repo-baseline.json).
+`configure-plugin:configure-mcp` writes those entries into a project's
+`.mcp.json`; copy from the policy rather than from an example here.
 
 ### User-scoped (personal)
 

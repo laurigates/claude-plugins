@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-14
+modified: 2026-11-02
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
@@ -119,9 +119,9 @@ A server registered from a **git URL** rather than a published package serves a
 **cached commit**, so an upstream fix never arrives:
 
 ```jsonc
-"pal": {
+"my-server": {
   "command": "uvx",
-  "args": ["--from", "git+https://github.com/owner/repo.git", "pal-mcp-server"]
+  "args": ["--from", "git+https://github.com/<owner>/<repo>.git", "<pkg>"]
 }
 ```
 
@@ -154,7 +154,10 @@ even if the process is then killed.
 git source. Once the server is on PyPI, register it as `uvx <pkg>` (or
 `uvx <pkg>@<version>`): a version bump re-resolves cleanly and there is no
 cached-head-went-stale failure at all. Prefer the `git+` form only as an interim
-before the first publish.
+before the first publish. PAL now ships on PyPI, and the repo baseline policy
+registers it as `uvx pal-mcp-server@latest`
+([`configure-plugin/policy/repo-baseline.json`](https://github.com/laurigates/claude-plugins/blob/main/configure-plugin/policy/repo-baseline.json),
+`mcpServers`).
 
 ## Configuration Patterns
 

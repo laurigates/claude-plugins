@@ -8,7 +8,9 @@ name: "Plugin: Enablement drift"
 #
 # The same job validates configure-plugin/policy/repo-baseline.json: every
 # plugin key the policy names, and every official LSP name the configure-plugin
-# skill docs cite, must resolve to a real plugin (#3318).
+# skill docs cite, must resolve to a real plugin (#3318); and no skill doc
+# outside configure-plugin restates one of the policy's mcpServers entries
+# (#3321), which is why every plugin's skill docs are a trigger path.
 
 on:
   pull_request:
@@ -19,7 +21,7 @@ on:
       - 'scripts/check-enabled-plugins-drift.sh'
       - 'scripts/tests/test-check-enabled-plugins-drift.sh'
       - 'configure-plugin/policy/**'
-      - 'configure-plugin/skills/**/*.md'
+      - '*-plugin/skills/**/*.md'
       - 'scripts/check-repo-baseline-policy.sh'
       - 'scripts/tests/test-check-repo-baseline-policy.sh'
       - '.github/workflows/plugin-enablement-drift.yml'
