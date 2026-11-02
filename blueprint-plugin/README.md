@@ -414,7 +414,11 @@ arrays of strings.
 
 The check is a diagnostic, never a gate: no manifest, a `format_version` older
 than the schema's (`WARN` → run `/blueprint:upgrade`), or a missing
-`uv`/`jsonschema` all exit 0 without claiming the manifest is clean.
+`uv`/`jsonschema` all exit 0 without claiming the manifest is clean. Run under
+plain `python3` without `jsonschema`, the script re-execs itself through
+`uv run --with jsonschema`; with no uv either it reports `STATUS=WARN` and
+`REASON=no_validator`, never `STATUS=OK` (#3177). The manifest path may be
+given positionally as well as with `--manifest`.
 
 ## Generated-Rules Registry
 
