@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-09
+modified: 2026-11-02
 reviewed: 2026-08-09
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
@@ -116,7 +116,11 @@ Initialize Blueprint Development in this project.
    Documents live at top-level `docs/`, not `docs/blueprint/` — why, plus the resulting trees: [references/directory-layout.md](references/directory-layout.md).
 
 7. **Create `manifest.json`** (v3.4.0 schema — canonical filename is `docs/blueprint/manifest.json`, no dot prefix):
-   Write the template in [references/manifest-template.md](references/manifest-template.md), filling each `[...]` placeholder from the answers above.
+   Write the template in [references/manifest-template.md](references/manifest-template.md), filling each `[...]` placeholder from the answers above. Fill `created_by.blueprint_plugin` with the plugin version (not the format version):
+
+   ```bash
+   jq -r .version "${CLAUDE_SKILL_DIR}/../../.claude-plugin/plugin.json"
+   ```
 
    Note: Include `feature_tracker` section only if feature tracking is enabled.
 
@@ -151,7 +155,7 @@ Initialize Blueprint Development in this project.
    ```bash
    bash "${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh" \
      --source "blueprint-init" \
-     --plugin-version "3.4.0" \
+     --plugin-version "$(jq -r .version "${CLAUDE_SKILL_DIR}/../../.claude-plugin/plugin.json")" \
      development.md testing.md document-management.md
    ```
 

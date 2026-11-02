@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-10-12
+modified: 2026-11-02
 reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
@@ -153,7 +153,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    Sub-steps a–f are in [references/v2.x-to-v3.0-overview.md](references/v2.x-to-v3.0-overview.md).
 
-9. **Update manifest** (v3.0.0 schema): write the manifest using the v3.0.0 schema template in [REFERENCE.md](REFERENCE.md). Preserve `created_at`, `project.name`, `project.type`, `structure.has_modular_rules`, and `structure.claude_md_mode` from the previous manifest. Set `updated_at` to now, `created_by.blueprint_plugin` to "3.0.0", and `generated.rules` from the migrated skills→rules conversion.
+9. **Update manifest** (v3.0.0 schema): write the manifest using the v3.0.0 schema template in [REFERENCE.md](REFERENCE.md). Preserve `created_at`, `project.name`, `project.type`, `structure.has_modular_rules`, and `structure.claude_md_mode` from the previous manifest. Set `updated_at` to now, `created_by.blueprint_plugin` to the plugin version (`jq -r .version "${CLAUDE_SKILL_DIR}/../../.claude-plugin/plugin.json"`, never the format version, issue #2950), and `generated.rules` from the migrated skills→rules conversion.
 
 10. **Report**: print the upgrade report using the standard template in [REFERENCE.md](REFERENCE.md), substituting `{previous}` with the prior `format_version` and `{n}` placeholders with the actual counts.
 
