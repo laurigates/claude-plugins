@@ -164,14 +164,16 @@ branch_matches="none"
 if [ -n "$issue_num" ]; then
   echo "ISSUE=${issue_num}"
   if [ "$gh_available" = true ]; then
-    issue_state=$(gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null || echo "unknown")
+    # gh resolves the repo from cwd, so run it from the repo root (#3148).
+    issue_state=$(cd "$repo_root" && gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null) \
+      || issue_state="unknown"
     : "${issue_state:=unknown}"
 
     # PRs that reference the issue via closing keywords.
-    prs=$(gh pr list --state all \
+    prs=$(cd "$repo_root" && gh pr list --state all \
       --search "fixes #${issue_num} OR closes #${issue_num} OR resolves #${issue_num}" \
       --json number,state,headRefName \
-      --jq '[.[] | "#\(.number):\(.state):\(.headRefName)"] | join(";")' 2>/dev/null || true)
+      --jq '[.[] | "#\(.number):\(.state):\(.headRefName)"] | join(";")' 2>/dev/null) || prs=""
     [ -n "$prs" ] && existing_prs="$prs"
   else
     issue_state="unknown"
