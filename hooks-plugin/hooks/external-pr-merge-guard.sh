@@ -669,6 +669,9 @@ case "$TOOL_NAME" in
               m = m "\n"; curline = ""
               if (hd_nomask || hsub || hbt) { st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0 }
               if (t == hd_delim) {
+                # The line after the delimiter is a command of its own, not
+                # more of the statement the body started (issue #3355).
+                if (st[ns] != i + 1) { st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0 }
                 hsub = 0; hbt = 0
                 if (pn > 0) { hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]; hd_unq = hdu[1]
                               for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1] }
@@ -692,6 +695,9 @@ case "$TOOL_NAME" in
               }
               else if (c == BT) { hbt = 1; mc = c; st[++ns] = i + 1 }
               else if (c == "$" && substr(buf, i + 1, 1) == "(") {
+                # The `$(` ends the prose before it (so that prose is all
+                # mask, issue #3355) and starts the command of the substitution.
+                st[++ns] = i + 1
                 hsub = 1; m = m "$("; curline = curline "$("; i += 2; st[++ns] = i; continue
               }
             }
@@ -815,6 +821,14 @@ case "$TOOL_NAME" in
           if (b > n) b = n
           if (b < a) continue
           sm = substr(m, a, b - a + 1); so = substr(buf, a, b - a + 1)
+          # A statement that is ALL mask is heredoc prose: the body of a
+          # quoted heredoc, or the text of an unquoted one between the
+          # $(…) and backtick spans that run. Its words are read back from
+          # the original, so a body line such as `$GH api graphql` read as
+          # a variable command word and was refused (issue #3355). Prose
+          # cannot be a command; quoted values keep their quote characters
+          # in the mask, so they never match here.
+          if (sm ~ /^[X \t\n]*$/) continue
           off = 0; wrapped = 0
           while (1) {
             while (substr(sm, off + 1, 1) == " " || substr(sm, off + 1, 1) == "\t") off++

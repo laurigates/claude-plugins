@@ -1083,6 +1083,77 @@ ck "branch selector: no REST guess" DENY "$(STUB_REST_LOGIN=laurigates run "$(ba
 ck "both lookups fail: denied"      DENY "$(STUB_REST_FAIL=1 run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')")"
 unset STUB_GRAPHQL_FAIL
 
+echo "== heredoc body lines are data, not command words (issue #3355) =="
+# A heredoc body is its own statement in the scan, and its command word was read
+# from the ORIGINAL text at the masked offsets — so a prose body line holding a
+# backtick or `$` read as a variable command word, and a GraphQL token in that
+# line got the `cmdword` refusal. Every ALLOW row was denied before #3355.
+H3355_Q=$(cat <<'CMD'
+cat > d.txt <<'EOF'
+`gh api graphql -f query="$Q"`
+EOF
+CMD
+)
+H3355_GH=$(cat <<'CMD'
+cat > d.txt <<'EOF'
+`$GH api graphql` merges
+EOF
+CMD
+)
+H3355_THREE=$(cat <<'CMD'
+cat > a.txt <<'EOF'
+plain
+EOF
+cat > d.txt <<'EOF'
+`-f query='mutation($id:ID!){updateIssue(...)}' -f id="$ID"`
+EOF
+cat > e.txt <<'EOF'
+more
+EOF
+python3 scripts/foo.py a.txt d.txt e.txt
+CMD
+)
+H3355_CD=$(cat <<'CMD'
+cd /tmp && cat > d.txt <<'EOF'
+- `$cmd` graphql here
+EOF
+./run.sh
+CMD
+)
+H3355_REPRO=$(cat <<'CMD'
+cat > /tmp/body.md <<'EOF'
+The cloud smoke test (#90) found that cloud sessions cannot use GitHub GraphQL.
+- `PROMPT.md`: the header describes the Desktop task setup.
+`gh api graphql` is refused, so use `$VAR` instead.
+EOF
+gh pr create -R laurigates/repos-claude-config -t "docs(routines): x" --body-file /tmp/body.md
+CMD
+)
+H3355_UNQ_PROSE=$(cat <<'CMD'
+cat <<EOF
+$GH api graphql is how $(date) reads
+EOF
+CMD
+)
+ck "quoted heredoc: backticked gh api graphql with \$Q"  ALLOW "$(run "$(bash_json "$H3355_Q")")"
+ck "quoted heredoc: backticked \$GH api graphql"         ALLOW "$(run "$(bash_json "$H3355_GH")")"
+ck "three quoted heredocs, GraphQL example in prose"     ALLOW "$(run "$(bash_json "$H3355_THREE")")"
+ck "cd && quoted heredoc, then a script"                 ALLOW "$(run "$(bash_json "$H3355_CD")")"
+ck "issue repro: heredoc, then gh pr create --body-file" ALLOW "$(run "$(bash_json "$H3355_REPRO")")"
+ck "unquoted heredoc: \$GH in prose is an expansion"     ALLOW "$(run "$(bash_json "$H3355_UNQ_PROSE")")"
+# Controls: the same bodies where a shell RUNS them must still be refused.
+ck "same body fed to bash <<'EOF'"   DENY "$(run "$(bash_json "${H3355_Q/cat > d.txt/bash}")")"
+ck "\$GH body fed to bash <<'EOF'"   DENY "$(run "$(bash_json "${H3355_GH/cat > d.txt/bash}")")"
+ck "same body, unquoted <<EOF (backticks run)" DENY "$(run "$(bash_json "${H3355_Q/<<\'EOF\'/<<EOF}")")"
+ck "\$GH body, unquoted <<EOF (backticks run)" DENY "$(run "$(bash_json "${H3355_GH/<<\'EOF\'/<<EOF}")")"
+ck "quoted heredoc to cat, piped to bash" DENY "$(run "$(bash_json "${H3355_GH/cat > d.txt <<\'EOF\'/cat <<\'EOF\' | bash}")")"
+# The line after the closing delimiter is a statement of its own. It used to be
+# read as more of the body's statement, whose first word (the first body line)
+# hid the merge behind it: this DENY row was ALLOWED before #3355.
+ck "merge on the line after a heredoc"    DENY "$(STUB_AUTHOR=joshua-trustabl run "$(bash_json "$(printf '%s\n' "cat > d.txt <<'EOF'" 'hello' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+ck "merge after an unquoted heredoc"      DENY "$(STUB_AUTHOR=joshua-trustabl run "$(bash_json "$(printf '%s\n' 'cat <<EOF' '$(date) hello' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+ck "own merge after a heredoc"            ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "$(printf '%s\n' "cat > d.txt <<'EOF'" '`$GH api graphql`' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+
 echo "== operator escape hatch =="
 out=$(printf '%s' "$(bash_json 'gh pr merge 2231 --squash')" \
       | STUB_AUTHOR=joshua-trustabl CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1 \
