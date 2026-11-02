@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-24
+modified: 2026-10-31
 reviewed: 2026-04-25
 name: kubernetes-operations
 description: "Kubernetes operations — deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
@@ -138,6 +138,20 @@ gcloud container clusters get-credentials <cluster> --region <region> --project 
 
 `gcloud auth application-default login` sets Application Default Credentials for
 SDKs and Terraform. It does not change the account kubectl uses.
+
+**`-o json` omits `managedFields`**
+
+Since kubectl 1.21, `kubectl get -o json` and `-o yaml` leave out
+`.metadata.managedFields`. A filter over them then fails with `jq: Cannot
+iterate over null`. A null-tolerant `[]?` instead returns nothing, which looks
+the same as an object with no field managers. Pass `--show-managed-fields`
+whenever the field managers are the thing you are checking, for example before
+a server-side-apply migration:
+
+```bash
+kubectl --context=<ctx> get crd <name> --show-managed-fields -o json \
+  | jq -r '.metadata.managedFields[] | [.manager, .operation, .time] | @tsv'
+```
 
 **Resource Definitions**
 - Use declarative YAML manifests

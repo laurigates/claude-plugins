@@ -104,8 +104,12 @@ SP_FILEARG='(^|\s)(--body-file|--template|--file|-F|-t)(=|\s+)?\S*(\.env|\.ssh/|
 SP_SECRETVAR='\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
 # Placeholders: @CMD@ = an allowlisted command that takes no protected file
 # argument; @SECRETVAR@ = SP_SECRETVAR.
-SP_RULES=$(
-  cat <<'YAML'
+# Filled by `read`, not `$(cat <<'YAML' … )`: macOS /bin/bash 3.2 scans a
+# `$( … )` body for backticks even inside a quoted heredoc, so the "`" rule
+# below would open a substitution that never closes and the hook would fail to
+# parse (#3145, #3261). `read -d ''` returns 1 at EOF, hence `|| true`; it keeps
+# the heredoc's final newline, which `$( … )` stripped, so drop it.
+IFS= read -r -d '' SP_RULES <<'YAML' || true
 id: n
 language: bash
 rule:
@@ -176,7 +180,7 @@ rule:
     - kind: command
       regex: '^(alias|unalias|hash|enable|builtin|trap|shopt)\b'
 YAML
-)
+SP_RULES=${SP_RULES%$'\n'}
 SP_CMD="{ kind: command, regex: '${SP_ALLOW}', not: { regex: '${SP_FILEARG}' } }"
 SP_RULES=${SP_RULES//@CMD@/"$SP_CMD"}
 SP_RULES=${SP_RULES//@SECRETVAR@/"$SP_SECRETVAR"}

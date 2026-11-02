@@ -147,7 +147,7 @@ Remove any ESLint/Prettier pre-commit hooks. Add Biome:
 
 ```yaml
 - repo: https://github.com/biomejs/pre-commit
-  rev: v0.6.0  # use latest
+  rev: v0.6.1  # use latest
   hooks:
     - id: biome-check
       additional_dependencies: ["@biomejs/biome@1.9.0"]

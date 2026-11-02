@@ -134,7 +134,7 @@ env:
   # renovate: datasource=github-releases depName=cargo-generate/cargo-generate extractVersion=^v(?<version>.*)$
   CARGO_GENERATE_VERSION: "0.23.14"
   # renovate: datasource=github-releases depName=GothenburgBitFactory/taskwarrior extractVersion=^v(?<version>.*)$
-  TASKWARRIOR_VERSION: "3.4.2"
+  TASKWARRIOR_VERSION: "3.5.0"
 
 jobs:
   test:
@@ -215,17 +215,30 @@ jobs:
       #
       # ~4 minutes cold on a 4-vCPU runner (C++ plus the Rust taskchampion
       # crate), which is why it is cached on the version tag; a warm run restores
-      # one binary in ~1s (56 MB unstripped, 17 MB in the cache — `strip` only
+      # the binary plus its rc dir in ~1s (56 MB unstripped, 17 MB in the cache — `strip` only
       # takes it to 39 MB, so it is not worth a step). The tag is the only
       # integrity anchor — upstream
       # publishes no checksum file — and Renovate keeps it fresh via the
       # workflow-env customManager in renovate.json.
+      #
+      # The binary alone is NOT a working install (#3360). Since 3.5.0 the
+      # built-in default config carries `include default.theme` (upstream
+      # #4124), resolved against the compiled-in TASK_RCDIR
+      # (<prefix>/share/doc/task/rc). Without the rc files every command —
+      # `add`, `export`, `uuids` — exits 2 with "Could not find file ...
+      # 'default.theme'", and the suites, which discard task's stderr, read
+      # back empty values. So the build installs into a ~/.local prefix with
+      # `cmake --install` (which bakes ~/.local/share/doc/task/rc into the
+      # binary) and the cache carries the rc dir beside the binary. The key's
+      # `-rc` suffix keeps a binary-only cache entry from ever being restored.
       - name: Restore cached taskwarrior
         id: taskwarrior-cache
         uses: actions/cache@v4
         with:
-          path: ~/.local/bin/task
-          key: taskwarrior-${{ env.TASKWARRIOR_VERSION }}-linux-x86_64
+          path: |
+            ~/.local/bin/task
+            ~/.local/share/doc/task/rc
+          key: taskwarrior-${{ env.TASKWARRIOR_VERSION }}-linux-x86_64-rc
 
       - name: Build taskwarrior
         if: steps.taskwarrior-cache.outputs.cache-hit != 'true'
@@ -235,20 +248,25 @@ jobs:
           # ("Looking for libuuid"), and it is cheap enough not to gamble on.
           sudo apt-get update -qq
           sudo apt-get install -y -qq uuid-dev
-          mkdir -p "$HOME/.local/bin"
           tmp_dir="$(mktemp -d)"
           git clone --depth 1 --branch "v${TASKWARRIOR_VERSION}" \
             https://github.com/GothenburgBitFactory/taskwarrior.git "$tmp_dir/src"
-          cmake -S "$tmp_dir/src" -B "$tmp_dir/build" -DCMAKE_BUILD_TYPE=Release
+          cmake -S "$tmp_dir/src" -B "$tmp_dir/build" -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$HOME/.local"
           cmake --build "$tmp_dir/build" -j"$(nproc)"
-          install -m 0755 "$tmp_dir/build/src/task" "$HOME/.local/bin/task"
+          cmake --install "$tmp_dir/build"
           rm -rf "$tmp_dir"
+          # Fail here, not 300 tests later, if the install is still incomplete.
+          test -f "$HOME/.local/share/doc/task/rc/default.theme"
 
       - name: Put installed tools on PATH
         run: |
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/cargo-generate" --version
           "$HOME/.local/bin/task" --version
+          # `--version` never reads the config; this does, so a missing
+          # default.theme fails the step instead of every taskwarrior suite.
+          "$HOME/.local/bin/task" rc.data.location="$(mktemp -d)" rc:/dev/null _version
 
       - name: Regression-test the skill-script runner's SKIP accounting
         run: bash scripts/tests/test-run-skill-script-tests.sh

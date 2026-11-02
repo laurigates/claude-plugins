@@ -315,7 +315,7 @@ unqueried rather than empty; with no `task` binary (`TASK_FAIL_REASON=no-cli`),
 |---|---|
 | `override` | `--project` (caller-supplied, user-asserted) |
 | `declared` | A `.claude/session.json` `.project` string at the cwd or repo root. That file is repo content, so the value must be a plain single-line string — any other shape is rejected, never flattened into a slug that would match nothing and earn a confident zero |
-| `cwd-repo-basename` | The directory basename (the guess) |
+| `cwd-repo-basename` | The directory basename (the guess); in a linked worktree, the main checkout's basename |
 | `cwd-repo-basename-ancestor` | An adopted ancestor repo slug |
 | `ambiguous` | No repo context |
 

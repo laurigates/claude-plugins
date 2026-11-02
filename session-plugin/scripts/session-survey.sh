@@ -179,6 +179,27 @@ declared_project_of() {  # $1 = directory that may hold .claude/session.json
   printf '%s' "$v"
 }
 
+# The checkout a slug is named after (#3314). In a linked worktree
+# `--show-toplevel` is the worktree's own directory (`../shore-recon-progress`,
+# `.claude/worktrees/<name>`), whose basename matches no task. When the git dir
+# differs from the common dir, the main checkout is the common dir's parent.
+# Only a common dir literally named `.git` is followed: a bare repo's worktrees
+# (`repo.git` as the common dir) keep the old answer, the worktree basename.
+# `cd … && pwd -P` instead of `--path-format=absolute` (git 2.31+) so old git
+# resolves the relative path the same way.
+main_checkout_of() {  # $1 = dir inside the repo, $2 = its --show-toplevel
+  local git_dir common_dir
+  git_dir=$("$git_bin" -C "$1" rev-parse --git-dir 2>/dev/null) || { printf '%s' "$2"; return; }
+  common_dir=$("$git_bin" -C "$1" rev-parse --git-common-dir 2>/dev/null) || { printf '%s' "$2"; return; }
+  git_dir=$(cd "$1" 2>/dev/null && cd "$git_dir" 2>/dev/null && pwd -P) || { printf '%s' "$2"; return; }
+  common_dir=$(cd "$1" 2>/dev/null && cd "$common_dir" 2>/dev/null && pwd -P) || { printf '%s' "$2"; return; }
+  if [ "$git_dir" != "$common_dir" ] && [ "$(basename "$common_dir")" = ".git" ]; then
+    dirname "$common_dir"
+  else
+    printf '%s' "$2"
+  fi
+}
+
 detection="ambiguous"
 repo_root=""
 if [ "$in_git" = true ]; then
@@ -199,7 +220,7 @@ else
     project="$declared_project"
     detection="declared"
   elif [ -n "$repo_root" ]; then
-    project=$(basename "$repo_root")
+    project=$(basename "$(main_checkout_of "$project_dir" "$repo_root")")
     detection="cwd-repo-basename"
   fi
 fi
