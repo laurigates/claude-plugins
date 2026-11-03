@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.68.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.3...git-plugin-v2.68.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** tell delegated agents to hand back on a pr-metadata block ([#3391](https://github.com/laurigates/claude-plugins/issues/3391)) ([ec6cd22](https://github.com/laurigates/claude-plugins/commit/ec6cd221382d57ee750dc74ec6f530870991c708))
+
 ## [2.68.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.2...git-plugin-v2.68.3) (2026-11-03)
 
 
