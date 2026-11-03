@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "kernel-plugin",
+  "version": "1.0.0",
+  "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "keywords": [
+    "linux",
+    "kernel",
+    "lore",
+    "mailing-list",
+    "git-send-email",
+    "reproducer",
+    "bug-report",
+    "maintainers"
+  ]
+}
