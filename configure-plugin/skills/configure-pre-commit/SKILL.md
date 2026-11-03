@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-11-03
 reviewed: 2026-07-05
 description: "Set up .pre-commit-config.yaml: hooks for the project type at current revs. Use when installing pre-commit in a repo, auditing stale hook revs, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,13 +25,13 @@ Check and configure pre-commit hooks against project standards.
 
 ## Context
 
-- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 - Project type in standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
-- Has package.json: !`find . -maxdepth 1 -name \'package.json\'`
-- Has pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
+- Has package.json: !`find . -maxdepth 1 -name 'package.json'`
+- Has pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml'`
 
 ## Parameters
 
