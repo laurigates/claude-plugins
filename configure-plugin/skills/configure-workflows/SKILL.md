@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-11-03
 reviewed: 2026-06-03
 description: "Whole-repo audit of .github/workflows/ — baseline workflows the project type is missing, and stale action pins. Use when reviewing a repo's CI as a set or bumping outdated action versions."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,11 +25,11 @@ Check and configure GitHub Actions CI/CD workflows against project standards.
 
 ## Context
 
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
+- Workflows dir: !`find . -maxdepth 2 -type d -path './.github/workflows'`
 - Workflow files: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*.yml' -o -name '*.yaml' \)`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*'`
-- Release-please config: !`find . -maxdepth 1 -name \'release-please-config.json\'`
+- Release-please config: !`find . -maxdepth 1 -name 'release-please-config.json'`
 
 **Skills referenced**: `ci-workflows`, `github-actions-auth-security`
 

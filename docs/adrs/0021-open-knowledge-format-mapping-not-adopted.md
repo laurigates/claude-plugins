@@ -2,8 +2,8 @@
 id: ADR-0021
 date: 2026-07-12
 created: 2026-07-12
-modified: 2026-07-12
-status: Proposed
+modified: 2026-11-02
+status: Accepted
 deciders: claude-plugins team
 domain: architecture
 relates-to:
@@ -14,6 +14,8 @@ relates-to:
 ---
 
 # ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence
+
+> **Accepted (2026-11-02):** in effect. Skills have stayed in the Claude Code `SKILL.md` format, and ADR-0022 builds on the substrate convergence this ADR records.
 
 ## Context
 

@@ -1,16 +1,17 @@
 ---
 id: ADR-0010
-status: Proposed
+status: Accepted
 deciders: Blueprint Plugin Maintainers
 date: 2026-01-09
 created: 2026-01-09
-modified: 2026-01-09
+modified: 2026-11-02
+domain: documentation
 ---
 
 # ADR-0010: Proactive Document Detection
 
 **Date**: 2026-01-09
-**Status**: Proposed
+**Status**: Accepted (in effect since 2026-01-09: `blueprint-plugin:document-detection` implements it)
 **Deciders**: Blueprint Plugin Maintainers
 
 ## Context
@@ -73,6 +74,8 @@ Use simple keyword matching (e.g., "new feature", "architecture decision") to tr
    - `requirements-documentation` agent for PRDs
    - `architecture-decisions` agent for ADRs
    - `prp-preparation` agent for PRPs
+
+   > ADR-0009 deleted these three agents. `document-detection` now hands the gathered context to `/blueprint:derive-plans` (PRDs, ADRs) and `/blueprint:prp-create` (PRPs).
 
 5. **Root Directory Policy**: All generated documentation goes to `docs/` subdirectories. Only standard project files (README.md, LICENSE, etc.) belong in the project root.
 
@@ -143,7 +146,7 @@ Use simple keyword matching (e.g., "new feature", "architecture decision") to tr
 - [Blueprint Plugin README](/Users/lgates/repos/laurigates/claude-plugins/blueprint-plugin/README.md)
 - [MADR Template](https://adr.github.io/madr/)
 - [Blueprint ADR Command](/Users/lgates/repos/laurigates/claude-plugins/blueprint-plugin/commands/blueprint-adr.md)
-- Related agents: `requirements-documentation`, `architecture-decisions`, `prp-preparation`
+- Related agents: `requirements-documentation`, `architecture-decisions`, `prp-preparation` (deleted by ADR-0009)
 
 ---
 *Generated via /blueprint:adr*

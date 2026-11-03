@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 model: opus
 created: 2025-12-27
-modified: 2026-10-29
+modified: 2026-11-02
 reviewed: 2026-04-25
 ---
 

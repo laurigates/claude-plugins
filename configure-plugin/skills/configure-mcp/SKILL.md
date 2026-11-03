@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-30
+modified: 2026-11-03
 reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -29,12 +29,11 @@ For server configurations, environment variable reference, and report templates,
 
 ## Context
 
-- Config exists: !`find . -maxdepth 1 -name \'.mcp.json\'`
+- Config exists: !`find . -maxdepth 1 -name '.mcp.json'`
 - Git tracking: !`find . -maxdepth 1 -name '.gitignore' -exec grep '.mcp.json' {} +`
-- Standards file: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Standards file: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 - Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' -print -quit`
 - Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) -print -quit`
-- Dotfiles registry: !`find . -maxdepth 1 -name \'~/.local/share/chezmoi/.chezmoidata.toml\'`
 
 ## Parameters
 

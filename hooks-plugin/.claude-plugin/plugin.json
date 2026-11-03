@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hooks-plugin",
-  "version": "2.18.0",
+  "version": "2.19.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -63,6 +63,11 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bash-safety.sh\"",
             "timeout": 5
           },
           {

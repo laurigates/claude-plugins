@@ -11,6 +11,8 @@ compatibility: claude-code
 reviewed: 2026-09-02
 ---
 
+<!-- skill-size-exception: scripts/check-loop-integrity.sh -->
+
 # Execution-Grounded Review
 
 A normal review reads the diff and asks *"does this look right?"* — and an

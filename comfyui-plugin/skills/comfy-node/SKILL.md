@@ -11,6 +11,8 @@ description: >-
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (comfy-node gitops-owner block, #2142) -->
+
 # comfy-node
 
 Take a ComfyUI custom-node **idea** and drive it through every step from empty

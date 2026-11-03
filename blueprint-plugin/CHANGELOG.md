@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.50.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.49.0...blueprint-plugin-v3.50.0) (2026-11-03)
+
+
+### Features
+
+* **blueprint-plugin:** ship a five-section ADR template ([375a679](https://github.com/laurigates/claude-plugins/commit/375a67969b8cf606d9f021ff895c2782a5c9f542)), closes [#2702](https://github.com/laurigates/claude-plugins/issues/2702)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** batch the autorun sync-ids sweep and report killed runs ([8866dd4](https://github.com/laurigates/claude-plugins/commit/8866dd492c66e566b7d84254f1eaf990a518b605)), closes [#3169](https://github.com/laurigates/claude-plugins/issues/3169)
+* **blueprint-plugin:** read doc frontmatter only when it opens the file ([85c98d1](https://github.com/laurigates/claude-plugins/commit/85c98d1b5033daf60b50b06d52615362517ed365)), closes [#2841](https://github.com/laurigates/claude-plugins/issues/2841)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** give blueprint-init an Execution spine with step headings ([8d1d053](https://github.com/laurigates/claude-plugins/commit/8d1d053bb0bedf9993b9115c3b3b55fb360c2d91)), closes [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+
 ## [3.49.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.2...blueprint-plugin-v3.49.0) (2026-11-02)
 
 

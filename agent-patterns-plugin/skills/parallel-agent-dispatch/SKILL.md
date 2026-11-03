@@ -10,6 +10,8 @@ compatibility: claude-code
 reviewed: 2026-09-02
 ---
 
+<!-- skill-size-exception: scripts/check-agent-failure-contract.sh -->
+
 # Parallel Agent Dispatch
 
 Conventions that apply every time more than one agent runs in parallel. Prevents
@@ -144,6 +146,7 @@ Every agent prompt must declare:
   approvals not given this session (system card: fabricated user quotes
   were observed).
 - **Scope authority per stage**: merge/publish authority goes only in the owning stage's brief; build-stage briefs end "stop at PR opened; do not merge". Each brief quotes the user's decisions verbatim and has no forward references ([stage authority](references/brief-templates.md#stage-authority-in-multi-stage-pipelines), [#2902](https://github.com/laurigates/claude-plugins/issues/2902)).
+- **PR-body authority**: a brief that pushes to an open PR says whether the agent may edit the PR body, and what to add. Silent means never; the agent hands back the PR number and commit SHA ([details](references/brief-templates.md#pushing-to-an-open-pr-pr-body-authority)).
 
 These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and

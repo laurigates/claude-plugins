@@ -2,8 +2,8 @@
 id: ADR-0017
 date: 2026-06-13
 created: 2026-06-13
-modified: 2026-08-06
-status: Proposed
+modified: 2026-11-02
+status: Accepted
 deciders: claude-plugins team
 domain: architecture
 relates-to:
@@ -16,6 +16,8 @@ github-issues:
 ---
 
 # ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
+
+> **Accepted (2026-11-02):** in effect. The worked example ships as `blueprint-plugin/hooks/blueprint-structural-cue.sh`, registered in `blueprint-plugin/hooks.json` and tested by `test-blueprint-structural-cue.sh`.
 
 > **Amended in part (2026-08-06, issue #2275):** every claim below about
 > `hookSpecificOutput.updatedToolOutput` as a general point-of-performance cue

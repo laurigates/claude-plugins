@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.18.0...evaluate-plugin-v1.19.0) (2026-11-03)
+
+
+### Features
+
+* **evaluate-plugin:** sync the evaluate-skill workflow at session start ([a4a9167](https://github.com/laurigates/claude-plugins/commit/a4a91672d9f6b321abe783075b821283276e39a4)), closes [#2829](https://github.com/laurigates/claude-plugins/issues/2829)
+
 ## [1.18.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.9...evaluate-plugin-v1.18.0) (2026-10-23)
 
 

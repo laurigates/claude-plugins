@@ -2,10 +2,13 @@
 id: ADR-0003
 status: Accepted
 created: 2026-01-09
-modified: 2026-02-18
+modified: 2026-11-02
+domain: architecture
 ---
 
 # ADR-0003: Auto-Discovery Component Pattern
+
+> **Partially superseded by [ADR-0026](0026-commands-migrated-to-skills.md)**: the `commands/` directory, the command rows of the discovery rules, and the command metadata format below were removed when every command became a skill ([#423](https://github.com/laurigates/claude-plugins/pull/423)). Convention-based discovery of skills, agents and hooks stands.
 
 ## Status
 

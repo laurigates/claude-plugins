@@ -207,6 +207,7 @@ sibling. It wraps the same `reconcile.sh` with two safety tiers:
 | `issue-closed` | linked issue closed | ✅ fact |
 | `pr-closed` | linked PR closed **unmerged** (abandoned? superseded?) | ❌ left for a human |
 | UNKNOWN | upstream state unreadable | ❌ never closed (it stays `verdict=live`) |
+| `review` | no `ghid`/`ghpr` UDA; text-ref items all done (#3126) | ❌ never closed, reported as `REVIEW_COUNT` |
 
 The `--only-verdicts=<csv>` flag on `reconcile.sh` is the lever: it restricts the
 *apply set* to the listed verdicts; everything else stale is reported

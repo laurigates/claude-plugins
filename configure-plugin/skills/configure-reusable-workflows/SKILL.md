@@ -1,6 +1,6 @@
 ---
 created: 2026-02-02
-modified: 2026-10-26
+modified: 2026-11-03
 reviewed: 2026-04-29
 description: "Pre-built Claude PR scans as claude-*.yml callers of the reusable security, quality and a11y workflows. Use when adding OWASP, secret, code-smell or WCAG review to pull requests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -25,7 +25,7 @@ Install Claude-powered reusable GitHub Actions workflows from claude-plugins int
 
 ## Context
 
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
+- Workflows dir: !`find . -maxdepth 2 -type d -path './.github/workflows'`
 - Existing callers: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'claude-*'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit`
 - TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit`

@@ -28,8 +28,11 @@ DEFAULT_CHANGELOG_SECTIONS = [
 # plugin's own plugin.json when it declares them; otherwise these defaults,
 # which match the marketplace owner and the repo-root MIT LICENSE that covers
 # every plugin. scripts/plugin-compliance-check.sh gates both fields (#2699).
+# `repository` follows the same pattern (#2772); `homepage` is deliberately not
+# emitted, since for a single-repo marketplace it would repeat the same URL.
 DEFAULT_AUTHOR = {"name": "Lauri Gates"}
 DEFAULT_LICENSE = "MIT"
+DEFAULT_REPOSITORY = "https://github.com/laurigates/claude-plugins"
 
 # Category mapping based on keywords (used when creating marketplace entries)
 CATEGORY_KEYWORDS = {
@@ -185,6 +188,7 @@ def create_marketplace_entry(plugin_name: str, plugin_data: dict, version: str) 
         "version": version,
         "author": plugin_data.get("author", dict(DEFAULT_AUTHOR)),
         "license": plugin_data.get("license", DEFAULT_LICENSE),
+        "repository": plugin_data.get("repository", DEFAULT_REPOSITORY),
         "keywords": keywords[:10],  # Limit to 10 keywords for readability
         "category": infer_category(keywords),
     }

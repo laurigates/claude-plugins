@@ -89,6 +89,14 @@ This plugin provides expert knowledge for Rust development with a focus on:
 - The transient stale-rlib "method not found" gotcha and its fix
 - Companion to agent-patterns-plugin worktree fan-out
 
+**cargo-dist** - Release binaries with dist (cargo-dist)
+- Non-interactive setup: hand-written `dist-workspace.toml`, then `dist generate`
+- `[profile.dist]`, and choosing which workspace crates ship (`dist = true/false`, `formula`)
+- Pairing with release-please (`create-release = false`, App-token tags)
+- Pinning the generated workflow's actions via `[dist.github-action-commits]`
+- Custom Homebrew publish jobs and the warnings they produce
+- Local verification: `dist plan`, `dist generate --check`, `dist build`
+
 ## Quick Start
 
 ### Using the Agent

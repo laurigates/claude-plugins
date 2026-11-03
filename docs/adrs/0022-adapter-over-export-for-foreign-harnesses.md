@@ -2,7 +2,7 @@
 id: ADR-0022
 date: 2026-07-17
 created: 2026-07-17
-modified: 2026-09-23
+modified: 2026-11-02
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
@@ -194,7 +194,7 @@ shared discovery core, and the export pipelines are superseded.
 | [#2090](https://github.com/laurigates/claude-plugins/issues/2090) | pi binding (hybrid push+pull) | eval vs tier baseline |
 | [#2091](https://github.com/laurigates/claude-plugins/issues/2091) | OpenCode binding (pull-first) | eval vs rulesync baseline |
 | [#2092](https://github.com/laurigates/claude-plugins/issues/2092) | `compatibility` frontmatter sweep (a marker may be dropped once a harness emulates what the skill needs) | precedes cutovers |
-| [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | gate frozen + PASS (2026-07-22) |
+| [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | **done** in [#2404](https://github.com/laurigates/claude-plugins/pull/2404) — gate frozen + PASS 2026-07-22 |
 | [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | **done** — gate frozen + PASS 2026-07-22; OC token calibration 2026-08-24 (89.3 measured vs 90.5 proxy, +1.4%) |
 
 ## Amendment (2026-07-22) — the cutover gate is tag-pinned and frozen
