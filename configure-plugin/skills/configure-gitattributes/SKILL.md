@@ -24,6 +24,7 @@ file it would corrupt. See `.claude/rules/gitattributes.md` for the convention.
 | Parallel PRs keep conflicting on an append-only table/changelog | The conflict is semantic (same line edited) — that needs a real merge |
 | Onboarding a repo (also reachable via `/configure:repo`) | Configuring Claude Code settings — use `/configure:repo` |
 | Build output (changelogs, lockfiles, generated trees) clutters PR diffs | — |
+| — | A tool-rewritten JSON/YAML file conflicts on timestamps or counters — write a custom driver with `git-plugin:git-merge-driver` |
 
 ## Context
 
