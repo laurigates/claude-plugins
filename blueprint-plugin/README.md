@@ -655,6 +655,44 @@ Implements the first worked example from [ADR-0017](../docs/adrs/0017-hook-based
 
 Regression test: `hooks/test-blueprint-structural-cue.sh` (run with `bash blueprint-plugin/hooks/test-blueprint-structural-cue.sh`, or via `scripts/run-skill-script-tests.sh`, which discovers it automatically). It replaces the former `hooks/spec/blueprint_structural_cue_spec.sh` — that ShellSpec suite pinned the broken output shape and was never executed by CI, pre-commit, or any recipe.
 
+### Manifest Merge Driver (SessionStart)
+
+| Hook | Event | Matcher | Purpose |
+|------|-------|---------|---------|
+| `register-merge-driver.sh` | SessionStart | `""` (all) | Registers `scripts/merge-manifest.py` as this clone's `blueprint-manifest` git merge driver, when `.gitattributes` opts in |
+
+Tooling rewrites `docs/blueprint/manifest.json` on every run, so two branches
+that each ran `sync-ids` conflict on a timestamp and a run counter. Git's line
+merge cannot tell that from a real disagreement. `scripts/merge-manifest.py`
+merges the parsed JSON instead:
+
+- A value changed on one side only takes that change.
+- Keys added on either side are kept, so registry entries union.
+- When both sides ran a task, `last_completed_at`, `last_result` and `stats`
+  all come from the later run.
+- Other timestamps take the later value, and `last_*` counters take the larger.
+- Anything else changed differently on both sides, such as one id registered for
+  two different documents, is still a conflict. The file then gets git's
+  ordinary conflict markers.
+
+Opt a repository in by committing one line to `.gitattributes`:
+
+```
+docs/blueprint/manifest.json merge=blueprint-manifest
+```
+
+The driver's command lives in git config, which is never committed, so each
+clone needs it registered. The hook does this at session start, only in a repo
+whose `.gitattributes` declares the attribute, writing `--local` config that
+linked worktrees share. It re-registers when the plugin's cached path changes,
+and if the script disappears before then, the driver falls back to
+`git merge-file`, so a merge never fails for a missing driver. Without the
+plugin, a clone behaves as it did before: ordinary conflicts.
+
+Regression test: `scripts/tests/test-merge-manifest.sh`. It merges through real
+`git merge` and `git stash pop`, and runs the same merge with the driver
+unregistered as a control.
+
 ## Installation
 
 ```bash
