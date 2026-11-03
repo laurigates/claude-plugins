@@ -157,7 +157,6 @@ is_deterministic() {
 # Prints "<docs_seen> <changed:true|false>".
 run_sync_ids() (
     local docs_seen=0
-    local doc_file frontmatter doc_id doc_status doc_title doc_created
     local work="${manifest}.autorun.$$"
 
     # shellcheck disable=SC2329,SC2317  # invoked indirectly by the EXIT trap
@@ -178,42 +177,77 @@ run_sync_ids() (
         fi
     fi
 
-    while IFS= read -r doc_file; do
-        [ -f "$doc_file" ] || continue
-        frontmatter=$(awk '/^---$/{if(++n==2)exit}n' "$doc_file" | tail -n +2)
-        [ -n "$frontmatter" ] || continue
-        doc_id=$(printf '%s\n' "$frontmatter" | grep -m1 "^id:" | sed 's/^id:[[:space:]]*//' | tr -d '\r' || true)
-        [ -n "$doc_id" ] || continue
+    # One awk pass over every document emits one row per document carrying an
+    # id: path, id, status, title, created, separated by \037 (US) so tabs,
+    # quotes and backslashes in values survive. One jq call then registers all
+    # rows. The per-document loop this replaces forked awk, grep/sed/tr per
+    # field and one jq read-modify-write per document; at 88 documents that
+    # took 6.3 s, past the probe's 5 s hook budget (#3169).
+    #
+    # Per-document rules (unchanged): the frontmatter is the lines between the
+    # first two `---` lines; the first `<key>:` line wins, leading whitespace
+    # stripped and CRs removed; an empty title falls back to the file's first
+    # `# ` heading; a document without an id is skipped.
+    local rows
+    rows=$(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
+                "${project_dir}/docs/blueprint/work-orders" \
+                -maxdepth 1 -type f -name '*.md' -exec awk '
+        function field(line, key,    v) {
+            v = substr(line, length(key) + 2)
+            sub(/^[[:space:]]+/, "", v)
+            gsub(/\r/, "", v)
+            return v
+        }
+        function emit() {
+            if (doc != "" && id != "") {
+                if (title == "") title = heading
+                printf "%s\037%s\037%s\037%s\037%s\n", doc, id, status, title, created
+            }
+        }
+        FNR == 1 {
+            emit()
+            doc = FILENAME; n = 0; id = status = title = created = heading = ""
+            has_id = has_status = has_title = has_created = has_heading = 0
+        }
+        n < 2 && /^---$/ { n++; next }
+        n == 1 {
+            if (!has_id && /^id:/) { id = field($0, "id"); has_id = 1 }
+            if (!has_status && /^status:/) { status = field($0, "status"); has_status = 1 }
+            if (!has_title && /^title:/) { title = field($0, "title"); has_title = 1 }
+            if (!has_created && /^created:/) { created = field($0, "created"); has_created = 1 }
+        }
+        !has_heading && /^# / { heading = substr($0, 3); gsub(/\r/, "", heading); has_heading = 1 }
+        END { emit() }
+    ' {} + 2>/dev/null)
 
-        doc_status=$(printf '%s\n' "$frontmatter" | grep -m1 "^status:" | sed 's/^status:[[:space:]]*//' | tr -d '\r' || true)
-        doc_title=$(printf '%s\n' "$frontmatter" | grep -m1 "^title:" | sed 's/^title:[[:space:]]*//' | tr -d '\r' || true)
-        if [ -z "$doc_title" ]; then
-            doc_title=$(grep -m1 "^# " "$doc_file" | sed 's/^# //' | tr -d '\r' || true)
-        fi
-        doc_created=$(printf '%s\n' "$frontmatter" | grep -m1 "^created:" | sed 's/^created:[[:space:]]*//' | tr -d '\r' || true)
+    if [ -n "$rows" ]; then
+        docs_seen=$(printf '%s\n' "$rows" | wc -l | tr -d ' ')
+    fi
 
-        local rel_path="${doc_file#"${project_dir}"/}"
-        if ! { jq --arg id "$doc_id" \
-             --arg doc_path "$rel_path" \
-             --arg doc_status "${doc_status:-unknown}" \
-             --arg title "${doc_title:-untitled}" \
-             --arg created "${doc_created:-$now_iso}" \
-             '.id_registry.documents[$id] =
-                ((.id_registry.documents[$id] // {"created": $created, "relates_to": [], "github_issues": []})
-                 + {path: $doc_path, status: $doc_status, title: $title}) |
-              (if ($id | startswith("PRD-")) then
-                 .id_registry.last_prd = ([.id_registry.last_prd // 0, (($id | ltrimstr("PRD-")) | tonumber? // 0)] | max)
-               elif ($id | startswith("PRP-")) then
-                 .id_registry.last_prp = ([.id_registry.last_prp // 0, (($id | ltrimstr("PRP-")) | tonumber? // 0)] | max)
-               else . end)' \
-             "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
-            rm -f "$work" "${work}.tmp"
-            return 1
-        fi
-        docs_seen=$((docs_seen + 1))
-    done < <(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
-                  "${project_dir}/docs/blueprint/work-orders" \
-                  -maxdepth 1 -type f -name '*.md' 2>/dev/null)
+    if ! { printf '%s\n' "$rows" | jq -R -s \
+             --arg pfx "${project_dir}/" \
+             --arg now "$now_iso" \
+             --slurpfile manifest_doc "$work" \
+             'def or_default($d): if . == "" then $d else . end;
+              def counter($prefix): ltrimstr($prefix) | tonumber? // 0;
+              [split("\n")[] | select(length > 0) | split("\u001f")] as $rows
+              | reduce $rows[] as $r ($manifest_doc[0];
+                  ($r[1]) as $id
+                  | .id_registry.documents[$id] =
+                      ((.id_registry.documents[$id]
+                        // {"created": ($r[4] | or_default($now)), "relates_to": [], "github_issues": []})
+                       + {path: ($r[0] | ltrimstr($pfx)),
+                          status: ($r[2] | or_default("unknown")),
+                          title: ($r[3] | or_default("untitled"))})
+                  | if ($id | startswith("PRD-")) then
+                      .id_registry.last_prd = ([.id_registry.last_prd // 0, ($id | counter("PRD-"))] | max)
+                    elif ($id | startswith("PRP-")) then
+                      .id_registry.last_prp = ([.id_registry.last_prp // 0, ($id | counter("PRP-"))] | max)
+                    else . end)' \
+             > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
+        rm -f "$work" "${work}.tmp"
+        return 1
+    fi
 
     local changed=true
     if [ "$(jq -S '.id_registry' "$work" 2>/dev/null)" = "$(jq -S '.id_registry' "$manifest" 2>/dev/null)" ]; then

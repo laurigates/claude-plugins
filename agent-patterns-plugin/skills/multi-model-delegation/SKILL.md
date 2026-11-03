@@ -9,6 +9,8 @@ modified: 2026-10-30
 reviewed: 2026-08-21
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (multi-model-delegation block) -->
+
 # Multi-Model Delegation
 
 Protocol for consulting *other* models — kimi, glm, gemini, gpt via the PAL

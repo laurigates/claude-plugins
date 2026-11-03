@@ -13,3 +13,5 @@ stay under `docs/`. Only finished plans move here.
 | `migration-commands-to-skills.md` | Completed — the `commands/*.md` → `skills/<name>/SKILL.md` consolidation is done (`find . -type d -name commands` returns 0). |
 | `github-workflows-plan.md` | Superseded (2026-06-29) — the reusable workflows shipped; see the in-file banner. |
 | `session-plugin-workflow.md` | Completed — Phases 0–3 landed; residual work is external/user-owned. |
+| `repo-maintenance-automation.md` | Superseded (#2840) — `scripts/check-docs-index.sh`, the `/docs-refresh` skill and `/marketplace-authoring` cover the ground; the scripts and skills it planned were never built. |
+| `git-repo-agent-plan.md` | Historical (#2840) — `git-repo-agent` was extracted to [`laurigates/git-repo-agent`](https://github.com/laurigates/git-repo-agent) (#1017); see the in-file banner. |

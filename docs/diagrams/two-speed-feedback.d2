@@ -28,10 +28,18 @@ fast: Fast loop — per-session · in context {
   feedback: feedback-session\nplugin signal →\nbug / enhancement / positive {
     style.fill: "#ffffff"
   }
+  tasksync: taskwarrior sync\nsession-linked tasks →\nannotate / modify / close {
+    style.fill: "#ffffff"
+  }
+  trackersync: blueprint tracker-sync\nundrained work orders →\nfeature tracker {
+    style.fill: "#ffffff"
+  }
 
   end -> wrap: if qualifies
   end -> distill: if qualifies
   end -> feedback: if qualifies
+  end -> tasksync: if qualifies
+  end -> trackersync: if qualifies
 }
 
 slow: Slow loop — weekly · autonomous {

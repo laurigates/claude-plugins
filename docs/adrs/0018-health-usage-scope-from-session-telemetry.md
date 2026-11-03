@@ -2,8 +2,8 @@
 id: ADR-0018
 date: 2026-06-16
 created: 2026-06-16
-modified: 2026-06-16
-status: Proposed
+modified: 2026-11-02
+status: Accepted
 deciders: claude-plugins team
 domain: architecture
 relates-to:
@@ -12,6 +12,8 @@ github-issues: []
 ---
 
 # ADR-0018: Usage-Telemetry Scope for `health-plugin`
+
+> **Accepted (2026-11-02):** in effect. `health-check --scope=usage` and `health-plugin/skills/health-check/scripts/check-usage.sh` implement this decision.
 
 ## Context
 

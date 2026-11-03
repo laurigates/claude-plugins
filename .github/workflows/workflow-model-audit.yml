@@ -138,6 +138,13 @@ jobs:
             echo "GITHUB_OUTPUT_EOF"
           } >> "$GITHUB_OUTPUT"
 
+      # The issue assertion after the transcript upload counts only issues
+      # created since this moment, so last month's report cannot satisfy it.
+      - name: Record the Claude step start time
+        id: start
+        if: steps.check_issue.outputs.exists == 'false'
+        run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Claude workflow-model audit
         if: steps.check_issue.outputs.exists == 'false'
         id: audit
@@ -379,3 +386,21 @@ jobs:
           path: ${{ steps.redact.outputs.path }}
           retention-days: 14
           if-no-files-found: warn
+
+      # The issue is this job's only output, and the SDK exits 0 when the
+      # `gh issue create` call is denied, so without this step a run that files
+      # nothing is green (#2731). `always()` still reports a Claude step that
+      # failed without filing; a skipped Claude step (an open report already
+      # exists) is not a missed deliverable.
+      - name: Assert the workflow-model audit issue was filed
+        if: always() && steps.audit.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SINCE: ${{ steps.start.outputs.epoch }}
+        run: |
+          if ! bash scripts/assert-issue-filed.sh \
+            --repo "$GITHUB_REPOSITORY" --label workflow-model-audit --since "$SINCE" \
+            --title-prefix 'Workflow model/effort audit:'; then
+            echo "::error title=Workflow-model audit filed no issue::No 'Workflow model/effort audit:' issue labelled workflow-model-audit appeared during this run. Read the uploaded claude-execution transcript for the denied tool calls."
+            exit 1
+          fi

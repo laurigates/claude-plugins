@@ -1,6 +1,7 @@
 ---
 id: ADR-0009
 status: Accepted
+domain: organization
 date: 2025-12-27
 created: 2025-12-27
 modified: 2026-06-18

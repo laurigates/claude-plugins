@@ -1,0 +1,49 @@
+{
+ "repo": "laurigates/claude-plugins",
+ "number": 2940,
+ "headRefName": "fix/skill-content-defects",
+ "body": "Synthetic fixture for #3373: two same-scope fixes that share only the files every fix touches by convention.",
+ "createdAt": "2026-10-07T11:38:29Z",
+ "lastEditedAt": null,
+ "author": {
+  "login": "laurigates",
+  "is_bot": false
+ },
+ "labels": [],
+ "commits": [
+  {
+   "oid": "1111111111111111111111111111111111111111",
+   "headline": "fix(hooks-plugin): guard a",
+   "authoredDate": "2026-10-07T11:21:14Z",
+   "parents": 1,
+   "files": [
+    "hooks-plugin/hooks/a.sh",
+    "hooks-plugin/hooks/test-a.sh",
+    "docs/changes/a.log",
+    "docs/changes/b.log"
+   ]
+  },
+  {
+   "oid": "2222222222222222222222222222222222222222",
+   "headline": "fix(hooks-plugin): guard b",
+   "authoredDate": "2026-10-07T11:23:51Z",
+   "parents": 1,
+   "files": [
+    "hooks-plugin/hooks/b.sh",
+    "hooks-plugin/hooks/test-b.sh",
+    "docs/changes/a.log",
+    "docs/changes/b.log"
+   ]
+  },
+  {
+   "oid": "3333333333333333333333333333333333333333",
+   "headline": "fix(session-plugin): unrelated fix",
+   "authoredDate": "2026-10-07T11:26:20Z",
+   "parents": 1,
+   "files": [
+    "session-plugin/skills/session-end/SKILL.md"
+   ]
+  }
+ ],
+ "squashMergeCommitMessage": "COMMIT_MESSAGES"
+}

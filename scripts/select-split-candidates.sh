@@ -21,7 +21,8 @@
 # `<plugin>/skills/**/SKILL.md` (case-insensitive) under each top-level
 # `*-plugin` directory of the current working directory. Explicit and --stdin
 # paths that do not exist are skipped, so a PR diff that deletes a skill is
-# harmless.
+# harmless. A skill carrying a `<!-- skill-size-exception: <pinning check> -->`
+# marker is skipped, as the gate skips its WARN (#2954).
 #
 # Output: one path per line on stdout, sorted by character count descending
 # (ties by path). A `<chars> chars  <path>` line per selected file goes to
@@ -43,6 +44,19 @@ read_threshold() {
   value=$(sed -n 's/^SKILL_SIZE_WARN_CHARS=\([0-9][0-9]*\)$/\1/p' "$gate")
   if [ -z "$value" ] || [ "$(printf '%s\n' "$value" | wc -l | tr -d ' ')" != "1" ]; then
     echo "select-split-candidates.sh: expected exactly one 'SKILL_SIZE_WARN_CHARS=<n>' line in $gate" >&2
+    exit 2
+  fi
+  printf '%s\n' "$value"
+}
+
+# The skill-size-exception marker regex (#2954), read from the gate's own
+# `SKILL_SIZE_EXCEPTION_RE='...'` line so a marked skill the gate exempts is
+# never selected for splitting.
+read_exception_re() {
+  local value
+  value=$(sed -n "s/^SKILL_SIZE_EXCEPTION_RE='\\(.*\\)'$/\\1/p" "$gate")
+  if [ -z "$value" ] || [ "$(printf '%s\n' "$value" | wc -l | tr -d ' ')" != "1" ]; then
+    echo "select-split-candidates.sh: expected exactly one \"SKILL_SIZE_EXCEPTION_RE='<regex>'\" line in $gate" >&2
     exit 2
   fi
   printf '%s\n' "$value"
@@ -74,6 +88,7 @@ done
 
 [ -n "$mode" ] || usage
 threshold=$(read_threshold)
+exception_re=$(read_exception_re)
 
 # Emit NUL-separated candidate paths for the selected mode.
 list_candidates() {
@@ -104,17 +119,23 @@ list_candidates() {
 }
 
 # Count exactly as check_skill_size() does: decoded UTF-8 characters,
-# surrogateescape so a malformed byte counts as one character.
+# surrogateescape so a malformed byte counts as one character. A skill whose
+# exception marker names a pinning check is skipped; an empty marker is not.
 list_candidates | python3 -c '
-import os, sys
+import os, re, sys
 threshold, limit = int(sys.argv[1]), int(sys.argv[2])
+exception_re = re.compile(sys.argv[3])
 seen, rows = set(), []
 for path in sys.stdin.buffer.read().decode("utf-8", "surrogateescape").split("\0"):
     path = os.path.normpath(path) if path else path
     if not path or path in seen or not os.path.isfile(path):
         continue
     seen.add(path)
-    chars = len(open(path, encoding="utf-8", errors="surrogateescape").read())
+    text = open(path, encoding="utf-8", errors="surrogateescape").read()
+    chars = len(text)
+    marker = exception_re.search(text)
+    if marker is not None and marker.group(1).strip():
+        continue
     if chars > threshold:
         rows.append((chars, path))
 rows.sort(key=lambda r: (-r[0], r[1]))
@@ -123,4 +144,4 @@ if limit:
 for chars, path in rows:
     print(f"{chars} chars  {path}", file=sys.stderr)
     print(path)
-' "$threshold" "$limit"
+' "$threshold" "$limit" "$exception_re"

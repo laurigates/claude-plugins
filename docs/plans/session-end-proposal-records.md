@@ -1,5 +1,8 @@
 # Unified proposal records for `session-plugin:session-end`
 
+> **Status:** proposed design, not yet implemented — tracked in
+> [#2360](https://github.com/laurigates/claude-plugins/issues/2360).
+
 ## 1. Decision summary
 
 Every pass emits one shared **proposal record**, but the record is a *preview and hand-off* format — not an automation gate. session-end's existing Step 3 `AskUserQuestion` becomes an **item-level** multiSelect over the merged record set, and each sub-skill skips its own item confirmation when handed a confirmed set. That single change is where the whole prompt reduction comes from (~10 → 1 on a heavy session); the vocabulary exists so five passes can share one preview line, one ordering, and one apply loop.

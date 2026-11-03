@@ -12,6 +12,15 @@ name: "Test: Adapters"
 # The smoke eval asserts the eval MACHINERY only (=== GATE === STATUS=PASS):
 # retrieval/token metrics are informational in CI, and the cutover thresholds
 # are never gated here (DESIGN §5.3/§5.6).
+#
+# A PR that changes SKILL.md files without touching adapters/** runs the narrow
+# `claude-env-sweep` job instead (#2726): adapters/tests/claude-env.test.ts
+# sweeps the skill corpus for CLAUDE_* variables the pi/OpenCode bindings do not
+# emulate, so the PR that introduces one is where it should fail. Workflow-level
+# `paths:` cannot target a single job, so the `changes` job diffs the PR and
+# gates both jobs: the full `test` job keeps its adapters/** + workflow-file
+# scope, and the sweep runs only when SKILL.md changed without either. A job
+# gated off by `if:` reports as skipped, which satisfies a required check.
 
 on:
   pull_request:
@@ -19,6 +28,7 @@ on:
     paths:
       - 'adapters/**'
       - '.github/workflows/test-adapters.yml'
+      - '**/SKILL.md'
   push:
     branches: [main]
     paths:
@@ -40,7 +50,47 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      adapters: ${{ steps.diff.outputs.adapters }}
+      skills: ${{ steps.diff.outputs.skills }}
+    steps:
+      # Depth 2 on a pull_request checks out the merge commit plus both of its
+      # parents, so HEAD^1..HEAD is exactly what the PR changes.
+      - name: Checkout repository
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Classify changed paths
+        id: diff
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            # push, schedule and workflow_dispatch keep running the full job.
+            echo "adapters=true" >> "$GITHUB_OUTPUT"
+            echo "skills=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files="$(git diff --name-only HEAD^1 HEAD)"
+          if grep -qE '^(adapters/|\.github/workflows/test-adapters\.yml$)' <<<"$files"; then
+            echo "adapters=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "adapters=false" >> "$GITHUB_OUTPUT"
+          fi
+          if grep -qE '(^|/)SKILL\.md$' <<<"$files"; then
+            echo "skills=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skills=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: changes
+    if: needs.changes.outputs.adapters == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -75,3 +125,27 @@ jobs:
           set -o pipefail
           bun eval/run-eval.ts | tee /tmp/adapters-eval.out
           grep -q '^=== GATE === STATUS=PASS$' /tmp/adapters-eval.out
+
+  # The full `test` job already runs this file through `bun test`, so the sweep
+  # runs only when SKILL.md changed and the full job is gated off (#2726).
+  claude-env-sweep:
+    needs: changes
+    if: needs.changes.outputs.skills == 'true' && needs.changes.outputs.adapters != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: adapters
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      # The test imports types from the pi and OpenCode adapter packages.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Claude variable sweep
+        run: bun test tests/claude-env.test.ts

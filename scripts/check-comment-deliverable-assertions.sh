@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Verify every Claude workflow step whose deliverable is a PR comment is
-# followed by a delivery assertion and an upload of its execution transcript.
+# Verify every Claude workflow step whose deliverable is a PR comment or a filed
+# issue is followed by a delivery assertion and an upload of its execution
+# transcript.
 #
 # Background (#2630 Rec 1, #2719). `claude-code-action` exits 0 when Claude's
 # tool calls are denied, so a step whose ONLY output is a PR comment can report
@@ -22,16 +23,27 @@
 #                                `steps.<id>.outputs.execution_file`, plus a later
 #                                actions/upload-artifact step
 #
+# Issue-filers are in scope too (#2731): a step whose `--allowedTools` grants
+# `Bash(gh issue create` files an issue as its deliverable, and the SDK exits 0
+# on a denied create just as it does on a denied comment. Each such step needs
+# the same `id:` and transcript upload, plus:
+#
+#   missing_issue_assertion      a LATER step in the same job that runs
+#                                scripts/assert-issue-filed.sh
+#
+# The match is on the literal grant: a `Bash(gh issue *)` wildcard step is not
+# one (research-radar.yml's liveness is scripts/check-audit-liveness.sh's
+# concern).
+#
 # Out of scope, and counted rather than silently dropped: TAG mode (no
-# `prompt:`), where the action creates its own tracking comment; steps with no
-# `--allowedTools` (nothing declared to check against); and issue-filers, whose
-# liveness is scripts/check-audit-liveness.sh's concern.
+# `prompt:`), where the action creates its own tracking comment; and steps with
+# no `--allowedTools` (nothing declared to check against).
 #
 # Usage:
 #   bash scripts/check-comment-deliverable-assertions.sh [--project-dir <path>] [workflow.yml ...]
 #
 # Exit codes:
-#   0 - every in-scope step carries both
+#   0 - every in-scope step carries its assertion and the upload
 #   1 - one or more in-scope steps are missing one
 #   2 - usage / environment error
 #
@@ -92,6 +104,8 @@ except ImportError:  # pragma: no cover - environment error, never a silent pass
 
 CLAUDE_ACTION = "anthropics/claude-code-action"
 ASSERT_SCRIPT = "scripts/assert-pr-comment-delivered.sh"
+ISSUE_ASSERT_SCRIPT = "scripts/assert-issue-filed.sh"
+ISSUE_GRANTS = ("Bash(gh issue create",)
 UPLOAD_ACTION = "actions/upload-artifact"
 COMMENT_GRANTS = (
     "Bash(gh pr comment",
@@ -141,6 +155,7 @@ def step_text(step):
 scanned = 0
 claude_steps = 0
 in_scope = 0
+issue_scope = 0
 skipped_tag = 0
 skipped_no_allowlist = 0
 issues = []
@@ -177,9 +192,14 @@ for path in workflow_files():
             if tools is None:
                 skipped_no_allowlist += 1
                 continue
-            if not any(t.startswith(g) for t in tools for g in COMMENT_GRANTS):
+            posts_comment = any(t.startswith(g) for t in tools for g in COMMENT_GRANTS)
+            files_issue = any(t.startswith(g) for t in tools for g in ISSUE_GRANTS)
+            if not (posts_comment or files_issue):
                 continue
-            in_scope += 1
+            if posts_comment:
+                in_scope += 1
+            if files_issue:
+                issue_scope += 1
             step_id = step.get("id")
             label = step_id if isinstance(step_id, str) else f"#{idx}"
             where = f"FILE={rel} JOB={job_id} STEP={label}"
@@ -187,9 +207,14 @@ for path in workflow_files():
             if not isinstance(step_id, str):
                 issues.append(
                     f"SEVERITY=ERROR TYPE=missing_step_id {where} "
-                    "MSG=a comment-posting Claude step needs an id so later steps can read its outcome and execution_file"
+                    "MSG=a comment-posting or issue-filing Claude step needs an id so later steps can read its outcome and execution_file"
                 )
-            if not any(ASSERT_SCRIPT in step_text(s) for s in later):
+            if files_issue and not any(ISSUE_ASSERT_SCRIPT in step_text(s) for s in later):
+                issues.append(
+                    f"SEVERITY=ERROR TYPE=missing_issue_assertion {where} "
+                    f"MSG=no later step runs {ISSUE_ASSERT_SCRIPT}, so a run that files no issue reports green"
+                )
+            if posts_comment and not any(ASSERT_SCRIPT in step_text(s) for s in later):
                 issues.append(
                     f"SEVERITY=ERROR TYPE=missing_delivery_assertion {where} "
                     f"MSG=no later step runs {ASSERT_SCRIPT}, so a run that posts nothing reports green"
@@ -208,6 +233,7 @@ print("=== COMMENT DELIVERABLE ASSERTIONS ===")
 print(f"WORKFLOWS_SCANNED={scanned}")
 print(f"CLAUDE_STEPS={claude_steps}")
 print(f"COMMENT_DELIVERABLE_STEPS={in_scope}")
+print(f"ISSUE_DELIVERABLE_STEPS={issue_scope}")
 print(f"SKIPPED_TAG_MODE={skipped_tag}")
 print(f"SKIPPED_NO_ALLOWLIST={skipped_no_allowlist}")
 print(f"SCANNED_EMPTY={'true' if scanned == 0 else 'false'}")

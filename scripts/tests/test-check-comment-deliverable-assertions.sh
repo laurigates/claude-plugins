@@ -15,10 +15,12 @@
 #   C. the same step with both → clean
 #   D. an assertion placed BEFORE the Claude step does not count
 #   E. tag mode (no prompt:) is out of scope — the action posts its own comment
-#   F. an issue-filer (only `gh issue create`) is out of scope
+#   F. an issue-filer (`gh issue create`) with no issue assertion → named (#2731)
 #   G. a comment-granting step with no id cannot be referenced → missing_step_id
 #   H. an upload not tied to the step's execution_file does not count
 #   I. an unknown argument exits 2 and scans nothing
+#   J. an issue-filer with assert-issue-filed.sh + transcript upload → clean
+#   K. the PR-comment assertion does not satisfy an issue-filer
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,6 +82,19 @@ UPLOAD_STEP='      - name: Upload Claude execution transcript
         with:
           name: transcript
           path: out.json'
+ISSUE_STEP='      - name: Claude audit
+        id: audit
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --model opus
+            --effort low
+            --allowedTools "Read,Bash(gh issue create *)"
+          prompt: |
+            File one issue.'
+ISSUE_ASSERT_STEP='      - name: Assert the issue was filed
+        if: always() && steps.audit.outcome != '"'"'skipped'"'"'
+        run: bash scripts/assert-issue-filed.sh --repo "$GITHUB_REPOSITORY" --label audit --since 0'
 HEAD='name: "Fixture: audit"
 on: { pull_request: {} }
 jobs:
@@ -94,6 +109,8 @@ assert "A: real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "A: STATUS=OK" "$(has_line "$OUT" 'STATUS=OK')"
 a_steps=$(sed -n 's/^COMMENT_DELIVERABLE_STEPS=//p' <<<"$OUT")
 assert "A: >= 2 comment-deliverable steps in scope (got '${a_steps:-none}')" "$([ "${a_steps:-0}" -ge 2 ] 2>/dev/null && echo true || echo false)"
+a_issue=$(sed -n 's/^ISSUE_DELIVERABLE_STEPS=//p' <<<"$OUT")
+assert "A: >= 3 issue-deliverable steps in scope (got '${a_issue:-none}')" "$([ "${a_issue:-0}" -ge 3 ] 2>/dev/null && echo true || echo false)"
 assert "A: tag-mode claude.yml counted as skipped, not scanned" "$([ "$(sed -n 's/^SKIPPED_TAG_MODE=//p' <<<"$OUT")" -ge 1 ] 2>/dev/null && echo true || echo false)"
 
 echo "=== TEST B: comment-granting step with no assertion and no upload ==="
@@ -144,22 +161,18 @@ assert "E: exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "E: SKIPPED_TAG_MODE=1" "$(has_line "$OUT" 'SKIPPED_TAG_MODE=1')"
 assert "E: nothing in scope" "$(has_line "$OUT" 'COMMENT_DELIVERABLE_STEPS=0')"
 
-echo "=== TEST F: an issue-filer is out of scope ==="
+echo "=== TEST F: an issue-filer with no issue assertion ==="
 fixture "$work/f" "$HEAD
-      - name: Claude audit
-        id: audit
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_args: >-
-            --model opus
-            --effort low
-            --allowedTools \"Read,Bash(gh issue create *)\"
-          prompt: |
-            File one issue."
+$ISSUE_STEP
+$REDACT_STEP
+$UPLOAD_STEP"
 run "$work/f"
-assert "F: exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
-assert "F: nothing in scope" "$(has_line "$OUT" 'COMMENT_DELIVERABLE_STEPS=0')"
-assert "F: the Claude step was seen" "$(has_line "$OUT" 'CLAUDE_STEPS=1')"
+assert "F: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "F: missing_issue_assertion reported" "$(has "$OUT" 'TYPE=missing_issue_assertion')"
+assert "F: names the workflow and step" "$(has "$OUT" 'FILE=.github/workflows/audit.yml JOB=audit STEP=audit')"
+assert "F: one issue-deliverable step in scope" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=1')"
+assert "F: not a comment-deliverable step" "$(has_line "$OUT" 'COMMENT_DELIVERABLE_STEPS=0')"
+assert "F: the upload still counts" "$(lacks "$OUT" 'TYPE=missing_transcript_upload')"
 
 echo "=== TEST G: a comment-granting step with no id ==="
 fixture "$work/g" "$HEAD
@@ -187,6 +200,27 @@ i_rc=$?
 assert "I: exits 2" "$([ "$i_rc" -eq 2 ] && echo true || echo false)"
 assert "I: names the argument" "$(has "$i_out" 'unknown argument: --strict')"
 assert "I: emits no report" "$(lacks "$i_out" 'WORKFLOWS_SCANNED=')"
+
+echo "=== TEST J: an issue-filer with the issue assertion and upload ==="
+fixture "$work/j" "$HEAD
+$ISSUE_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/j"
+assert "J: exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "J: STATUS=OK" "$(has_line "$OUT" 'STATUS=OK')"
+assert "J: still in scope (non-vacuous)" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=1')"
+
+echo "=== TEST K: the PR-comment assertion does not satisfy an issue-filer ==="
+fixture "$work/k" "$HEAD
+$ISSUE_STEP
+$ASSERT_STEP
+$REDACT_STEP
+$UPLOAD_STEP"
+run "$work/k"
+assert "K: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "K: missing_issue_assertion reported" "$(has "$OUT" 'TYPE=missing_issue_assertion')"
 
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"

@@ -20,32 +20,33 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0004](0004-marketplace-registry-model.md) | Marketplace Registry Model | Accepted | 2024-12 |
 | [0005](0005-blueprint-development-methodology.md) | Blueprint Development Methodology | Accepted | 2024-12 |
 | [0006](0006-project-standards-enforcement.md) | Project Standards Enforcement | Accepted | 2024-12 |
-| [0007](0007-namespace-based-command-organization.md) | Namespace-Based Command Organization | Accepted | 2024-12 |
+| [0007](0007-namespace-based-command-organization.md) | Namespace-Based Command Organization | Superseded by ADR-0026 | 2024-12 |
 | [0008](0008-semantic-versioning-with-manifest.md) | Semantic Versioning with Manifest | Accepted | 2024-12 |
 | [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
-| [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
+| [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Accepted | 2026-01 |
 | [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Accepted | 2026-01 |
 | [0012](0012-blog-plugin-for-project-documentation.md) | Blog Plugin for Project Documentation | Accepted | 2026-01 |
 | [0013](0013-project-and-blueprint-plugin-separation.md) | Project and Blueprint Plugin Separation | Accepted | 2026-01 |
-| [0014](0014-reusable-workflows-in-repository.md) | Reusable GitHub Workflows in Plugin Repository | Superseded | 2026-01 |
+| [0014](0014-reusable-workflows-in-repository.md) | Reusable GitHub Workflows in Plugin Repository | Superseded (moved to laurigates/.github, #908) | 2026-01 |
 | [0015](0015-agent-teams-adoption.md) | Adopt Agent Teams and Deprecate Manual Orchestration | Accepted | 2026-02 |
 | [0016](0016-deterministic-script-extraction-for-token-efficiency.md) | Extract Deterministic Skill Procedure into Structured-Output Scripts | Accepted | 2026-06 |
-| [0017](0017-hook-based-behavioral-cues-for-plugin-utilization.md) | Hook-Based Behavioral Cues for Multi-Plugin Utilization | Proposed | 2026-06 |
-| [0018](0018-health-usage-scope-from-session-telemetry.md) | Usage-Telemetry Scope for health-plugin | Proposed | 2026-06 |
+| [0017](0017-hook-based-behavioral-cues-for-plugin-utilization.md) | Hook-Based Behavioral Cues for Multi-Plugin Utilization | Accepted | 2026-06 |
+| [0018](0018-health-usage-scope-from-session-telemetry.md) | Usage-Telemetry Scope for health-plugin | Accepted | 2026-06 |
 | [0019](0019-skill-dry-via-library-templating-rejected.md) | Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY | Accepted | 2026-06 |
-| [0020](0020-blueprint-autonomy-levels.md) | Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model | Proposed | 2026-07 |
-| [0021](0021-open-knowledge-format-mapping-not-adopted.md) | Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence | Proposed | 2026-07 |
+| [0020](0020-blueprint-autonomy-levels.md) | Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model | Accepted | 2026-07 |
+| [0021](0021-open-knowledge-format-mapping-not-adopted.md) | Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence | Accepted | 2026-07 |
 | [0022](0022-adapter-over-export-for-foreign-harnesses.md) | Adapter over Export — Runtime Skill Discovery for Foreign Harnesses | Accepted | 2026-07 |
 | [0023](0023-adr-required-sections-narrowed.md) | ADR Required Sections Narrowed to Context, Decision, Consequences | Accepted | 2026-09 |
 | [0024](0024-blueprint-work-order-model-invocable.md) | Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable (partially supersedes 0020) | Accepted | 2026-10 |
 | [0025](0025-visibility-gated-public-leak-nudge.md) | Gate Public-Repo Leaks at the Write, Keyed on the Destination's Visibility | Accepted | 2026-10 |
+| [0026](0026-commands-migrated-to-skills.md) | Commands Migrated to Skills (supersedes 0007, partially 0003) | Accepted | 2026-02 |
 
 ## Categories
 
 ### Core Architecture
 - ADR-0001: Plugin-Based Architecture
 - ADR-0002: Domain-Driven Plugin Organization
-- ADR-0003: Auto-Discovery Component Pattern
+- ADR-0003: Auto-Discovery Component Pattern (commands/ parts superseded by ADR-0026)
 - ADR-0004: Marketplace Registry Model
 
 ### Development Methodology
@@ -53,10 +54,11 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0006: Project Standards Enforcement
 
 ### Organization & Versioning
-- ADR-0007: Namespace-Based Command Organization
+- ADR-0007: Namespace-Based Command Organization (Superseded by ADR-0026)
 - ADR-0008: Semantic Versioning with Manifest
 - ADR-0009: Task-Focused Agent Consolidation
 - ADR-0013: Project and Blueprint Plugin Separation
+- ADR-0026: Commands Migrated to Skills
 
 ### Documentation & Automation
 - ADR-0010: Proactive Document Detection
@@ -83,16 +85,28 @@ This repository was created by migrating Claude Code plugin configurations from 
 
 ## ADR Format
 
-Each ADR follows the [Michael Nygard format](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
+Each ADR starts with YAML frontmatter and carries three required sections. The
+single source of truth is `blueprint-plugin/schemas/adr.schema.json`, which the
+blueprint `validate-frontmatter.sh` hook checks on every write;
+[ADR-0023](0023-adr-required-sections-narrowed.md) set the required sections.
 
 ```markdown
+---
+id: ADR-NNNN
+title: "ADR-NNNN: Title"
+status: Proposed        # Draft | Proposed | Accepted | Rejected | Withdrawn | Superseded | Deprecated
+created: YYYY-MM-DD
+modified: YYYY-MM-DD
+deciders: claude-plugins team
+domain: architecture    # kebab-case category used for conflict detection
+supersedes: ADR-NNNN    # optional; the target carries the reciprocal superseded-by
+relates-to:
+  - ADR-NNNN
+github-issues:
+  - NNNN
+---
+
 # ADR-NNNN: Title
-
-## Status
-[Proposed | Accepted | Deprecated | Superseded by ADR-NNNN]
-
-## Date
-YYYY-MM
 
 ## Context
 The issue motivating this decision and any relevant context.
@@ -103,6 +117,11 @@ The change being proposed or made.
 ## Consequences
 What becomes easier or harder as a result of this decision.
 ```
+
+`## Options Considered` and `## Related ADRs` are recommended where the
+deliberation or the links exist, but not required. A superseded ADR sets
+`status: Superseded` and `superseded-by: ADR-NNNN`, and gets a one-line banner
+under its title naming the replacement.
 
 ## Related ADRs
 
@@ -117,6 +136,6 @@ The [laurigates/dotfiles](https://github.com/laurigates/dotfiles) repository con
 ## Adding New ADRs
 
 1. Create a new file with the next sequential number: `NNNN-kebab-case-title.md`
-2. Follow the ADR format template above
+2. Follow the template in [ADR Format](#adr-format)
 3. Update the index table in this README
 4. Consider cross-references to related decisions

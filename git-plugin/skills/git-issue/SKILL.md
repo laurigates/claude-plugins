@@ -10,6 +10,8 @@ disable-model-invocation: true
 name: git-issue
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (git-issue blocks, #3061) -->
+
 ## When to Use This Skill
 
 | Use this skill when... | Use X instead when... |

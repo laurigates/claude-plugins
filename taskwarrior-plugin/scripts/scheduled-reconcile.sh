@@ -128,14 +128,19 @@ case "$closed" in ''|*[!0-9]*) closed="" ;; esac
 # --- Per-project breakdown + closeable/needs-review split from TASK lines -----
 # A stale TASK line: `TASK ... project=<p> ... verdict=<v> method=<m>`.
 # closeable = the bounded verdicts; needs_review = stale but outside the set.
+# verdict=review (a text-ref-only link, #3126) is not stale: reconcile.sh never
+# closes it and leaves it out of STALE_COUNT, so it is counted on its own and
+# never drives a notification.
 declare -A proj_stale
 closeable=0
 needs_review=0
+review=0
 breakdown=""
 while IFS= read -r line; do
   case "$line" in TASK\ *) ;; *) continue ;; esac
   v=$(printf '%s\n' "$line" | grep -o 'verdict=[^ ]*' | cut -d= -f2)
   [ "$v" = "live" ] && continue
+  if [ "$v" = "review" ]; then review=$((review + 1)); continue; fi
   p=$(printf '%s\n' "$line" | grep -o 'project=[^ ]*' | cut -d= -f2)
   [ -z "$p" ] && p="-"
   proj_stale[$p]=$(( ${proj_stale[$p]:-0} + 1 ))
@@ -150,6 +155,7 @@ for p in "${!proj_stale[@]}"; do
 done
 echo "CLOSEABLE_COUNT=${closeable}"
 echo "NEEDS_REVIEW_COUNT=${needs_review}"
+echo "REVIEW_COUNT=${review}"
 echo "PROJECT_BREAKDOWN=${breakdown}"
 
 # --- Decide whether there is anything to surface -----------------------------

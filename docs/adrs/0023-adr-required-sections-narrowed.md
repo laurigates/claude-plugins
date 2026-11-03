@@ -2,7 +2,7 @@
 id: ADR-0023
 date: 2026-09-20
 created: 2026-09-20
-modified: 2026-09-20
+modified: 2026-11-02
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
@@ -173,20 +173,21 @@ The complexity is real and the benefit is redundant with Option 2's mitigation.
   `Options Considered` without a warning, and the template is only a
   convention.
 - **There is no enforced ceiling.** `Options Considered` and `Related ADRs` are
-  now recommended by convention only. `/blueprint:adr-validate` checks
-  relationships, reference integrity, numbering and index drift — it has never
-  checked sections — and the repo carries no five-section authoring template
-  (`docs/adrs/README.md` §ADR Format documents the three-section Nygard shape).
-  So this ADR removes the floor's lower two rungs without any surface picking
-  them up. Building that ceiling — a section check in `blueprint-adr-validate`,
-  or a real template — is deliberately left as separate work, because adding a
-  new gate is a different decision from narrowing this one.
+  not checked anywhere. `/blueprint:adr-validate` checks relationships,
+  reference integrity, numbering and index drift — it has never checked
+  sections. When this ADR landed the repo also had no five-section authoring
+  template, so it removed the floor's lower two rungs without any surface
+  picking them up. #2702 chose the template over a gate: blueprint-plugin now
+  ships `templates/adr-template.md` with all five sections, and
+  `/blueprint:derive-plans` writes new ADRs from it. New ADRs get the two
+  sections when they are written; no validator warns when one is left out,
+  and existing ADRs are unaffected. (Amended 2026-11-02, #2702.)
 
 ### Mitigations
 
 | Issue | Mitigation |
 |-------|------------|
-| Weaker pressure on new ADRs | Unmitigated by design, and stated plainly above rather than papered over: no surface enforces the two optional sections today. This ADR models the full five-section shape as the convention to imitate |
+| Weaker pressure on new ADRs | Mitigated by construction, not by a gate (#2702): `blueprint-plugin/templates/adr-template.md` carries all five sections and `/blueprint:derive-plans` writes from it. No check enforces the two optional sections. This ADR also models the full five-section shape |
 | Two-surface standard | The schema's `sections` description says which sections it polices and which it deliberately does not, so a reader of the schema alone is not misled |
 | Stale prose | Fixed in the same commit: `blueprint-plugin/README.md`'s schema table and WARN rationale, `blueprint-plugin/docs/hook-design-decisions.md`'s section table (which listed all five as "P0 - Blocking" — wrong on both counts), and `docs/adrs/README.md`'s index and category lists |
 

@@ -85,12 +85,13 @@ cp "$REPO_ROOT/scripts/lib/extract-md-elements.py" "$root/scripts/lib/"
 
 PLUGIN="fixture-plugin"
 
-# The license/author fields every manifest and marketplace entry must carry
-# (#2698/#2699). The writers below take the metadata as a JSON fragment so the
-# license-gate cases at the end can drop or corrupt one field on one surface
-# while everything else stays byte-identical to the clean fixture.
+# The license/author/repository fields every manifest and marketplace entry
+# must carry (#2698/#2699/#2772). The writers below take the metadata as a JSON
+# fragment so the license-gate cases at the end can drop or corrupt one field on
+# one surface while everything else stays byte-identical to the clean fixture.
 CLEAN_META=',
   "author": {"name": "Fixture Author"},
+  "repository": "https://github.com/example/fixture-marketplace",
   "license": "MIT"'
 
 # write_marketplace <entry-meta-fragment>
@@ -463,15 +464,29 @@ run_license_check() {
 # count_lines <haystack> <ERE> → number of matching lines (0 when none).
 count_lines() { grep -cE "$2" <<<"$1" || true; }
 
+FIXTURE_REPO='"repository": "https://github.com/example/fixture-marketplace"'
 NO_LICENSE_META=',
-  "author": {"name": "Fixture Author"}'
+  "author": {"name": "Fixture Author"},
+  '"$FIXTURE_REPO"
 NO_AUTHOR_META=',
+  '"$FIXTURE_REPO"',
   "license": "MIT"'
 APACHE_META=',
   "author": {"name": "Fixture Author"},
+  '"$FIXTURE_REPO"',
   "license": "Apache-2.0"'
 STRING_AUTHOR_META=',
   "author": "Fixture Author",
+  '"$FIXTURE_REPO"',
+  "license": "MIT"'
+# #2772: `repository` is required on both surfaces; `homepage` is deliberately
+# not (Lauri, 2026-11-01: option 2). A non-string repository counts as missing.
+NO_REPOSITORY_META=',
+  "author": {"name": "Fixture Author"},
+  "license": "MIT"'
+OBJECT_REPOSITORY_META=',
+  "author": {"name": "Fixture Author"},
+  "repository": {"url": "https://github.com/example/fixture-marketplace"},
   "license": "MIT"'
 
 # --- Guard integrity: the clean fixture passes the gate in both modes -------
@@ -546,6 +561,33 @@ assert_contains "entry without license is a ❌ issue" \
 run_license_check; out_e_lo="$OUT"; rc_e_lo="$RC"
 assert_eq "license-only: entry without license exits 1" "$rc_e_lo" "1"
 assert_contains "license-only: entry without license → MISSING_LICENSE=1" "$out_e_lo" "MISSING_LICENSE=1"
+write_marketplace "$CLEAN_META"
+
+# --- (e) #2772: plugin.json / entry without `repository` → ❌ ---------------
+write_manifest "$NO_REPOSITORY_META"
+run_check; out_g="$OUT"; rc_g="$RC"
+assert_eq "manifest without repository exits 1" "$rc_g" "1"
+assert_contains "manifest without repository is a ❌ issue" \
+  "$out_g" "❌ ${PLUGIN}: plugin.json missing 'repository'"
+run_license_check; out_g_lo="$OUT"; rc_g_lo="$RC"
+assert_eq "license-only: manifest without repository exits 1" "$rc_g_lo" "1"
+assert_contains "license-only: MISSING_REPOSITORY=1" "$out_g_lo" "MISSING_REPOSITORY=1"
+assert_contains "license-only: names the repository defect row" \
+  "$out_g_lo" "SEVERITY=ERROR TYPE=missing_repository SURFACE=plugin.json PLUGIN=${PLUGIN}"
+write_manifest "$OBJECT_REPOSITORY_META"
+run_license_check; out_g2_lo="$OUT"; rc_g2_lo="$RC"
+assert_eq "license-only: object repository (schema wants a string) exits 1" "$rc_g2_lo" "1"
+assert_contains "license-only: object repository counts as MISSING_REPOSITORY=1" "$out_g2_lo" "MISSING_REPOSITORY=1"
+write_manifest "$CLEAN_META"
+
+write_marketplace "$NO_REPOSITORY_META"
+run_check; out_h="$OUT"; rc_h="$RC"
+assert_eq "entry without repository exits 1" "$rc_h" "1"
+assert_contains "entry without repository is a ❌ issue" \
+  "$out_h" "❌ ${PLUGIN}: marketplace.json entry missing 'repository'"
+run_license_check; out_h_lo="$OUT"
+assert_contains "license-only: entry without repository names the entry surface" \
+  "$out_h_lo" "TYPE=missing_repository SURFACE=marketplace.json PLUGIN=${PLUGIN}"
 
 # --- (d) restoring the clean fixture returns both modes to green ------------
 write_marketplace "$CLEAN_META"

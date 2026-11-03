@@ -110,12 +110,13 @@ is not on this list: the `generate-catalog` pre-commit hook rewrites it, or run
        "name": "Lauri Gates"
      },
      "license": "MIT",
+     "repository": "https://github.com/laurigates/claude-plugins",
      "keywords": ["keyword1", "keyword2"]
    }
    ```
-   `license` (from the allowlist `["MIT"]`) and `author.name` are required here and in the marketplace entry below; `bash scripts/plugin-compliance-check.sh --license-only` fails the PR without them. The repo-root MIT `LICENSE` covers every plugin, so no per-plugin `LICENSE` file is needed.
+   `license` (from the allowlist `["MIT"]`), `author.name` and `repository` are required here and in the marketplace entry below (`homepage` is deliberately omitted, #2772); `bash scripts/plugin-compliance-check.sh --license-only` fails the PR without them. The repo-root MIT `LICENSE` covers every plugin, so no per-plugin `LICENSE` file is needed.
 3. Create `README.md` with plugin documentation
-4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array), carrying the same `author` and `license` as the plugin's `plugin.json`:
+4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array), carrying the same `author`, `license` and `repository` as the plugin's `plugin.json`:
    ```json
    {
      "name": "new-plugin",
@@ -126,6 +127,7 @@ is not on this list: the `generate-catalog` pre-commit hook rewrites it, or run
        "name": "Lauri Gates"
      },
      "license": "MIT",
+     "repository": "https://github.com/laurigates/claude-plugins",
      "keywords": ["keyword1", "keyword2"],
      "category": "category-name"
    }

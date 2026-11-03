@@ -31,6 +31,7 @@ set -euo pipefail
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
 
 SUITE="$(cd "$(dirname "$0")" && pwd)/test-bash-antipatterns.sh"
+SAFETY_SUITE="$(cd "$(dirname "$0")" && pwd)/test-bash-safety.sh"
 PASS=0
 FAIL=0
 
@@ -58,12 +59,16 @@ neutral=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
 [ -n "$neutral" ] && [ -d "$neutral" ] || { echo "FATAL: invalid neutral dir" >&2; exit 1; }
 trap 'rm -rf "$REAL" "$neutral"' EXIT
 
-(
-  cd "$neutral"
-  export GIT_DIR="$REAL/.git"
-  export GIT_WORK_TREE="$REAL"
-  bash "$SUITE" >/dev/null 2>&1
-) || true
+# test-bash-safety.sh carries the git push -u sandbox repo that moved out of
+# test-bash-antipatterns.sh with its detector (#2788), so both suites run here.
+for suite in "$SUITE" "$SAFETY_SUITE"; do
+  (
+    cd "$neutral"
+    export GIT_DIR="$REAL/.git"
+    export GIT_WORK_TREE="$REAL"
+    bash "$suite" >/dev/null 2>&1
+  ) || true
+done
 
 config_after=$(cat "$REAL/.git/config")
 

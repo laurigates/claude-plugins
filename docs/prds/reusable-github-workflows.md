@@ -1,15 +1,18 @@
 ---
 id: PRD-002
 created: 2026-01-25
-modified: 2026-01-25
-status: Draft
+modified: 2026-11-02
+status: Deprecated
 version: "1.0"
 relates-to:
   - ADR-0014
-github-issues: []
+github-issues:
+  - 908
 ---
 
 # Reusable GitHub Action Workflows - Product Requirements Document
+
+> **Superseded (recorded 2026-11-02):** the reusable workflows moved to [`laurigates/.github`](https://github.com/laurigates/.github) in [#908](https://github.com/laurigates/claude-plugins/pull/908), which also superseded [ADR-0014](../adrs/0014-reusable-workflows-in-repository.md). Requirements for those workflows live there now. The PRD schema has no `Superseded` status, so the frontmatter reads `Deprecated`. The haiku model choice below is historical and contradicts the current Opus-by-default workflow policy (`.claude/rules/workflow-model-effort.md`).
 
 ## Executive Summary
 

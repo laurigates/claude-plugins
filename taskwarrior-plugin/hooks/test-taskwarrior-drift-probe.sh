@@ -278,6 +278,61 @@ check "opt-out: no stale_claims finding" "no" "$got"
 check "opt-out: stale_claims script never runs" "skipped" \
     "$([ -f "$CLAIMS_RAN" ] && echo ran || echo skipped)"
 
+# --- Test 10: drift count is UDA-backed only (#3126) --------------------------
+# Runs the probe against the REAL reconcile.sh (task/gh stubbed) so the count it
+# reads is the one reconcile.sh actually computes. A task citing a merged PR only
+# in its description text is verdict=review and must not drive the finding; a
+# ghpr UDA on the same merged PR must.
+REAL_RECONCILE="${SCRIPT_DIR}/../skills/task-reconcile/scripts/reconcile.sh"
+BIN10="${WORK}/bin10"
+mkdir -p "$BIN10"
+cat > "${BIN10}/task" <<'SH'
+#!/usr/bin/env bash
+for a in "$@"; do [ "$a" = "+BLOCKING" ] && { echo "[]"; exit 0; }; done
+for a in "$@"; do [ "$a" = "export" ] && { cat "$TW10_FIXTURE"; exit 0; }; done
+exit 0
+SH
+cat > "${BIN10}/gh" <<'SH'
+#!/usr/bin/env bash
+[ "$1 $2" = "auth status" ] && exit 0
+[ "$1" = "pr" ] && { echo MERGED; exit 0; }
+exit 0
+SH
+chmod +x "${BIN10}/task" "${BIN10}/gh"
+
+run_probe_real() {
+    rm -rf "${SIGNALS:?}"/* 2>/dev/null || true
+    rm -f "$CACHE_FILE"
+    printf '{"session_id":"testsess","cwd":"%s"}' "$PROJ" \
+        | PATH="${BIN10}:${PATH}" \
+          HOME="$FAKE_HOME" \
+          CLAUDE_DRIFT_SIGNALS_DIR="$SIGNALS" \
+          CLAUDE_TASKWARRIOR_DRIFT_CACHE_DIR="$CACHE" \
+          TW_DRIFT_RECONCILE_SCRIPT="$REAL_RECONCILE" \
+          TW_DRIFT_RESOLVE_SCRIPT="$FAKE_RESOLVE" \
+          TW_DRIFT_ENSURE_UDAS="$FAKE_UDAS" \
+          TW_DRIFT_STALE_CLAIMS_SCRIPT="$FAKE_STALE_CLAIMS" \
+          FAKE_UDAS_MISSING=0 \
+          bash "$PROBE" >/dev/null 2>&1
+    local sig="${SIGNALS}/testsess/taskwarrior-plugin.json"
+    [ -f "$sig" ] || { echo "__NO_SIGNAL_FILE__"; return; }
+    jq -r '[.findings[].kind] | join(" ")' "$sig" 2>/dev/null
+}
+
+TW10_FIXTURE="${WORK}/fixture10-textref.json"
+printf '%s' '[{"id":1,"uuid":"aaaaaaaa-0000-0000-0000-000000000001","project":"testproj","description":"Add the section to REFERENCE.md; promoted in PR #2479"}]' \
+    > "$TW10_FIXTURE"
+out=$(TW10_FIXTURE="$TW10_FIXTURE" run_probe_real)
+case " $out " in *" stale_linked_tasks "*) got=yes ;; *) got=no ;; esac
+check "text-ref-only task on merged PR does NOT drive stale_linked_tasks" "no" "$got"
+
+TW10_FIXTURE="${WORK}/fixture10-uda.json"
+printf '%s' '[{"id":1,"uuid":"aaaaaaaa-0000-0000-0000-000000000002","project":"testproj","ghpr":"2479.000000","description":"Merge the promotion PR"}]' \
+    > "$TW10_FIXTURE"
+out=$(TW10_FIXTURE="$TW10_FIXTURE" run_probe_real)
+case " $out " in *" stale_linked_tasks "*) got=yes ;; *) got=no ;; esac
+check "ghpr UDA task on merged PR drives stale_linked_tasks" "yes" "$got"
+
 # --- Summary -----------------------------------------------------------------
 echo "=== TASKWARRIOR DRIFT PROBE TEST ==="
 echo "PASS=${pass}"

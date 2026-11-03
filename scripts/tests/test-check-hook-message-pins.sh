@@ -397,7 +397,7 @@ else
   printf '%s\n' "$OUT" | sed 's/^/    /'
 fi
 # #2727: every message in these two suites is pinned by tag or by declaration.
-for s in hooks-plugin/hooks/test-bash-antipatterns.sh hooks-plugin/hooks/test-secret-protection.sh; do
+for s in hooks-plugin/hooks/test-bash-antipatterns.sh hooks-plugin/hooks/test-bash-safety.sh hooks-plugin/hooks/test-secret-protection.sh; do
   has "$OUT" "SUITE=$s HOOK=" \
     && fail "(m) $s still has UNCHECKED messages: $(grep -F "SUITE=$s HOOK=" <<<"$OUT")" \
     || pass "(m) $s has no UNCHECKED messages (#2727)"

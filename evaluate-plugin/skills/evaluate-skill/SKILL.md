@@ -12,6 +12,8 @@ compatibility: claude-code
 reviewed: 2026-03-04
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (evaluate-skill block) -->
+
 # /evaluate:skill
 
 Evaluate a skill's effectiveness by running behavioral test cases and grading the results against assertions.
