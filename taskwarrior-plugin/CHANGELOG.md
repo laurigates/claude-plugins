@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.15.1...taskwarrior-plugin-v1.16.0) (2026-11-03)
+
+
+### Features
+
+* **taskwarrior-plugin:** add task-triage for evidence-backed queue triage ([#3389](https://github.com/laurigates/claude-plugins/issues/3389)) ([8151415](https://github.com/laurigates/claude-plugins/commit/81514158a3f314c497d69fac07b0476c20cd6760))
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.15.0...taskwarrior-plugin-v1.15.1) (2026-11-03)
 
 
