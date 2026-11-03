@@ -99,8 +99,13 @@ this for `merge=union`; custom drivers behave the same).
    serializer settings the tool uses (indent, key order, trailing newline,
    non-ASCII escaping). Verify by round-tripping the committed file: parse and
    re-serialize must produce identical bytes, or every merge adds a diff.
-9. **Use the oldest interpreter the clones have.** The macOS Xcode `python3` is
-   3.9: no `match`, and `datetime.fromisoformat` rejects a trailing `Z`.
+9. **Know which interpreter git will run.** A bare `python3` in the driver
+   command resolves through the PATH git inherits at merge time, which can
+   differ from your shell's. A terminal with mise or Homebrew gets that
+   Python; a git GUI launched from Finder, or another bare `/usr/bin:/bin`
+   environment, gets the macOS Xcode `python3` (3.9). Either support the
+   oldest one that can be reached, or check the version at startup and exit 1
+   with a message, so the merge falls back to a normal conflict.
 
 A minimal skeleton with the contract in place (fill in `merge()`):
 
