@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.1...code-quality-plugin-v1.28.2) (2026-11-03)
+
+
+### Documentation
+
+* **code-quality-plugin:** spread a reproducer's threads across partitions in blocking diagnosis ([#3381](https://github.com/laurigates/claude-plugins/issues/3381)) ([e741a79](https://github.com/laurigates/claude-plugins/commit/e741a795c9e3833f69a6c014836d3b225ca84044))
+
 ## [1.28.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.0...code-quality-plugin-v1.28.1) (2026-10-29)
 
 
