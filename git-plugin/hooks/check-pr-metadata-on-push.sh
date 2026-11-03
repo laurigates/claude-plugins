@@ -241,6 +241,10 @@ if [ -n "$BASE" ]; then
     RECENT_COMMITS=$(git -C "$CWD" log --format='  - %s' "${BASE}..${PUSH_REF}" 2>/dev/null | head -20 || true)
 fi
 
+# Full SHA of the commit being pushed, so a delegated agent that cannot take
+# the bypass can hand it back to its caller verbatim (issue #3331).
+PUSH_SHA=$(git -C "$CWD" rev-parse "$PUSH_REF" 2>/dev/null || true)
+
 # Truncate body for display (first 5 non-empty lines)
 PR_BODY_PREVIEW=""
 if [ -n "$PR_BODY" ]; then
@@ -275,4 +279,6 @@ Timestamps (why a bare re-run won't bypass this check):
 To bypass: edit the PR title or body so it reflects the new commit, THEN push.
 Editing the PR bumps its updatedAt past your commit's author time, which the
 hook reads as 'metadata reconciled' and lets the push through on the next attempt.
-Re-running the push without editing the PR fires the same block again."
+Re-running the push without editing the PR fires the same block again.
+
+If you are a delegated agent without authority to edit this PR's title/body, do not retry and do not edit the PR: report PR #${PR_NUMBER} and commit ${PUSH_SHA:-(unknown)} to your caller."

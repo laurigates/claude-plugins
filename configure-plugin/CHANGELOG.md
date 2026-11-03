@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.0...configure-plugin-v1.42.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **configure-plugin:** unescape quotes in context find commands ([#3392](https://github.com/laurigates/claude-plugins/issues/3392)) ([5d950aa](https://github.com/laurigates/claude-plugins/commit/5d950aa11ebede9e168c1bad0f5b14008aac334c))
+
 ## [1.42.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.41.1...configure-plugin-v1.42.0) (2026-11-02)
 
 

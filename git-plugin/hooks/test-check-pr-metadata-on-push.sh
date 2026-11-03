@@ -469,6 +469,15 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     "To bypass: edit the PR title or body so it reflects the new commit, THEN push." \
     "$MSG_PUSH_JSON"
 
+# A delegated fixer with no authority over the PR's title/body cannot take the
+# bypass, so the message must tell it to hand back instead of retrying, naming
+# the PR number and the local commit it would have pushed (issue #3331).
+FEATURE_SHA=$(git -C "$TMPDIR" rev-parse refs/heads/feature)
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_stderr_contains "block message tells a delegated agent to hand back (#3331)" \
+    "If you are a delegated agent without authority to edit this PR's title/body, do not retry and do not edit the PR: report PR #42 and commit $FEATURE_SHA to your caller." \
+    "$MSG_PUSH_JSON"
+
 # ── Parsed trigger: a mention is not a push (issue #2737) ──────────────────
 # The trigger used to be `(^|\s|&&\s*|;\s*)git\s+push\b` over the raw command,
 # so a quoted argument, a heredoc body or a commit message that merely MENTIONS
