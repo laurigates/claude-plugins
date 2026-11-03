@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.68.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.1...git-plugin-v2.68.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** point the stacked-chain CI wait at merge-chain.sh ([#3388](https://github.com/laurigates/claude-plugins/issues/3388)) ([b614216](https://github.com/laurigates/claude-plugins/commit/b614216d5f1face79ea0949f9b312569761352a6))
+
 ## [2.68.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.0...git-plugin-v2.68.1) (2026-11-02)
 
 
