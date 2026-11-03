@@ -22,6 +22,16 @@
 # union-merging the row into the rule, outside any table.
 docs/regression-ledger.md merge=union
 
+# --- Custom structural merge drivers ----------------------------------------
+# The blueprint manifest is rewritten by sync-ids/autorun on every run, so two
+# branches that each ran a task conflict on timestamps and run counters. The
+# blueprint-plugin driver merges the parsed JSON (later run wins, registry
+# entries union, a genuine disagreement still conflicts). Its command lives in
+# git config, registered per clone by blueprint-plugin's
+# hooks/register-merge-driver.sh; an unregistered clone falls back to the
+# ordinary line merge. See blueprint-plugin/README.md § Manifest Merge Driver.
+docs/blueprint/manifest.json merge=blueprint-manifest
+
 # --- Generated files (GitHub linguist) -------------------------------------
 # Collapse in PR diffs and exclude from language stats. These are build output
 # or tool-owned — reviewers should not wade through their churn, and a conflict
