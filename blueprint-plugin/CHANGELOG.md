@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.50.0...blueprint-plugin-v3.51.0) (2026-11-03)
+
+
+### Features
+
+* **blueprint-plugin:** add a structural git merge driver for manifest.json ([#3393](https://github.com/laurigates/claude-plugins/issues/3393)) ([6a129dc](https://github.com/laurigates/claude-plugins/commit/6a129dc86145aca6e1ba36c15ae4ea5a1ab59886))
+
 ## [3.50.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.49.0...blueprint-plugin-v3.50.0) (2026-11-03)
 
 
