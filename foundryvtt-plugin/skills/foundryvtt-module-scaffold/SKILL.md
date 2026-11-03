@@ -1,6 +1,6 @@
 ---
 created: 2026-06-26
-modified: 2026-11-02
+modified: 2026-11-03
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
@@ -186,6 +186,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 | Prove the finishing-pass gate still fires | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-manifest-invariants.sh` |
 | Prove the app variant passes biome at any module-id length | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-app-biome-format.sh` |
 | Test the fleet-drift checker | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-fleet-drift.sh` |
+| Prove every variant keeps biome off its Markdown | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-biome-markdown-off.sh` |
 
 ## Notes & deferrals
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.6.0...foundryvtt-plugin-v1.6.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **foundryvtt-plugin:** disable biome markdown in generated modules ([#3390](https://github.com/laurigates/claude-plugins/issues/3390)) ([af256b0](https://github.com/laurigates/claude-plugins/commit/af256b0c677d77f0aa7b900466e281a12709e68c))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.5.0...foundryvtt-plugin-v1.6.0) (2026-11-03)
 
 

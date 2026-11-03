@@ -20,6 +20,10 @@ toolchain decision. The `app` variant adds `src/app.ts` + `templates/app.hbs`;
   `$schema` from `node_modules`, and the CI lint job runs `bun run lint` after
   `bun install`, so a Renovate biome bump changes the only copy and CI lints
   with the bumped version.
+- `biome.json` turns biome's Markdown formatter and linter off. Biome 2.6 enabled
+  them by default; with `files.includes: ["**"]` they reach `CLAUDE.md` and want
+  its Layout table padded to a width that depends on the module id, and they
+  mangle YAML frontmatter (#3374).
 - Action/tool versions in the generated workflows are current as of scaffolding;
   the account-wide gitops Renovate App reads the emitted `renovate.json` and
   bumps them. No repo-local `renovate.yml` is emitted: a second runner kept a

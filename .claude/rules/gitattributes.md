@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-23
+modified: 2026-11-03
 reviewed: 2026-09-23
 paths:
   - "**/.gitattributes"
@@ -8,19 +8,20 @@ paths:
 # .gitattributes Conventions
 
 A repo's `.gitattributes` is a path→attribute map git consults for **merge**,
-**diff**, **checkout**, and **archive** behavior. This repo uses it for three
+**diff**, **checkout**, and **archive** behavior. This repo uses it for four
 things; the reusable cross-repo automation is
 [`configure-plugin:configure-gitattributes`](../../configure-plugin/skills/configure-gitattributes/SKILL.md),
 and the conflict-resolution side is `docs/regression-ledger.md` plus
 `scripts/resolve-additive-conflicts.py`.
 
-## The three uses (and what each is safe for)
+## The four uses (and what each is safe for)
 
 | Attribute | Effect | Safe for | Never for |
 |-----------|--------|----------|-----------|
 | `merge=union` | Built-in driver; concatenates both sides' additions, no markers | **Append-only files where every logical entry is exactly one line** (the regression ledger table) | Code, JSON, multi-line-entry files, anything that gets *edited* not just appended |
 | `text=auto eol=lf` | Normalize line endings to LF on commit/checkout | Any repo with shell scripts/hooks (CRLF silently breaks a shebang) | — (safe globally; no-op on an all-LF tree) |
 | `linguist-generated` | Collapse in GitHub PR diffs + drop from language stats | Build output, tool-owned files (changelogs, lockfiles, rendered diagrams, compiled prompts) | — (display-only; changes **no** merge behavior, so safe even where `merge=union` is wrong) |
+| `merge=<custom>` | Runs a program that merges the file's structure; the command lives in per-clone git config | Tool-rewritten structured files whose conflicts are mechanical: `docs/blueprint/manifest.json` → `merge=blueprint-manifest` ([blueprint-plugin README](../../blueprint-plugin/README.md#manifest-merge-driver-sessionstart)) | Files with no registration path — an unregistered clone silently falls back to the line merge |
 
 ## `merge=union` — the one-line-per-entry test
 

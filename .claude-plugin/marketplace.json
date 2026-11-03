@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.56.0",
+      "version": "2.56.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -411,7 +411,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.68.3",
+      "version": "2.68.4",
       "author": {
         "name": "Lauri Gates"
       },
