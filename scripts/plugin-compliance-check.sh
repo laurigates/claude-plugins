@@ -6,7 +6,7 @@ set -euo pipefail
 # Usage: ./scripts/plugin-compliance-check.sh [--license-only] [plugin1 plugin2 ...]
 # If no plugins are named, auto-detects all *-plugin directories
 #
-# --license-only (#2699): run ONLY the license/author metadata predicates over
+# --license-only (#2699): run ONLY the license/author/repository (#2772) metadata predicates over
 # each plugin.json and its marketplace.json entry, print the structured
 # === LICENSE === block, and exit 1 on any finding. This is the mode CI gates
 # on: the full run is advisory in plugin-pr-checks.yml (`|| true`, posted as a
@@ -81,18 +81,22 @@ entries_checked=0
 missing_license=0
 disallowed_license=0
 missing_author=0
+missing_repository=0
 
 # check_license_fields <plugin> <surface> <label> <json>
 #   surface: plugin.json | marketplace.json (the structured SURFACE= value)
 #   label:   prefix for the human-readable ❌ line
 # Every manifest and every marketplace entry must declare a `license` from
-# ALLOWED_LICENSES and an `author.name`. Both manifest schemas define `license`
-# as an SPDX string and `author` as an object with a required `name`, so a
-# non-string license or a bare-string author counts as missing. Each defect is
-# a blocking ❌ issue plus a structured row; returns 2 on any defect, else 0.
+# ALLOWED_LICENSES, an `author.name`, and a `repository` (#2772). Both manifest
+# schemas define `license` as an SPDX string, `author` as an object with a
+# required `name`, and `repository` as a string, so a non-string license or
+# repository, or a bare-string author, counts as missing. `homepage` is
+# deliberately not required: for a single-repo marketplace it would repeat the
+# repository URL (decision recorded on #2772, 2026-11-01). Each defect is a
+# blocking ❌ issue plus a structured row; returns 2 on any defect, else 0.
 check_license_fields() {
   local plugin="$1" surface="$2" label="$3" json="$4"
-  local license author_name allowed a status=0 is_allowed=false
+  local license author_name repository allowed a status=0 is_allowed=false
   allowed=$(IFS=,; echo "${ALLOWED_LICENSES[*]}")
 
   if [ "$surface" = "plugin.json" ]; then
@@ -103,6 +107,7 @@ check_license_fields() {
 
   license=$(jq -r '(.license | strings) // ""' <<<"$json" 2>/dev/null || echo "")
   author_name=$(jq -r '(.author | objects | .name | strings) // ""' <<<"$json" 2>/dev/null || echo "")
+  repository=$(jq -r '(.repository | strings) // ""' <<<"$json" 2>/dev/null || echo "")
 
   for a in "${ALLOWED_LICENSES[@]}"; do
     if [ "$license" = "$a" ]; then
@@ -129,6 +134,13 @@ check_license_fields() {
     status=2
   fi
 
+  if [ -z "$repository" ]; then
+    issues+=("❌ ${plugin}: ${label} missing 'repository'")
+    license_rows+=("  - SEVERITY=ERROR TYPE=missing_repository SURFACE=${surface} PLUGIN=${plugin}")
+    missing_repository=$((missing_repository + 1))
+    status=2
+  fi
+
   return "$status"
 }
 
@@ -146,6 +158,7 @@ emit_license_report() {
   echo "MISSING_LICENSE=${missing_license}"
   echo "DISALLOWED_LICENSE=${disallowed_license}"
   echo "MISSING_AUTHOR=${missing_author}"
+  echo "MISSING_REPOSITORY=${missing_repository}"
   echo "STATUS=${status}"
   echo "ISSUE_COUNT=${#license_rows[@]}"
   if [ ${#license_rows[@]} -gt 0 ]; then
@@ -2536,8 +2549,16 @@ check_skill_when_to_use() {
 # (the skill-splitter workflow's candidate selector) reads
 # SKILL_SIZE_WARN_CHARS from this exact `NAME=<digits>` line, so the splitter
 # processes the skills this gate warns about. Keep the assignment on one line.
+#
+# Exception marker (#2954): a SKILL.md whose body a check, test or rule pins in
+# place carries `<!-- skill-size-exception: <pinning check> -->`. The WARN band
+# is skipped for it (the ERROR ceiling still applies). The marker must name the
+# pinning check, so an empty or whitespace-only name keeps the WARN and says why.
+# scripts/select-split-candidates.sh applies the same regex, so the splitter
+# skips exactly the skills this gate exempts.
 SKILL_SIZE_WARN_CHARS=10000
 SKILL_SIZE_ERROR_CHARS=26000
+SKILL_SIZE_EXCEPTION_RE='<!--[ \t]*skill-size-exception:[ \t]*([^\n]*?)[ \t]*-->'
 check_skill_size() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -2553,17 +2574,29 @@ check_skill_size() {
     local skill_name
     skill_name=$(basename "$(dirname "$skill_file")")
 
-    local char_count est_tokens
+    local char_count est_tokens size_marker
     # Decoded UTF-8 characters, locale-independent (see the note above).
     # surrogateescape keeps a malformed byte as one character instead of raising.
-    char_count=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()))' "$skill_file")
+    # Second field: the exception marker's state — none, valid, or empty.
+    read -r char_count size_marker < <(python3 -c '
+import re, sys
+text = open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()
+m = re.search(sys.argv[2], text)
+print(len(text), "none" if m is None else ("valid" if m.group(1).strip() else "empty"))
+' "$skill_file" "$SKILL_SIZE_EXCEPTION_RE")
     est_tokens=$(( char_count / 4 ))
 
     if [ "$char_count" -gt "$SKILL_SIZE_ERROR_CHARS" ]; then
       issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_ERROR_CHARS} ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
       has_errors=true
     elif [ "$char_count" -gt "$SKILL_SIZE_WARN_CHARS" ]; then
-      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — consider extracting to REFERENCE.md or scripts/ (ceiling: ${SKILL_SIZE_ERROR_CHARS} chars / ~6500 tokens)")
+      if [ "$size_marker" = "valid" ]; then
+        continue
+      elif [ "$size_marker" = "empty" ]; then
+        recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — its skill-size-exception marker names no pinning check, so it does not exempt the skill (#2954)")
+      else
+        recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — consider extracting to REFERENCE.md or scripts/ (ceiling: ${SKILL_SIZE_ERROR_CHARS} chars / ~6500 tokens)")
+      fi
       has_warnings=true
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)

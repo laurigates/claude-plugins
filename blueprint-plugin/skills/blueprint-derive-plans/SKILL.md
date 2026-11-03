@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-06-18
+modified: 2026-11-02
 reviewed: 2026-05-29
 description: Derive PRDs, ADRs, PRPs from git history, docs, and codebase. Use when onboarding a project to blueprint, generating a PRD or ADRs retroactively, or extracting features from conventional commits.
 args: "[--quick] [--since DATE]"
@@ -135,7 +135,10 @@ For each document type, use templates and patterns from [REFERENCE.md](REFERENCE
    - Mark sections with confidence scores
 
 2. **Generate ADRs** as `docs/adrs/{NNNN}-{title}.md` (one per decision)
-   - Use ADR template from REFERENCE.md
+   - Start from the five-section template
+     `${CLAUDE_SKILL_DIR}/../../templates/adr-template.md` (Context, Decision,
+     Consequences, Options Considered, Related ADRs), filled as described in
+     REFERENCE.md § ADR Template
    - Include git evidence (commit SHA, date, files changed)
    - Mark with confidence score
    - **Conflict & supersede check**: after writing the ADRs, run
@@ -145,7 +148,8 @@ For each document type, use templates and patterns from [REFERENCE.md](REFERENCE
 
 3. **Create ADR index** at `docs/adrs/README.md`
    - Table of all ADRs with status and dates
-   - Link to MADR template for new ADRs
+   - Point new ADRs at blueprint-plugin's `templates/adr-template.md`
+     (the five-section template), not MADR
 
 4. **Generate PRPs** as `docs/prps/{feature}.md` (one per future work item)
    - Use PRP template from REFERENCE.md

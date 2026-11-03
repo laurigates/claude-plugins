@@ -7,6 +7,8 @@ modified: 2026-11-02
 reviewed: 2026-06-24
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (session-end blocks) -->
+
 # session-end
 
 One survey, then the reversible work runs immediately and the

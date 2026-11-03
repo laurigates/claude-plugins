@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-10-10
+modified: 2026-11-02
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -28,6 +28,8 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 > **Characters, not bytes** (issue [#2135](https://github.com/laurigates/claude-plugins/issues/2135)). `wc -c` counts **bytes**, and a bare `wc -m` counts characters only under a UTF-8 locale — under `C`/`POSIX` it silently falls back to bytes. Every non-ASCII character this repo uses heavily (em-dash `—`, arrows `→`, box-drawing) is 2–3 bytes, so a byte gate tightens the budget by encoding overhead alone, unevenly across skills: `parallel-agent-dispatch` measured 26,024 bytes vs 25,850 characters — an ERROR on 174 bytes of UTF-8 overhead from 87 non-ASCII characters. `check_skill_size()` therefore counts with `python3` (`len(open(f, encoding="utf-8").read())`), which is locale-independent by construction. Use the same method when checking a body by hand; `LC_ALL=C.UTF-8 wc -m` also works where that locale is guaranteed present.
 
 `REFERENCE.md` has no size limit — it is a supporting file loaded on demand.
+
+**Pinned bodies** (issue [#2954](https://github.com/laurigates/claude-plugins/issues/2954)). When a check, test or rule pins text in a body so it cannot move to a sidecar, add `<!-- skill-size-exception: <pinning check> -->` to the SKILL.md. `check_skill_size()` then skips the WARN and `scripts/select-split-candidates.sh` skips the skill; the ERROR ceiling still applies. The marker must name the check (an empty name keeps the WARN), and it comes out when the pin moves.
 
 > **Why not gate on tokens directly?** Tokens are the real cost, but counting them needs Claude's tokenizer (the `count_tokens` API = network + per-file calls), too heavy for a pre-commit/CI lint. Characters track tokens tightly at near-`wc` cost. Lines are kept only as a human reference (they map to scroll length and to `head -N` partial reads), not as the gate.
 

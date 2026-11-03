@@ -40,6 +40,7 @@ an ERROR, never a squash: a failed fetch must not pass as a decision.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import re
 import subprocess
@@ -54,6 +55,13 @@ OVERRIDE_LABELS = ("merge:squash", "merge:rebase")
 # checked and the PR squashes.
 MAX_FILE_COMMITS = 50
 CORRECTION_TYPES = frozenset({"fix", "style", "chore", "refactor", "test"})
+
+# Files every fix touches by convention (#3373): the regression ledger and a
+# plugin's top-level README. Rule 8 leaves them, and any merge=union path from
+# .gitattributes, out of its overlap count, or two independent same-scope fixes
+# share half their files and read as a fixup.
+CONVENTION_FILE = re.compile(r"^(docs/regression-ledger\.md|[^/]+/README\.md)$")
+UNION_ATTR = re.compile(r"(^|\s)merge=union(\s|$)")
 
 CONVENTIONAL = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?!?: \S")
 AUTOSQUASH = re.compile(r"^(fixup|squash|amend)! ")
@@ -108,8 +116,27 @@ def conventional(headline: str) -> tuple[str, str] | None:
 FilesFor = Callable[[list[str]], dict[str, list[str]]]
 
 
+def union_paths(gitattributes: str) -> list[str]:
+    """Patterns that .gitattributes marks merge=union (append-only files)."""
+    return [
+        line.split()[0]
+        for line in gitattributes.splitlines()
+        if line.strip()
+        and not line.lstrip().startswith("#")
+        and UNION_ATTR.search(line)
+    ]
+
+
+def is_convention_file(path: str, unions: list[str]) -> bool:
+    return bool(CONVENTION_FILE.match(path)) or any(
+        fnmatch.fnmatch(path, u.lstrip("/")) for u in unions
+    )
+
+
 def in_pr_correction(
-    commits: list[dict], files_by_oid: dict[str, list[str]]
+    commits: list[dict],
+    files_by_oid: dict[str, list[str]],
+    unions: list[str] | None = None,
 ) -> tuple[dict, dict] | None:
     """(correction, the earlier commit it corrects) for the first in-PR correction.
 
@@ -119,10 +146,15 @@ def in_pr_correction(
       (b) it is a `fix` sharing its scope with earlier commits that already
           changed at least half of its files: a fix to code that is not on
           main yet, which would land as a phantom changelog line.
+    Convention files (is_convention_file) count in neither (a) nor (b).
     """
     earlier: list[tuple[dict, set[str], str]] = []
     for c in commits:
-        files = set(files_by_oid.get(c["oid"], []))
+        files = {
+            f
+            for f in files_by_oid.get(c["oid"], [])
+            if not is_convention_file(f, unions or [])
+        }
         kind = conventional(c["headline"])
         if earlier and kind and files:
             seen = set().union(*(f for _, f, _ in earlier))
@@ -203,7 +235,9 @@ def decide(pr: dict, files_for: FilesFor) -> Decision:
             "too_many_commits",
             f"{len(commits)} commits; file overlap not checked past {MAX_FILE_COMMITS}",
         )
-    hit = in_pr_correction(commits, files_for([c["oid"] for c in commits]))
+    hit = in_pr_correction(
+        commits, files_for([c["oid"] for c in commits]), pr.get("unionPaths", [])
+    )
     if hit:
         fix, target = hit
         return Decision(
@@ -434,6 +468,20 @@ def fetch(repo: str, number: int) -> dict:
     }
 
 
+def fetch_union_paths(repo: str) -> list[str]:
+    """merge=union patterns from the repo's .gitattributes; none if it has none."""
+    try:
+        text = gh(
+            "api",
+            f"repos/{repo}/contents/.gitattributes",
+            "-H",
+            "Accept: application/vnd.github.raw",
+        )
+    except RuntimeError:
+        return []
+    return union_paths(text)
+
+
 def commit_files(repo: str, oid: str) -> list[str]:
     return json.loads(
         gh("api", f"repos/{repo}/commits/{oid}", "--jq", "[.files[].filename]")
@@ -468,6 +516,7 @@ def main(argv: list[str]) -> int:
         else:
             repo, number = resolve(a.repo, a.pr)
             pr = fetch(repo, number)
+            pr["unionPaths"] = fetch_union_paths(repo)
             files_for = partial(fetch_files, repo)  # type: ignore[assignment]
         if not pr.get("commits"):
             print(

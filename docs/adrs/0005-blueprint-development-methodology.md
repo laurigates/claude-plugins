@@ -2,10 +2,13 @@
 id: ADR-0005
 status: Accepted
 created: 2026-01-09
-modified: 2026-04-08
+modified: 2026-11-02
+domain: methodology
 ---
 
 # ADR-0005: Blueprint Development Methodology
+
+> **Amended by [ADR-0011](0011-blueprint-state-in-docs-directory.md)**: blueprint state moved from `blueprints/` / `.claude/blueprints/` to `docs/blueprint/` (manifest at `docs/blueprint/manifest.json`), beside `docs/prds/`, `docs/adrs/` and `docs/prps/`. The component table below is historical: the commands it lists became skills ([ADR-0026](0026-commands-migrated-to-skills.md)), and the `requirements-documentation` agent was deleted by [ADR-0009](0009-task-focused-agent-consolidation.md).
 
 ## Status
 

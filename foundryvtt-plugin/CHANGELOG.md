@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.5.0...foundryvtt-plugin-v1.6.0) (2026-11-03)
+
+
+### Features
+
+* **foundryvtt-plugin:** add fleet-drift checker for foundryvtt-module-scaffold ([bee0f80](https://github.com/laurigates/claude-plugins/commit/bee0f80ff5bae0fcb09ea338532c1733c2f9bbb4)), closes [#2761](https://github.com/laurigates/claude-plugins/issues/2761)
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.4.0...foundryvtt-plugin-v1.5.0) (2026-11-02)
 
 

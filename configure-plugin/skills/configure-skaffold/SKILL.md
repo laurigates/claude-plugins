@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-11-03
 reviewed: 2026-04-29
 description: "Skaffold for Kubernetes: port forwarding, dotenvx hooks, API version. Use when fixing 0.0.0.0 binding, adding secret generation hooks, or creating skaffold.yaml."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -26,11 +26,11 @@ Check and configure Skaffold against project standards.
 ## Context
 
 - K8s/Helm directories: !`find . -maxdepth 1 -type d \( -name 'k8s' -o -name 'helm' \)`
-- Skaffold config: !`find . -maxdepth 1 -name \'skaffold.yaml\'`
+- Skaffold config: !`find . -maxdepth 1 -name 'skaffold.yaml'`
 - Skaffold API version: !`find . -maxdepth 1 -name 'skaffold.yaml' -exec grep -m1 apiVersion {} +`
 - Port forward config: !`find . -maxdepth 1 -name 'skaffold.yaml' -exec grep -m1 address {} +`
 - Profiles defined: !`find . -maxdepth 1 -name 'skaffold.yaml' -exec grep -m10 'name:' {} +`
-- Generate-secrets script: !`find . -maxdepth 1 -name \'scripts/generate-secrets.sh\'`
+- Generate-secrets script: !`find . -maxdepth 2 -path './scripts/generate-secrets.sh'`
 - Dotenvx available: !`dotenvx --version`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 

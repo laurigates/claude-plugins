@@ -13,6 +13,8 @@
 #   - enabled:false always wins over auto_run:true
 #   - on-change/on-demand schedules are never runner-due
 #   - a run killed mid-sweep (SIGTERM) leaves no manifest work copy (#3169)
+#   - the batched sweep builds the same id_registry as the per-document
+#     registration did, with a jq call count independent of doc count (#3169)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -256,15 +258,15 @@ rm -rf "$sb"
 # repo the sweep outlives it and the harness kills the run. The work copy
 # (manifest.json.autorun.<pid>) must not survive the kill.
 #
-# Deterministic: a PATH-stubbed jq parks inside the per-document registration
-# call (the only jq call carrying `--arg id`) until a release file appears, so
+# Deterministic: a PATH-stubbed jq parks inside the batched registration call
+# (the only jq call carrying `--arg pfx`) until a release file appears, so
 # the run is provably mid-sweep when the signal lands — no timing sleeps.
 real_jq=$(command -v jq)
 stub_dir=$(make_sandbox)
 cat > "$stub_dir/jq" <<'EOF'
 #!/usr/bin/env bash
 for a in "$@"; do
-    if [ "$a" = "id" ]; then
+    if [ "$a" = "pfx" ]; then
         : > "$STUB_MARK"
         i=0
         while [ ! -f "$STUB_RELEASE" ] && [ "$i" -lt 200 ]; do
@@ -314,7 +316,7 @@ run_killed_sweep() {
     pid=$!
     set +m
     if ! wait_for_file "$sb/mark"; then
-        notok "K($label): sweep never reached the per-document jq call"
+        notok "K($label): sweep never reached the registration jq call"
         : > "$sb/release"
         wait "$pid" 2>/dev/null
         rm -rf "$sb"
@@ -350,6 +352,93 @@ run_killed_sweep() {
 run_killed_sweep group group
 run_killed_sweep parent parent
 rm -rf "$stub_dir"
+
+# ---- Test L: batched sweep builds the per-document id_registry (#3169) ----
+# The sweep reads every document's frontmatter in one awk pass and registers
+# them in one jq call. Pin the registry it must produce, field for field, on
+# a fixture covering each per-document rule the old loop applied: first
+# `key:` line wins, `title:` falls back to the first `# ` heading, then
+# "untitled"; missing status -> "unknown"; missing created -> run time; no id
+# or no frontmatter -> skipped; an existing entry keeps created/relates_to/
+# github_issues; last_prd/last_prp take the max numeric suffix.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true daily null
+mf="$sb/docs/blueprint/manifest.json"
+"$real_jq" '. + {id_registry: {last_prd: 4, last_prp: 0, github_issues: {"7": "PRD-0003"},
+    documents: {"PRD-0003": {created: "2020-01-01", relates_to: ["ADR-0001"], github_issues: [7],
+                             path: "old/path.md", status: "Draft", title: "Old title"}}}}' \
+    "$mf" > "$mf.new" && mv "$mf.new" "$mf"
+mkdir -p "$sb/docs/prds" "$sb/docs/adrs" "$sb/docs/prps" "$sb/docs/blueprint/work-orders"
+printf -- '---\nid: PRD-0003\nstatus: Accepted\ntitle: Search\ncreated: 2026-01-02\n---\n\n# Heading ignored\n' > "$sb/docs/prds/0003-search.md"
+printf -- '---\nid: PRD-0010\nstatus: Draft\ncreated: 2026-02-03\n---\n\n# Ten from heading\n' > "$sb/docs/prds/0010 spaced name.md"
+printf -- '---\nid:    PRP-0007\ntitle: Tab\there "quoted" \\back\nstatus: Ready\r\ncreated: 2026-03-04\n---\n' > "$sb/docs/prps/0007-prp.md"
+printf -- '---\nid: PRP-0002\ncreated: 2026-03-05\n---\nno heading here\n' > "$sb/docs/prps/0002-prp.md"
+printf -- '---\nid: ADR-0001\nid: ADR-9999\nstatus: Accepted\n---\n# First heading\n# Second heading\n' > "$sb/docs/adrs/0001-adr.md"
+printf -- '---\nid: WO-001\nstatus: open\ntitle:\n---\n# WO heading\n' > "$sb/docs/blueprint/work-orders/001-wo.md"
+printf -- '---\nstatus: Accepted\ntitle: No id\n---\n' > "$sb/docs/adrs/0002-noid.md"
+printf -- '# No frontmatter\nid: ADR-0003\n' > "$sb/docs/adrs/0003-nofm.md"
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "L: sweep registered the six id-bearing docs" "STATE=ran DOCS=6 CHANGED=true" "$out"
+expected='{
+  "github_issues": {"7": "PRD-0003"},
+  "last_prd": 10,
+  "last_prp": 7,
+  "documents": {
+    "PRD-0003": {"created": "2020-01-01", "relates_to": ["ADR-0001"], "github_issues": [7],
+                 "path": "docs/prds/0003-search.md", "status": "Accepted", "title": "Search"},
+    "PRD-0010": {"created": "2026-02-03", "relates_to": [], "github_issues": [],
+                 "path": "docs/prds/0010 spaced name.md", "status": "Draft", "title": "Ten from heading"},
+    "PRP-0007": {"created": "2026-03-04", "relates_to": [], "github_issues": [],
+                 "path": "docs/prps/0007-prp.md", "status": "Ready", "title": "Tab\there \"quoted\" \\back"},
+    "PRP-0002": {"created": "2026-03-05", "relates_to": [], "github_issues": [],
+                 "path": "docs/prps/0002-prp.md", "status": "unknown", "title": "untitled"},
+    "ADR-0001": {"created": "RUNTIME", "relates_to": [], "github_issues": [],
+                 "path": "docs/adrs/0001-adr.md", "status": "Accepted", "title": "First heading"},
+    "WO-001": {"created": "RUNTIME", "relates_to": [], "github_issues": [],
+               "path": "docs/blueprint/work-orders/001-wo.md", "status": "open", "title": "WO heading"}
+  }
+}'
+actual=$("$real_jq" -S '.id_registry
+    | .documents |= with_entries(if (.value.created | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")) then .value.created = "RUNTIME" else . end)' "$mf")
+if [ "$actual" = "$(printf '%s' "$expected" | "$real_jq" -S .)" ]; then
+    ok "L: id_registry matches the per-document registration semantics"
+else
+    notok "L: id_registry differs: $(diff <(printf '%s' "$expected" | "$real_jq" -S .) <(printf '%s\n' "$actual") | head -20)"
+fi
+rm -rf "$sb"
+
+# ---- Test M: jq calls do not grow with the number of documents (#3169) ----
+# 88 docs at several forks each took 6.3 s, past the probe's 5 s hook budget.
+# Count jq invocations for a 2-doc and a 40-doc tree; they must be equal.
+count_dir=$(make_sandbox)
+cat > "$count_dir/jq" <<'EOF'
+#!/usr/bin/env bash
+echo x >> "$JQ_COUNT_LOG"
+exec "$REAL_JQ" "$@"
+EOF
+chmod +x "$count_dir/jq"
+jq_calls_for() {
+    # jq_calls_for <doc_count> — prints the jq invocation count of one run
+    local n="$1" sb i
+    sb=$(make_sandbox)
+    write_manifest "$sb" 1 true daily null
+    i=1
+    while [ "$i" -le "$n" ]; do
+        write_doc "$sb" "docs/adrs/$(printf '%04d' "$i")-doc.md" "ADR-$(printf '%04d' "$i")"
+        i=$((i + 1))
+    done
+    : > "$sb/count.log"
+    PATH="$count_dir:$PATH" REAL_JQ="$real_jq" JQ_COUNT_LOG="$sb/count.log" \
+        bash "$AUTORUN" --project-dir "$sb" >/dev/null 2>&1
+    wc -l < "$sb/count.log" | tr -d ' '
+    rm -rf "$sb"
+}
+calls_small=$(jq_calls_for 2)
+calls_large=$(jq_calls_for 40)
+[ "$calls_small" = "$calls_large" ] && [ "$calls_small" -gt 0 ] \
+    && ok "M: jq calls independent of doc count ($calls_small for 2 and 40 docs)" \
+    || notok "M: jq calls grow with doc count (2 docs: $calls_small, 40 docs: $calls_large)"
+rm -rf "$count_dir"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

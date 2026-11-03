@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.15.0...tools-plugin-v2.15.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **adapters:** mirror the session-end offer text [#3371](https://github.com/laurigates/claude-plugins/issues/3371) changed in the pi nudge ([fbaf9b8](https://github.com/laurigates/claude-plugins/commit/fbaf9b82c553bfc705ffb5536cdc65ec5be5a29b))
+
 ## [2.15.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.14.0...tools-plugin-v2.15.0) (2026-10-24)
 
 

@@ -138,6 +138,29 @@ else
     notok "auto-sync-id-registry.sh invoked directly accepts an absolute file_path (got $(registered_path "$proj" ADR-104))"
 fi
 
+# An index README documents the ADR format with a fenced frontmatter example.
+# The awk frontmatter scan read that example as the README's own frontmatter
+# and registered a junk ADR-NNNN entry on every README edit.
+cat > "$proj/docs/adrs/README.md" <<'EOF'
+# Architecture Decision Records
+
+## ADR Format
+
+```markdown
+---
+id: ADR-NNNN
+title: "ADR-NNNN: Title"
+status: Proposed        # Draft | Proposed | Accepted
+---
+```
+EOF
+run_hook "$HOOK" "$proj" "$(write_payload Edit "$proj/docs/adrs/README.md")"
+if [ "$(registered_path "$proj" ADR-NNNN)" = "NONE" ]; then
+    ok "an index README's fenced frontmatter example is not registered as a document"
+else
+    notok "an index README's fenced frontmatter example is not registered (got $(registered_path "$proj" ADR-NNNN))"
+fi
+
 # A body-only edit to a registered document must not rewrite the manifest:
 # jq re-serialises the whole file, which reformats a hand-edited manifest.
 python3 -c '

@@ -187,6 +187,8 @@ if [ "${CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE:-0}" != "1" ] \
             --project-dir "$probe_dir" --limit "$stale_limit" 2>/dev/null || true)
         gh_avail=$(printf '%s\n' "$rc_out" | grep -m1 '^GH_AVAILABLE=' | cut -d= -f2-)
         if [ "$gh_avail" = "true" ]; then
+            # STALE_COUNT counts UDA-backed verdicts only: a text-ref-only task
+            # is verdict=review in REVIEW_COUNT, so it never drives this line (#3126).
             stale=$(printf '%s\n' "$rc_out" | grep -m1 '^STALE_COUNT=' | cut -d= -f2-)
             stale="${stale:-0}"
             printf 'EPOCH=%s\nSTALE=%s\n' "$now" "$stale" > "$cache_file" 2>/dev/null || true

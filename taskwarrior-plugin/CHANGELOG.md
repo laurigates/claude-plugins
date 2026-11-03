@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.15.0...taskwarrior-plugin-v1.15.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** report text-ref-only reconcile matches as review ([011e9dd](https://github.com/laurigates/claude-plugins/commit/011e9dd1a2174cb0d10d8ac654bc78c05c42c989)), closes [#3126](https://github.com/laurigates/claude-plugins/issues/3126)
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.9...taskwarrior-plugin-v1.15.0) (2026-10-18)
 
 

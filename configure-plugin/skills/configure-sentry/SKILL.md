@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-11-03
 reviewed: 2026-07-05
 description: "Sentry error tracking setup. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload for frontend, Next.js, Node, or Python."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -28,9 +28,9 @@ Check and configure Sentry error tracking integration against project standards.
 
 ## Context
 
-- Package.json: !`find . -maxdepth 1 -name \'package.json\'`
-- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
-- Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\'`
+- Package.json: !`find . -maxdepth 1 -name 'package.json'`
+- Pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- Requirements.txt: !`find . -maxdepth 1 -name 'requirements.txt'`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 - Sentry in package.json: !`find . -maxdepth 1 -name 'package.json' -exec grep -o '"@sentry/[^"]*"' {} +`
 - Sentry in pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep 'sentry' {} +`

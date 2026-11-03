@@ -1,12 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "foundryvtt-plugin",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, and open the gitops adoption PR",
   "author": {
     "name": "Lauri Gates"
   },
   "license": "MIT",
+  "repository": "https://github.com/laurigates/claude-plugins",
   "keywords": [
     "foundryvtt",
     "foundry-vtt",
