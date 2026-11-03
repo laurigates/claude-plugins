@@ -111,6 +111,7 @@ reviewed head as first parent, so the push is a fast-forward and needs no force:
 set -e
 T=$(git -C <dir> write-tree)
 C=$(git commit-tree "$T" -p "$child_head" -p "$main" -m "Merge origin/main into <child>")
+REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ); echo "C=$C REVIEW_TS=$REVIEW_TS"
 git push origin "${C}:refs/heads/<child>"
 ```
 
@@ -119,8 +120,14 @@ modifier and sends a mangled refspec. The full table is in
 [stacked-chain-push.md](stacked-chain-push.md).
 
 Then run `scripts/merge-chain.sh --prs <n>` as the CI-registration bullet of
-[stacked-chain-push.md](stacked-chain-push.md) shows, with `--review-ts` taken
-after the gates passed and its `HEAD_SHA=` equal to `$C`. It waits for CI, runs the
+[stacked-chain-push.md](stacked-chain-push.md) shows, with `--review-ts` set to
+the `REVIEW_TS=` that the commit-tree block in this section printed and its `HEAD_SHA=` equal to `$C`. That
+time is taken after `git commit-tree` and before the push on purpose. `$C` has
+two parents, but its committer is you, not `noreply@github.com`, so the script's
+exemption for GitHub's own update-branch merges does not cover it: a
+`--review-ts` older than `$C` stops the run with `GUARD_LATE_COMMIT` on your own
+merge commit, and one taken after the push would let a commit pushed in between
+through unreviewed. It waits for CI, runs the
 guard in [serial-merge-chain.md](serial-merge-chain.md), and merges pinned to the
 pushed head as this hand command does, resolving the merge method itself:
 

@@ -72,13 +72,17 @@ claude-plugins #1979→#1987):
   passed while a second `lint` run for the same head was still registering
   (ForumViriumHelsinki/.github-private #13, #15, #19).
 
-  Record the review time when the **Check** bullet passes, before the
-  force-push: a rebase gives every commit a new committer date, so a time taken
-  earlier makes the script refuse the child's own commits. After the push, run
+  Take `--review-ts` from the **Check** bullet of this section, which records it once the
+  check passes and before the force-push. A rebase gives every commit a new
+  committer date, so a time taken before the rebase makes the script refuse the
+  child's own commits. A time taken after the push stops guarding the gap: a
+  commit anyone pushes between the Check and the push is older than that time,
+  so the script would merge it unreviewed. Shell variables do not survive
+  between Bash calls, so paste the value the Check printed. After the push, run
   the script on the child alone:
 
   ```bash
-  REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)   # when the pre-push check passed
+  REVIEW_TS=<the REVIEW_TS= value the Check printed>
   bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs <child> --review-ts "$REVIEW_TS"
   ```
 
@@ -91,7 +95,21 @@ claude-plugins #1979→#1987):
   returns the pre-push tip settles on that tip, and the guard's fresh read then
   stops it with `GUARD_LATE_COMMIT` (`head_moved`), so a stale read fails closed.
   Flags, statuses and what to do on each: [merge-shepherd.md](merge-shepherd.md).
-  Run it as background Bash: the default `--timeout` is 1800 seconds.
+
+  The call can run longer than a foreground Bash call allows (2 minutes by
+  default, 10 at most), and longer than its own `--timeout`. `--timeout`
+  (default 1800 seconds) bounds one CI wait. When the base moves while CI runs,
+  the script updates the branch and waits again, up to `MC_MAX_UPDATES` (3)
+  waits per PR, and each wait can overrun its budget by one poll interval
+  (`MERGE_CHAIN_POLL_SECONDS`, default 20). After the merge it reads the state
+  back up to 5 times, one poll apart. For one PR at the defaults that is
+  3 x (1800 + 20) + 5 x 20 = 5560 seconds. Run the block with
+  `run_in_background: true` and an explicit `timeout` of `6000000` (100 minutes).
+  The default background limit is 30 minutes, no more than a single wait's own
+  budget, so without the larger `timeout` the harness can kill the script
+  mid-wait, and it then prints no `STATUS=` at all. Scale the `timeout` with the
+  PR count and with any `--timeout` you pass. Read the child's `STATUS=` when the
+  task finishes: anything other than `MERGED` means it did not merge.
 
   This bullet used to carry its own `jq` poll over `statusCheckRollup`. It read
   every rollup entry alike, so a run cancelled by workflow concurrency, sitting
@@ -108,7 +126,15 @@ claude-plugins #1979→#1987):
   through `merge-chain.sh`.
 
 - **Check** before every force-push: `git log --oneline origin/main..<sha>` —
-  expect *exactly* the child's commits, nothing more, never empty.
+  expect *exactly* the child's commits, nothing more, never empty. When it
+  passes, record the review time before the push, for the CI-registration
+  bullet's `--review-ts`:
+
+  ```bash
+  git log --oneline origin/main..<sha>
+  REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ); echo "REVIEW_TS=$REVIEW_TS"
+  ```
+
 - **Recovery** when auto-closed: the rebased commits survive in local objects
   (`git reflog`) — `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`,
   open a fresh PR from the branch, comment "Superseded by #new" on the closed

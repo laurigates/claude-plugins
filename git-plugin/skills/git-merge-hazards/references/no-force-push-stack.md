@@ -351,7 +351,9 @@ pins the merge to the head it read.
 
 Wait for CI and merge with `scripts/merge-chain.sh --prs <child>`, as the
 CI-registration bullet of [stacked-chain-push.md](stacked-chain-push.md) shows,
-with `--review-ts` taken after the route's last gate passed. Its `HEAD_SHA=` must
+with `--review-ts` taken after the route's last gate passed (after the tree check,
+when a rejected push added a merge) and before the push, so it is newer than every
+merge commit the route made and older than anything pushed after. Its `HEAD_SHA=` must
 equal the pushed SHA (`$new`); for an `update-branch` merge, the head that Case A
 step 1 read. Do not gate on a check count. Once the push has succeeded,
 remove the worktree with `git worktree remove <dir>`, without `--force`. It

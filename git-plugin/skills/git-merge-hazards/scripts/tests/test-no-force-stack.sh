@@ -1811,6 +1811,81 @@ for flag in '--repo' '--prs' '--review-ts'; do
 done
 check "control: an undeclared flag is reported absent from the usage header" no "$(has "$MC_FILE" '#   --expected-sha')"
 
+# The review time is recorded at the pre-push Check, not beside the merge-chain call: a time
+# taken after the push no longer guards commits pushed between the Check and the push.
+# bash_block_with <file> <needle>: print every ```bash block of <file> that contains <needle>.
+bash_block_with() {
+    awk -v needle="$2" '
+        /^[ \t]*```bash$/ {inside = 1; buf = ""; next}
+        inside && /^[ \t]*```$/ {inside = 0; if (index(buf, needle)) printf "%s", buf; next}
+        inside {buf = buf $0 "\n"}' "$1"
+}
+MC_BLOCK="$(bash_block_with "$GF" 'merge-chain.sh')"
+CHECK_BLOCK="$(bash_block_with "$GF" 'git log --oneline origin/main..<sha>')"
+check "gate: the merge-chain block does not take the review time itself (post-push time)" no \
+    "$(yn grep -qF -- '$(date' <<<"$MC_BLOCK")"
+check "control: the merge-chain block was extracted" yes "$(yn grep -qF -- '--review-ts' <<<"$MC_BLOCK")"
+check "gate: the pre-push Check block records the review time" yes \
+    "$(yn grep -qF -- 'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' <<<"$CHECK_BLOCK")"
+write_lines "$sandbox/post-push-ts.md" '```bash' \
+    'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' \
+    'bash merge-chain.sh --repo OWNER/REPO --prs <child> --review-ts "$REVIEW_TS"' '```'
+check "control: a review time taken in the merge-chain block fails the pin" yes \
+    "$(yn grep -qF -- '$(date' <<<"$(bash_block_with "$sandbox/post-push-ts.md" 'merge-chain.sh')")"
+
+# mc_bound_s <merge-chain.sh>: worst-case seconds for one PR, from the script's own constants:
+# MC_MAX_UPDATES CI waits, each up to --timeout plus one poll, then the merge read-back loop.
+mc_bound_s() {
+    local t u p r
+    t="$(sed -n 's/^MC_TIMEOUT=\([0-9][0-9]*\).*/\1/p' "$1" | head -1)"
+    u="$(sed -n 's/^MC_MAX_UPDATES=\([0-9][0-9]*\).*/\1/p' "$1" | head -1)"
+    p="$(sed -n 's/^MC_POLL="\${MERGE_CHAIN_POLL_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$1" | head -1)"
+    r="$(grep -oE 'while \[ "\$tries" -lt [0-9]+ \]' "$1" | head -1 | grep -oE '[0-9]+' || true)"
+    [ -n "$t" ] && [ -n "$u" ] && [ -n "$p" ] && [ -n "$r" ] || return 1
+    echo $((u * (t + p) + r * p))
+}
+# harness_timeout_ok <reference> <merge-chain.sh>: exit 0 when the reference's explicit
+# background `timeout` (milliseconds) exceeds that bound, so the harness does not kill the
+# script mid-wait (the default background limit is 30 minutes).
+harness_timeout_ok() {
+    local bound timeout_ms
+    bound="$(mc_bound_s "$2")" || return 1
+    timeout_ms="$(grep -oE 'timeout` of `[0-9]+' "$1" | head -1 | grep -oE '[0-9]+$' || true)"
+    [ -n "$timeout_ms" ] && grep -qF 'run_in_background: true' "$1" && [ "$timeout_ms" -gt $((bound * 1000)) ]
+}
+check "gate: merge-chain.sh's worst-case run time is computable from its constants" yes "$(yn mc_bound_s "$MC_FILE")"
+check "gate: the background timeout exceeds merge-chain.sh's worst case for one PR" yes \
+    "$(yn harness_timeout_ok "$GF" "$MC_FILE")"
+write_lines "$sandbox/old-timeout.md" \
+    'Run it with `run_in_background: true` and an explicit `timeout` of `2100000`.'
+write_lines "$sandbox/no-timeout.md" 'Run it with `run_in_background: true`.'
+write_lines "$sandbox/big-timeout.md" \
+    'Run it with `run_in_background: true` and an explicit `timeout` of `6000000`.'
+sed 's/^MC_MAX_UPDATES=3 /MC_MAX_UPDATES=4 /' "$MC_FILE" > "$sandbox/mc-four-updates.sh"
+check "control: the old 35-minute timeout (one wait's budget) fails the pin" no \
+    "$(yn harness_timeout_ok "$sandbox/old-timeout.md" "$MC_FILE")"
+check "control: a note with no explicit timeout fails the pin" no "$(yn harness_timeout_ok "$sandbox/no-timeout.md" "$MC_FILE")"
+check "control: a timeout above the bound passes the pin" yes "$(yn harness_timeout_ok "$sandbox/big-timeout.md" "$MC_FILE")"
+check "control: raising MC_MAX_UPDATES to 4 makes the same timeout fail (the bound reads the script)" no \
+    "$(yn harness_timeout_ok "$sandbox/big-timeout.md" "$sandbox/mc-four-updates.sh")"
+
+# Delta-apply: the operator's merge commit $C is not exempt from the late-commit guard (its
+# committer is not noreply@github.com), so the review time is taken after git commit-tree and
+# before the push.
+DELTA_FILE="${REF_DIR}/delta-apply-stack.md"
+DELTA_BLOCK="$(bash_block_with "$DELTA_FILE" 'git commit-tree')"
+delta_order_ok() {
+    local c ts p
+    c="$(grep -n 'git commit-tree' <<<"$1" | head -1 | cut -d: -f1)"
+    ts="$(grep -nF 'REVIEW_TS=$(date -u' <<<"$1" | head -1 | cut -d: -f1)"
+    p="$(grep -n 'git push' <<<"$1" | head -1 | cut -d: -f1)"
+    [ -n "$c" ] && [ -n "$ts" ] && [ -n "$p" ] && [ "$c" -lt "$ts" ] && [ "$ts" -lt "$p" ]
+}
+check "delta-apply: REVIEW_TS is taken after git commit-tree and before the push" yes "$(yn delta_order_ok "$DELTA_BLOCK")"
+check "control: a review time taken before git commit-tree fails the order pin" no \
+    "$(yn delta_order_ok "$(printf '%s\n' 'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' 'C=$(git commit-tree "$T")' 'git push origin "${C}:refs/heads/x"')")"
+check "delta-apply: names why the operator's merge commit is not exempt" yes "$(has "$DELTA_FILE" 'its committer is you, not `noreply@github.com`')"
+
 for grant in 'Bash(git merge *)' 'Bash(git checkout *)' 'Bash(git worktree *)' \
     'Bash(git diff *)' 'Bash(git rev-list *)' 'Bash(git add *)' 'Bash(git commit *)' \
     'Bash(git -C *)' 'Bash(git merge-base *)' 'Bash(grep *)' 'Bash(awk *)' 'Bash(jq *)'; do
