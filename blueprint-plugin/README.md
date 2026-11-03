@@ -324,8 +324,11 @@ schedule interval has elapsed since `last_completed_at` (written back with
 (PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
 reconciled on every run, because the on-change signal misses edits made outside
 Claude Code and Bash edits outside the recorded change list. A reconcile that
-changes nothing leaves the manifest byte-identical. `on-demand` tasks never
-auto-run. At every level, ambient automation may at most *draft* work-order
+changes nothing leaves the manifest byte-identical. The sweep reads all
+frontmatter in one `awk` pass and registers it in one `jq` call, so it fits the
+probe's 5 s SessionStart hook timeout; a run the timeout kills is reported in
+the next session as an `autorun_incomplete` finding (remediation
+`/blueprint:sync-ids`). `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
 proposals (GitHub issues labeled `work-order-draft`); promotion is a separate,
 reviewed `/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
 `/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
@@ -352,7 +355,7 @@ the ADR schema spelled the back-reference `superseded_by` while the hook read
 
 | Schema | Required frontmatter | Required sections |
 |---|---|---|
-| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNN` or `ADR-NNNN`, three or more digits), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional, and **nothing enforces them**: `/blueprint:adr-validate` checks relationships and numbering, not sections |
+| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNN` or `ADR-NNNN`, three or more digits), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional. New ADRs get them from the five-section [`templates/adr-template.md`](templates/adr-template.md), which `/blueprint:derive-plans` writes from; **no gate enforces them** (`/blueprint:adr-validate` checks relationships and numbering, not sections) |
 | [`prd.schema.json`](schemas/prd.schema.json) | `id` (`PRD-NNN`), `status`, `created`, `modified` | none — the template governs structure |
 | [`prp.schema.json`](schemas/prp.schema.json) | `id` (`PRP-NNN`), `status`, `created`, `modified`, `reviewed`, `confidence`, `domain` | Context Framing, AI Documentation, Implementation Blueprint, Test Strategy, Validation Gates, Success Criteria |
 
@@ -376,7 +379,7 @@ nudge rather than block (`.claude/rules/hook-block-vs-nudge.md`):
 | Finding | Severity | Why |
 |---|---|---|
 | Unknown `status`, bad `id` pattern, missing required field, no line-1 frontmatter | ERROR (blocks) | The document is malformed or unparseable |
-| Missing `## ` section | WARN | Blocking an edit until someone back-writes a section the ADR never had is hostile. ADR-0023 narrowed the required set to the three load-bearing sections, taking the corpus from 45 section warnings to 5; the other two are convention, unpoliced |
+| Missing `## ` section | WARN | Blocking an edit until someone back-writes a section the ADR never had is hostile. ADR-0023 narrowed the required set to the three load-bearing sections, taking the corpus from 45 section warnings to 5; the other two come from `templates/adr-template.md`, not from any check |
 | `Superseded` with no `superseded-by` | WARN | A decision can be marked superseded before its replacement is numbered |
 | Deprecated spelling (`superseded_by`, `status: completed`) | WARN | Named so it can be migrated, accepted so downstream documents keep validating |
 | `reviewed` older than `x-blueprint-staleness-days` | WARN | Staleness is a fact about time, not a defect in the document |

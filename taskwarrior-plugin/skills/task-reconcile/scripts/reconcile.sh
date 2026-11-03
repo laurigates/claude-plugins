@@ -21,6 +21,14 @@
 # not the CWD default — so a task in project A referencing owner/B#N resolves
 # against B. Bare #N (and UDAs) use the CWD-resolved repo, as before.
 #
+# Link strength (issue #3126): only a ghid/ghpr UDA can produce a close verdict
+# (pr-merged / pr-closed / issue-closed). A task linked ONLY by text refs whose
+# items are all done gets verdict=review — reported (REVIEW_COUNT, method=keep)
+# and never closed, under --apply and under any --only-verdicts list. Tasks often
+# cite a merged PR as context for work that is still open; 7 of 8 text-ref
+# pr-merged verdicts in one dry run were false positives. review is not counted
+# in STALE_COUNT, so the SessionStart drift line counts UDA-backed verdicts only.
+#
 # Multi-ref safety: a task with several refs is stale ONLY when EVERY ref is
 # resolved done. Any open ref → live; any unreadable ref → kept (uncertain);
 # any pr-closed among them → the aggregate is pr-closed (ambiguous, never in the
@@ -48,7 +56,8 @@
 #                            reported (method=keep) but are never closed. Unset
 #                            = every stale verdict is closeable (back-compat).
 #                            UNKNOWN upstream is never stale, so this only ever
-#                            narrows the apply set, never widens it.
+#                            narrows the apply set, never widens it. review is
+#                            rejected even when listed (#3126).
 #
 # Output: structured KEY=VALUE block (.claude/rules/structured-script-output.md),
 # one TASK line per linked task, then a summary. Always exit 0 on a clean run so
@@ -97,6 +106,8 @@ done
 # verdict_allowed <verdict> — is this stale verdict in the apply allowlist?
 # An empty allowlist means every stale verdict is closeable (back-compat).
 verdict_allowed() {
+  # review (text-ref-only link) never enters a close path, listed or not (#3126).
+  [ "$1" = "review" ] && return 1
   [ -z "$rc_only_verdicts" ] && return 0
   case ",${rc_only_verdicts}," in
     *",$1,"*) return 0 ;;
@@ -235,6 +246,7 @@ done_uuids=()
 stale_count=0
 live_count=0
 unknown_count=0
+review_count=0
 
 task_count=$(printf '%s' "$linked_json" | jq 'length')
 i=0
@@ -295,6 +307,9 @@ while [ "$i" -lt "$task_count" ]; do
     if grep -qx 'pr-closed' <<<"$(printf '%s\n' "${components[@]}")"; then verdict="pr-closed"
     elif grep -qx 'pr-merged' <<<"$(printf '%s\n' "${components[@]}")"; then verdict="pr-merged"
     else verdict="issue-closed"; fi
+    # A text ref alone is weak evidence: the task may cite the item as context
+    # for open work. Without a ghid/ghpr UDA, report for review; never close.
+    if [ -z "$t_ghid" ] && [ -z "$t_ghpr" ]; then verdict="review"; fi
     if [ "${#reasons[@]}" -eq 1 ]; then
       reason="${reasons[0]}"
     else
@@ -303,7 +318,10 @@ while [ "$i" -lt "$task_count" ]; do
   fi
 
   method="keep"
-  if [ "$verdict" != "live" ]; then
+  if [ "$verdict" = "review" ]; then
+    # Reported only: never routed to a close path, never counted as stale.
+    review_count=$((review_count + 1))
+  elif [ "$verdict" != "live" ]; then
     stale_count=$((stale_count + 1))
     if verdict_allowed "$verdict"; then
       # In the apply allowlist (or no allowlist) — route to the close path.
@@ -330,6 +348,7 @@ done
 
 echo "STALE_COUNT=${stale_count}"
 echo "LIVE_COUNT=${live_count}"
+echo "REVIEW_COUNT=${review_count}"
 echo "BULK_COUNT=${#bulk_uuids[@]}"
 echo "DONE_COUNT=${#done_uuids[@]}"
 [ "$unknown_count" -gt 0 ] && echo "UNKNOWN_UPSTREAM=${unknown_count}"

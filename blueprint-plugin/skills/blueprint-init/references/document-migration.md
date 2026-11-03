@@ -11,6 +11,17 @@ find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/.git/*' | grep -
 
 ## Measure cross-reference density
 
+Migrating a doc into `docs/{prds,adrs,prps}/` rewrites its path, breaking every
+reference to it. For each candidate doc, grep the repo for references to its
+path **from outside `docs/`** (README, scripts, CI, `.rulesync/`) and inter-doc
+links.
+
+A doc whose path is **referenced outside `docs/`** (build scripts, CI, README,
+`.rulesync/`) is expensive to migrate — every reference must be rewritten,
+including build-critical files. Blueprint only needs the **empty**
+`docs/{prds,adrs,prps}/` for *future* derived docs, so "leave in place" is a
+safe default when migration is expensive.
+
 ```bash
 # Count references to each candidate doc path (skip the doc itself)
 for doc in $candidate_docs; do

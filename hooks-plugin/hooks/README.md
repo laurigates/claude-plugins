@@ -17,9 +17,25 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway); append a `# allow-timeout` comment to bound a genuinely-never-exiting process (REPL, stdio server) — #2041 |
 | `cat/tail ...tasks/*.output` (whole command only — #2148) | Use **Read** tool on the output path (or pipe an extraction for large files) |
+
+## bash-safety.sh
+
+A PreToolUse hook holding the Bash safety blocks, split out of
+`bash-antipatterns.sh` so the pi safety-hook bridge can export them without
+that hook's Read/Edit/Write advice (#2788). It is pure regex, never consults
+`ast-grep`, and sources no library, so it fires in every context. Tests:
+`test-bash-safety.sh`.
+
+| Pattern | Reminder |
+|---------|----------|
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
 | `git X && git Y` where **both** X and Y modify the index (`add`, `commit`, `rm`, `mv`, `reset`) | Run `git status --short`, then ONE `git add -- A B C` of the confirmed-present paths, then `git commit` as a separate Bash call (avoids index.lock race condition; never chain `git add A && git add B` — #3042). Chaining one index writer to a read-only git command — `git add f && git status --short` — is allowed |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
+| `git push -u origin main:feat/x` from `main` | Push without `-u` (#1600) |
+| `curl`/`wget` piped to a shell | Download, review, then execute (#3178, #3186) |
+| Fork bombs, `chmod 777`, writes to block devices | Blocked |
+
+## bash-antipatterns.sh: implementation notes
 
 ### Structural classification (ast-grep) and fail-open (#2008)
 
@@ -49,11 +65,9 @@ budget. See `.claude/rules/bash-tool-replacements.md`.
 These are **style nudges** and **fail open**: when `ast-grep` is absent
 (sandboxes, subagents) they simply do not fire. Losing a "use Read instead of
 `cat`" steer where the parser is unavailable costs nothing irreversible, and
-there is deliberately **no regex twin** to keep in lockstep. The **safety /
-correctness blocks** (`curl|bash`, `chmod 777`, `git add -A`, `git reset
---hard`, `git push -u` footgun, block-device writes, fork bombs, the index-lock
-chain, the grep-chain test-output scrape, `awk`/`cat`-to-commit-file) stay
-pure-regex and fire in **every** context. Set
+there is deliberately **no regex twin** to keep in lockstep. The regex blocks
+(the grep-chain test-output scrape, `awk`/`cat`-to-commit-file, `timeout`) and
+the safety blocks in `bash-safety.sh` fire in **every** context. Set
 `CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1` to force the no-op path (used by
 the regression suite to exercise fail-open).
 
@@ -68,7 +82,8 @@ message described a *connection timeout* was blocked with "REMINDER: The
 'timeout' command is usually unnecessary — remove the timeout wrapper". There
 was no wrapper; the word was prose.
 
-All four now scan `COMMAND_SHELL_ONLY` (heredoc bodies and trailing `#` comments
+Since #2788 the three git blocks live in `bash-safety.sh`, which carries the
+same projection. All four now scan `COMMAND_SHELL_ONLY` (heredoc bodies and trailing `#` comments
 removed) instead of the raw command. The per-line anchoring is **kept** — a
 genuine command on line 2 of a multi-line Bash call is still the start of a
 command and still blocks; only heredoc-body lines are exempt. The `timeout`

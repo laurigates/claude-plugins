@@ -306,9 +306,11 @@ remaining members before keeping any of the unit's work.
   mean to close — GitHub matches the keyword without reading the sentence, so even
   "does not close #12" closes it.
 - Open it ready for review, not draft. Do not merge it, and do not close the issue.
-- Verify CI: after opening, poll `gh pr view <n> --json statusCheckRollup` until
-  checks have registered *and* completed — zero pending checks immediately after a
-  push means the jobs have not been created yet, not that they passed. If a check
+- Verify CI: after opening, run `gh pr checks <n> --watch --fail-fast` (per
+  `git-plugin:gh-workflow-monitoring`) rather than polling the rollup by hand. It
+  reports only the checks registered so far, so "no checks reported" right after a
+  push means the jobs have not been created yet, not that they passed; run it
+  again once they appear. If a check
   fails because of your diff, fix it. If it also fails on `main`, say so in the PR
   body and leave it.
 - Verify the body landed: `gh pr view <n> --json body --jq '.body | length'`.

@@ -162,7 +162,13 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
         # Substring matches are intentionally narrow (the exact prose the
         # hook emits) to avoid false positives from incidental "blocked"
         # phrasing in unrelated content.
-        if "bash-antipatterns" in ev:
+        #
+        # #2788 split the safety blocks (broad git staging, network-to-shell
+        # pipes, git chains, ...) into bash-safety.sh. They keep their
+        # `hook:bash-antipatterns:*` signatures so weekly trends stay
+        # comparable across the split; without this, those blocks fell to
+        # `hook:unclassified`.
+        if "bash-antipatterns" in ev or "bash-safety" in ev:
             if "blocked: 'grep" in ev or "blocked: 'rg" in ev:
                 return "hook:bash-antipatterns:grep-rg"
             if "blocked: 'find" in ev:

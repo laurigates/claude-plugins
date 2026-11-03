@@ -4,7 +4,7 @@ This directory holds dated, read-only audit artifacts — findings documents, no
 fixes. An audit records what was wrong at a point in time and links the issues
 that track remediation; the edits themselves land in separate PRs.
 
-Naming follows the one artifact already here,
+Naming follows the existing artifacts, e.g.
 `project-plugin-phase1-audit-2026-06-04.md`: `<scope>-<what>-YYYY-MM-DD.md`.
 
 ## Two layers
@@ -78,7 +78,7 @@ evidence:
 | A — front door & maps | `README.md`, `CLAUDE.md`, `docs/PLUGIN-MAP.md`, `docs/PRINCIPLES.md` |
 | B — rules coherence | `.claude/rules/*.md` |
 | C — legacy docs | the non-blueprint `docs/*.md` |
-| D — blueprint & decisions | `docs/blueprint/` — ADRs, PRDs, PRPs |
+| D — blueprint & decisions | `docs/blueprint/`, `docs/adrs/`, `docs/prds/`, `docs/prps/` |
 
 The deliverable is **follow-up issues, one per cluster** — not a fix-everything
 PR — reconciled into a dated findings document in this directory. Mechanical

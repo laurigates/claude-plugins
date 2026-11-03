@@ -1,8 +1,8 @@
 ---
 id: PRP-005
-status: in-progress
+status: complete
 created: 2026-02-07
-modified: 2026-02-07
+modified: 2026-11-02
 reviewed: 2026-02-07
 confidence: 7/10
 domain: architecture
@@ -11,13 +11,27 @@ domain: architecture
 # PRP: Agent Teams Migration
 
 **Created**: 2026-02-07
-**Modified**: 2026-02-07
-**Status**: Executing
+**Modified**: 2026-11-02
+**Status**: Closed (see Closure)
 **Priority**: P1 - Architecture Simplification
 **Confidence**: 7/10
 **Related ADRs**: [ADR-0015](../adrs/0015-agent-teams-adoption.md), [ADR-0009](../adrs/0009-task-focused-agent-consolidation.md)
 
 ---
+
+## Closure (2026-11-02)
+
+Closed after the Layer-2 documentation audit (#2841, finding D-7). What landed and what was dropped:
+
+| Phase | Outcome |
+|-------|---------|
+| 1. Remove redundant orchestration | **Landed.** The orchestration skills and `orchestrator-enforcement.sh` are gone; `agent-patterns-plugin:agent-teams` documents the native feature |
+| 2. Convert agent definitions | **Landed in part.** `agents-plugin/README.md` records teammate-vs-subagent fit per agent. The per-agent haiku/sonnet model column in the Phase 2 table was **not** adopted: the ten agents it lists all run on `opus` (`.claude/rules/agent-development.md` § Model Selection for Agents), so that table is superseded |
+| 3. Remove `/handoffs` | **Landed.** The `handoffs` skill is gone from `tools-plugin` |
+| 4. Optional team patterns | **Landed for 4 of 6 skills** (`code-review`, `test-full`, `project-continue`, `docs-generate`). `configure-all` got a bundled workflow harness instead of a teammate split; `blueprint-prp-execute` got neither |
+| 5. Extend analytics | **Dropped.** `command-analytics-plugin` was removed, so there is no `track-usage.sh` to extend |
+
+The sections below record the plan as written.
 
 ## Goal
 

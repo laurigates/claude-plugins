@@ -1,19 +1,21 @@
 ---
 id: PRD-001
-status: Draft
+status: Completed
 created: 2026-01-09
-modified: 2026-01-09
+modified: 2026-11-02
 reviewed: 2026-01-09
 ---
 
 # Automatic Document Management - Product Requirements Document
 
 **Created**: 2026-01-09
-**Modified**: 2026-01-09
+**Modified**: 2026-11-02
 **Reviewed**: 2026-01-09
-**Status**: Draft
+**Status**: Completed
 **Version**: 1.0
 **Author**: Blueprint Development Team
+
+> **Completed (recorded 2026-11-02):** proactive document detection shipped on 2026-01-09 as the `blueprint-plugin:document-detection` skill, per [ADR-0010](../adrs/0010-proactive-document-detection.md) and [PRP-001](../prps/automatic-document-management.md). The roadmap and phase tables below record the plan as written; the dedicated documentation agents it delegates to were later deleted by ADR-0009, and detection now hands off to `/blueprint:derive-plans` and `/blueprint:prp-create`.
 
 ---
 

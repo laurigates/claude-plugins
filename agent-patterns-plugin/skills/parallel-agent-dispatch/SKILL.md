@@ -10,6 +10,8 @@ compatibility: claude-code
 reviewed: 2026-09-02
 ---
 
+<!-- skill-size-exception: scripts/check-agent-failure-contract.sh -->
+
 # Parallel Agent Dispatch
 
 Conventions that apply every time more than one agent runs in parallel. Prevents

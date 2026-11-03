@@ -46,6 +46,13 @@ Scaffold a new FoundryVTT v13 module repository ready for implementation, in the
   and attaches the install assets
 - localization, scoped CSS, `CLAUDE.md`, `README.md`, `LICENSE`, and a toolchain ADR
 
+`scripts/check-fleet-drift.py` audits the modules the scaffold has already
+generated: it derives the comparable file set from `scaffold.py`, compares each
+module against the per-file policy in `fleet-policy.toml`
+(`managed` / `shared` / `seed` / `absent`), and reports drift in both
+directions as `STATUS=OK|WARN|ERROR` without writing to any module. An `absent`
+entry keeps the repo-local Renovate runner (#2708) from coming back.
+
 Three variants:
 
 | Variant | Adds |

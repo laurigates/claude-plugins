@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 45 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -15,6 +15,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "accessibility",
         "wcag",
@@ -33,6 +34,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "agents",
         "configuration",
@@ -52,6 +54,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "agents",
         "teammates",
@@ -73,6 +76,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "api",
         "rest",
@@ -90,6 +94,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "bevy",
         "game-engine",
@@ -108,6 +113,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "blog",
         "writing",
@@ -127,6 +133,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "blueprint",
         "prd",
@@ -150,6 +157,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "cloud",
         "gcp",
@@ -170,6 +178,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "code-review",
         "refactoring",
@@ -191,6 +200,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "attributes",
         "health",
@@ -210,6 +220,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -231,6 +242,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "communication",
         "google-chat",
@@ -248,6 +260,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "components",
         "ui-patterns",
@@ -268,6 +281,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "infrastructure",
         "standards",
@@ -284,6 +298,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "container",
         "docker",
@@ -301,6 +316,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "css",
         "lightning-css",
@@ -321,6 +337,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "documentation",
         "docs",
@@ -339,6 +356,7 @@
         "url": "https://github.com/laurigates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -358,6 +376,7 @@
         "url": "https://github.com/laurigates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -376,6 +395,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "finops",
         "github-actions",
@@ -396,6 +416,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "foundryvtt",
         "foundry-vtt",
@@ -412,11 +433,12 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.68.0",
+      "version": "2.68.2",
       "author": {
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "git",
         "github",
@@ -448,6 +470,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -467,6 +490,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "health",
         "diagnostics",
@@ -490,6 +514,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "home-assistant",
         "smart-home",
@@ -513,6 +538,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "hooks",
         "automation",
@@ -526,6 +552,28 @@
       "category": "automation"
     },
     {
+      "name": "kernel-plugin",
+      "source": "./kernel-plugin",
+      "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
+      "version": "1.1.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
+      "keywords": [
+        "linux",
+        "kernel",
+        "lore",
+        "mailing-list",
+        "git-send-email",
+        "reproducer",
+        "bug-report",
+        "maintainers"
+      ],
+      "category": "development"
+    },
+    {
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
@@ -534,6 +582,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "kubernetes",
         "helm",
@@ -551,6 +600,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "langchain",
         "langgraph",
@@ -573,6 +623,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "linux",
         "disk-usage",
@@ -597,6 +648,7 @@
         "url": "https://github.com/laurigates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "macos",
         "darwin",
@@ -620,6 +672,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "migration",
         "dual-write",
@@ -641,6 +694,7 @@
         "url": "https://github.com/laurigates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "networking",
         "diagnostics",
@@ -660,6 +714,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "obsidian",
         "vault",
@@ -688,6 +743,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "project",
         "initialization",
@@ -708,6 +764,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "prompt-engineering",
         "hallucination",
@@ -726,6 +783,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "prose",
         "writing",
@@ -756,6 +814,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "python",
         "uv",
@@ -774,6 +833,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "rust",
         "cargo",
@@ -791,6 +851,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "session",
         "spinup",
@@ -812,6 +873,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "software-design",
         "deep-modules",
@@ -833,6 +895,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "taskwarrior",
         "coordination",
@@ -853,6 +916,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "terraform",
         "infrastructure",
@@ -870,6 +934,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "testing",
         "tdd",
@@ -886,11 +951,12 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.15.0",
+      "version": "2.15.1",
       "author": {
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "tools",
         "utilities",
@@ -910,6 +976,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "typescript",
         "eslint",
@@ -928,6 +995,7 @@
         "url": "https://github.com/laurigates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "video",
         "ffmpeg",
@@ -951,6 +1019,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "workflow",
         "orchestration",
@@ -972,6 +1041,7 @@
         "name": "Lauri Gates"
       },
       "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
       "keywords": [
         "youtube",
         "youtube-data-api",

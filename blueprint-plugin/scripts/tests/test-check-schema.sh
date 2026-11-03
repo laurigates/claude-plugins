@@ -373,6 +373,39 @@ for s in adr prd prp; do
 done
 
 # ==========================================================================
+# The five-section ADR template (#2702) — the ceiling ADR-0023 left unbuilt.
+# The schema requires three sections; the template carries all five, so new
+# ADRs get Options Considered / Related ADRs by construction, with no gate.
+# ==========================================================================
+TEMPLATE="${PLUGIN_DIR}/templates/adr-template.md"
+DERIVE_DIR="${PLUGIN_DIR}/skills/blueprint-derive-plans"
+if [ -f "$TEMPLATE" ]; then
+    out="$(run adr "$TEMPLATE")"
+    has_issue "$out" "STATUS=OK" && has_issue "$out" "ISSUE_COUNT=0" \
+        && ok "adr template: validates clean against adr.schema.json" \
+        || notok "adr template: must validate with STATUS=OK ISSUE_COUNT=0 -- got: $out"
+    for h in Context Decision Consequences "Options Considered" "Related ADRs"; do
+        grep -qxF -- "## $h" "$TEMPLATE" \
+            && ok "adr template: carries '## $h'" \
+            || notok "adr template: must carry a '## $h' heading"
+    done
+else
+    notok "adr template: templates/adr-template.md must exist"
+fi
+for f in "$DERIVE_DIR/SKILL.md" "$DERIVE_DIR/REFERENCE.md" "${PLUGIN_DIR}/templates/adr-readme.md"; do
+    rel="${f#"${PLUGIN_DIR}"/}"
+    grep -qF "templates/adr-template.md" "$f" \
+        && ok "adr template: $rel points at templates/adr-template.md" \
+        || notok "adr template: $rel must point at templates/adr-template.md"
+    grep -qF "adr.github.io/madr" "$f" \
+        && notok "adr template: $rel still links the MADR template (headings do not match the schema)" \
+        || ok "adr template: $rel no longer links MADR"
+done
+grep -qE '^## (Decision Drivers|Considered Options)$' "$DERIVE_DIR/REFERENCE.md" \
+    && notok "adr template: derive-plans REFERENCE.md still emits MADR headings" \
+    || ok "adr template: derive-plans REFERENCE.md emits no MADR headings"
+
+# ==========================================================================
 # Degradation contract — a diagnostic must stay quiet rather than wrong.
 # ==========================================================================
 out="$(uv run --quiet --script "$CHECKER" --schema "${SCHEMA_DIR}/feature-tracker.schema.json" --json-file "$WORK/absent.json" 2>&1)"

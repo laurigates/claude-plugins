@@ -11,6 +11,8 @@ name: git-pr-feedback
 agent: general-purpose
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (git-pr-feedback block) -->
+
 ## Context
 
 - Repo: !`git remote -v`

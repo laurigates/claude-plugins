@@ -449,10 +449,18 @@ check "repo: kubernetes-plugin projected from inline plugin.json" \
 for key in hooks-plugin/branch-protection.sh hooks-plugin/secret-protection.sh \
     hooks-plugin/repo-deletion-safety.sh hooks-plugin/external-pr-merge-guard.sh \
     git-plugin/check-branch-sync-on-push.sh git-plugin/git-drift-probe.sh \
-    git-plugin/validate-pr-issue-links.sh; do
+    git-plugin/validate-pr-issue-links.sh hooks-plugin/bash-safety.sh; do
     check "repo: safety hook exported: $key" \
         test -f "$rext/hook-scripts/${key%%/*}/hooks/${key#*/}"
 done
+# #2788: bash-antipatterns.sh's safety blocks were split into bash-safety.sh so
+# they reach pi; the style hook itself (remedies naming Read/Edit/Write) stays out.
+check "repo: bash-safety.sh registered in the extension code (#2788)" \
+    bash -c "grep -vE '^\s*//' '$rext/index.ts' | grep -qF '\"script\":\"bash-safety.sh\"' || grep -vE '^\s*//' '$rext/index.ts' | tr -d '\n ' | grep -qF '\"script\":\"bash-safety.sh\"'"
+check "repo: bash-antipatterns.sh skipped by name (#2788)" \
+    grep -q "script=bash-antipatterns.sh reason=not in the pi safety allowlist" <<<"$repo_report"
+check_not "repo: bash-antipatterns.sh absent from code (#2788)" \
+    bash -c "grep -vE '^\s*//' '$rext/index.ts' | grep -qF 'bash-antipatterns.sh'"
 for nudge in bash-antipatterns-teach.sh prose-house-style-nudge.sh \
     code-quality-preflight-cue.sh blueprint-structural-cue.sh session-spinup-nudge.sh; do
     check "repo: nudge skipped by name: $nudge" \

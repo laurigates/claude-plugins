@@ -59,8 +59,10 @@ if [ ! -f "$FILE_PATH" ]; then
     exit 0
 fi
 
-# Extract frontmatter from the actual file on disk
-FRONTMATTER=$(awk '/^---$/{if(++n==2)exit}n' "$FILE_PATH" | tail -n +2)
+# Extract frontmatter from the actual file on disk. Frontmatter opens the file:
+# a `---` pair further down (a fenced format example in an index README) is
+# body text, and reading it registered a junk ADR-NNNN entry.
+FRONTMATTER=$(awk 'NR==1 && !/^---$/{exit} /^---$/{if(++n==2)exit}n' "$FILE_PATH" | tail -n +2)
 
 if [ -z "$FRONTMATTER" ]; then
     exit 0
