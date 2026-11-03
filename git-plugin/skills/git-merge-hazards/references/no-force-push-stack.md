@@ -300,6 +300,7 @@ git -C <dir> merge --no-ff --no-edit origin/main         # step 3: must be clean
 [ "$(git -C <dir> diff --no-ext-diff --no-color -U0 --ignore-submodules=none --submodule=short --no-textconv --output-indicator-new='>' --output-indicator-old='<' origin/main HEAD -- <source paths> | grep -E '^[<>]')" = "$reviewed" ]   # step 4: the content lines
 [ "$(meta_of <dir> origin/main HEAD -- <source paths>)" = "$reviewed_meta" ]                  # step 4: the raw listing
 new=$(git -C <dir> rev-parse HEAD)                       # step 5: push by full SHA, no force
+REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ); echo "new=$new REVIEW_TS=$REVIEW_TS"   # after the last gate, before the push
 git -C <dir> push origin "${new}:refs/heads/<child>"
 ```
 
@@ -333,6 +334,7 @@ before=$(git -C <dir> rev-parse 'HEAD^{tree}')
 git -C <dir> merge --no-ff --no-edit origin/<child>
 [ "$before" = "$(git -C <dir> rev-parse 'HEAD^{tree}')" ]
 new=$(git -C <dir> rev-parse HEAD)
+REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ); echo "new=$new REVIEW_TS=$REVIEW_TS"   # supersedes step 5's REVIEW_TS
 git -C <dir> push origin "${new}:refs/heads/<child>"
 ```
 
@@ -351,9 +353,10 @@ pins the merge to the head it read.
 
 Wait for CI and merge with `scripts/merge-chain.sh --prs <child>`, as the
 CI-registration bullet of [stacked-chain-push.md](stacked-chain-push.md) shows,
-with `--review-ts` taken after the route's last gate passed (after the tree check,
-when a rejected push added a merge) and before the push, so it is newer than every
-merge commit the route made and older than anything pushed after. Its `HEAD_SHA=` must
+with `--review-ts` set to the last `REVIEW_TS=` a push block in this route printed
+(the rejected-push block's, if it ran). Each block records it after its last gate
+and before its push, so it is newer than every merge commit the route made and
+older than anything pushed after. Its `HEAD_SHA=` must
 equal the pushed SHA (`$new`); for an `update-branch` merge, the head that Case A
 step 1 read. Do not gate on a check count. Once the push has succeeded,
 remove the worktree with `git worktree remove <dir>`, without `--force`. It
