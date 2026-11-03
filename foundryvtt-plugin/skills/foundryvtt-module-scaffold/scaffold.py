@@ -335,6 +335,7 @@ BIOME_JSON = """\
       "arrowParentheses": "always"
     }
   },
+  "markdown": { "formatter": { "enabled": false }, "linter": { "enabled": false } },
   "assist": { "enabled": true, "actions": { "source": { "organizeImports": "off" } } }
 }
 """
