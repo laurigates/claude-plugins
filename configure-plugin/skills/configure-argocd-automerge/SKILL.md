@@ -1,6 +1,6 @@
 ---
 created: 2026-02-03
-modified: 2026-09-23
+modified: 2026-11-03
 reviewed: 2026-06-01
 description: "argocd-automerge.yml: auto-create and merge PRs from ArgoCD Image Updater's image-updater-** branches. Use when setting up that workflow or checking its PAT permissions."
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
@@ -25,7 +25,7 @@ Configure GitHub Actions workflow to automatically create and merge PRs from Arg
 
 ## Context
 
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
+- Workflows dir: !`find . -maxdepth 2 -type d -path './.github/workflows'`
 - Existing automerge workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*argocd*automerge*' -o -name '*automerge*argocd*' \)`
 - Image updater branches: !`git branch -r --list 'origin/image-updater-*'`
 - Auto-merge workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'argocd-automerge.yml'`

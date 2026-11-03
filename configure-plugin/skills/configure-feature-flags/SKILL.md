@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-03
 reviewed: 2025-12-16
 description: "Feature flags with OpenFeature and providers (GOFF, flagd, LaunchDarkly). Use when setting up the SDK, configuring a relay proxy, or adding flag test helpers."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,14 +25,14 @@ Check and configure feature flag infrastructure using the OpenFeature standard w
 
 ## Context
 
-- Package JSON: !`find . -maxdepth 1 -name \'package.json\'`
-- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\'`
-- Go project: !`find . -maxdepth 1 -name \'go.mod\'`
-- Cargo project: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Package JSON: !`find . -maxdepth 1 -name 'package.json'`
+- Python project: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- Go project: !`find . -maxdepth 1 -name 'go.mod'`
+- Cargo project: !`find . -maxdepth 1 -name 'Cargo.toml'`
 - OpenFeature SDK: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml -o -name Cargo.toml -o -name go.mod \) -exec grep -l 'openfeature' {} +`
 - GOFF config: !`find . -maxdepth 2 -name 'flags.goff.yaml' -o -name 'flags.goff.yml'`
 - Docker compose: !`find . -maxdepth 1 -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml'`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

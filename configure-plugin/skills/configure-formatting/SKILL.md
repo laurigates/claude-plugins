@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-03
 reviewed: 2026-08-25
 description: "Set up formatters (Biome, Ruff format, rustfmt) with pre-commit and CI format checks. Use when a repo has no formatter, replacing Prettier or Black, or unifying monorepo style."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,17 +25,17 @@ Check and configure code formatting tools against modern best practices.
 
 ## Context
 
-- Biome config: !`find . -maxdepth 1 -name \'biome.json\'`
+- Biome config: !`find . -maxdepth 1 -name 'biome.json'`
 - Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \)`
 - Ruff config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.ruff.format' {} +`
 - Black config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.black' {} +`
 - Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \)`
-- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\'`
-- Package JSON: !`find . -maxdepth 1 -name \'package.json\'`
-- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\'`
-- Rust project: !`find . -maxdepth 1 -name \'Cargo.toml\'`
-- Pre-commit: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- EditorConfig: !`find . -maxdepth 1 -name '.editorconfig'`
+- Package JSON: !`find . -maxdepth 1 -name 'package.json'`
+- Python project: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- Rust project: !`find . -maxdepth 1 -name 'Cargo.toml'`
+- Pre-commit: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 
