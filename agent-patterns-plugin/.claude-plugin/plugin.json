@@ -1,12 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agent-patterns-plugin",
-  "version": "2.56.0",
+  "version": "2.56.1",
   "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, and hooks configuration",
   "author": {
     "name": "Lauri Gates"
   },
   "license": "MIT",
+  "repository": "https://github.com/laurigates/claude-plugins",
   "hooks": "./hooks.json",
   "keywords": [
     "agents",

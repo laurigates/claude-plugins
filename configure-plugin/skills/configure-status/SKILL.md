@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-10
+modified: 2026-11-03
 reviewed: 2026-07-05
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
 allowed-tools: Glob, Grep, Read, TodoWrite, Bash(bash *)
@@ -27,19 +27,19 @@ Display infrastructure standards compliance status without making changes.
 
 ## Context
 
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 - Project type: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Standards version: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^standards_version:" {} +`
 - Last configured: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^last_configured:" {} +`
-- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
+- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
 - Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 - Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' -print -quit`
-- Has skaffold: !`find . -maxdepth 1 -name \'skaffold.yaml\'`
+- Has skaffold: !`find . -maxdepth 1 -name 'skaffold.yaml'`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
 - Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \)`
 - Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \)`
-- Editor config: !`find . -maxdepth 1 -name \'.editorconfig\'`
-- Gitleaks config: !`find . -maxdepth 1 -name \'.gitleaks.toml\'`
+- Editor config: !`find . -maxdepth 1 -name '.editorconfig'`
+- Gitleaks config: !`find . -maxdepth 1 -name '.gitleaks.toml'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
 
 ## Parameters

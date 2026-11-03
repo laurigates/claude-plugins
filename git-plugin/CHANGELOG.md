@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.68.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.3...git-plugin-v2.68.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** tell delegated agents to hand back on a pr-metadata block ([#3391](https://github.com/laurigates/claude-plugins/issues/3391)) ([ec6cd22](https://github.com/laurigates/claude-plugins/commit/ec6cd221382d57ee750dc74ec6f530870991c708))
+
+## [2.68.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.2...git-plugin-v2.68.3) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** exclude convention files from rule 8 overlap ([5dcfa2a](https://github.com/laurigates/claude-plugins/commit/5dcfa2a048481afbde6c7229802acb7a89d63fe7)), closes [#3373](https://github.com/laurigates/claude-plugins/issues/3373)
+
+## [2.68.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.1...git-plugin-v2.68.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** point the stacked-chain CI wait at merge-chain.sh ([#3388](https://github.com/laurigates/claude-plugins/issues/3388)) ([b614216](https://github.com/laurigates/claude-plugins/commit/b614216d5f1face79ea0949f9b312569761352a6))
+
 ## [2.68.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.0...git-plugin-v2.68.1) (2026-11-02)
 
 

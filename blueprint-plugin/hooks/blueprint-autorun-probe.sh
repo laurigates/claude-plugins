@@ -9,6 +9,8 @@
 #   - due AGENT-JUDGMENT tasks become drift findings via drift-protocol.sh:
 #       level 1  -> one finding per due task, remediation /blueprint:<task>
 #       level 2+ -> one aggregated finding, remediation /blueprint:autopilot
+#   - a run that never returned (killed by the hook timeout) becomes an
+#     autorun_incomplete finding in the next session (#3169)
 #
 # Level 0 / missing automation block is a complete no-op (empty signal file).
 # Opt out entirely with BLUEPRINT_AUTORUN_DISABLE=1; tune the debounce with
@@ -117,13 +119,31 @@ if [ -f "$cache_file" ]; then
     fi
 fi
 
+# Start/done markers make a killed run visible (#3169). The harness kills the
+# hook when the runner outlives the 5 s SessionStart budget, so the killed
+# session reports nothing; a later session that finds the start marker
+# without the done marker reports autorun_incomplete instead of looking like
+# "nothing due". The done marker is written once the runner returns, whatever
+# its exit status: only a run that never returned is incomplete.
+started_marker="${cache_base}/${project_key}.started"
+done_marker="${cache_base}/${project_key}.done"
+
 if [ "$cache_fresh" -eq 0 ]; then
-    touch "$cache_file" 2>/dev/null
+    rm -f "$done_marker"
+    touch "$started_marker" "$cache_file" 2>/dev/null
     if bash "$AUTORUN_BIN" --project-dir "$DRIFT_CWD" > "${cache_file}.tmp" 2>/dev/null; then
         mv -f "${cache_file}.tmp" "$cache_file" || rm -f "${cache_file}.tmp"
     else
         rm -f "${cache_file}.tmp"
     fi
+    touch "$done_marker" 2>/dev/null
+fi
+
+if [ -f "$started_marker" ] && [ ! -f "$done_marker" ]; then
+    drift_add_finding warn \
+        autorun_incomplete \
+        "blueprint autorun did not finish within the SessionStart hook budget; the id-registry reconcile has not landed" \
+        "/blueprint:sync-ids"
 fi
 
 if [ ! -s "$cache_file" ]; then

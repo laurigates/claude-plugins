@@ -1,15 +1,19 @@
 ---
 id: ADR-0007
-status: Accepted
+status: Superseded
+superseded-by: ADR-0026
 created: 2026-01-09
-modified: 2026-04-08
+modified: 2026-11-02
+domain: organization
 ---
 
 # ADR-0007: Namespace-Based Command Organization
 
+> **Superseded by [ADR-0026](0026-commands-migrated-to-skills.md)**: the `commands/` directories this ADR organizes were removed when every command became a skill ([#423](https://github.com/laurigates/claude-plugins/pull/423)). The `/<namespace>:<name>` invocation form survives as the skill directory name `skills/<namespace>-<name>/SKILL.md` (`.claude/rules/skill-naming.md`).
+
 ## Status
 
-Accepted
+Superseded by ADR-0026
 
 ## Date
 

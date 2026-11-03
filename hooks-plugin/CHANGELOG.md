@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.18.0...hooks-plugin-v2.19.0) (2026-11-03)
+
+
+### Features
+
+* **hooks-plugin:** split bash-antipatterns' safety blocks into bash-safety.sh ([e18546c](https://github.com/laurigates/claude-plugins/commit/e18546c5459c6b80bf8a05335edfe486248647ea)), closes [#2788](https://github.com/laurigates/claude-plugins/issues/2788)
+
 ## [2.18.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.17.1...hooks-plugin-v2.18.0) (2026-11-02)
 
 

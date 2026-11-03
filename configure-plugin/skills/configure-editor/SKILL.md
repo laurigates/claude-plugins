@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-03
 reviewed: 2025-12-16
 description: "Set up .editorconfig and .vscode/ workspace settings shared by the team. Use when adding format-on-save, recommended extensions, or debug launch configs."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -25,13 +25,13 @@ Check and configure editor settings for consistency across the team.
 
 ## Context
 
-- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\'`
-- VS Code settings: !`find . -maxdepth 1 -name \'.vscode/settings.json\'`
-- VS Code extensions: !`find . -maxdepth 1 -name \'.vscode/extensions.json\'`
-- VS Code launch: !`find . -maxdepth 1 -name \'.vscode/launch.json\'`
-- VS Code tasks: !`find . -maxdepth 1 -name \'.vscode/tasks.json\'`
+- EditorConfig: !`find . -maxdepth 1 -name '.editorconfig'`
+- VS Code settings: !`find . -maxdepth 2 -path './.vscode/settings.json'`
+- VS Code extensions: !`find . -maxdepth 2 -path './.vscode/extensions.json'`
+- VS Code launch: !`find . -maxdepth 2 -path './.vscode/launch.json'`
+- VS Code tasks: !`find . -maxdepth 2 -path './.vscode/tasks.json'`
 - Project languages: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'biome.json' \)`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

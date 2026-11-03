@@ -27,12 +27,10 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `echo`/`printf > file` (repo files; absolute `/tmp`/scratch destinations exempt, W38) | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (human approval time exceeds it); append `# allow-timeout` for genuinely-unbounded processes (#2041) |
-| `git add -A` / `git add .` | Stage specific files by name instead |
 | Multi-grep test parsing | Use `--reporter=json` instead |
-| `curl \| sh` / `wget \| bash` | Download first, review, then execute |
-| Fork bombs | Blocked unconditionally |
-| `chmod 777` | Use restrictive permissions (755, 644, 600) |
-| Write to block device | Blocked unconditionally |
+
+The safety blocks (`git add -A`, git chains, `reset --hard`, `curl | sh`, fork
+bombs, `chmod 777`, block-device writes) are in `bash-safety.sh`, below.
 
 The three write rows share one scratch context: a `cd` into `/tmp`, a variable
 holding a `/tmp` path, or a `mktemp -d` dir (`T=$(mktemp -d)`,
@@ -56,9 +54,8 @@ The read/write detectors (`cat`/`head`/`tail`, `echo`/`printf`/`cat` writes,
 string/heredoc-body/pipeline/argument, retiring the regex false-positive
 treadmill (#1701/#1721/#1722/#1848/#2052/#2058) and the remote-exec guard
 (#1900). They are style nudges that **fail open** when `ast-grep` is absent
-(no regex twin, #2008); the safety blocks below stay pure-regex and fire in
-every context, except inside a quoted heredoc body fed to `cat`/`tee`/`gh`/`git`
-with no pipe (#3363). The three **read** rules additionally require the read to be the
+(no regex twin, #2008); the safety blocks in `bash-safety.sh` stay pure-regex
+and fire in every context. The three **read** rules additionally require the read to be the
 **whole command** (#2148) — `cat f.md` blocks, `cd repo && cat f.md` and
 `ls d/; head -20 f` do not; the write rules are unscoped by that narrowing.
 
@@ -67,6 +64,32 @@ with no pipe (#3363). The three **read** rules additionally require the read to 
 blocked — those redirects were demoted to non-blocking hints in the opt-in
 teach hook (`bash-antipatterns-teach.sh`). See
 `.claude/rules/hook-block-vs-nudge.md` for the block-vs-nudge litigation.
+
+### bash-safety.sh
+
+A PreToolUse hook holding the Bash **safety** blocks, split out of
+`bash-antipatterns.sh` so they can be exported to other harnesses without that
+hook's Claude-Code-specific tool advice (#2788). Every detector is pure regex,
+fires in every context (sandboxes and subagents included, with or without
+`ast-grep`), and sources no library.
+
+| Pattern | Reminder |
+|---------|----------|
+| `git add -A` / `git add --all` / `git add .` | Stage specific files by name instead |
+| Two index-modifying git commands chained with `&&` (`git add a && git commit`) | One `git add -- A B C`, then `git commit` as a separate call (index.lock races) |
+| `git reset --hard` | Use `git pull`, `git restore`, or `git reset --soft` instead |
+| `git push -u origin main:feat/x` from `main` | Push without `-u` |
+| `curl \| sh` / `wget \| bash` | Download first, review, then execute |
+| Fork bombs | Blocked unconditionally |
+| `chmod 777` | Use restrictive permissions (755, 644, 600) |
+| Write to block device | Blocked unconditionally |
+
+Heredoc bodies and trailing `#` comments are data, not commands, for the
+line-anchored git blocks (#2106, #2431). The network-to-shell, fork-bomb,
+`chmod 777` and block-device checks skip a quoted heredoc body fed to
+`cat`/`tee`/`gh`/`git` with no pipe (#3363). The pi export
+(`scripts/generate-pi-hook-extension.py`) includes this hook and leaves
+`bash-antipatterns.sh` out. Pinned by `hooks/test-bash-safety.sh`.
 
 ### git-stash-session-init.sh
 
@@ -675,6 +698,11 @@ Then add to your `.claude/settings.json`:
             "type": "command",
             "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/bash-antipatterns.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/bash-safety.sh",
+            "timeout": 5
           }
         ]
       }
@@ -697,6 +725,11 @@ If using this plugin repository, reference the hooks directly:
           {
             "type": "command",
             "command": "bash /path/to/hooks-plugin/hooks/bash-antipatterns.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash /path/to/hooks-plugin/hooks/bash-safety.sh",
             "timeout": 5
           }
         ]

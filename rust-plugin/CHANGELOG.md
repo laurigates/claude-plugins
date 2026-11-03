@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.4...rust-plugin-v1.8.0) (2026-11-03)
+
+
+### Features
+
+* **rust-plugin:** add cargo-dist skill for release binaries ([6bc9f8c](https://github.com/laurigates/claude-plugins/commit/6bc9f8cd3a9ec5ab33b0f95047df0b2a4b17e98f)), closes [#3303](https://github.com/laurigates/claude-plugins/issues/3303)
+
 ## [1.7.4](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.3...rust-plugin-v1.7.4) (2026-11-02)
 
 

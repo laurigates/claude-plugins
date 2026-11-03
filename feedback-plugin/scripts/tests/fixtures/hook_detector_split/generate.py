@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate `t.jsonl` from the DEPLOYED bash-antipatterns.sh block messages.
+"""Regenerate `t.jsonl` from the DEPLOYED bash-antipatterns.sh / bash-safety.sh block messages.
 
 The seven REMINDER-format detector messages are EXTRACTED from the shipped
 hook source, never retyped: a hand-copied message reads identically in a diff
@@ -22,7 +22,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[4]
-HOOK_SCRIPT = REPO_ROOT / "hooks-plugin" / "hooks" / "bash-antipatterns.sh"
+# #2788 split the safety blocks (broad git staging, network-to-shell pipes,
+# ...) out of bash-antipatterns.sh into bash-safety.sh. A detector's message is
+# wrapped with the script that actually emits it, so the fixture carries the
+# real `[bash .../bash-safety.sh]` prefix the parser has to recognise.
+HOOK_SCRIPTS = {
+    name: REPO_ROOT / "hooks-plugin" / "hooks" / f"{name}.sh"
+    for name in ("bash-antipatterns", "bash-safety")
+}
 
 WRAPPER = "PreToolUse:Bash hook error: [bash ${CLAUDE_PLUGIN_ROOT}/hooks/%s.sh]: "
 
@@ -164,6 +171,15 @@ def block_messages(text: str) -> list[str]:
         i = k + 1
 
 
+def deployed() -> list[tuple[str, str]]:
+    """(script name, message) for every `block "..."` in both hook files."""
+    return [
+        (name, msg)
+        for name, path in HOOK_SCRIPTS.items()
+        for msg in block_messages(path.read_text(encoding="utf-8"))
+    ]
+
+
 def select(messages: list[str], needle: str) -> str:
     hits = [m for m in messages if needle in m.lower()]
     if len(hits) != 1:
@@ -176,13 +192,14 @@ def select(messages: list[str], needle: str) -> str:
 
 
 def records() -> list[dict]:
-    messages = block_messages(HOOK_SCRIPT.read_text(encoding="utf-8"))
+    pairs = deployed()
+    owner = {msg: name for name, msg in pairs}
+    messages = [msg for _name, msg in pairs]
     rows: list[tuple[str, str, str]] = []
 
     for needle, command, _sig in DETECTORS + OTHERS:
-        rows.append(
-            (command, WRAPPER % "bash-antipatterns" + select(messages, needle), "hook")
-        )
+        msg = select(messages, needle)
+        rows.append((command, WRAPPER % owner[msg] + msg, "hook"))
     body, command, _sig = SYNTHETIC_OTHER
     rows.append((command, WRAPPER % "bash-antipatterns" + body, "hook"))
     for kind, script, body, command, _sig in CONTROLS:

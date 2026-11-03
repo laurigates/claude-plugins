@@ -345,6 +345,23 @@ DETECTOR_SIGNATURES = (
 )
 
 
+def _bash_safety_rebucket(before: dict, after: dict) -> bool:
+    """The one bucket move the #2788 split permits outside `:other`.
+
+    bash-safety.sh blocks used to come from bash-antipatterns.sh. A baseline
+    parser that predates the split reads the new `[bash .../bash-safety.sh]`
+    prefix as `hook:unclassified`; the current parser keeps those blocks on
+    their `hook:bash-antipatterns:*` detector keys. Once the baseline carries
+    the split, this matches nothing.
+    """
+    return (
+        before["signature"] == "hook:unclassified"
+        and after["signature"].startswith("hook:bash-antipatterns:")
+        and "bash-safety.sh" in before["evidence"]
+        and before["evidence"] == after["evidence"]
+    )
+
+
 def _detector_generator():
     """The fixture generator module, imported for its hook-source extractor.
 
@@ -428,7 +445,7 @@ def test_detector_fixture_matches_deployed_hook():
     `python3 feedback-plugin/scripts/tests/fixtures/hook_detector_split/generate.py`.
     """
     gen = _detector_generator()
-    messages = gen.block_messages(HOOK_SCRIPT.read_text(encoding="utf-8"))
+    messages = [msg for _script, msg in gen.deployed()]
 
     # Compare DECODED tool_result bodies, not the raw JSON: encoding choices
     # (ensure_ascii, escaping) would otherwise masquerade as drift.
@@ -444,7 +461,7 @@ def test_detector_fixture_matches_deployed_hook():
     for needle, _command, expected_sig in gen.DETECTORS:
         deployed = gen.select(messages, needle)
         assert deployed in fixture_text, (
-            f"fixture drifted from hooks-plugin/hooks/bash-antipatterns.sh for "
+            f"fixture drifted from hooks-plugin/hooks/bash-{{antipatterns,safety}}.sh for "
             f"{expected_sig}; regenerate it from the deployed block message"
         )
         assert expected_sig in DETECTOR_SIGNATURES, (
@@ -513,6 +530,8 @@ def test_dual_parser_only_other_events_change_bucket():
             )
         if before["signature"] == after["signature"]:
             continue
+        if _bash_safety_rebucket(before, after):
+            continue
         assert before["signature"] == catchall and after["signature"] in detectors, (
             f"illegal bucket move at {before['ts']}: "
             f"{before['signature']} -> {after['signature']}"
@@ -542,7 +561,13 @@ def test_dual_parser_only_other_events_change_bucket():
             out[ev["signature"]] = out.get(ev["signature"], 0) + 1
         return out
 
-    before_counts, after_counts = counts(old), counts(new)
+    # Count the baseline as if the #2788 re-bucket had already happened, so
+    # every other signature must still match exactly.
+    old_effective = [
+        after if _bash_safety_rebucket(before, after) else before
+        for before, after in zip(old, new)
+    ]
+    before_counts, after_counts = counts(old_effective), counts(new)
     for sig in set(before_counts) | set(after_counts):
         if sig == catchall or sig in detectors:
             continue
@@ -805,6 +830,17 @@ def test_dual_parser_stop_feedback_is_purely_additive():
             remaining = [json.dumps(e, sort_keys=True) for e in new]
             for ev in old:
                 key = json.dumps(ev, sort_keys=True)
+                if key not in remaining:
+                    # The #2788 split's re-bucket: same event, detector key.
+                    moved = [
+                        k
+                        for k in remaining
+                        if _bash_safety_rebucket(ev, json.loads(k))
+                        and json.loads(k)["ts"] == ev["ts"]
+                    ]
+                    if moved:
+                        remaining.remove(moved[0])
+                        continue
                 assert key in remaining, (
                     f"{d.name}: baseline event lost or altered: {key[:200]}"
                 )

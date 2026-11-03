@@ -81,6 +81,27 @@ The `pr-closed`-dominates rule keeps an ambiguous abandoned-vs-superseded PR fro
 being auto-closed in the bounded scheduled apply even when it sits alongside
 merged/closed siblings.
 
+### Link strength: text refs report, UDAs close
+
+The verdicts in § Classification authority apply as written only to a task with a `ghid`/`ghpr` UDA. A
+task linked **only** by text refs whose items are all done gets verdict
+`review` instead (issue #3126):
+
+| Link source | All refs done | Close method |
+|-------------|---------------|--------------|
+| `ghid`/`ghpr` UDA | `pr-merged` / `pr-closed` / `issue-closed` | bulk / done (subject to `--only-verdicts`) |
+| text refs only | `review` | keep — never closed |
+
+Tasks routinely cite a merged PR as background ("promoted in PR #2479 — add the
+section to REFERENCE.md"). In the dry run behind #3126, 7 of 8 text-ref
+`pr-merged` verdicts were open work, and the one correct verdict came from a
+`ghpr` UDA. `review` is counted in `REVIEW_COUNT`, not `STALE_COUNT`, so the
+SessionStart drift line and the scheduled notifier count UDA-backed verdicts
+only. `verdict_allowed` rejects `review` even when `--only-verdicts` lists it.
+Text refs still resolve (the `upstream=` field shows their state), so the
+`review` list is the input for deciding later whether a narrower text rule is
+worth adding.
+
 ## The two close paths — and why
 
 | Path | Used for | Mechanism | Trade-off |

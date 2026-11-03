@@ -7,6 +7,7 @@
     "name": "Lauri Gates"
   },
   "license": "MIT",
+  "repository": "https://github.com/laurigates/claude-plugins",
   "keywords": [
     "communication",
     "google-chat",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.14.0...feedback-plugin-v1.14.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** classify bash-safety.sh blocks under their detector keys ([f13c3fa](https://github.com/laurigates/claude-plugins/commit/f13c3fa7de006c8a27afa9f177e957137f57727f)), closes [#2788](https://github.com/laurigates/claude-plugins/issues/2788)
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.3...feedback-plugin-v1.14.0) (2026-11-02)
 
 

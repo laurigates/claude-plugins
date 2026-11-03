@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-03
 reviewed: 2025-12-16
 description: "Test frameworks: Vitest, Jest, pytest, cargo-nextest. Use when setting up test infrastructure, migrating to a modern framework, or validating coverage config."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,9 +25,9 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 
 ## Context
 
-- Package.json: !`find . -maxdepth 1 -name \'package.json\'`
-- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
-- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Package.json: !`find . -maxdepth 1 -name 'package.json'`
+- Pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- Cargo.toml: !`find . -maxdepth 1 -name 'Cargo.toml'`
 - Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \)`
 - Pytest in pyproject: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -c 'tool.pytest' {} +`
 - Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \)`

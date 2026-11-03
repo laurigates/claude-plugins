@@ -2,7 +2,7 @@
 # shellcheck disable=SC2016,SC2317,SC2329  # SC2016: single-quoted literals are grep/order patterns, not expansions; SC2317 (0.10 name) and SC2329 (0.11 name): helpers are reached through yn/rc's "$@" dispatch
 # test-no-force-stack.sh — semantic regression test for the no-force stacked-merge
 # route in the git-merge-hazards skill (references/no-force-push-stack.md, #2826),
-# and for the rollup gate in references/stacked-chain-push.md.
+# and for the CI-wait pointer in references/stacked-chain-push.md.
 #
 # Part 1 executes the reference's own bash blocks. The Classify block assigns the
 # route. The two Case A blocks (update-branch, and the local merge) and the Case B
@@ -85,15 +85,11 @@
 #      baseline must name the bump as a Subproject line, and step 4 must stop.
 #   EB the reviewed baseline is empty (reviewed_tip is the pre-squash tip) and step 4's diff is
 #      empty too. Both sides compare equal, so step 4 must refuse; a control shows the push it stops.
-#   G  the rollup gate in stacked-chain-push.md, executed on fixture sequences: two
-#      equal reads pass, an extra IN_PROGRESS entry on the second read blocks, a
-#      MERGED PR stops at its first read, and a gate that never settles stops at
-#      its deadline. The gate's sleep is stubbed to advance SECONDS.
 #
 # Part 2 pins the text the recipes cannot express, each pin with a control.
 #
 # Every scenario runs git in a sandbox (mktemp guard; the GIT_DIR family unset,
-# #1745). Needs git, jq and python3, all present on the runner, so a missing one
+# #1745). Needs git and python3, both present on the runner, so a missing one
 # fails the run instead of skipping it.
 
 set -uo pipefail
@@ -141,7 +137,6 @@ setup() { # setup <description> <cmd...>
     "$@" || { printf 'FAIL: setup step failed (%s): %s\n' "$desc" "$*" >&2; exit 1; }
 }
 
-command -v jq >/dev/null 2>&1 || { echo "FAIL: jq is required by the rollup gate fixtures" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "FAIL: python3 is required by the body-size band check" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
@@ -560,7 +555,6 @@ CASE_A_UPDATE_RAW="$(doc_block_of "$NF" '^## Case A' 1)"   # update-branch chain
 CASE_A_LOCAL_RAW="$(doc_block_of "$NF" '^## Case A' 2)"    # local merge in a worktree
 CASE_B_RAW="$(doc_block_of "$NF" '^## Case B' 1)"
 REJECT_RAW="$(doc_block_of "$NF" '^## If the push is rejected' 1)"   # the recovery after a refused push
-GATE_RAW="$(doc_block_of "$GF" '^## 3[.]' 1)"              # the rollup gate
 
 # The four empty-diff gates, as the reference writes them. They compare tree SHAs: Case A's update-branch
 # check and merge, then Case B's before-merge and resolved-index gates. Pins and controls match them.
@@ -634,66 +628,13 @@ update_chain() {
     PATH="$GH_BIN:$PATH" GH_STUB_MODE="$mode" rc recipe "$work" /unused "$CASE_A_UPDATE_RAW" "$@"
 }
 
-# The gate block polls gh. The stub answers the nth gh call with the nth fixture, and the
-# last fixture repeats. gh runs inside $(...), so its count comes from the call log, not
-# from a variable. sleep advances SECONDS by ten minutes, so the block's deadline is
-# reached in a few reads. sleep runs in the block's own shell, where a run of more than
-# 50 reads exits 99, so a gate that lost its deadline or its escape ends the test
-# instead of hanging it.
-GATE_STUB='FX=("$@"); total=${#FX[@]}
-gh() {
-    echo x >> "$GATE_CALL_LOG"
-    local i
-    i=$(wc -l < "$GATE_CALL_LOG" | tr -d " ")
-    [ "$i" -gt "$total" ] && i=$total
-    printf "%s" "${FX[$((i - 1))]}"
-}
-sleep() {
-    SECONDS=$((SECONDS + 600))
-    [ "$(wc -l < "$GATE_CALL_LOG" | tr -d " ")" -gt 50 ] && exit 99
-}'
-
-# gate_run <fixture>...: runs the rollup gate's bash block with the stub above. Exit 0
-# when the gate passes. The pushed SHA is GATE_SHA and the PR is 7.
-GATE_SHA=1111111111111111111111111111111111111111
-OLD_SHA=2222222222222222222222222222222222222222
-gate_run() {
-    local script
-    script="$GATE_STUB"$'\n'"n=7"$'\n'"sha='$GATE_SHA'"$'\n'"$GATE_RAW"
-    : > "$sandbox/gate-calls"
-    GATE_CALL_LOG="$sandbox/gate-calls" bash -c "$script" gate "$@" >/dev/null 2>&1
-}
-# gate_calls: how many gh reads the last gate_run made.
-gate_calls() { wc -l < "$sandbox/gate-calls" | tr -d ' '; }
-# bounded_calls: yes when the last gate_run made one to five reads.
-bounded_calls() {
-    local c
-    c="$(gate_calls)"
-    if [ "$c" -ge 1 ] && [ "$c" -le 5 ]; then echo yes; else echo no; fi
-}
-
-# fixture <head-sha> <rollup-json>: a `gh pr view --json state,headRefOid,statusCheckRollup`
-# payload for an OPEN PR. fixture_in <state> <head-sha> <rollup-json> takes the state too.
-fixture_in() { printf '{"state":"%s","headRefOid":"%s","statusCheckRollup":%s}' "$1" "$2" "$3"; }
-fixture() { fixture_in OPEN "$1" "$2"; }
-
-E_OK='[{"name":"lint","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"e2e","status":"COMPLETED","conclusion":"SKIPPED"},{"name":"docs","status":"COMPLETED","conclusion":"NEUTRAL"}]'
-E_EMPTY='[]'
-E_RUNNING='[{"name":"lint","status":"IN_PROGRESS","conclusion":null}]'
-E_FAILED='[{"name":"lint","status":"COMPLETED","conclusion":"FAILURE"}]'
-E_STALE='[{"name":"lint","status":"IN_PROGRESS","conclusion":"SUCCESS"}]'
-E_LEGACY_OK='[{"context":"ci/legacy","state":"SUCCESS"}]'
-E_LEGACY_PENDING='[{"context":"ci/legacy","state":"PENDING"}]'
-# E_OK with one more entry still registering, and a passing rollup with a different count.
-E_OK_PLUS='[{"name":"lint","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"e2e","status":"COMPLETED","conclusion":"SKIPPED"},{"name":"docs","status":"COMPLETED","conclusion":"NEUTRAL"},{"name":"lint-2","status":"IN_PROGRESS","conclusion":null}]'
-E_OK_TWO='[{"name":"lint","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"e2e","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"docs","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"lint-2","status":"COMPLETED","conclusion":"SUCCESS"}]'
 
 # ---------------------------------------------------------------------------
 # Part 1 — execute the reference's own recipes
 # ---------------------------------------------------------------------------
 
-check "reference: the Classify, Case A (both), Case B, rejected-push and gate recipes are present" yes \
-    "$(yn test -n "$CLASSIFY_RAW" -a -n "$CASE_A_UPDATE_RAW" -a -n "$CASE_A_LOCAL_RAW" -a -n "$CASE_B_RAW" -a -n "$REJECT_RAW" -a -n "$GATE_RAW")"
+check "reference: the Classify, Case A (both), Case B and rejected-push recipes are present" yes \
+    "$(yn test -n "$CLASSIFY_RAW" -a -n "$CASE_A_UPDATE_RAW" -a -n "$CASE_A_LOCAL_RAW" -a -n "$CASE_B_RAW" -a -n "$REJECT_RAW")"
 check "control: the gh stub records a direct call" yes "$(yn gh_invoked "$GH_BIN/gh" pr view child)"
 
 # A: main gained nothing after the squash, and the child holds the base's tip.
@@ -1443,38 +1384,6 @@ EB_UNGUARDED="${CASE_B_RAW/"$EB_GUARD"/true}"
 check "EB control: without the guard, the same run pushes the change-free merge" zero \
     "$(rc recipe "$EB2_W" "$sandbox/eb2/wt" "$EB_UNGUARDED" "$EB2_PRE" "$EB2_SQ" "$EB2_PRE" "$EB2_PRE")"
 
-# G: the rollup gate. The block reads the PR again after 30 seconds and passes only when
-# two reads agree. Each fixture sequence exercises one rule the gate names.
-check "G: a head at the pushed SHA, with every entry COMPLETED and passing, passes on two equal reads" zero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_OK")" "$(fixture "$GATE_SHA" "$E_OK")")"
-check "G: a passing read followed by one with an extra IN_PROGRESS entry blocks" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_OK")" "$(fixture "$GATE_SHA" "$E_OK_PLUS")")"
-check "G: a passing read followed by a passing read with another count waits for a third to agree" zero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_OK")" "$(fixture "$GATE_SHA" "$E_OK_TWO")")"
-check "G: a head that is not the pushed SHA blocks (a read after a push can return the old tip)" nonzero \
-    "$(rc gate_run "$(fixture "$OLD_SHA" "$E_OK")")"
-check "G: an empty rollup blocks (zero entries before a second run registers)" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_EMPTY")")"
-check "G: a null rollup blocks" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" null)")"
-check "G: an entry still IN_PROGRESS with a null conclusion blocks" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_RUNNING")")"
-check "G: a FAILURE conclusion blocks" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_FAILED")")"
-check "G: a passing conclusion does not count while the status is not COMPLETED" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_STALE")")"
-check "G: a legacy commit status in SUCCESS passes (it has no status field)" zero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_LEGACY_OK")")"
-check "G: a legacy commit status still PENDING blocks" nonzero \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_LEGACY_PENDING")")"
-check "G: an empty gh read blocks (no state, so the loop never passes)" nonzero \
-    "$(rc gate_run "")"
-check "G: a PR that merged while the gate waits blocks at its first read" "nonzero 1" \
-    "$(rc gate_run "$(fixture_in MERGED "$GATE_SHA" "$E_OK")") $(gate_calls)"
-check "G: a PR that closed while the gate waits blocks at its first read" "nonzero 1" \
-    "$(rc gate_run "$(fixture_in CLOSED "$GATE_SHA" "$E_RUNNING")") $(gate_calls)"
-check "G: an open PR that never settles stops at the deadline, within a few reads" "nonzero yes" \
-    "$(rc gate_run "$(fixture "$GATE_SHA" "$E_RUNNING")") $(bounded_calls)"
 
 # ---------------------------------------------------------------------------
 # Part 2 — structural pins the recipes cannot express, each with a control
@@ -1591,15 +1500,6 @@ tree_gates_pinned() {
     done
 }
 
-# gate_timeout_ok <file>: exit 0 when the explicit background `timeout` (milliseconds) exceeds
-# the gate's own deadline (seconds), so the block ends by its own exit, not by a harness kill.
-gate_timeout_ok() {
-    local deadline_s timeout_ms
-    deadline_s="$(grep -oE 'SECONDS \+ [0-9]+' "$1" | head -1 | grep -oE '[0-9]+$' || true)"
-    timeout_ms="$(grep -oE 'timeout` of `[0-9]+' "$1" | head -1 | grep -oE '[0-9]+$' || true)"
-    [ -n "$deadline_s" ] && [ -n "$timeout_ms" ] && [ "$timeout_ms" -gt $((deadline_s * 1000)) ]
-}
-
 # modified_ok <file>: exit 0 when the frontmatter `modified:` date is 2026-10-17 or later.
 modified_ok() {
     local d
@@ -1624,8 +1524,6 @@ write_lines "$sandbox/twodot-ref.md" \
     'reviewed=$(git diff -U0 "$pre" "$reviewed_tip" -- <source paths>)'
 write_lines "$sandbox/count-gate.md" \
     'gh pr view "$n" --json statusCheckRollup --jq '"'"'length'"'"''
-write_lines "$sandbox/reversed-gate.md" \
-    'and all(.statusCheckRollup[]; .status == "COMPLETED")'
 
 # Fixtures for the pins added with the polish round: a bash block of plain merges (a control for
 # the --no-ff pin), the same block with --no-ff, a bare direction pointer, and a workflow whose
@@ -1876,13 +1774,6 @@ check "control: a reference that never names merge.verifySignatures fails that p
 check "gate: count gate removed (--jq 'length' absent)" yes "$(yn lacks "$GF" "--jq 'length'")"
 check "control: a fixture carrying the count gate fails the absence pin" no \
     "$(yn lacks "$sandbox/count-gate.md" "--jq 'length'")"
-check "gate: the rollup is read" yes "$(has "$GF" 'statusCheckRollup')"
-check "gate: head SHA check present" yes "$(has "$GF" 'headRefOid')"
-check "gate: completion check present" yes "$(has "$GF" 'COMPLETED')"
-check "gate: skipped and neutral conclusions named as accepted" yes "$(has "$GF" 'SKIPPED')"
-check "gate: legacy commit statuses are read through state" yes "$(has "$GF" '(.conclusion // .state)')"
-check "control: a fixture without the state fallback fails the pin" no \
-    "$(has "$sandbox/reversed-gate.md" '(.conclusion // .state)')"
 check "gate: the cited registration race names its repository" yes \
     "$(has "$GF" 'ForumViriumHelsinki/.github-private #13, #15, #19')"
 check "control: the registration race no longer cites claude-plugins PRs" no \
@@ -1891,29 +1782,109 @@ check "gate: Recovery bullet kept" yes \
     "$(has "$GF" '- **Recovery** when auto-closed: the rebased commits survive in local objects')"
 check "gate: Recovery refspec kept byte-identical" yes \
     "$(has "$GF" '(`git reflog`) — `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`,')"
-check "gate: the poll has a wall-clock deadline" yes "$(has "$GF" 'deadline=$((SECONDS + 1800))')"
-check "gate: the 30-minute poll is run in the background, past the foreground Bash limit" yes \
-    "$(has "$GF" 'run_in_background: true')"
-check "control: a gate note without the background run fails the pin" no \
-    "$(has "$sandbox/count-gate.md" 'run_in_background: true')"
-write_lines "$sandbox/equal-timeout.md" \
-    'deadline=$((SECONDS + 1800))' \
-    'Run it with `run_in_background: true` and an explicit `timeout` of `1800000`.'
-write_lines "$sandbox/no-timeout.md" \
-    'deadline=$((SECONDS + 1800))' \
-    'Run it with `run_in_background: true`, whose default limit is 30 minutes.'
-write_lines "$sandbox/larger-timeout.md" \
-    'deadline=$((SECONDS + 1800))' \
-    'Run it with `run_in_background: true` and an explicit `timeout` of `1800001`.'
-check "gate: the background run carries an explicit timeout above the gate's own deadline" yes \
-    "$(yn gate_timeout_ok "$GF")"
-check "control: a timeout equal to the deadline fails the pin (the harness kill races the exit)" no \
-    "$(yn gate_timeout_ok "$sandbox/equal-timeout.md")"
-check "control: a note with no explicit timeout fails the pin" no "$(yn gate_timeout_ok "$sandbox/no-timeout.md")"
-check "control: a timeout above the deadline passes the pin" yes "$(yn gate_timeout_ok "$sandbox/larger-timeout.md")"
-check "gate: a PR that is no longer OPEN ends the poll" yes "$(has "$GF" 'MERGED|CLOSED) break')"
-check "control: a loop without the deadline fails the pin" no \
-    "$(has "$sandbox/count-gate.md" 'deadline=$((SECONDS + 1800))')"
+
+# The CI wait in §3 points at scripts/merge-chain.sh. The hand-written rollup poll it replaced
+# read a run cancelled by workflow concurrency as a failure (#3380), so §3 must carry no bash
+# block that polls the rollup itself, and its invocation must use flags the script declares.
+GATE_BLOCKS="$(awk '/^[ \t]*```bash$/ {inside = 1; next} inside && /^[ \t]*```$/ {inside = 0; next} inside {print}' "$GF")"
+MC_FILE="${SKILL_DIR}/scripts/merge-chain.sh"
+check "gate: the CI wait points at merge-chain.sh with a single-PR invocation" yes \
+    "$(has "$GF" 'scripts/merge-chain.sh" --repo OWNER/REPO --prs <child> --review-ts "$REVIEW_TS"')"
+check "gate: the review time is recorded before the force-push" yes "$(has "$GF" 'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)')"
+check "gate: the removal names its cause (#3380)" yes "$(has "$GF" '#3380')"
+check "gate: the case merge-chain.sh does not cover is named" yes "$(has "$GF" 'Not covered: waiting on a PR you are not merging now')"
+check "gate: the wait-only alternative is not presented as a merge gate" yes "$(has "$GF" 'its exit 0 is not a merge gate')"
+check "gate: no bash block in the reference polls statusCheckRollup by hand" no \
+    "$(yn grep -qF -- 'statusCheckRollup' <<<"$GATE_BLOCKS")"
+check "gate: no bash block in the reference carries a sleep loop" no \
+    "$(yn grep -qE -- '(^|[^A-Za-z_])sleep [0-9]' <<<"$GATE_BLOCKS")"
+check "control: the extracted bash blocks are non-empty (the merge-chain call is in one)" yes \
+    "$(yn grep -qF -- 'merge-chain.sh' <<<"$GATE_BLOCKS")"
+write_lines "$sandbox/hand-poll.md" '```bash' \
+    'snap=$(gh pr view "$n" --json state,headRefOid,statusCheckRollup)' \
+    'sleep 30' '```'
+HAND_POLL_BLOCKS="$(awk '/^[ \t]*```bash$/ {inside = 1; next} inside && /^[ \t]*```$/ {inside = 0; next} inside {print}' "$sandbox/hand-poll.md")"
+check "control: a hand-written rollup poll fails the no-poll pin" yes \
+    "$(yn grep -qF -- 'statusCheckRollup' <<<"$HAND_POLL_BLOCKS")"
+for flag in '--repo' '--prs' '--review-ts'; do
+    check "gate: merge-chain.sh's usage header declares $flag" yes "$(has "$MC_FILE" "#   $flag")"
+done
+check "control: an undeclared flag is reported absent from the usage header" no "$(has "$MC_FILE" '#   --expected-sha')"
+
+# The review time is recorded at the pre-push Check, not beside the merge-chain call: a time
+# taken after the push no longer guards commits pushed between the Check and the push.
+# bash_block_with <file> <needle>: print every ```bash block of <file> that contains <needle>.
+bash_block_with() {
+    awk -v needle="$2" '
+        /^[ \t]*```bash$/ {inside = 1; buf = ""; next}
+        inside && /^[ \t]*```$/ {inside = 0; if (index(buf, needle)) printf "%s", buf; next}
+        inside {buf = buf $0 "\n"}' "$1"
+}
+MC_BLOCK="$(bash_block_with "$GF" 'merge-chain.sh')"
+CHECK_BLOCK="$(bash_block_with "$GF" 'git log --oneline origin/main..<sha>')"
+check "gate: the merge-chain block does not take the review time itself (post-push time)" no \
+    "$(yn grep -qF -- '$(date' <<<"$MC_BLOCK")"
+check "control: the merge-chain block was extracted" yes "$(yn grep -qF -- '--review-ts' <<<"$MC_BLOCK")"
+check "gate: the pre-push Check block records the review time" yes \
+    "$(yn grep -qF -- 'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' <<<"$CHECK_BLOCK")"
+write_lines "$sandbox/post-push-ts.md" '```bash' \
+    'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' \
+    'bash merge-chain.sh --repo OWNER/REPO --prs <child> --review-ts "$REVIEW_TS"' '```'
+check "control: a review time taken in the merge-chain block fails the pin" yes \
+    "$(yn grep -qF -- '$(date' <<<"$(bash_block_with "$sandbox/post-push-ts.md" 'merge-chain.sh')")"
+
+# mc_bound_s <merge-chain.sh>: worst-case seconds for one PR, from the script's own constants:
+# MC_MAX_UPDATES CI waits, each up to --timeout plus one poll, then the merge read-back loop.
+mc_bound_s() {
+    local t u p r
+    t="$(sed -n 's/^MC_TIMEOUT=\([0-9][0-9]*\).*/\1/p' "$1" | head -1)"
+    u="$(sed -n 's/^MC_MAX_UPDATES=\([0-9][0-9]*\).*/\1/p' "$1" | head -1)"
+    p="$(sed -n 's/^MC_POLL="\${MERGE_CHAIN_POLL_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$1" | head -1)"
+    r="$(grep -oE 'while \[ "\$tries" -lt [0-9]+ \]' "$1" | head -1 | grep -oE '[0-9]+' || true)"
+    [ -n "$t" ] && [ -n "$u" ] && [ -n "$p" ] && [ -n "$r" ] || return 1
+    echo $((u * (t + p) + r * p))
+}
+# harness_timeout_ok <reference> <merge-chain.sh>: exit 0 when the reference's explicit
+# background `timeout` (milliseconds) exceeds that bound, so the harness does not kill the
+# script mid-wait (the default background limit is 30 minutes).
+harness_timeout_ok() {
+    local bound timeout_ms
+    bound="$(mc_bound_s "$2")" || return 1
+    timeout_ms="$(grep -oE 'timeout` of `[0-9]+' "$1" | head -1 | grep -oE '[0-9]+$' || true)"
+    [ -n "$timeout_ms" ] && grep -qF 'run_in_background: true' "$1" && [ "$timeout_ms" -gt $((bound * 1000)) ]
+}
+check "gate: merge-chain.sh's worst-case run time is computable from its constants" yes "$(yn mc_bound_s "$MC_FILE")"
+check "gate: the background timeout exceeds merge-chain.sh's worst case for one PR" yes \
+    "$(yn harness_timeout_ok "$GF" "$MC_FILE")"
+write_lines "$sandbox/old-timeout.md" \
+    'Run it with `run_in_background: true` and an explicit `timeout` of `2100000`.'
+write_lines "$sandbox/no-timeout.md" 'Run it with `run_in_background: true`.'
+write_lines "$sandbox/big-timeout.md" \
+    'Run it with `run_in_background: true` and an explicit `timeout` of `6000000`.'
+sed 's/^MC_MAX_UPDATES=3 /MC_MAX_UPDATES=4 /' "$MC_FILE" > "$sandbox/mc-four-updates.sh"
+check "control: the old 35-minute timeout (one wait's budget) fails the pin" no \
+    "$(yn harness_timeout_ok "$sandbox/old-timeout.md" "$MC_FILE")"
+check "control: a note with no explicit timeout fails the pin" no "$(yn harness_timeout_ok "$sandbox/no-timeout.md" "$MC_FILE")"
+check "control: a timeout above the bound passes the pin" yes "$(yn harness_timeout_ok "$sandbox/big-timeout.md" "$MC_FILE")"
+check "control: raising MC_MAX_UPDATES to 4 makes the same timeout fail (the bound reads the script)" no \
+    "$(yn harness_timeout_ok "$sandbox/big-timeout.md" "$sandbox/mc-four-updates.sh")"
+
+# Delta-apply: the operator's merge commit $C is not exempt from the late-commit guard (its
+# committer is not noreply@github.com), so the review time is taken after git commit-tree and
+# before the push.
+DELTA_FILE="${REF_DIR}/delta-apply-stack.md"
+DELTA_BLOCK="$(bash_block_with "$DELTA_FILE" 'git commit-tree')"
+delta_order_ok() {
+    local c ts p
+    c="$(grep -n 'git commit-tree' <<<"$1" | head -1 | cut -d: -f1)"
+    ts="$(grep -nF 'REVIEW_TS=$(date -u' <<<"$1" | head -1 | cut -d: -f1)"
+    p="$(grep -n 'git push' <<<"$1" | head -1 | cut -d: -f1)"
+    [ -n "$c" ] && [ -n "$ts" ] && [ -n "$p" ] && [ "$c" -lt "$ts" ] && [ "$ts" -lt "$p" ]
+}
+check "delta-apply: REVIEW_TS is taken after git commit-tree and before the push" yes "$(yn delta_order_ok "$DELTA_BLOCK")"
+check "control: a review time taken before git commit-tree fails the order pin" no \
+    "$(yn delta_order_ok "$(printf '%s\n' 'REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)' 'C=$(git commit-tree "$T")' 'git push origin "${C}:refs/heads/x"')")"
+check "delta-apply: names why the operator's merge commit is not exempt" yes "$(has "$DELTA_FILE" 'its committer is you, not `noreply@github.com`')"
 
 for grant in 'Bash(git merge *)' 'Bash(git checkout *)' 'Bash(git worktree *)' \
     'Bash(git diff *)' 'Bash(git rev-list *)' 'Bash(git add *)' 'Bash(git commit *)' \
@@ -1969,9 +1940,10 @@ check "control: a body without the caveat fails the bucket pin" no \
     "$(has "$sandbox/reversed-skill.md" 'REVIEW bucket')"
 check "skill: frontmatter grants git cat-file (the Record block's object check)" yes \
     "$(has "$SF" 'Bash(git cat-file *)')"
-check "skill: frontmatter grants sleep (the rollup gate's poll interval)" yes "$(has "$SF" 'Bash(sleep *)')"
+check "skill: frontmatter grants sleep (the mergeability poll's interval)" yes "$(has "$SF" 'Bash(sleep *)')"
 
-check "gh-json-fields: points at the rollup gate" yes "$(has "$FIELDS_FILE" 'stacked-chain-push.md')"
+check "gh-json-fields: points at the CI-wait reference" yes "$(has "$FIELDS_FILE" 'stacked-chain-push.md')"
+check "gh-json-fields: names merge-chain.sh as the CI wait" yes "$(has "$FIELDS_FILE" 'scripts/merge-chain.sh')"
 check "gh-json-fields: two-read stability guidance kept" yes \
     "$(has "$FIELDS_FILE" 'stable across two consecutive reads')"
 check "README: the git-merge-hazards row names the no-force route" yes \
