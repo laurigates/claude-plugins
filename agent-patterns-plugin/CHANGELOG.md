@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.56.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.56.0...agent-patterns-plugin-v2.56.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **git-plugin:** tell delegated agents to hand back on a pr-metadata block ([#3391](https://github.com/laurigates/claude-plugins/issues/3391)) ([ec6cd22](https://github.com/laurigates/claude-plugins/commit/ec6cd221382d57ee750dc74ec6f530870991c708))
+
 ## [2.56.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.55.1...agent-patterns-plugin-v2.56.0) (2026-11-02)
 
 
