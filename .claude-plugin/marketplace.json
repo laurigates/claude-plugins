@@ -529,7 +529,7 @@
       "name": "kernel-plugin",
       "source": "./kernel-plugin",
       "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Lauri Gates"
       },
