@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-02
+modified: 2026-11-03
 reviewed: 2026-06-24
 description: "release-please workflow file, manifest, and config for a single-package repo — setup and compliance audit. Use when adding release-please or upgrading release-please-action."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -26,10 +26,10 @@ Check and configure release-please against project standards.
 ## Context
 
 - Workflow file: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'release-please*'`
-- Config file: !`find . -maxdepth 1 -name \'release-please-config.json\'`
-- Manifest file: !`find . -maxdepth 1 -name \'.release-please-manifest.json\'`
+- Config file: !`find . -maxdepth 1 -name 'release-please-config.json'`
+- Manifest file: !`find . -maxdepth 1 -name '.release-please-manifest.json'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
+- Workflows dir: !`find . -maxdepth 2 -type d -path './.github/workflows'`
 
 **Skills referenced**: `git-plugin:release-please-protection` (protected files), `git-plugin:release-please-configuration` (monorepo strategy); standards tables live in [REFERENCE.md](REFERENCE.md)
 

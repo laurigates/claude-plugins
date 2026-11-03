@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-03
 reviewed: 2026-06-01
 description: "Dockerfile standards: Alpine/slim base, non-root user, multi-stage builds. Use when creating a Dockerfile, hardening security, or auditing image size."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -26,7 +26,7 @@ Check and configure Dockerfile against project standards with emphasis on **mini
 ## Context
 
 - Dockerfiles: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \)`
-- Dockerignore: !`find . -maxdepth 1 -name \'.dockerignore\'`
+- Dockerignore: !`find . -maxdepth 1 -name '.dockerignore'`
 - Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit`
 - Base images: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) -exec grep -hm5 '^FROM' {} +`
 

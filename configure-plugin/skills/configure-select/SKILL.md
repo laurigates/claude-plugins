@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-08-15
+modified: 2026-11-03
 reviewed: 2026-07-05
 description: "Pick-a-component menu for infrastructure standards — configures only the selected ones. Use when setting up one or a few named components (linting, CI, containers, tests)."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
@@ -25,12 +25,12 @@ Interactively select which infrastructure standards checks to run.
 
 ## Context
 
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 - Project type: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
-- Has package.json: !`find . -maxdepth 1 -name \'package.json\'`
-- Has pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
-- Has Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Has package.json: !`find . -maxdepth 1 -name 'package.json'`
+- Has pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- Has Cargo.toml: !`find . -maxdepth 1 -name 'Cargo.toml'`
 
 ## Parameters
 
