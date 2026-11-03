@@ -1,6 +1,6 @@
 # Stacked-Chain Merges: Push by SHA, Mergeability and CI Races
 
-Moved from `SKILL.md` §3; its CI-registration bullet (the rollup gate) diverges from the chezmoi copy, as [sync-notes.md](sync-notes.md) records. Read before any force-push or merge while working down a stacked-PR chain.
+Moved from `SKILL.md` §3; its CI-registration bullet (which points at `scripts/merge-chain.sh`) diverges from the chezmoi copy, as [sync-notes.md](sync-notes.md) records. Read before any force-push or merge while working down a stacked-PR chain.
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
@@ -61,7 +61,8 @@ claude-plugins #1979→#1987):
   recomputes `mergeable` asynchronously; `gh pr merge` right after a push
   fails with "not mergeable" on a perfectly clean PR. Poll
   `gh pr view <n> --json mergeable` until it leaves `UNKNOWN`.
-- **Waiting for CI races check *registration*, not just completion.** A loop on
+- **Waiting for CI races check *registration*, not just completion. Wait and
+  merge with `scripts/merge-chain.sh`, never a hand-written poll.** A loop on
   "zero pending checks" can exit **immediately** after a push/`update-branch`:
   zero pending is trivially true before the jobs are registered. Observed
   2026-07: `state=CLEAN` on a **single** check while three CI jobs had not yet
@@ -69,69 +70,42 @@ claude-plugins #1979→#1987):
   race either. An expected count breaks on path-filtered workflows, whose check
   set changes with the diff (`.claude/rules/gh-json-fields.md`), and a count gate
   passed while a second `lint` run for the same head was still registering
-  (ForumViriumHelsinki/.github-private #13, #15, #19). Gate on the rollup, and merge only when all five
-  hold:
-  1. `headRefOid` equals the full SHA you pushed. A read right after a push can
-     return the old tip, and ForumViriumHelsinki/.github-private #17 merged on a pre-push run.
-  2. `statusCheckRollup` is non-empty.
-  3. No entry has a `status` other than `COMPLETED`.
-  4. Every `conclusion` is `SUCCESS`, `SKIPPED` or `NEUTRAL`. Skipped and neutral
-     are not failures (`gh-json-fields.md`), and a SUCCESS-only gate would
-     deadlock on jobs a path filter skipped on purpose. Any other value blocks,
-     including `null` while a job still runs.
-  5. Checks 2 to 4 hold on two reads about 30 seconds apart, with the same number
-     of entries. One completion read cannot close the window before a second run
-     registers. The second read can. The gate loop in the bash block of this rule
-     takes both reads. It stops at the first read that shows the PR is no longer
-     `OPEN`: a PR that merged while you waited keeps reporting its rollup, so a
-     poll without that escape never exits. It also stops at a 30-minute deadline.
+  (ForumViriumHelsinki/.github-private #13, #15, #19).
 
-  Set `n` to the child's PR number and `sha` to the pushed SHA, then run the loop:
+  Record the review time when the **Check** bullet passes, before the
+  force-push: a rebase gives every commit a new committer date, so a time taken
+  earlier makes the script refuse the child's own commits. After the push, run
+  the script on the child alone:
 
   ```bash
-  deadline=$((SECONDS + 1800))
-  prev=""
-  ok=0
-  while [ "$SECONDS" -lt "$deadline" ]; do
-    snap=$(gh pr view "$n" --json state,headRefOid,statusCheckRollup 2>/dev/null) || snap=""
-    case "$(jq -r '.state // ""' <<<"$snap")" in
-      OPEN) ;;
-      MERGED|CLOSED) break ;;
-      *) prev=""; sleep 30; continue ;;
-    esac
-    if jq -e --arg sha "$sha" '
-        (.headRefOid == $sha)
-        and (.statusCheckRollup | length > 0)
-        and all(.statusCheckRollup[]; (.status // "COMPLETED") == "COMPLETED")
-        and all(.statusCheckRollup[];
-          (.conclusion // .state) as $c | ($c == "SUCCESS" or $c == "SKIPPED" or $c == "NEUTRAL"))' \
-        <<<"$snap" >/dev/null; then
-      count=$(jq '.statusCheckRollup | length' <<<"$snap")
-      if [ -n "$prev" ] && [ "$count" = "$prev" ]; then ok=1; break; fi
-      prev=$count
-    else
-      prev=""
-    fi
-    sleep 30
-  done
-  [ "$ok" -eq 1 ]
+  REVIEW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)   # when the pre-push check passed
+  bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs <child> --review-ts "$REVIEW_TS"
   ```
 
-  The loop can run for 30 minutes, longer than a foreground Bash call allows (2
-  minutes by default, 10 at most). Run the block with `run_in_background: true` and
-  an explicit `timeout` of `2100000` (35 minutes). The default background limit is
-  also 30 minutes, equal to the gate's own deadline, so without a larger `timeout`
-  a gate that never settles ends as a killed task after its last `sleep`, not by the
-  block's own `[ "$ok" -eq 1 ]` exit. Read the exit status when the task finishes:
-  0 means the gate passed, and any other status means do not merge.
+  It runs `gh pr update-branch` (a no-op on a child just rebased onto `main`),
+  waits until every check on the head has completed and two consecutive reads
+  agree, keeps only the latest run of each check, refuses any commit newer than
+  `--review-ts` and a head that moved after CI settled, and merges with
+  `--match-head-commit` and the full 40-character SHA. Its `HEAD_SHA=` line must
+  equal the SHA you pushed. The script takes no expected SHA: a read that still
+  returns the pre-push tip settles on that tip, and the guard's fresh read then
+  stops it with `GUARD_LATE_COMMIT` (`head_moved`), so a stale read fails closed.
+  Flags, statuses and what to do on each: [merge-shepherd.md](merge-shepherd.md).
+  Run it as background Bash: the default `--timeout` is 1800 seconds.
 
-  A failed `gh` read never passes: its state is empty, so the loop takes no pass
-  from it and polls again. `SECONDS` is the loop's clock: the block reads it once
-  at its first line, so the 30 minutes run from there. A legacy commit status
-  (`StatusContext`) has no `status`, so the gate reads it as complete, and its
-  `state` stands in for the conclusion: `SUCCESS` passes, while `PENDING`,
-  `FAILURE` and `ERROR` block. Same root cause as the **single mergeability read**
-  race: an async field read once, too early.
+  This bullet used to carry its own `jq` poll over `statusCheckRollup`. It read
+  every rollup entry alike, so a run cancelled by workflow concurrency, sitting
+  beside the run that superseded it, blocked the merge as a failure: the false
+  `CI_RED` that #3380 fixed in `merge-chain.sh`.
+
+  **Not covered: waiting on a PR you are not merging now.** The script always
+  merges a PR whose CI settles green, and it skips a PR that is a draft or whose
+  author is neither you nor a bot. To only wait, for a child pushed before its
+  base merges or a PR someone else wrote, use
+  `gh pr checks <n> --watch --fail-fast` (or `gh run watch`, per
+  `git-plugin:gh-workflow-monitoring`). It reports only the checks registered so
+  far and does not pin the head SHA, so its exit 0 is not a merge gate: merge
+  through `merge-chain.sh`.
 
 - **Check** before every force-push: `git log --oneline origin/main..<sha>` —
   expect *exactly* the child's commits, nothing more, never empty.

@@ -1,6 +1,6 @@
 ---
 created: 2026-05-11
-modified: 2026-07-29
+modified: 2026-11-03
 reviewed: 2026-07-29
 ---
 
@@ -98,14 +98,16 @@ pending **and** at least N checks". That guards a real race (zero-pending is
 trivially true before jobs register), but a hardcoded `N` breaks on
 **path-filtered** workflows: the same repo yields 7 checks for a PR touching
 `*-plugin/**` and 5 for one touching only `.claude/rules/**`, so `-ge 6` waits
-forever on a perfectly green PR. The skill now gates on the rollup instead: every
-check `COMPLETED`, every conclusion `SUCCESS`, `SKIPPED` or `NEUTRAL`, the
-head SHA equal to the pushed one, and the same answer on two reads. See
+forever on a perfectly green PR. The skill now waits and merges through its
+`scripts/merge-chain.sh` instead of a hand-written poll: every check completed,
+no failing conclusion (`SKIPPED` and `NEUTRAL` pass), and only the latest run of
+each check counted, so a run cancelled by a newer one is not a failure (#3380).
+See
 [stacked-chain-push.md](../../git-plugin/skills/git-merge-hazards/references/stacked-chain-push.md).
 
 Derive the expectation instead of hardcoding it — poll until the check count is
 **stable across two consecutive reads** with nothing pending, and bound the
-whole loop with a deadline. The rollup gate applies the same two-read rule, so a
+whole loop with a deadline. `merge-chain.sh` applies the same two-read rule, so a
 second run that registers between the reads is caught.
 
 ## Default list cap: pass `--limit` when counting or verifying state

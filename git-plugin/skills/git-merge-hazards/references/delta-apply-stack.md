@@ -118,9 +118,11 @@ Brace the variable: unbraced, zsh reads the `:r` of `refs/` as a history
 modifier and sends a mangled refspec. The full table is in
 [stacked-chain-push.md](stacked-chain-push.md).
 
-Wait for CI with the rollup gate in [stacked-chain-push.md](stacked-chain-push.md),
-with `sha` set to `$C`, run the guard in [serial-merge-chain.md](serial-merge-chain.md),
-then merge pinned to the pushed head:
+Then run `scripts/merge-chain.sh --prs <n>` as the CI-registration bullet of
+[stacked-chain-push.md](stacked-chain-push.md) shows, with `--review-ts` taken
+after the gates passed and its `HEAD_SHA=` equal to `$C`. It waits for CI, runs the
+guard in [serial-merge-chain.md](serial-merge-chain.md), and merges pinned to the
+pushed head as this hand command does, resolving the merge method itself:
 
 ```bash
 gh pr merge <n> -R <owner>/<repo> --squash --delete-branch --match-head-commit "$C"

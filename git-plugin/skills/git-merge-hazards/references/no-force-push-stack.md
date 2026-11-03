@@ -238,9 +238,10 @@ unset.
    route moves to step 2. If the chain got as far as `gh pr update-branch` and
    then failed, read `origin/<child>` before doing anything else. A moved branch
    means the update is already on the child. Stop there and report it, because
-   undoing it takes a revert commit, which is for a person to decide. Use `$new`,
-   not the pre-update tip, as the head the rollup gate in
-   [stacked-chain-push.md](stacked-chain-push.md) reads.
+   undoing it takes a revert commit, which is for a person to decide. Expect
+   `$new`, not the pre-update tip, as the `HEAD_SHA=` that `merge-chain.sh`
+   reports (the CI-registration bullet of
+   [stacked-chain-push.md](stacked-chain-push.md)).
 
 2. Otherwise, merge in a detached worktree, verify, then push by full SHA:
 
@@ -348,10 +349,11 @@ pins the merge to the head it read.
 
 ## After the push
 
-Wait for CI with the rollup gate in [stacked-chain-push.md](stacked-chain-push.md),
-on the pushed SHA. Set `sha` to that SHA (`$new`) and `n` to the child's PR number
-before running the block. For an `update-branch` merge, gate on the head that
-Case A step 1 read. Do not gate on a check count. Once the push has succeeded,
+Wait for CI and merge with `scripts/merge-chain.sh --prs <child>`, as the
+CI-registration bullet of [stacked-chain-push.md](stacked-chain-push.md) shows,
+with `--review-ts` taken after the route's last gate passed. Its `HEAD_SHA=` must
+equal the pushed SHA (`$new`); for an `update-branch` merge, the head that Case A
+step 1 read. Do not gate on a check count. Once the push has succeeded,
 remove the worktree with `git worktree remove <dir>`, without `--force`. It
 refuses a dirty tree, and a dirty tree means work is still in progress.
 
