@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.69.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.4...git-plugin-v2.69.0) (2026-11-03)
+
+
+### Features
+
+* **git-plugin:** add git-merge-driver skill for custom structural merge drivers ([4814ed7](https://github.com/laurigates/claude-plugins/commit/4814ed78dbc90b6843a40d7e503e30aae4d7410f))
+
+
+### Bug Fixes
+
+* **git-plugin:** state which python3 a merge driver runs under ([17c2be2](https://github.com/laurigates/claude-plugins/commit/17c2be2397b9d3f8059741e28a640e28f14f187c))
+
 ## [2.68.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.3...git-plugin-v2.68.4) (2026-11-03)
 
 

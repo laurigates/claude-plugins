@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.1...configure-plugin-v1.42.2) (2026-11-03)
+
+
+### Documentation
+
+* **configure-plugin:** point configure-gitattributes at git-merge-driver ([6fc088d](https://github.com/laurigates/claude-plugins/commit/6fc088d5e7c09ec4bec96f009703e0e7fbc6f850))
+
 ## [1.42.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.0...configure-plugin-v1.42.1) (2026-11-03)
 
 
