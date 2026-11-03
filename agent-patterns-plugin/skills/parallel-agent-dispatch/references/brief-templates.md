@@ -198,6 +198,26 @@ Push authority is separate from merge authority: agents push their own commits
 in the normal case (SKILL.md § Who Pushes?), and pushing a branch or opening a
 PR never implies merging it.
 
+### Pushing to an open PR: PR-body authority
+
+Editing an existing PR's title or body is a third authority, separate from push
+and merge. A brief that has an agent push to a branch with an open PR states
+whether the agent may edit the PR body and, if it may, what to add (e.g. "append
+one line under Changes naming the fix"). When the brief says nothing, the agent
+never edits the PR body.
+
+This matters because `git-plugin`'s `check-pr-metadata-on-push.sh` blocks a push
+whose commit is newer than the PR's last edit, and editing the PR is the only
+way past it. An agent without that authority does not retry and does not edit
+the PR. It reports the PR number and its local commit SHA to its caller, which
+the block message prints, and the orchestrator reconciles the metadata and
+pushes.
+
+> Evidence: issue [#3331](https://github.com/laurigates/claude-plugins/issues/3331)
+> — worktree fixers briefed only to push a small fix to an existing PR were
+> blocked by the hook and stalled, since no brief told them whether they could
+> edit the PR body.
+
 > Evidence: issue [#2902](https://github.com/laurigates/claude-plugins/issues/2902)
 > — an implement → review Workflow over four issues in
 > laurigates/mcu-tinkering-lab put "implement, review, fix and merge with no
