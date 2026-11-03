@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-49 plugins, 464 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+49 plugins, 465 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -22,7 +22,7 @@
 | [blueprint-plugin](../blueprint-plugin/) | 35 | 0 | Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking |
 | [comfyui-plugin](../comfyui-plugin/) | 17 | 0 | ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots |
 | [foundryvtt-plugin](../foundryvtt-plugin/) | 2 | 0 | FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR |
-| [git-plugin](../git-plugin/) | 48 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
+| [git-plugin](../git-plugin/) | 49 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
 | [home-assistant-plugin](../home-assistant-plugin/) | 4 | 0 | Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations |
 | [kernel-plugin](../kernel-plugin/) | 4 | 0 | Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists |
 | [linux-plugin](../linux-plugin/) | 1 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores |
