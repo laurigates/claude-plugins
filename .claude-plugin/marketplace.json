@@ -276,7 +276,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.42.1",
+      "version": "1.42.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.68.4",
+      "version": "2.69.0",
       "author": {
         "name": "Lauri Gates"
       },
