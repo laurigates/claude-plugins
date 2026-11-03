@@ -43,4 +43,4 @@ running `biome migrate` alone doesn't fix it either: it only updates the
 | Config | Status |
 |---|---|
 | `adapters/biome.json` | off since #3352 |
-| `foundryvtt-plugin/templates/foundryvtt-module/biome.json` + `scaffold.py` `BIOME_JSON` | open: #3374 |
+| `foundryvtt-plugin/templates/foundryvtt-module/biome.json` + `scaffold.py` `BIOME_JSON` | off since #3374 |
