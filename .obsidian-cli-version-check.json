@@ -2,10 +2,21 @@
   "_comment": "Tracks the Obsidian CLI documentation page so the obsidian-cli-changelog workflow can detect upstream changes and propose skill/README updates. See .github/workflows/obsidian-cli-changelog.yml.",
   "docUrl": "https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md",
   "humanUrl": "https://obsidian.md/help/cli",
-  "lastCheckedDocSha256": "884d3f36a30ad2dc08bcdc84c1243e17e255677a2bd4a7a1aa0d8f77939fc012",
-  "lastCheckedDate": "2026-09-22",
-  "lastSeenObsidianVersion": "1.13.7",
+  "lastCheckedDocSha256": "4d93112c99394fdc7c0fcd2b8b7f91c6c5dc31cd28986bee5664d1c2ba990172",
+  "lastCheckedDate": "2026-11-03",
+  "lastSeenObsidianVersion": "1.15.0",
   "reviewedChanges": [
+    {
+      "date": "2026-11-03",
+      "obsidianVersion": "1.15.0",
+      "docSha256": "4d93112c99394fdc7c0fcd2b8b7f91c6c5dc31cd28986bee5664d1c2ba990172",
+      "summary": "No new top-level command group and no removals: the command surface is the same one the plugin already covers, and the 1.12.7 installer floor is unchanged. The doc now points to Obsidian Headless / Headless Sync for syncing without the desktop app, both from the 'app must be running' note and from the Sync section. publish-sync now says that its sync commands control the running app and that headless syncing is a separate tool. A full command-by-command comparison also turned up older gaps in vault-files. The doc's heading= parameter on append, prepend, daily:append and daily:prepend was undocumented, as were the inline/open/paneType options on daily:append and the help command. The skill also said move needs a .md path in to=, but the doc says to= takes a destination folder or a path. Finally, an Agentic Optimizations row advertised `files format=json`, which the doc's files command does not accept. All of these were corrected. Every other skill matched the doc.",
+      "updatedSkills": [
+        "obsidian-plugin/skills/vault-files/SKILL.md",
+        "obsidian-plugin/skills/publish-sync/SKILL.md"
+      ],
+      "followUpIssues": []
+    },
     {
       "date": "2026-09-22",
       "obsidianVersion": "1.13.7",

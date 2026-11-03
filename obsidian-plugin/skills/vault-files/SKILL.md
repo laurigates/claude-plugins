@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-09-22
-reviewed: 2026-09-22
+modified: 2026-11-03
+reviewed: 2026-11-03
 name: vault-files
 description: "Obsidian vault file ops via CLI: read, create, append, move, rename, delete, listings, daily/random notes. Use when managing vault files."
 user-invocable: false
@@ -33,7 +33,7 @@ Comprehensive guidance for managing files, folders, and daily notes in Obsidian 
 - All paths are **vault-relative** — use `folder/note.md`, not absolute filesystem paths
 - `file=<name>` resolves like a wikilink (no extension needed); `path=<full/path.md>` is exact
 - Most commands default to the **active file** when neither `file=` nor `path=` is supplied
-- `create` omits `.md` from `name=` (added automatically); `move` requires `.md` in `to=`
+- `create` omits `.md` from `name=` (added automatically); `move`'s `to=` takes a destination folder, or a full path including `.md` to rename at the same time
 - Quote values containing spaces: `file="My Note Title"`
 - Newlines: `\n`, tabs: `\t`
 - **Flags are bare words** — `overwrite`, `open`, `newtab`, `permanent`, `inline`, `total`. The single exception is `--copy` (a universal output flag).
@@ -128,6 +128,10 @@ obsidian append file="Daily Log" content="more text" inline
 
 # Add after frontmatter (prepend skips YAML)
 obsidian prepend file="Inbox" content="- [ ] New task\n"
+
+# Target a heading section instead of the whole file
+obsidian append file="Project" heading="Log" content="- Shipped v2"
+obsidian prepend file="Project" heading="Log" content="- Kickoff"
 ```
 
 ### Open a Note
@@ -140,10 +144,10 @@ obsidian open path="Notes/Recipe.md" newtab
 ### Move / Rename
 
 ```bash
-# Move to a folder (requires .md extension on target)
-obsidian move file="Draft" to=Archive/Draft.md
+# Move into a folder (to= accepts a destination folder or a full path)
+obsidian move file="Draft" to=Archive
 
-# Move + rename in one shot
+# Move + rename in one shot (full path, with .md)
 obsidian move file="Old Name" to="Archive/New Name.md"
 
 # Rename in place — preserves extension automatically
@@ -181,6 +185,11 @@ obsidian daily:read
 # Append / prepend
 obsidian daily:append content="- Met with team about roadmap"
 obsidian daily:prepend content="## Morning Goals\n- Review PRs"
+
+# Append under a heading, without a newline, or open the note afterwards
+obsidian daily:append heading="Log" content="- 14:00 call"
+obsidian daily:append content=" (done)" inline
+obsidian daily:append content="- idea" open paneType=split
 
 # Open in a split or new window
 obsidian daily paneType=split
@@ -226,6 +235,10 @@ Obsidian.
 ## App Maintenance
 
 ```bash
+# List every command, or show help for one
+obsidian help
+obsidian help append
+
 # Obsidian app version
 obsidian version
 
@@ -240,9 +253,8 @@ obsidian restart
 
 | Flag / Parameter | Description |
 |------------------|-------------|
-| `format=json` | JSON output for machine parsing |
-| `format=csv`, `format=tsv` | Spreadsheet-friendly outputs |
 | `--copy` | **Universal**: copy command output to clipboard |
+| `heading=<name>` | Append/prepend into a heading section (`append`, `prepend`, `daily:append`, `daily:prepend`) |
 | `overwrite` | Replace existing file on `create` |
 | `permanent` | Irreversible delete (skip trash) |
 | `inline` | Append/prepend without an added newline |
@@ -255,7 +267,9 @@ obsidian restart
 
 | Context | Command |
 |---------|---------|
-| List files (structured) | `obsidian files format=json` |
+| List files in a folder | `obsidian files folder=X` |
+| Append under a heading | `obsidian append file=X heading=H content=Y` |
+| Command help | `obsidian help <command>` |
 | Filter by extension | `obsidian files ext=md` |
 | File count | `obsidian files total` |
 | Folders under a parent | `obsidian folders folder=X` |
