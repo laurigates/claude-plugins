@@ -27,12 +27,14 @@ the exceptions listed in this file. Read it when syncing that rule.
   sentence in its notes outside the body. Move it into the body there, or the next
   sync deletes it from this skill, and `scripts/check-branch-containment-guidance.sh`
   then fails on `branch_audit_uncaveated`.
-- **Diverged, not yet mirrored: §3's registration race.** The rollup gate in
-  [stacked-chain-push.md](stacked-chain-push.md) replaces the chezmoi copy's
-  expected-count gate with the `headRefOid`, completion, two-read, deadline and
-  terminal-state rules (#2826), and its background run carries an explicit
-  `timeout` above the deadline. Mirror that gate into `pr-merge-hazards.md`, or the
-  next sync reinstates the count gate that broke on path-filtered workflows.
+- **Diverged, not yet mirrored: §3's registration race.** The CI-registration
+  bullet in [stacked-chain-push.md](stacked-chain-push.md) replaces the chezmoi
+  copy's expected-count gate with a pointer to `scripts/merge-chain.sh`, which
+  waits for every check to complete on a head two reads agree on and keeps only
+  the latest run of each check. It once carried a hand-written rollup poll
+  (#2826), removed because it read a superseded cancelled run as a failure
+  (#3380). Mirror the pointer into `pr-merge-hazards.md`, or the next sync
+  reinstates the count gate that broke on path-filtered workflows.
 - Two gates, §1's merged-ness authority order and §4 (minus its skill-only
   merge-endpoint pointer), are also reproduced verbatim in the
   `pr-merge-hazards.md` stub, because they are read *while* the decision is being
