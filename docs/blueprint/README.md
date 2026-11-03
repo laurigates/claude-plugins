@@ -7,10 +7,10 @@ This directory contains [Blueprint Development](https://github.com/laurigates/cl
 `claude-plugins` is the upstream of `blueprint-plugin`. That makes naïve use of the derive/generate tasks dangerous:
 
 - **`derive-plans`** (which now subsumes the former `derive-prd` / `derive-adr`) mines git history and `README.md` to invent PRDs/ADRs/PRPs. Here, git history is dominated by plugin-feature commits (`feat(blueprint-plugin): ...`) and 39 `*-plugin/SKILL.md` files look like requirements documents to a naïve scanner. Synthesised PRDs would treat plugin work as project requirements.
-- **`derive-rules` / `generate-rules`** write into `.claude/rules/`, which already holds 18 hand-curated rules (the source of truth for plugin conventions, shared with every marketplace user). Generated content currently lands flat alongside hand-written files, so a hash-collision overwrite would clobber governance content.
+- **`derive-rules` / `generate-rules`** write into `.claude/rules/`, which holds hand-curated rules (the source of truth for plugin conventions, shared with every marketplace user). `derive-rules` can overwrite one by hash comparison, and any generated rule would compete with the hand-written ones for always-loaded context (`.claude/rules/context-engineering.md`).
 - **`claude-md`** offers a "regenerate completely" option that would discard 230+ lines of hand-curated convention guidance in `CLAUDE.md` if accepted by mistake.
 
-The constrained posture disables all of the above. It keeps the workflows that genuinely add value across 16 ADRs / 2 PRDs / 5 PRPs.
+The constrained posture disables all of the above. It keeps the workflows that genuinely add value across the ADRs, PRDs and PRPs in `docs/`.
 
 ## Enabled vs disabled tasks
 
@@ -18,16 +18,16 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 
 | Task | Enabled | Why |
 |------|---------|-----|
-| `adr-validate` | ✓ | Detects orphans, broken `supersedes` chains, and missing domain tags across 16 ADRs |
+| `adr-validate` | ✓ | Detects orphans, broken `supersedes` chains, and missing domain tags across the ADRs in `docs/adrs/` |
 | `sync-ids` | ✓ | Reconciles document ID frontmatter; **always run with `--dry-run` first**. The deterministic id-registry *sweep* (never assigns IDs) additionally has `auto_run: true` — see Automation below |
 | `feature-tracker-sync` | ✓ | Read-leaning sync against `TODO.md` (no tracker enabled yet) |
 | `story-audit` | ✓ | Read-only audit: capability map ↔ PRD stories ↔ tests, tier-ranked. Writes one dated artifact under `docs/blueprint/audits/` |
 | `story-reconcile` | ✓ | Phase 2 of story-audit. Mutates PRDs only (idempotent inline markers + wholesale `## Known Drift` section); confirms each PRD before writing |
 | `derive-plans` | ✗ | Would invent PRDs/ADRs from plugin-feature commits; conflicts with hand-authored `docs/plans/`. Subsumes the former `derive-prd`/`derive-adr`. |
-| `derive-rules` | ✗ | Could overwrite the 18 hand-written rules |
-| `generate-rules` | ✗ | No subdirectory output path yet — re-enable once configurable ([#1043](https://github.com/laurigates/claude-plugins/issues/1043)) |
+| `derive-rules` | ✗ | Could overwrite the hand-written rules |
+| `generate-rules` | ✗ | The rules are hand-curated governance; generated rules would compete with them for always-loaded context. The output-path blocker ([#1043](https://github.com/laurigates/claude-plugins/issues/1043)) is gone, and the task stays off by decision ([#2841](https://github.com/laurigates/claude-plugins/issues/2841)) |
 | `claude-md` | ✗ | "Regenerate completely" prompt is too easy to mis-click |
-| `curate-docs` | ✗ | Default off in blueprint init |
+| `curate-docs` | ✗ | Writes generated rules into `.claude/rules/`; same always-loaded-context reason as `generate-rules` |
 
 ## Automation (autonomy level 1)
 
@@ -60,10 +60,10 @@ Curated AI context lives in `.claude/rules/` (hand-written here); the former `ai
 | Location | Content |
 |----------|---------|
 | `docs/prds/` | Product Requirements Documents (hand-authored) |
-| `docs/adrs/` | Architecture Decision Records (hand-authored, 0001–0015) |
+| `docs/adrs/` | Architecture Decision Records (hand-authored) |
 | `docs/prps/` | Product Requirement Prompts (hand-authored) |
 | `docs/plans/` | Hand-authored plans (do not confuse with blueprint PRPs) |
-| `.claude/rules/` | 18 hand-written rules — **never** auto-generated into this directory |
+| `.claude/rules/` | Hand-written rules — **never** auto-generated into this directory |
 
 ## Commit-scope convention
 
@@ -80,7 +80,7 @@ The `blueprint` scope exists to keep dogfooding commits legible in the changelog
 Before flipping any disabled task to `enabled: true`:
 
 1. Read the `context.disabled_reason` in `manifest.json`.
-2. Confirm the underlying concern has been addressed (e.g. `generate-rules` only after a configurable output path lands in `blueprint-plugin`).
+2. Confirm the underlying concern has been addressed (e.g. `generate-rules` stays off while `.claude/rules/` is hand-curated governance).
 3. Open a PR with the manifest change separately from any other work, so the rationale lives in one commit.
 
 ## Learn more

@@ -24,20 +24,21 @@
 # preserved here: a genuine command on line 2 of a multi-line Bash call IS the
 # start of a command and must still match.
 #
-# ── Why this exists alongside bash-antipatterns.sh's own inline copy ─────────
+# ── Why this exists alongside the hooks' own inline copies ───────────────────
 #
-# `bash-antipatterns.sh` computes the identical projection inline and does NOT
-# source this file, deliberately. Its safety blocks (curl|bash, chmod 777,
-# git add -A, git reset --hard, …) are documented to fire in EVERY context and
-# must not depend on a file that could be missing from a partial deployment; a
-# hook that fails to source its library and exits non-zero is a worse outcome
-# there than a duplicated awk program. This library is therefore the shared home
-# for NON-safety consumers — currently `bash-antipatterns-teach.sh`.
+# `bash-safety.sh` computes the identical projection inline and does NOT source
+# this file, deliberately. Its safety blocks (curl|bash, chmod 777, git add -A,
+# git reset --hard, …) are documented to fire in EVERY context and must not
+# depend on a file that could be missing from a partial deployment; a hook that
+# fails to source its library and exits non-zero is a worse outcome there than a
+# duplicated awk program. `bash-antipatterns.sh`, which held those blocks until
+# they were split out (#2788), keeps its own inline copy as well. This library is
+# the shared home for the other consumers — currently `bash-antipatterns-teach.sh`.
 #
-# The two copies are kept honest behaviourally, not textually:
+# The copies are kept honest behaviourally, not textually:
 # test-bash-antipatterns-teach.sh pins the heredoc-body and trailing-comment
-# shapes for the teach hook, and test-bash-antipatterns.sh pins them for the
-# safety hook (issues #2106, #2431, #2518).
+# shapes for the teach hook, and test-bash-antipatterns.sh and
+# test-bash-safety.sh pin them for the other two (issues #2106, #2431, #2518).
 #
 # Shell options: both current consumers `set -euo pipefail` BEFORE sourcing, so
 # the line below is a no-op for them. It exists because lint-shell-scripts.sh

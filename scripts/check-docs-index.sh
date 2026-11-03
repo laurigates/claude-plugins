@@ -4,7 +4,7 @@
 # not expansions.
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
-# Nine zero-false-positive checks:
+# Ten zero-false-positive checks:
 #   1. RULES INDEX  — every .claude/rules/*.md appears as the first cell of a
 #      table row inside the CLAUDE.md `## Rules` section (a row appended under
 #      another heading, or a prose mention, does not count — #2838 A-5),
@@ -46,10 +46,8 @@
 #      skills as headings instead (agent-patterns' `#### \`/meta:assimilate\``,
 #      blueprint, configure, testing, project) are outside it entirely. It is a
 #      cheap gate on the rows it does see, not a corpus-wide index audit.
-#      The REVERSE direction (a skill directory catalogued in no README row) is
-#      deliberately NOT gated: 71 directories corpus-wide are absent from their
-#      plugin README today, so an ERROR there would be red on arrival. Fixing
-#      that backlog is its own task.
+#      The REVERSE direction (a skill directory named nowhere in its README) is
+#      Check 10's job.
 #
 #   8. README SKILL TABLES — in a plugin README table whose first header cell is
 #      `Skill`/`Skills`, a leading cell holding a bare hyphenated skill name
@@ -70,6 +68,17 @@
 #      `/marketplace-authoring` loaded Claude Code's mods guide). A prose mention of
 #      the bundled name without the slash is not a pointer and is not flagged.
 #      ERROR severity.
+#  10. README SKILL COVERAGE — every <plugin>/skills/<name>/ holding a SKILL.md
+#      is named somewhere in <plugin>/README.md: the directory name, or an
+#      invocation path for it (`/<ns>:<rest>`, `/<plugin-prefix>:<name>`), each
+#      bounded so a longer name does not satisfy a shorter one. Layout is not
+#      checked: a heading, a table row in any column, or prose all count (#3164,
+#      option C; layout auditing waits until a malformed row is observed).
+#      #3149's README omitted two skills and no check noticed. WARN severity,
+#      against a shrink-only baseline (scripts/docs-index-readme-baseline.txt,
+#      `<plugin>/<skill>` per line) holding the 17 omissions present when the
+#      check landed; a new omission is readme_skill_missing, and a baseline
+#      entry that is now named or no longer exists is readme_baseline_stale.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -522,6 +531,60 @@ for bs_name in "${BUNDLED_SKILL_NAMES[@]}"; do
   done < <(cd "$proj_dir" && grep -HnF "\`/$bs_name\`" "${bs_scan[@]}" 2>/dev/null)
 done
 
+# --- Check 10: every skill directory is named in its plugin README -------------
+# See header (#3164). A skill counts as mentioned when its README contains the
+# directory name, or an invocation path for it (`/<ns>:<rest>` from the name's
+# first segment, or `/<plugin-prefix>:<name>` with or without the prefix
+# repeated). Every form is bounded by non-[a-z0-9-] characters, so `alpha-one`
+# is not satisfied by a mention of `alpha-one-two`.
+readme_skills_checked=0
+readme_skills_baselined=0
+readme_baseline="$proj_dir/scripts/docs-index-readme-baseline.txt"
+declare -A readme_baseline_set=()
+if [ -f "$readme_baseline" ]; then
+  while IFS= read -r bl_entry; do
+    bl_entry="${bl_entry%%#*}"
+    bl_entry="${bl_entry//[[:space:]]/}"
+    [ -n "$bl_entry" ] && readme_baseline_set[$bl_entry]=1
+  done < "$readme_baseline"
+fi
+
+readme_mentions() {
+  # readme_mentions <readme> <plugin> <skill> — exit 0 when the skill is named
+  local rm_pre="${2%-plugin}" rm_s="$3"
+  local rm_ns="${rm_s%%-*}" rm_rest="${rm_s#*-}" rm_b='([^a-z0-9-]|$)'
+  grep -qE -- "(^|[^a-z0-9-])${rm_s}${rm_b}|/${rm_ns}:${rm_rest}${rm_b}|/${rm_pre}:${rm_s}${rm_b}|/${rm_pre}:${rm_s#"$rm_pre"-}${rm_b}" "$1"
+}
+
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  p_readme="$proj_dir/$p/README.md"
+  if [ ! -f "$p_readme" ] || [ ! -d "$proj_dir/$p/skills" ]; then continue; fi
+  for rs_dir in "$proj_dir/$p/skills"/*/; do
+    [ -f "${rs_dir}SKILL.md" ] || continue
+    rs_name="$(basename "$rs_dir")"
+    readme_skills_checked=$((readme_skills_checked + 1))
+    readme_mentions "$p_readme" "$p" "$rs_name" && continue
+    if [ -n "${readme_baseline_set[$p/$rs_name]:-}" ]; then
+      readme_skills_baselined=$((readme_skills_baselined + 1))
+      continue
+    fi
+    add_issue WARN readme_skill_missing \
+      "$p/skills/$rs_name/ is named nowhere in $p/README.md; add it to the README's skill list"
+  done
+done <<< "$disk_set"
+
+# Shrink-only: an entry that is now mentioned, or whose skill is gone, is stale.
+for bl_entry in "${!readme_baseline_set[@]}"; do
+  bl_plugin="${bl_entry%%/*}"
+  bl_skill="${bl_entry#*/}"
+  if [ ! -f "$proj_dir/$bl_plugin/skills/$bl_skill/SKILL.md" ] \
+    || readme_mentions "$proj_dir/$bl_plugin/README.md" "$bl_plugin" "$bl_skill" 2>/dev/null; then
+    add_issue WARN readme_baseline_stale \
+      "$bl_entry is in scripts/docs-index-readme-baseline.txt but is now named in its README or no longer exists; delete the entry"
+  fi
+done
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -565,6 +628,8 @@ else
   echo "README_ROW_PLUGINS=$readme_row_plugins"
   echo "README_TABLE_ROWS=$readme_table_rows"
   echo "LOCAL_SKILLS=$local_skills"
+  echo "README_SKILLS_CHECKED=$readme_skills_checked"
+  echo "README_SKILLS_BASELINED=$readme_skills_baselined"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
   if [ "$overall_status" != "OK" ]; then

@@ -210,6 +210,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # The issue assertion after the transcript upload counts only issues
+      # created since this moment, so last month's report cannot satisfy it.
+      - name: Record the Claude step start time
+        id: start
+        run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Run the Tier-2 cross-model sweep
         id: sweep
         uses: anthropics/claude-code-action@v1
@@ -449,3 +455,21 @@ jobs:
           path: ${{ steps.redact.outputs.path }}
           retention-days: 14
           if-no-files-found: warn
+
+      # The issue is this job's only output, and the SDK exits 0 when the
+      # `gh issue create` call is denied, so without this step a run that files
+      # nothing is green (#2731). `always()` still reports a Claude step that
+      # failed without filing; a skipped Claude step (an open report already
+      # exists) is not a missed deliverable.
+      - name: Assert the golden-set sweep issue was filed
+        if: always() && steps.sweep.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SINCE: ${{ steps.start.outputs.epoch }}
+        run: |
+          if ! bash scripts/assert-issue-filed.sh \
+            --repo "$GITHUB_REPOSITORY" --label golden-set-eval --since "$SINCE" \
+            --title-prefix 'Golden-set cross-model sweep:'; then
+            echo "::error title=Golden-set sweep filed no issue::No 'Golden-set cross-model sweep:' issue labelled golden-set-eval appeared during this run. Read the uploaded claude-execution transcript for the denied tool calls."
+            exit 1
+          fi

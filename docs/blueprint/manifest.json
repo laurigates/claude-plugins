@@ -62,7 +62,7 @@
       "schedule": "on-demand",
       "stats": {},
       "context": {
-        "disabled_reason": "Constrained dogfooding: 18 hand-written rules in .claude/rules/ are governance content. derive-rules can overwrite them by hash comparison."
+        "disabled_reason": "Constrained dogfooding: the hand-written rules in .claude/rules/ are governance content. derive-rules can overwrite them by hash comparison."
       }
     },
     "generate-rules": {
@@ -73,7 +73,7 @@
       "schedule": "on-demand",
       "stats": {},
       "context": {
-        "disabled_reason": "Constrained dogfooding: blueprint-generated rules currently land flat in .claude/rules/ alongside hand-written ones. Re-enable only after a configurable subdirectory output path lands. Tracked in laurigates/claude-plugins#1043."
+        "disabled_reason": "Constrained dogfooding: the rules in .claude/rules/ are hand-curated governance, and generated rules would compete with them for always-loaded context (.claude/rules/context-engineering.md). The configurable output path once tracked in laurigates/claude-plugins#1043 has landed (#1046, #1047); the task stays off because this repo has no use for generated rules (decision recorded on #2841)."
       }
     },
     "adr-validate": {
@@ -125,7 +125,9 @@
       "last_result": null,
       "schedule": "on-demand",
       "stats": {},
-      "context": {}
+      "context": {
+        "disabled_reason": "Constrained dogfooding: curate-docs writes researched library-gotcha rules into .claude/rules/, which here holds hand-curated governance. A generated rule would compete with them for always-loaded context (.claude/rules/context-engineering.md)."
+      }
     },
     "story-audit": {
       "enabled": true,
@@ -170,7 +172,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/prds/reusable-github-workflows.md",
-        "status": "Draft",
+        "status": "Deprecated",
         "title": "Reusable GitHub Action Workflows - Product Requirements Document"
       },
       "PRD-001": {
@@ -178,7 +180,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/prds/automatic-document-management.md",
-        "status": "Draft",
+        "status": "Completed",
         "title": "Automatic Document Management - Product Requirements Document"
       },
       "ADR-0013": {
@@ -250,7 +252,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/adrs/0021-open-knowledge-format-mapping-not-adopted.md",
-        "status": "Proposed",
+        "status": "Accepted",
         "title": "ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence"
       },
       "ADR-0022": {
@@ -274,7 +276,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/adrs/0018-health-usage-scope-from-session-telemetry.md",
-        "status": "Proposed",
+        "status": "Accepted",
         "title": "ADR-0018: Usage-Telemetry Scope for `health-plugin`"
       },
       "ADR-0017": {
@@ -282,7 +284,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/adrs/0017-hook-based-behavioral-cues-for-plugin-utilization.md",
-        "status": "Proposed",
+        "status": "Accepted",
         "title": "ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization"
       },
       "ADR-0015": {
@@ -298,7 +300,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/adrs/0007-namespace-based-command-organization.md",
-        "status": "Accepted",
+        "status": "Superseded",
         "title": "ADR-0007: Namespace-Based Command Organization"
       },
       "ADR-0001": {
@@ -338,7 +340,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/adrs/0010-proactive-document-detection.md",
-        "status": "Proposed",
+        "status": "Accepted",
         "title": "ADR-0010: Proactive Document Detection"
       },
       "ADR-0004": {
@@ -402,7 +404,7 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/prps/agent-teams-migration.md",
-        "status": "in-progress",
+        "status": "complete",
         "title": "PRP: Agent Teams Migration"
       },
       "PRP-004": {
@@ -418,8 +420,18 @@
         "relates_to": [],
         "github_issues": [],
         "path": "docs/prps/automatic-document-management.md",
-        "status": "draft",
+        "status": "complete",
         "title": "PRP: Automatic Document Management"
+      },
+      "ADR-0026": {
+        "path": "docs/adrs/0026-commands-migrated-to-skills.md",
+        "title": "ADR-0026: Commands Migrated to Skills",
+        "status": "Accepted",
+        "relates_to": [
+          "ADR-0003"
+        ],
+        "github_issues": [],
+        "created": "2026-11-02"
       }
     },
     "github_issues": {}

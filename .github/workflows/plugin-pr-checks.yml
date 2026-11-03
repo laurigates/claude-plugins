@@ -295,7 +295,8 @@ jobs:
       - name: Gate plugin license and author metadata (#2698, #2699)
         # Whole-repo invariant, always-on: every */.claude-plugin/plugin.json
         # and every .claude-plugin/marketplace.json entry declares a `license`
-        # from the allowlist (["MIT"]) and an `author.name`. The full
+        # from the allowlist (["MIT"]), an `author.name` and a `repository`
+        # (#2772; `homepage` deliberately not required). The full
         # compliance run above cannot gate this: it is advisory (`|| true`) and
         # scoped to the changed plugins, so a marketplace.json-only edit would
         # never be checked. `--license-only` runs just these predicates over
@@ -704,7 +705,9 @@ jobs:
         # Whole-repo invariant (#2630, #2719): a Claude step whose deliverable
         # is a PR comment must be followed by scripts/assert-pr-comment-delivered.sh
         # and an upload of its execution transcript, because the SDK exits 0 on
-        # a denied posting call. The review itself runs in the `skill-review`
+        # a denied posting call. An issue-filing step (literal
+        # `Bash(gh issue create` grant) needs scripts/assert-issue-filed.sh
+        # instead (#2731). The review itself runs in the `skill-review`
         # job below. The guard's self-test runs in `Test: Skill scripts`.
         run: bash scripts/check-comment-deliverable-assertions.sh
 

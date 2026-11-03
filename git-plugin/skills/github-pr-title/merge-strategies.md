@@ -24,14 +24,17 @@ first match wins:
 | 5 | Any `fixup!`, `squash!` or `amend!` subject, or a review-churn subject: `address review`, `review findings`, `review gaps`, `review issues`, `after/from/per (code) review`, `apply suggestion`, `wip` (case-insensitive, anywhere in the subject) | squash | The churn would land as its own commits |
 | 6 | Any non-conventional subject | squash | release-please silently skips non-conventional commits |
 | 7 | Every commit has the same `(type, scope)` | squash | Single concern; one commit says it |
-| 8 | In-PR correction: a later commit (a) of type `fix`, `style`, `chore`, `refactor` or `test` touches only files an earlier commit in the PR already changed, or (b) is a `fix` with the same scope as earlier commits that already changed at least half of its files. A PR over 50 commits also squashes, because file overlap is not checked past 50 | squash | A fix to code not yet on `main` would become a phantom changelog line. `docs` commits are exempt from (a): release-please hides `docs` in the changelog, so a docs polish commit does not force a multi-concern PR to squash |
+| 8 | In-PR correction: a later commit (a) of type `fix`, `style`, `chore`, `refactor` or `test` touches only files an earlier commit in the PR already changed, or (b) is a `fix` with the same scope as earlier commits that already changed at least half of its files. Neither (a) nor (b) counts the files every fix touches by convention: `docs/regression-ledger.md`, a top-level `<dir>/README.md`, and any path `.gitattributes` marks `merge=union`. A PR over 50 commits also squashes, because file overlap is not checked past 50 | squash | A fix to code not yet on `main` would become a phantom changelog line. `docs` commits are exempt from (a): release-please hides `docs` in the changelog, so a docs polish commit does not force a multi-concern PR to squash. Without the convention-file exclusion, two independent same-scope fixes that each add a ledger row and a README line share half their files and read as a fixup (#3373) |
 | 9 | Otherwise | rebase | Two or more clean, independent conventional commits |
 
 Rules 4, 5 and 8 are heuristics calibrated against the last 400 merged
 claude-plugins PRs (2026-08-29 to 2026-10-24). Over that set the script picks
 rebase for 24 and squash for 376: 129 bot or release, 126 with merge commits,
-92 single-commit, 14 in-PR corrections, 10 single-concern, 5 review churn. A
-`merge:*` label overrides a call you disagree with.
+92 single-commit, 14 in-PR corrections, 10 single-concern, 5 review churn. The
+rule 8 convention-file exclusion (#3373) came after that calibration and moves
+at least one of those 14 to rebase: PR #3132, whose correction re-placed a
+ledger row an earlier commit added. A `merge:*` label overrides a call you
+disagree with.
 
 ### Running it
 

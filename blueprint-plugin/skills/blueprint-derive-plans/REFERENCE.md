@@ -212,42 +212,56 @@ larger org / OSS → full matrix):
 
 ### ADR Template
 
+Start every generated ADR from blueprint-plugin's five-section template,
+`${CLAUDE_SKILL_DIR}/../../templates/adr-template.md`: Context, Decision,
+Consequences, Options Considered, Related ADRs. Its frontmatter passes
+`schemas/adr.schema.json`, which requires the first three sections and leaves
+the last two optional (ADR-0023). The template is what gives a new ADR the
+optional pair; no validator checks for them. A retroactive ADR fills it like
+this (`status: Accepted`, because the schema's status enum has no
+"Retroactive" value):
+
 ```markdown
+---
+id: ADR-{number}
+status: Accepted
+created: {commit_date}
+modified: {today}
+domain: {domain}
+---
+
 # ADR-{number}: {Decision Title}
 
-**Date**: {commit_date}
-**Status**: Accepted (Retroactive)
-**Confidence**: {score}/10
+Retroactive: identified from git history. **Confidence**: {score}/10
 
 ## Context
 
 {Inferred from pre-change state or user input}
 <!-- This decision was identified from git history. Original context may need clarification. -->
 
-## Decision Drivers
+## Decision
 
-- {driver from user input or inferred}
-- {driver 2}
+"{Current choice}" because {user-provided rationale or "rationale needs documentation"}.
 
-## Considered Options
+## Consequences
 
-1. **{Current choice}** - The implemented solution
-2. **{Alternative 1}** - Common alternative for this type of decision
-3. **{Alternative 2}** - Another common alternative
-
-## Decision Outcome
-
-**Chosen option**: "{Current choice}" because {user-provided rationale or "rationale needs documentation"}.
-
-### Positive Consequences
+### Positive
 
 - {inferred benefit from implementation}
-- {benefit 2}
 
-### Negative Consequences
+### Negative
 
-- {known tradeoff if any}
-- {limitation if any}
+- {known tradeoff or limitation, if any}
+
+## Options Considered
+
+1. **{Current choice}** - The implemented solution
+2. **{Alternative 1}** - Common alternative for this type of decision (inferred)
+3. **{Alternative 2}** - Another common alternative (inferred)
+
+## Related ADRs
+
+- {ADRs in the same domain, or "None"}
 
 ## Evidence
 
@@ -279,7 +293,9 @@ This directory contains Architecture Decision Records (ADRs) documenting signifi
 
 ## Template
 
-New ADRs should follow the [MADR template](https://adr.github.io/madr/).
+New ADRs start from blueprint-plugin's five-section template,
+`templates/adr-template.md` (Context, Decision, Consequences, Options
+Considered, Related ADRs).
 ```
 
 ### PRP Template

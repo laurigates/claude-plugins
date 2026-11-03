@@ -113,6 +113,12 @@ The generated repo asserts the same invariants in `tests/manifest.test.ts`, whic
 its own `test` CI job runs on every PR — so a rename that drifts one of the five
 places the module id appears fails a PR, not a user's install.
 
+### Fleet drift
+
+`python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py --fleet-root <dir>`
+reports (never fixes) template-vs-module drift; see
+[references/fleet-drift.md](references/fleet-drift.md).
+
 ### Alternative: the cargo-generate template (pilot)
 
 `scaffold.py` remains the default. To edit the scaffold itself or try the cargo-generate port (`templates/foundryvtt-module/`), see [references/cargo-generate-template.md](references/cargo-generate-template.md).
@@ -179,6 +185,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 | Check the pilot still matches scaffold.py | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh` |
 | Prove the finishing-pass gate still fires | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-manifest-invariants.sh` |
 | Prove the app variant passes biome at any module-id length | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-app-biome-format.sh` |
+| Test the fleet-drift checker | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-fleet-drift.sh` |
 | Prove every variant keeps biome off its Markdown | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-biome-markdown-off.sh` |
 
 ## Notes & deferrals

@@ -1,6 +1,8 @@
 # Dynamic-workflow migration plan — claude-plugins
 
-> **Status:** evaluation only — nothing in this plan has been implemented.
+> **Status:** implemented except the cold-read-gate batch path — eight of the
+> nine recommended harnesses ship as `skills/*/workflows/*.workflow.js`; the
+> Tier B `cold-read-gate` batch template was not built (#2840).
 >
 > **Question asked:** which of this repo's skills would work better as Claude Code
 > *dynamic workflows*, and which harness shape fits each?

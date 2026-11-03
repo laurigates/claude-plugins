@@ -172,7 +172,7 @@
     },
     "sections": {
       "type": "object",
-      "description": "Map of `## ` heading text to its 0-based ordinal. Only the three load-bearing sections are required \u2014 `Options Considered` and `Related ADRs` are RECOMMENDED BUT UNENFORCED (ADR-0023): 20 of this repo's 22 ADRs carry neither, and requiring them made the validator report 45 section warnings nobody could honestly clear without back-writing deliberation that may never have happened. Nothing in the repo currently checks for the two optional sections \u2014 /blueprint:adr-validate validates relationships, reference integrity, numbering and index drift, not sections \u2014 so treat them as a convention this schema deliberately does not police. Missing required sections WARN rather than block, so a PreToolUse edit to a 2026-01 ADR is never refused. See .claude/rules/hook-block-vs-nudge.md.",
+      "description": "Map of `## ` heading text to its 0-based ordinal. Only the three load-bearing sections are required \u2014 `Options Considered` and `Related ADRs` are OPTIONAL HERE (ADR-0023): 20 of this repo's 22 ADRs carry neither, and requiring them made the validator report 45 section warnings nobody could honestly clear without back-writing deliberation that may never have happened. New ADRs get both from templates/adr-template.md, the five-section template /blueprint:derive-plans writes from (#2702); no gate checks for them \u2014 /blueprint:adr-validate validates relationships, reference integrity, numbering and index drift, not sections \u2014 so this schema deliberately does not police them. Missing required sections WARN rather than block, so a PreToolUse edit to a 2026-01 ADR is never refused. See .claude/rules/hook-block-vs-nudge.md.",
       "required": [
         "Context",
         "Decision",
@@ -182,7 +182,7 @@
         "type": "integer"
       },
       "x-blueprint-severity": "warning",
-      "title": "required `## ` section missing \u2014 add it (Context, Decision and Consequences are the required set)"
+      "title": "required `## ` section missing \u2014 add it (Context, Decision and Consequences are the required set; templates/adr-template.md also carries the optional Options Considered and Related ADRs)"
     }
   }
 }

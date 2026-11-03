@@ -9,6 +9,8 @@ compatibility: claude-code
 reviewed: 2026-09-02
 ---
 
+<!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (cold-read-gate block) -->
+
 # Cold-Read Gate
 
 Text written inside a long session inherits the session's context — codenames,

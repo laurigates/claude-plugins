@@ -15,6 +15,9 @@
 #   E. the opt-out env var makes the wrapper a no-op (reconcile never invoked).
 #   F. scheduled-reconcile --apply delegates with --apply AND the bounded
 #      --only-verdicts=pr-merged,issue-closed allowlist.
+#   H. a verdict=review TASK line (text-ref-only link, #3126) is counted as
+#      REVIEW_COUNT only: never in NEEDS_REVIEW_COUNT, the per-project
+#      breakdown, or the notification trigger.
 #   G. reconcile.sh REJECTS an unknown argument (exit 2, error on stderr,
 #      nothing mutated). Guards issue #2057: a silent `*) ;;` catch-all
 #      swallowed a misspelled/unsupported --only-verdicts under version skew,
@@ -138,7 +141,7 @@ RC_STUB="${WORK}/reconcile-stub.sh"
 NOTIFY_CAPTURE="${WORK}/telegram.txt"
 NOTIFY_BIN="${WORK}/telegram-stub.sh"
 
-make_rc_stub() { # make_rc_stub <gh_avail> <stale_count>
+make_rc_stub() { # make_rc_stub <gh_avail> <stale_count> [review-line: yes]
   cat > "$RC_STUB" <<SH
 #!/usr/bin/env bash
 printf '%s\n' "\$@" > "${RC_ARGS}"
@@ -147,6 +150,7 @@ echo "GH_AVAILABLE=$1"
 echo "TASK id=1 project=alpha uuid=${UA} ghpr=10 upstream=MERGED verdict=pr-merged method=bulk"
 echo "TASK id=2 project=alpha uuid=${UB} ghpr=11 upstream=CLOSED verdict=pr-closed method=keep"
 echo "TASK id=3 project=beta uuid=${UC} ghid=20 upstream=CLOSED verdict=issue-closed method=bulk"
+$([ "${3:-}" = yes ] && echo "echo \"TASK id=4 project=gamma uuid=${UD} ghid=- ghpr=- refs=1 upstream=MERGED verdict=review method=keep\"")
 echo "STALE_COUNT=$2"
 echo "CLOSED_COUNT=2"
 echo "STATUS=OK"
@@ -212,6 +216,20 @@ check "F: mode apply" "apply" "$(field MODE "$out")"
 check "F: reconcile got --apply" "yes" "$(grep -qx -- '--apply' "$RC_ARGS" && echo yes || echo no)"
 check "F: reconcile got bounded --only-verdicts" "yes" \
   "$(grep -qx -- '--only-verdicts=pr-merged,issue-closed' "$RC_ARGS" && echo yes || echo no)"
+
+# --- H: verdict=review is counted separately, never as needs-review ----------
+make_rc_stub true 3 yes
+rm -f "$NOTIFY_CAPTURE"
+out=$(run_wrapper)
+check "H: REVIEW_COUNT counts the text-ref task" "1" "$(field REVIEW_COUNT "$out")"
+check "H: NEEDS_REVIEW_COUNT excludes review (pr-closed only)" "1" "$(field NEEDS_REVIEW_COUNT "$out")"
+check "H: review project not in breakdown" "no" \
+  "$(grep -q '^PROJECT_BREAKDOWN=.*gamma=' <<<"$out" && echo yes || echo no)"
+
+make_rc_stub true 0 yes
+rm -f "$NOTIFY_CAPTURE"
+out=$(run_wrapper)
+check "H: review-only drift does not notify" "false" "$(field NOTIFIED "$out")"
 
 # --- Summary ----------------------------------------------------------------
 echo "=== SCHEDULED RECONCILE TEST ==="

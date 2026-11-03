@@ -124,7 +124,9 @@ Required — a missing one emits `SEVERITY=WARN`, not a block
 | `## Decision` | The architecture decision |
 | `## Consequences` | Impact of the decision |
 
-Recommended but **unenforced** since ADR-0023 — nothing checks for these:
+Optional since ADR-0023 and **unenforced** — no check looks for these. New
+ADRs get them from the five-section `templates/adr-template.md`, which
+`/blueprint:derive-plans` writes from (#2702):
 
 | Section | Purpose |
 |---------|---------|

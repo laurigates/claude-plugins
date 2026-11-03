@@ -1,6 +1,7 @@
 ---
 id: ADR-0001
 status: Accepted
+domain: architecture
 created: 2026-01-09
 modified: 2026-01-09
 ---
