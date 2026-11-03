@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kernel-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
   "author": {
     "name": "Lauri Gates"
