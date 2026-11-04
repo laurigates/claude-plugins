@@ -15,7 +15,9 @@
 #                more parents AND committer email noreply@github.com, both read
 #                from GitHub. The subject line is not consulted, and a merge
 #                commit anyone else made (a conflict agent merging main into the
-#                branch) is unreviewed like any other commit.
+#                branch) is unreviewed like any other commit. A value more
+#                than 60 s after the current UTC time is a usage error: it
+#                would count commits pushed during the run as reviewed.
 #   --method     Merge method for every PR. Without it, each PR takes the
 #                METHOD= that git-plugin/scripts/pr-merge-method.py prints for
 #                it after update-branch (a branch with a merge commit squashes),
@@ -101,6 +103,18 @@ done
 [[ "$MC_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || usage_error "--repo OWNER/REPO is required"
 [[ "$MC_REVIEW_TS" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
   usage_error "--review-ts must be a UTC timestamp like 2026-10-27T08:00:00Z"
+# A future --review-ts would count commits pushed during the run as reviewed,
+# turning the §6 guard off. Same fixed-width UTC format, so a string compare
+# orders it, as the guard's own jq compare does. 60 s of clock skew is allowed.
+mc_now_epoch=$(date -u +%s)
+mc_ts_fmt='+%Y-%m-%dT%H:%M:%SZ'
+mc_now=$(date -u -d "@$mc_now_epoch" "$mc_ts_fmt" 2>/dev/null || date -u -r "$mc_now_epoch" "$mc_ts_fmt")
+mc_ts_limit=$(date -u -d "@$((mc_now_epoch + 60))" "$mc_ts_fmt" 2>/dev/null ||
+  date -u -r "$((mc_now_epoch + 60))" "$mc_ts_fmt")
+[[ "$mc_ts_limit" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
+  usage_error "cannot read the current UTC time to check --review-ts"
+[[ "$MC_REVIEW_TS" > "$mc_ts_limit" ]] &&
+  usage_error "--review-ts $MC_REVIEW_TS is in the future (current UTC time is $mc_now); pass the time verification ended"
 [ -z "$MC_METHOD" ] || [[ "$MC_METHOD" =~ ^(squash|merge|rebase)$ ]] ||
   usage_error "--method must be squash, merge or rebase"
 [[ "$MC_TIMEOUT" =~ ^[0-9]+$ ]] || usage_error "--timeout must be a whole number of seconds"

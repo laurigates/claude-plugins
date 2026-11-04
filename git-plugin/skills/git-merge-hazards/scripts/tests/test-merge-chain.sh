@@ -500,6 +500,26 @@ expect_line "non-numeric PR exits 2" "$RC" "2"
 OUT=$(MERGE_CHAIN_METHOD_CMD="$T/no-such-method-cmd" bash "$CHAIN" --repo o/r --prs 1 --review-ts "$TS" 2>&1); RC=$?
 expect_line "no --method and no method command exits 2" "$RC" "2"
 
+# A future --review-ts marks commits pushed after the run starts as reviewed,
+# switching the §6 guard off (#3400). It is refused before any gh call; up to
+# 60 s ahead is accepted as clock skew.
+ts_in() { # ts_in <seconds from now> -> UTC timestamp
+  local e=$(( $(date -u +%s) + $1 ))
+  date -u -d "@$e" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -r "$e" +%Y-%m-%dT%H:%M:%SZ
+}
+: >"$STUB_LOG"
+OUT=$(bash "$CHAIN" --repo o/r --prs 1 --review-ts "$(ts_in 3600)" 2>&1); RC=$?
+expect_line "future --review-ts exits 2" "$RC" "2"
+expect_has "future --review-ts is a usage error" "$OUT" "TYPE=usage MSG=--review-ts .* is in the future"
+expect_has "the refusal names the current UTC time" "$OUT" "current UTC time is [0-9]{4}-[0-9]{2}-[0-9]{2}T"
+expect_no "no gh call before the refusal" "$(cat "$STUB_LOG")" "."
+mkpr 701
+TS_SAVED=$TS; TS=$(ts_in 30)
+run_chain 701
+TS=$TS_SAVED
+expect_no "--review-ts 30 s ahead is not refused (skew)" "$OUT" "in the future"
+expect_line "--review-ts 30 s ahead still merges" "$(section 701)" "STATUS=MERGED"
+
 # ---- 9. the skill points at the script --------------------------------------
 echo "skill"
 if grep -q 'scripts/merge-chain.sh' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md names scripts/merge-chain.sh"; else bad "SKILL.md does not name scripts/merge-chain.sh"; fi
