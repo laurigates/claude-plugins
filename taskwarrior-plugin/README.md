@@ -207,6 +207,7 @@ sibling. It wraps the same `reconcile.sh` with two safety tiers:
 | `issue-closed` | linked issue closed | ✅ fact |
 | `pr-closed` | linked PR closed **unmerged** (abandoned? superseded?) | ❌ left for a human |
 | UNKNOWN | upstream state unreadable | ❌ never closed (it stays `verdict=live`) |
+| AMBIGUOUS | `--all` only: bare `#N` / `ghid` / `ghpr` on a task outside the wrapper dir's project, so no repo is known (#3387) | ❌ never closed, never sent to `gh` (`verdict=live`, `AMBIGUOUS_REPO`) |
 | `review` | no `ghid`/`ghpr` UDA; text-ref items all done (#3126) | ❌ never closed, reported as `REVIEW_COUNT` |
 
 The `--only-verdicts=<csv>` flag on `reconcile.sh` is the lever: it restricts the

@@ -41,14 +41,14 @@ repository, run as background Bash. Do not dispatch one agent per repository.
 
 ## Read the result
 
-Each PR gets an `=== PR <n> ===` section with `STATUS=` and, unless merged,
-`REASON=`. The closing `=== MERGE CHAIN ===` section follows the
+Each PR gets an `=== PR <n> ===` section with `STATUS=` and, unless this
+script merged it, `REASON=`. The closing `=== MERGE CHAIN ===` section follows the
 structured-output contract (`STATUS=OK|WARN|ERROR`, `REASON=`, `ISSUES:`) and
 carries `REMAINING=`, the PRs still to merge, with the stopped PR first.
 
 | `STATUS=` | Chain | What to do |
 |---|---|---|
-| `MERGED` | continues | Nothing. |
+| `MERGED` | continues | Nothing. `REASON=auto-merge: …` means the PR had auto-merge enabled and GitHub merged it during the CI wait, so the §6 guard never ran on it; read its commits if a branch-writing bot could have pushed after your review. A PR merged during the wait **without** auto-merge is `SKIPPED` (`already_merged`). |
 | `SKIPPED` | continues | Already merged or closed, a draft, release-please, Renovate, or a non-self non-bot author. A stranger's PR is a review, not a merge: `git-plugin:external-pr-trust`. |
 | `CONFLICT` | stops | Dispatch one agent for this PR: [Dispatch only on CONFLICT or CI_RED](#dispatch-only-on-conflict-or-ci_red). |
 | `CI_RED` | stops | Dispatch one agent for this PR: [Dispatch only on CONFLICT or CI_RED](#dispatch-only-on-conflict-or-ci_red). `REASON=check_failed: <names>`, `ci_timeout`, `unstable` (§4: merging over red needs both checks), or `still_behind`. |
