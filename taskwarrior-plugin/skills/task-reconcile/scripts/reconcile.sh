@@ -21,6 +21,16 @@
 # not the CWD default — so a task in project A referencing owner/B#N resolves
 # against B. Bare #N (and UDAs) use the CWD-resolved repo, as before.
 #
+# Ambiguous repo under --all (issue #3387): a bare #N or ghid/ghpr UDA names no
+# repo, and the CWD repo is only trustworthy for tasks of the CWD's own project.
+# So under --all such a ref resolves only when the task's project equals the CWD
+# project (scripts/resolve-project.sh: basename of the git toplevel) or is a
+# dotted child of it (<cwd-project>.*). For any other task it is AMBIGUOUS: never
+# sent to gh, the task is kept (verdict=live, upstream=AMBIGUOUS, counted in
+# AMBIGUOUS_REPO), and it can never be closed. Run from ~/repos, task OLMap
+# "#65" otherwise resolved against the cwd repo's PR 65 (MERGED) while OLMap's
+# own PR 65 was OPEN. Single-project runs are unchanged.
+#
 # Link strength (issue #3126): only a ghid/ghpr UDA can produce a close verdict
 # (pr-merged / pr-closed / issue-closed). A task linked ONLY by text refs whose
 # items are all done gets verdict=review — reported (REVIEW_COUNT, method=keep)
@@ -117,6 +127,10 @@ verdict_allowed() {
 
 echo "=== TASK RECONCILE ==="
 
+# Resolve the script's own dir before the cd below: a relative BASH_SOURCE
+# (`bash scripts/reconcile.sh`) stops resolving once the cwd moves.
+RC_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+
 # gh resolves the default repo from the working directory, so operate there.
 cd "$rc_dir" 2>/dev/null || true
 
@@ -143,12 +157,40 @@ if [ "$gh_ok" != true ]; then
   exit 0
 fi
 
+# --- CWD project (for --all ambiguous-repo detection, #3387) ---------------
+# Under --all a repo-less ref (bare #N, ghid/ghpr UDA) is only resolved for
+# tasks of the CWD's project. Resolved with the plugin's shared ladder; if the
+# resolver is missing, cwd_project stays empty and every such ref is ambiguous.
+# Resolve from $PWD (where gh looks), not $rc_dir: after the cd above, a relative
+# --project-dir no longer names the same directory.
+cwd_project=""
+if [ "$rc_all" = true ]; then
+  rc_resolve="${RC_SCRIPT_DIR}/../../../scripts/resolve-project.sh"
+  if [ -f "$rc_resolve" ]; then
+    cwd_project=$(bash "$rc_resolve" --project-dir "$PWD" 2>/dev/null \
+      | grep -m1 '^PROJECT=' | cut -d= -f2- || true)
+  fi
+fi
+
+# repo_less_trusted <task-project> — may a repo-less ref resolve against the CWD
+# repo for this task? Always outside --all; under --all only for the CWD project
+# or a dotted child of it.
+repo_less_trusted() {
+  [ "$rc_all" != true ] && return 0
+  [ -z "$cwd_project" ] && return 1
+  case "$1" in
+    "$cwd_project"|"$cwd_project".*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # --- Build the project filter ---------------------------------------------
 proj_filter=()
 if [ "$rc_all" != true ] && [ -n "$rc_project" ]; then
   proj_filter=("project:${rc_project}")
 fi
 echo "SCOPE=${rc_project:-ALL}"
+[ "$rc_all" = true ] && echo "CWD_PROJECT=${cwd_project}"
 echo "MODE=$([ "$rc_apply" = true ] && echo apply || echo dry-run)"
 echo "ONLY_VERDICTS=${rc_only_verdicts}"
 
@@ -246,6 +288,7 @@ done_uuids=()
 stale_count=0
 live_count=0
 unknown_count=0
+ambiguous_count=0
 review_count=0
 
 task_count=$(printf '%s' "$linked_json" | jq 'length')
@@ -267,16 +310,23 @@ while [ "$i" -lt "$task_count" ]; do
   # ref resolved done; any open ref → live; any unreadable ref → keep.
   components=()   # per-ref stale verdicts (pr-merged/pr-closed/issue-closed)
   reasons=()
-  bare_states=()  # per-ref bare state (MERGED/CLOSED/OPEN/UNKNOWN) for upstream=
+  bare_states=()  # per-ref bare state (MERGED/CLOSED/OPEN/UNKNOWN/AMBIGUOUS) for upstream=
   has_open=false
   has_unknown=false
+  has_ambiguous=false
   r=0
   while [ "$r" -lt "$nrefs" ]; do
     rr=$(printf '%s' "$refs_json" | jq -c ".[$r]")
     r_repo=$(printf '%s' "$rr" | jq -r '.repo')
     r_kind=$(printf '%s' "$rr" | jq -r '.kind')
     r_num=$(printf '%s' "$rr" | jq -r '.num')
-    st=$(ref_state "$r_repo" "$r_kind" "$r_num")
+    if [ -z "$r_repo" ] && ! repo_less_trusted "$t_project"; then
+      # No repo named and the task is outside the CWD project (--all): the CWD
+      # repo is the wrong place to look, so do not ask gh at all (#3387).
+      st="AMBIGUOUS"
+    else
+      st=$(ref_state "$r_repo" "$r_kind" "$r_num")
+    fi
     bare_states+=("${st##*:}")
     ref_label="${r_repo}#${r_num}"
     case "$st" in
@@ -284,6 +334,7 @@ while [ "$i" -lt "$task_count" ]; do
       PR:CLOSED)    components+=("pr-closed");    reasons+=("PR ${ref_label} closed unmerged") ;;
       ISSUE:CLOSED) components+=("issue-closed"); reasons+=("issue ${ref_label} closed") ;;
       PR:OPEN|ISSUE:OPEN) has_open=true ;;
+      AMBIGUOUS)    has_ambiguous=true ;;
       *)            has_unknown=true ;;
     esac
     r=$((r + 1))
@@ -296,6 +347,10 @@ while [ "$i" -lt "$task_count" ]; do
 
   if [ "$nrefs" -eq 0 ] || [ "$has_open" = true ]; then
     verdict="live"
+  elif [ "$has_ambiguous" = true ]; then
+    # A ref's repo is unknown under --all — never close on a guessed repo.
+    verdict="live"
+    ambiguous_count=$((ambiguous_count + 1))
   elif [ "$has_unknown" = true ]; then
     # A ref could not be confirmed done — never close on uncertainty.
     verdict="live"
@@ -352,6 +407,7 @@ echo "REVIEW_COUNT=${review_count}"
 echo "BULK_COUNT=${#bulk_uuids[@]}"
 echo "DONE_COUNT=${#done_uuids[@]}"
 [ "$unknown_count" -gt 0 ] && echo "UNKNOWN_UPSTREAM=${unknown_count}"
+[ "$ambiguous_count" -gt 0 ] && echo "AMBIGUOUS_REPO=${ambiguous_count}"
 
 # --- Dry-run stops here ----------------------------------------------------
 if [ "$rc_apply" != true ]; then

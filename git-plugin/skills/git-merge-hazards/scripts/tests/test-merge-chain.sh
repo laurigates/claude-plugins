@@ -27,6 +27,9 @@
 #     failure; a CANCELLED run that is the latest still is (PR #104 shape).
 #   - CI is settled only after two agreeing reads, and an empty rollup only
 #     after MC_MIN_EMPTY_POLLS reads; UNSTABLE is CI_RED; a draft is skipped.
+#   - a --review-ts more than 60 s in the future is a usage error (#3400).
+#   - a PR GitHub auto-merges during the CI wait is MERGED, not SKIPPED/WARN;
+#     one merged during the wait without auto-merge stays SKIPPED (#3401).
 #
 # Needs bash and jq.
 
@@ -82,6 +85,12 @@ case "$1 $2" in
     for a in "$@"; do [ "$prev" = "--json" ] && fields="$a"; prev="$a"; done
     if [[ "$fields" == *statusCheckRollup* ]] && [ "$(jq '(._rollup_seq // []) | length' "$(f "$n")")" -gt 0 ]; then
       save "$n" '.statusCheckRollup = ._rollup_seq[0] | ._rollup_seq = ._rollup_seq[1:]'
+    fi
+    # _merge_on_ci_read: GitHub (auto-merge, or a third party) merges the PR
+    # before the first checks read returns.
+    if [[ "$fields" == *statusCheckRollup* ]] && [ "$(jq -r '._merge_on_ci_read // false' "$(f "$n")")" = true ]; then
+      save "$n" "._merge_on_ci_read = false | .state = \"MERGED\" | .autoMergeRequest = null
+        | .mergeCommit = {oid: \"$(printf 'e%039d' "$n")\"}"
     fi
     jq 'with_entries(select(.key | startswith("_") | not))' "$(f "$n")"; exit 0 ;;
   "api graphql")
@@ -171,7 +180,7 @@ mkpr() {
       mergeStateStatus: "BEHIND",
       statusCheckRollup: [{__typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS"}],
       commits: [{oid: "f0", committedDate: "2026-10-27T06:00:00Z", messageHeadline: "feat: work"}],
-      mergeCommit: null
+      mergeCommit: null, autoMergeRequest: null
     }' | jq "${2:-.}" >"$STUB_STATE/pr-$1.json"
 }
 
@@ -259,6 +268,28 @@ mkpr 116 '.isDraft = true'
 run_chain 116
 expect_has "draft skipped" "$(section 116)" "^REASON=draft:"
 expect_no "a draft is never updated or merged" "$LOG" "pr (update-branch|merge) 116"
+
+# A PR with auto-merge enabled merges itself once update-branch's CI goes
+# green, before this script's merge step. That is the intended outcome, not a
+# skip: MERGED, out of the WARN rollup, and the reason says the §6 guard did not
+# run (#3401). Without auto-merge, a merge during the wait stays SKIPPED/WARN.
+mkpr 117 '.autoMergeRequest = {enabledAt: "2026-10-27T07:00:00Z", mergeMethod: "SQUASH"} | ._merge_on_ci_read = true'
+mkpr 118
+run_chain 117,118 --fetch-dir "$T/no-such-clone"
+expect_line "auto-merged during the CI wait -> MERGED" "$(section 117)" "STATUS=MERGED"
+expect_has "REASON says auto-merge and that the guard did not run" "$(section 117)" "^REASON=auto-merge: .*§6 guard not applied"
+expect_line "the auto-merge commit is reported" "$(section 117)" "MERGE_COMMIT=e000000000000000000000000000000000000117"
+expect_line "the clone is fetched after an auto-merge too" "$(section 117)" "FETCH=failed"
+expect_no "no merge call for an auto-merged PR" "$LOG" "pr merge 117"
+expect_line "the chain continues past an auto-merge" "$(section 118)" "STATUS=MERGED"
+expect_line "auto-merge is in the MERGED list" "$(summary)" "MERGED=117,118"
+expect_line "auto-merge alone keeps the chain OK" "$(summary)" "STATUS=OK"
+validate_summary "auto-merge summary passes the validator"
+mkpr 119 '._merge_on_ci_read = true'
+run_chain 119
+expect_line "merged during the wait without auto-merge -> SKIPPED" "$(section 119)" "STATUS=SKIPPED"
+expect_has "REASON=already_merged" "$(section 119)" "^REASON=already_merged: merged while waiting for CI"
+expect_line "a third-party merge still rolls up to WARN" "$(summary)" "STATUS=WARN"
 
 # ---- 3. CONFLICT ------------------------------------------------------------
 echo "CONFLICT"

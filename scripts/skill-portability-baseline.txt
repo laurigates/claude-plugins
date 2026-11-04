@@ -1,0 +1,39 @@
+# Skill-portability baseline -- see scripts/check-skill-portability.sh.
+# path<TAB>matched text<TAB>count: hits that predate the rule and wait
+# for the per-plugin sweep (#3308). Counts may only go down; rewrite with
+# --update-baseline, which never raises an entry.
+agent-patterns-plugin/skills/meta-context-diet/references/anti-patterns.md	laurigates/loractl	2
+agent-patterns-plugin/skills/meta-promote/SKILL.md	~/repos/	1
+agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
+agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md	laurigates/loractl	1
+code-quality-plugin/skills/bulk-sweep-classify/SKILL.md	laurigates/dotfiles	1
+comfyui-plugin/skills/comfy-node/SKILL.md	gitops repo	3
+comfyui-plugin/skills/comfy-node/SKILL.md	laurigates/gitops	3
+comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml	laurigates/.github	1
+comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml	~/repos/	1
+comfyui-plugin/skills/comfyui-node-scaffold/references/template-upkeep.md	laurigates/gitops	2
+comfyui-plugin/skills/comfyui-node-scaffold/references/template-upkeep.md	~/repos/	1
+comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py	laurigates/.github	3
+comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py	~/repos/	3
+comfyui-plugin/skills/comfyui-node-scaffold/scripts/tests/test-finishing-pass.sh	laurigates/.github	1
+configure-plugin/skills/claude-security-settings/SKILL.md	laurigates/loractl	1
+configure-plugin/skills/configure-completions/REFERENCE.md	laurigates/shore-recon	1
+configure-plugin/skills/configure-reusable-workflows/REFERENCE.md	laurigates/.github	9
+configure-plugin/skills/configure-reusable-workflows/SKILL.md	laurigates/.github	1
+foundryvtt-plugin/skills/foundryvtt-module-scaffold/references/fleet-drift.md	~/repos/	1
+foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/check-fleet-drift.py	~/repos/	2
+foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	gitops repo	1
+git-plugin/skills/git-commit-push-pr/SKILL.md	laurigates/gitops	2
+git-plugin/skills/git-merge-hazards/references/serial-merge-chain.md	laurigates/dotfiles	1
+git-plugin/skills/git-merge-hazards/references/sync-notes.md	laurigates/dotfiles	1
+git-plugin/skills/git-pr/REFERENCE.md	laurigates/gitops	2
+git-plugin/skills/git-pr/SKILL.md	laurigates/gitops	2
+git-plugin/skills/github-pr-title/SKILL.md	laurigates/gitops	2
+git-plugin/skills/github-pr-title/merge-strategies.md	laurigates/.github	2
+git-plugin/skills/github-pr-title/merge-strategies.md	laurigates/gitops	3
+github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
+github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
+hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1
+hooks-plugin/hooks/test-bash-antipatterns.sh	~/repos/	2
+project-plugin/skills/changelog-review/SKILL.md	laurigates/.github	2
+taskwarrior-plugin/skills/task-triage/references/agent-brief.md	~/repos/	1

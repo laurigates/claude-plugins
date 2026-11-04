@@ -74,8 +74,8 @@ for a in "\$@"; do [ "\$a" = "+BLOCKING" ] && { echo "[]"; exit 0; }; done
 cat <<'JSON'
 [{"id":1,"uuid":"${UA}","project":"alpha","ghpr":"10"},
  {"id":2,"uuid":"${UB}","project":"alpha","ghpr":"11"},
- {"id":3,"uuid":"${UC}","project":"beta","ghid":"20"},
- {"id":4,"uuid":"${UD}","project":"beta","ghpr":"12"}]
+ {"id":3,"uuid":"${UC}","project":"alpha.beta","ghid":"20"},
+ {"id":4,"uuid":"${UD}","project":"alpha.beta","ghpr":"12"}]
 JSON
 SH
 chmod +x "${BIN}/task"
@@ -92,7 +92,14 @@ exit 0
 SH
 chmod +x "${BIN}/gh"
 
-run_reconcile() { PATH="${BIN}:$PATH" bash "$RECONCILE" --all "$@" 2>/dev/null; }
+# Under --all a ghid/ghpr UDA resolves only for tasks in the cwd's project or a
+# dotted child of it (#3387). The cwd is a git repo whose toplevel is "alpha",
+# so every fixture task (alpha, alpha.beta) is in scope.
+CWD_REPO="${WORK}/alpha"
+mkdir -p "$CWD_REPO"
+git -C "$CWD_REPO" init -q 2>/dev/null || { echo "git init failed" >&2; exit 1; }
+
+run_reconcile() { PATH="${BIN}:$PATH" bash "$RECONCILE" --all --project-dir "$CWD_REPO" "$@" 2>/dev/null; }
 field() { printf '%s\n' "$2" | grep -m1 "^$1=" | cut -d= -f2-; }
 
 # --- A: --only-verdicts limits the apply set --------------------------------
