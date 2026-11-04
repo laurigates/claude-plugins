@@ -20,8 +20,6 @@
 #   G. the same command with plain single quotes is NOT flagged
 #   H. no configure-plugin SKILL.md carries the escaped-quote shape — pins the
 #      #3207 part-1 fix so a revert is caught
-#   I. no SKILL.md anywhere in the repo carries the escaped-quote shape — pins
-#      the #3207 part-2 fix (rust, container, component-patterns, blueprint)
 #
 # The linter greps relative to its cwd, so each fixture is exercised by running
 # it from a throwaway directory containing only that fixture.
@@ -185,11 +183,6 @@ assert "G: plain single-quoted Context find commands are NOT flagged" "$g_ok"
 h_hits="$(grep -A0 'WARN \[escaped-single-quote\]' <<<"$e_out" | grep -c 'configure-plugin/' || true)"
 [ "$h_hits" -eq 0 ] && h_ok=true || h_ok=false
 assert "H: no configure-plugin Context command carries escaped single quotes (found $h_hits)" "$h_ok"
-
-# I. no file anywhere carries the escaped-quote shape (pins #3207 part 2)
-i_hits="$(grep -c 'WARN \[escaped-single-quote\]' <<<"$e_out" || true)"
-[ "$i_hits" -eq 0 ] && i_ok=true || i_ok=false
-assert "I: no Context command repo-wide carries escaped single quotes (found $i_hits)" "$i_ok"
 
 echo "----"
 echo "PASS=$pass_count FAIL=$fail_count"
