@@ -3,11 +3,19 @@ name: git-repo-delete-check
 description: "Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup. Use when asked to rm -rf, delete, or prune a git checkout."
 allowed-tools: Bash(git -C *), Bash(git remote *), Bash(git status *), Bash(git log *), Bash(git stash *), Bash(git branch *), Bash(du *), Bash(tar *), Bash(mkdir *), Read, Glob, AskUserQuestion, TodoWrite
 created: 2026-08-19
-modified: 2026-08-21
+modified: 2026-11-04
 reviewed: 2026-08-19
 ---
 
 # /git:repo-delete-check
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Deleting, `rm -rf`-ing, or pruning a whole git checkout | Use `deadbranch` to delete stale branches inside a repo that stays |
+| Checking a checkout for a remote, unpushed commits, and stashes before removal | Use `git-coworker-check` to find out whether another agent is writing in the checkout |
+| Offering a push or tar backup before a clone cleanup | Use `macos-plugin:macos-disk-usage` or `linux-plugin:linux-disk-usage` to find what fills the disk |
 
 Run this before any deletion of a git checkout — `rm -rf`, a cleanup
 sweep over old clones, or a disk-space prune.

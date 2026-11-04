@@ -3,11 +3,20 @@ name: git-upstream-fix-check
 description: "Check upstream HEAD before patching vendored, tarball-installed, or forked code. Use when patching a dependency, custom node, or fork you don't own."
 allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), Read, Grep, Glob
 created: 2026-08-19
-modified: 2026-08-19
+modified: 2026-11-04
 reviewed: 2026-08-19
 ---
 
 # /git:upstream-fix-check
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| About to patch vendored, tarball-installed, or forked code you don't own | Use `git-fork-workflow` once upstream carries the fix and the fork needs syncing |
+| Checking upstream HEAD, issues, and PRs for an existing fix to one bug | Use `workflow-orchestration-plugin:workflow-verify-before-filing` for a backlog of accumulated bug candidates |
+| Deciding between upgrading a stale snapshot and patching it locally | Use `upstream-pr-contribution` when opening the PR that sends a local fix upstream |
+| A bug sits in a custom node or package you installed, not one you author | Use `comfyui-plugin:comfyui-node-authoring` when writing your own custom node's code |
 
 Fires when you are about to edit third-party code inside the project — a path
 under `vendor/`, `site-packages/`, `node_modules/`, `custom_nodes/`,
