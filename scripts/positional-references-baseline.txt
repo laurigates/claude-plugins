@@ -56,7 +56,7 @@ git-plugin/skills/deadbranch/SKILL.md	2
 git-plugin/skills/git-branch-pr-workflow/SKILL.md	1
 git-plugin/skills/git-conflicts/SKILL.md	1
 git-plugin/skills/git-coworker-check/SKILL.md	1
-git-plugin/skills/git-fork-workflow/SKILL.md	4
+git-plugin/skills/git-fork-workflow/SKILL.md	3
 git-plugin/skills/git-issue-hierarchy/SKILL.md	2
 git-plugin/skills/git-issue-scoping/SKILL.md	2
 git-plugin/skills/git-issue/SKILL.md	2
