@@ -154,15 +154,7 @@ After per-item actions, emit a structured summary:
 4. **Decisions needed** — `still-valid` issues whose body ends in a question or "how should we…".
 5. **Handoff recommendations** per category:
 
-| Category | Recommended next skill |
-|----------|------------------------|
-| `needs-fix` | `/git:fix-pr <n>` |
-| `changes-requested` | recommend the user run `/git:pr-feedback <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
-| `needs-rebase` | `/git:conflicts <n>` or `gh pr merge --update-branch` |
-| `still-valid` (actionable) | recommend the user run `/git:issue <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
-| `still-valid` (admin only) | `/git:issue-manage` |
-| `implemented` (not auto-closed) | manual `gh issue close <n>` |
-| `tripwire-candidate` | `testing-plugin:test-tripwire` — a test that fails when the condition comes true, then close the issue linking it |
+   Next skill for each category: [references/report-template.md](references/report-template.md#handoff-recommendations-step-8).
 
 ## Post-actions
 
