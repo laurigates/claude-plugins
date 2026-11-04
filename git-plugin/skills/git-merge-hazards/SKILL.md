@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-02
+modified: 2026-11-04
 reviewed: 2026-08-21
 ---
 
@@ -128,8 +128,9 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 `pull_request` workflows, so a branch-writing bot's post-review commits merge
 unread. Before each merge, refuse any post-review commit but GitHub's
 update-branch merge (2+ parents, committer `noreply@github.com`); your own
-`main` merge holds an unreviewed resolution. Pin `--match-head-commit <sha>`; a
-PR changing that bot goes last. See [references/serial-merge-chain.md](references/serial-merge-chain.md).
+`main` merge holds an unreviewed resolution. Pin
+`--match-head-commit` to a full 40-char SHA; a PR changing that bot goes last.
+See [references/serial-merge-chain.md](references/serial-merge-chain.md).
 
 ## Merge shepherd
 
