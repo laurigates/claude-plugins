@@ -15,7 +15,9 @@
 #                more parents AND committer email noreply@github.com, both read
 #                from GitHub. The subject line is not consulted, and a merge
 #                commit anyone else made (a conflict agent merging main into the
-#                branch) is unreviewed like any other commit.
+#                branch) is unreviewed like any other commit. A value more than
+#                60 s ahead of this host's clock is a usage error: it would
+#                mark commits pushed during the run as reviewed.
 #   --method     Merge method for every PR. Without it, each PR takes the
 #                METHOD= that git-plugin/scripts/pr-merge-method.py prints for
 #                it after update-branch (a branch with a merge commit squashes),
@@ -25,6 +27,7 @@
 #   --fetch-dir  A clone to `git fetch origin` after each merge.
 #   MERGE_CHAIN_POLL_SECONDS  CI poll interval (default 20).
 #   MERGE_CHAIN_METHOD_CMD    Replaces pr-merge-method.py (tests use a stub).
+#   MERGE_CHAIN_NOW_EPOCH     Replaces the clock the --review-ts check reads (tests).
 #
 # Per PR, in order: read state and author; `gh pr update-branch`; wait until
 # every check on the head completes and two consecutive reads agree; read
@@ -65,6 +68,7 @@ MC_FETCH_DIR=""
 MC_POLL="${MERGE_CHAIN_POLL_SECONDS:-20}"
 MC_MIN_EMPTY_POLLS=3   # reads with zero checks before "this repo has no CI"
 MC_MAX_UPDATES=3       # BEHIND again after CI settled: re-update at most this often
+MC_CLOCK_SKEW=60       # seconds a --review-ts may lie ahead of this host's clock
 
 PERMISSION_RE='HTTP 40[13]|[Pp]ermission|not authori[sz]ed|[Rr]esource not accessible|must have (admin|write|push)|[Dd]enied'
 HEAD_MOVED_RE='[Hh]ead branch was modified|[Hh]ead (commit|sha)|expected head|match-head'
@@ -101,6 +105,16 @@ done
 [[ "$MC_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || usage_error "--repo OWNER/REPO is required"
 [[ "$MC_REVIEW_TS" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
   usage_error "--review-ts must be a UTC timestamp like 2026-10-27T08:00:00Z"
+# A future --review-ts marks every commit pushed before it as reviewed, so the
+# §6 guard would be off for the run. GNU date first, then BSD; every field is
+# given, so BSD does not fill any from the current time.
+mc_review_epoch=$(date -u -d "$MC_REVIEW_TS" +%s 2>/dev/null) ||
+  mc_review_epoch=$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$MC_REVIEW_TS" +%s 2>/dev/null) ||
+  usage_error "--review-ts $MC_REVIEW_TS is not a valid UTC time"
+mc_now_epoch="${MERGE_CHAIN_NOW_EPOCH:-$(date -u +%s)}"
+[[ "$mc_now_epoch" =~ ^[0-9]+$ ]] || usage_error "MERGE_CHAIN_NOW_EPOCH must be a whole number"
+[ "$mc_review_epoch" -le $((mc_now_epoch + MC_CLOCK_SKEW)) ] ||
+  usage_error "--review-ts $MC_REVIEW_TS is in the future (now $(date -u -d "@$mc_now_epoch" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -r "$mc_now_epoch" +%Y-%m-%dT%H:%M:%SZ)); a future value marks unreviewed commits as reviewed"
 [ -z "$MC_METHOD" ] || [[ "$MC_METHOD" =~ ^(squash|merge|rebase)$ ]] ||
   usage_error "--method must be squash, merge or rebase"
 [[ "$MC_TIMEOUT" =~ ^[0-9]+$ ]] || usage_error "--timeout must be a whole number of seconds"

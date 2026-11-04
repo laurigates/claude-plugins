@@ -500,6 +500,34 @@ expect_line "non-numeric PR exits 2" "$RC" "2"
 OUT=$(MERGE_CHAIN_METHOD_CMD="$T/no-such-method-cmd" bash "$CHAIN" --repo o/r --prs 1 --review-ts "$TS" 2>&1); RC=$?
 expect_line "no --method and no method command exits 2" "$RC" "2"
 
+# A future --review-ts marks every commit pushed before it as reviewed, so the
+# §6 guard is off for the whole run (#3400). Refuse it beyond 60 s of clock
+# skew. MERGE_CHAIN_NOW_EPOCH pins "now" so the cases do not depend on the clock.
+TS_EPOCH=1793088000   # 2026-10-27T08:00:00Z
+mkpr 701
+: >"$STUB_LOG"
+OUT=$(MERGE_CHAIN_NOW_EPOCH=$((TS_EPOCH - 3600)) bash "$CHAIN" --repo o/r --prs 701 --review-ts "$TS" 2>&1); RC=$?
+expect_line "--review-ts 1 h in the future exits 2" "$RC" "2"
+expect_has "the usage error names the future timestamp" "$OUT" "^  - SEVERITY=ERROR TYPE=usage MSG=--review-ts $TS is in the future"
+expect_no "no gh call before the usage error" "$(cat "$STUB_LOG")" "STUB_GH"
+validate_summary "future --review-ts usage error passes the validator"
+run_chain_now() { # run_chain_now <now-epoch> <prs>; like run_chain with a pinned clock
+  : >"$STUB_LOG"
+  OUT=$(MERGE_CHAIN_NOW_EPOCH="$1" bash "$CHAIN" --repo o/r --prs "$2" --review-ts "$TS" 2>&1); RC=$?
+  LOG=$(cat "$STUB_LOG")
+}
+mkpr 701
+run_chain_now $((TS_EPOCH - 30)) 701
+expect_line "--review-ts 30 s ahead (clock skew) is accepted" "$(section 701)" "STATUS=MERGED"
+mkpr 702
+run_chain_now $((TS_EPOCH + 86400)) 702
+expect_line "control: a past --review-ts is accepted" "$(section 702)" "STATUS=MERGED"
+# Without the seam the real clock decides: 2099 is in the future on any test host.
+OUT=$(bash "$CHAIN" --repo o/r --prs 1 --review-ts 2099-01-01T00:00:00Z 2>&1); RC=$?
+expect_line "a far-future --review-ts exits 2 on the real clock" "$RC" "2"
+OUT=$(bash "$CHAIN" --repo o/r --prs 1 --review-ts 2026-13-45T00:00:00Z 2>&1); RC=$?
+expect_line "a well-shaped but impossible --review-ts exits 2" "$RC" "2"
+
 # ---- 9. the skill points at the script --------------------------------------
 echo "skill"
 if grep -q 'scripts/merge-chain.sh' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md names scripts/merge-chain.sh"; else bad "SKILL.md does not name scripts/merge-chain.sh"; fi
