@@ -65,6 +65,9 @@ Refs #124
 - Use `Refs` for issues that are related but not solved, including follow-up
   issues — `Closes #N after merge` still closes `#N` the moment the PR merges
 - Follow-up work should be created as new issues, not left in a checklist
+- When no issue exists for the work, write a line `No linked issue: <reason>`
+  instead of filing an issue only for the PR to close; the
+  `mcp__github__create_pull_request` prompt hook accepts it
 
 > **Do NOT use markdown tables to track linked issues.** GitHub's auto-close
 > machinery only fires on `Fixes #N` / `Closes #N` / `Resolves #N` keywords
