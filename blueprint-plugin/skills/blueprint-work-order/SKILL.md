@@ -214,13 +214,7 @@ Print the report in [references/report-template.md](references/report-template.m
 
 ### Step 10: Prompt for Next Action
 
-Ask with the prompt in [references/next-action-prompt.md](references/next-action-prompt.md).
-
-**Based on selection:**
-- "Execute this work-order" → Run `/project:continue` with work-order context
-- "Create another work-order" → Run `/blueprint:work-order` again
-- "Delegate to subagent" → Provide handoff instructions for subagent execution
-- "I'm done" → Exit
+Ask with the prompt in [references/next-action-prompt.md](references/next-action-prompt.md), and act on the selection as that file maps it.
 
 ## Agentic Optimizations
 
@@ -232,26 +226,9 @@ Ask with the prompt in [references/next-action-prompt.md](references/next-action
 | Publish a new WO issue | `gh issue create --title "[WO-NNN] ..." --body-file <wo.md> --label work-order` |
 | List open work orders | `gh issue list --label work-order --state open --limit 100 --json number,title` |
 
-## Key Principles
+## Principles and Error Handling
 
-- **Minimal context**: Only what's needed, not full files/PRDs
-- **Specific tests**: Exact test cases, not vague descriptions
-- **TDD enforced**: Tests specified before implementation
-- **Clear criteria**: Unambiguous success checkboxes
-- **Isolated**: Task should be doable with only provided context
-- **Transparent**: GitHub issue provides visibility to collaborators
-
----
-
-## Error Handling
-
-| Condition | Action |
-|-----------|--------|
-| No PRDs exist | Guide to write PRDs first |
-| No tasks in feature-tracker | Ask for current phase/status |
-| Task unclear | Ask user what to work on next |
-| `gh` not authenticated | Warn and fallback to `--no-publish` behavior |
-| Issue already has `work-order` label | Warn, ask to update or create new |
+Work-order principles (minimal context, specific tests, TDD, isolation) and the error-handling table: [REFERENCE.md](REFERENCE.md).
 
 ## GitHub Integration Notes
 
