@@ -3,7 +3,7 @@ name: git-merge-driver
 description: Write a custom git merge driver that merges a file's structure instead of its lines. Use when a tool-rewritten JSON/YAML/lock file keeps conflicting on mechanical fields.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-11-03
-modified: 2026-11-03
+modified: 2026-11-04
 reviewed: 2026-11-03
 ---
 
@@ -107,41 +107,7 @@ this for `merge=union`; custom drivers behave the same).
    oldest one that can be reached, or check the version at startup and exit 1
    with a message, so the merge falls back to a normal conflict.
 
-A minimal skeleton with the contract in place (fill in `merge()`):
-
-```python
-#!/usr/bin/env python3
-import json, subprocess, sys
-from pathlib import Path
-
-class Conflict(Exception): pass
-
-def merge(base, ours, theirs):
-    if ours == theirs: return ours
-    if base == ours: return theirs
-    if base == theirs: return ours
-    # dicts: recurse per key; field policies here; otherwise:
-    raise Conflict()
-
-def line_merge(o, a, b):
-    rc = subprocess.run(["git", "merge-file", "-L", "ours", "-L", "base",
-                         "-L", "theirs", a, o, b]).returncode
-    if rc == 0:
-        try: json.loads(Path(a).read_text()); return 0
-        except ValueError: pass
-    return 1  # never > 128
-
-def main(o, a, b, *_):
-    try:
-        load = lambda p: json.loads(Path(p).read_text() or "null")
-        result = merge(load(o), load(a), load(b))
-    except (ValueError, Conflict):
-        return line_merge(o, a, b)
-    Path(a).write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
-    return 0
-
-sys.exit(main(*sys.argv[1:]))
-```
+A minimal Python skeleton with the exit-code contract, the `git merge-file` fallback and the parse check in place: [REFERENCE.md § Minimal driver skeleton](REFERENCE.md#minimal-driver-skeleton).
 
 A production example with run-state grouping, timestamp and counter policies,
 and the test layers in [Testing it](#testing-it) is blueprint-plugin's manifest driver
