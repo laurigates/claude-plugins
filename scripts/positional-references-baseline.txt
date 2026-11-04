@@ -104,7 +104,7 @@ session-plugin/skills/session-wrap/SKILL.md	2
 software-design-plugin/skills/design-patterns/SKILL.md	1
 taskwarrior-plugin/skills/task-add/SKILL.md	1
 taskwarrior-plugin/skills/task-coordinate/SKILL.md	1
-taskwarrior-plugin/skills/task-done/SKILL.md	2
+taskwarrior-plugin/skills/task-done/SKILL.md	1
 taskwarrior-plugin/skills/task-status/SKILL.md	1
 testing-plugin/skills/mutation-testing/SKILL.md	1
 testing-plugin/skills/test-analyze/SKILL.md	5
