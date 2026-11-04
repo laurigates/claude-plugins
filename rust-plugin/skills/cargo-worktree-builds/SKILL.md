@@ -1,9 +1,9 @@
 ---
 created: 2026-06-29
-modified: 2026-11-02
+modified: 2026-11-04
 reviewed: 2026-11-02
 name: cargo-worktree-builds
-description: "Share one CARGO_TARGET_DIR across parallel git-worktree agents so Rust deps compile once. Use when running cargo/clippy/test in several worktrees concurrently, when parallel agent builds rebuild dependencies N times, or when N worktrees blow up disk with N copies of target/."
+description: "Share one CARGO_TARGET_DIR across parallel git-worktree agents so Rust deps compile once. Use when worktrees run cargo concurrently, rebuild deps N times, or fill disk with N target/ copies."
 user-invocable: false
 allowed-tools: Bash, Read
 ---

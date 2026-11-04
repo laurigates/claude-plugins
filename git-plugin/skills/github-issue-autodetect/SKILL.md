@@ -1,9 +1,9 @@
 ---
 created: 2026-01-15
-modified: 2026-05-09
+modified: 2026-11-04
 reviewed: 2026-04-25
 name: github-issue-autodetect
-description: Auto-detect GitHub issues that staged changes may fix or close. Analyzes diffs, paths, and issue metadata to suggest closing keywords (Fixes/Closes/Resolves) for commit messages. Use when committing to ensure proper issue linkage.
+description: Auto-detect GitHub issues staged changes may fix or close, and suggest Fixes/Closes/Resolves keywords from diffs, paths, and issue metadata. Use when committing to ensure proper issue linkage.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, mcp__github__list_issues, mcp__github__get_issue
 ---

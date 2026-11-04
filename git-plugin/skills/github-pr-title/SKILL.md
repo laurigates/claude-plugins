@@ -1,12 +1,9 @@
 ---
 created: 2026-01-30
-modified: 2026-10-26
+modified: 2026-11-04
 reviewed: 2026-04-25
 name: github-pr-title
-description: |
-  Craft PR titles using conventional commits format. Use when creating PRs or
-  ensuring consistent PR naming. PR titles MUST follow conventional commits to
-  drive release-please automation and maintain consistent git history.
+description: Craft PR titles in conventional commits format, which drives release-please automation and squash-merge history. Use when creating PRs or ensuring consistent PR naming.
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Bash(gh pr *), Read, Grep, Glob, TodoWrite
 ---
