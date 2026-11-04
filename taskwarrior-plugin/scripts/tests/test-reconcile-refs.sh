@@ -18,6 +18,11 @@
 #      is not selected (safe false-negative, never a wrong-repo close).
 #   H. review never enters a close path: not under --apply, not under
 #      --only-verdicts=pr-merged, not even under --only-verdicts=review (#3126).
+#   I. Under --all, a ref with no repo (ghpr/ghid UDA or bare #N) is trusted only
+#      for tasks in the cwd's project or a dotted child of it (#3387). Elsewhere
+#      it is AMBIGUOUS: kept, never sent to gh, never closed. A ref that names
+#      its repo (owner/repo#N) still resolves in any project. A single-project
+#      run keeps the cwd-repo default.
 #
 # `task` and `gh` are pure stubs; no network, no real taskwarrior store.
 
@@ -61,6 +66,11 @@ U6="66666666-6666-6666-6666-666666666666"  # desc prompt-editor#60 (shorthand) �
 U7="77777777-7777-7777-7777-777777777777"  # desc #70,#71       → PR MERGED, PR CLOSED → review
 U8="88888888-8888-8888-8888-888888888888"  # ghpr 71 UDA        → CLOSED unmerged → pr-closed
 U9="99999999-9999-9999-9999-999999999999"  # ghid 90 UDA        → ISSUE CLOSED → issue-closed
+# Tasks in project "olmap"/"alphabet" — not the cwd project "alpha" (#3387):
+UA="aaaaaaaa-0000-0000-0000-00000000000a"  # ghpr 65 UDA        → MERGED in cwd repo, OPEN in its own → AMBIGUOUS
+UB="bbbbbbbb-0000-0000-0000-00000000000b"  # desc bare #65,#67  → AMBIGUOUS (no gh call)
+UC="cccccccc-0000-0000-0000-00000000000c"  # desc owner/repo#66 → PR MERGED via -R → review
+UD="dddddddd-0000-0000-0000-00000000000d"  # ghpr 10, project "alphabet" (prefix, not a child) → AMBIGUOUS
 
 # Stub `task`: import captures stdin; +BLOCKING → []; export → the fixture.
 cat > "${BIN}/task" <<SH
@@ -70,20 +80,26 @@ for a in "\$@"; do [ "\$a" = "+BLOCKING" ] && { echo "[]"; exit 0; }; done
 cat <<'JSON'
 [{"id":1,"uuid":"${U1}","project":"alpha","ghpr":"10.000000","description":"Merge touch-manager release"},
  {"id":2,"uuid":"${U2}","project":"alpha","description":"Merge PR #20 now"},
- {"id":3,"uuid":"${U3}","project":"beta","description":"track laurigates/other-repo#30 monitoring"},
- {"id":4,"uuid":"${U4}","project":"beta","description":"Monitor #40, #41, #42 write-tool issues"},
- {"id":5,"uuid":"${U5}","project":"gamma","description":"Monitor #50 and #51 both landed"},
- {"id":6,"uuid":"${U6}","project":"gamma","description":"publish prompt-editor#60 to registry"},
- {"id":7,"uuid":"${U7}","project":"delta","description":"land #70, close #71"},
- {"id":8,"uuid":"${U8}","project":"delta","ghpr":"71.000000","description":"Land the abandoned PR"},
- {"id":9,"uuid":"${U9}","project":"delta","ghid":"90.000000","description":"Fix the reported bug"}]
+ {"id":3,"uuid":"${U3}","project":"alpha.beta","description":"track laurigates/other-repo#30 monitoring"},
+ {"id":4,"uuid":"${U4}","project":"alpha.beta","description":"Monitor #40, #41, #42 write-tool issues"},
+ {"id":5,"uuid":"${U5}","project":"alpha.gamma","description":"Monitor #50 and #51 both landed"},
+ {"id":6,"uuid":"${U6}","project":"alpha.gamma","description":"publish prompt-editor#60 to registry"},
+ {"id":7,"uuid":"${U7}","project":"alpha.delta","description":"land #70, close #71"},
+ {"id":8,"uuid":"${U8}","project":"alpha.delta","ghpr":"71.000000","description":"Land the abandoned PR"},
+ {"id":9,"uuid":"${U9}","project":"alpha.delta","ghid":"90.000000","description":"Fix the reported bug"},
+ {"id":10,"uuid":"${UA}","project":"olmap","ghpr":"65.000000","description":"Merge the lodash types bump"},
+ {"id":11,"uuid":"${UB}","project":"olmap","description":"triage conflicting Renovate PRs #65, #67"},
+ {"id":12,"uuid":"${UC}","project":"olmap","description":"follow up on ForumViriumHelsinki/OLMap#66"},
+ {"id":13,"uuid":"${UD}","project":"alphabet","ghpr":"10.000000","description":"Merge the alphabet release"}]
 JSON
 SH
 chmod +x "${BIN}/task"
 
 # Stub `gh`: auth OK; parse kind/num/-R; PR-numbers 10/20/70 MERGED, 71 CLOSED;
-# every other number is an ISSUE (so `pr view` returns empty → issue fallback):
-# 30/40/41/50/51/90 CLOSED, 42 OPEN. Records every invocation to GH_LOG.
+# PR 65 is MERGED in the cwd repo (no -R) but OPEN in any named repo — the
+# wrong-repo shape from #3387; PR 66 MERGED. Every other number is an ISSUE (so
+# `pr view` returns empty → issue fallback): 30/40/41/50/51/90 CLOSED, 42 OPEN.
+# Records every invocation to GH_LOG.
 cat > "${BIN}/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$GH_LOG"
@@ -99,7 +115,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 if [ "$kind" = "pr" ]; then
-  case "$num" in 10|20|70) echo MERGED ;; 71) echo CLOSED ;; *) : ;; esac
+  case "$num" in
+    10|20|66|70) echo MERGED ;;
+    71) echo CLOSED ;;
+    65) if [ -n "$repo" ]; then echo OPEN; else echo MERGED; fi ;;
+    *) : ;;
+  esac
 elif [ "$kind" = "issue" ]; then
   case "$num" in 30|40|41|50|51|90) echo CLOSED ;; 42) echo OPEN ;; *) : ;; esac
 fi
@@ -107,7 +128,14 @@ exit 0
 SH
 chmod +x "${BIN}/gh"
 
-run_reconcile() { GH_LOG="$GH_LOG" PATH="${BIN}:$PATH" bash "$RECONCILE" --all "$@" 2>/dev/null; }
+# The cwd is a git repo whose toplevel is named "alpha", so the cwd project
+# (resolve-project.sh: basename of the git toplevel) is "alpha" (#3387).
+CWD_REPO="${WORK}/alpha"
+mkdir -p "$CWD_REPO"
+git -C "$CWD_REPO" init -q 2>/dev/null || { echo "git init failed" >&2; exit 1; }
+
+run_reconcile() { GH_LOG="$GH_LOG" PATH="${BIN}:$PATH" bash "$RECONCILE" --all --project-dir "$CWD_REPO" "$@" 2>/dev/null; }
+run_scoped() { GH_LOG="$GH_LOG" PATH="${BIN}:$PATH" bash "$RECONCILE" --project-dir "$CWD_REPO" "$@" 2>/dev/null; }
 field() { printf '%s\n' "$2" | grep -m1 "^$1=" | cut -d= -f2-; }
 task_field() { # task_field <uuid> <key> <output>
   printf '%s\n' "$3" | grep "uuid=$1 " | grep -o "$2=[^ ]*" | cut -d= -f2-
@@ -116,7 +144,7 @@ task_field() { # task_field <uuid> <key> <output>
 # --- Dry run: selection + classification -----------------------------------
 : > "$GH_LOG"
 out=$(run_reconcile)
-check "TOTAL_LINKED excludes shorthand-only task" "8" "$(field TOTAL_LINKED "$out")"
+check "TOTAL_LINKED excludes shorthand-only task" "12" "$(field TOTAL_LINKED "$out")"
 check "G: shorthand task not selected (no TASK line)" "" \
   "$(printf '%s\n' "$out" | grep -c "uuid=${U6} " | grep -v '^0$' || true)"
 check "B: ghpr UDA back-compat → pr-merged" "pr-merged" "$(task_field "$U1" verdict "$out")"
@@ -130,9 +158,24 @@ check "D: multi-ref with an open ref → live" "live" "$(task_field "$U4" verdic
 check "E: multi-ref text refs all closed → review" "review" "$(task_field "$U5" verdict "$out")"
 check "text refs merged+closed → review" "review" "$(task_field "$U7" verdict "$out")"
 check "STALE_COUNT counts UDA-backed only (u1,u8,u9)" "3" "$(field STALE_COUNT "$out")"
-check "REVIEW_COUNT counts text-ref-only (u2,u3,u5,u7)" "4" "$(field REVIEW_COUNT "$out")"
+check "REVIEW_COUNT counts text-ref-only (u2,u3,u5,u7,uc)" "5" "$(field REVIEW_COUNT "$out")"
 check "C: cross-repo used -R laurigates/other-repo" "yes" \
   "$(grep -q -- '-R laurigates/other-repo' "$GH_LOG" && echo yes || echo no)"
+
+# --- I: --all trusts a repo-less ref only in the cwd project (#3387) --------
+check "I: ghpr UDA in another project → live (not pr-merged)" "live" "$(task_field "$UA" verdict "$out")"
+check "I: ... upstream=AMBIGUOUS" "AMBIGUOUS" "$(task_field "$UA" upstream "$out")"
+check "I: ... method=keep" "keep" "$(task_field "$UA" method "$out")"
+check "I: bare #N text refs in another project → live" "live" "$(task_field "$UB" verdict "$out")"
+check "I: ... upstream=AMBIGUOUS,AMBIGUOUS" "AMBIGUOUS,AMBIGUOUS" "$(task_field "$UB" upstream "$out")"
+check "I: project 'alphabet' is not a child of 'alpha' → live" "live" "$(task_field "$UD" verdict "$out")"
+check "I: dotted child alpha.delta keeps its UDA verdict" "issue-closed" "$(task_field "$U9" verdict "$out")"
+check "I: named-repo ref in another project still resolves → review" "review" "$(task_field "$UC" verdict "$out")"
+check "I: named-repo ref used -R ForumViriumHelsinki/OLMap" "yes" \
+  "$(grep -q -- '-R ForumViriumHelsinki/OLMap' "$GH_LOG" && echo yes || echo no)"
+check "I: no gh call for the ambiguous #65/#67" "0" \
+  "$(grep -cE ' (65|67)( |$)' "$GH_LOG" || true)"
+check "I: AMBIGUOUS_REPO counts ua,ub,ud" "3" "$(field AMBIGUOUS_REPO "$out")"
 
 # --- Apply with the bounded allowlist --------------------------------------
 : > "$IMPORT_CAPTURE"; : > "$GH_LOG"
@@ -145,6 +188,9 @@ check "u9 (ghid issue) IS closed" "1" \
   "$(jq --arg u "$U9" '[.[]|select(.uuid==$u)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
 check "u4 (live) never closed" "0" \
   "$(jq --arg u "$U4" '[.[]|select(.uuid==$u)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
+check "I: ambiguous-repo tasks never in bounded import payload" "0" \
+  "$(jq --arg a "$UA" --arg b "$UB" --arg d "$UD" \
+      '[.[]|select(.uuid==$a or .uuid==$b or .uuid==$d)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
 check "H: review tasks never in bounded import payload" "0" \
   "$(jq --arg a "$U2" --arg b "$U3" --arg c "$U5" --arg d "$U7" \
       '[.[]|select(.uuid==$a or .uuid==$b or .uuid==$c or .uuid==$d)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
@@ -174,6 +220,22 @@ check "u8 pr-closed IS closed without allowlist" "1" \
 check "H: review tasks never closed without allowlist" "0" \
   "$(jq --arg a "$U2" --arg b "$U3" --arg c "$U5" --arg d "$U7" \
       '[.[]|select(.uuid==$a or .uuid==$b or .uuid==$c or .uuid==$d)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
+
+# --- I: a single-project run keeps the cwd-repo default ---------------------
+# The stub ignores the project filter, so every fixture task comes back; without
+# --all the scope is the caller's repo and a repo-less ref resolves there.
+: > "$GH_LOG"
+out=$(run_scoped --project=alpha)
+check "I: scoped run resolves a repo-less UDA against the cwd repo" "pr-merged" \
+  "$(task_field "$UA" verdict "$out")"
+check "I: scoped run reports no AMBIGUOUS_REPO" "" "$(field AMBIGUOUS_REPO "$out")"
+
+# --- I: a relative --project-dir into a repo subdir still finds the project --
+# reconcile.sh cds into --project-dir before resolving the cwd project, so the
+# resolver must be handed the post-cd directory, not the relative argument.
+mkdir -p "${CWD_REPO}/sub"
+out=$(cd "$WORK" && GH_LOG="$GH_LOG" PATH="${BIN}:$PATH" bash "$RECONCILE" --all --project-dir alpha/sub 2>/dev/null)
+check "I: relative --project-dir alpha/sub → CWD_PROJECT=alpha" "alpha" "$(field CWD_PROJECT "$out")"
 
 # --- Summary ----------------------------------------------------------------
 echo "=== RECONCILE REFS TEST ==="

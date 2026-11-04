@@ -115,7 +115,9 @@ close via per-task `task done` so taskwarrior's dependency auto-unblock fires
 
 Print `CLOSED_COUNT`, the per-task verdicts, and any `UNKNOWN_UPSTREAM` count
 (tasks whose issue/PR could not be fetched — left untouched, never closed on
-uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
+uncertainty) or `AMBIGUOUS_REPO` count (`--all` only: tasks outside the cwd's
+project whose refs name no repo, so the cwd repo cannot answer for them — run
+the skill from that project's repo to reconcile them). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 
 ## Agentic Optimizations
 
@@ -136,7 +138,7 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 |------|---------|---------|
 | `--apply` | off (dry-run) | Perform the close |
 | `--project=<name>` | repo basename | Override the project filter |
-| `--all` | off | Reconcile across every project |
+| `--all` | off | Reconcile across every project. A ref that names no repo (bare `#N`, `ghid`/`ghpr` UDA) resolves only for tasks in the cwd's project or a dotted child of it; elsewhere it is `upstream=AMBIGUOUS`, never sent to `gh`, and the task is kept (`AMBIGUOUS_REPO`) |
 | `--limit=N` | 200 | Max linked tasks to inspect |
 | `--only-verdicts=<csv>` | unset (all stale closeable) | Restrict the apply set to these verdicts (e.g. `pr-merged,issue-closed`); other stale verdicts (notably `pr-closed`) are reported `method=keep` but never closed. `review` is never closeable, even when listed. Used by the scheduled bounded auto-apply (`scripts/scheduled-reconcile.sh --apply`) |
 
