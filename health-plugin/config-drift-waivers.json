@@ -265,7 +265,7 @@
   {
    "a": "component-patterns-plugin/skills/version-badge-pattern/SKILL.md",
    "b": "component-patterns-plugin/skills/components-version-badge/SKILL.md",
-   "a_hash": "edee9bffb2c7ddef",
+   "a_hash": "1f2919e0cadb0685",
    "b_hash": "37abd7d1e05d6f2e",
    "reason": "A deliberate implementation/pattern pair: components-version-badge implements the badge per framework and routes to version-badge-pattern for the pattern documentation in its When to Use table.",
    "finding": "semantic_overlap_skill_skill: skill version-badge-pattern and skill components-version-badge are 92% semantically similar"
