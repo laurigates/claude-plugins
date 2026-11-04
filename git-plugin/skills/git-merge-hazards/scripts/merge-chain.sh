@@ -42,6 +42,9 @@
 # (STATUS=OK|WARN|ERROR, REASON=, ISSUE_COUNT=, ISSUES:), with REMAINING= naming
 # the PRs still to merge, stopped PR first. SKIPPED continues the chain; every
 # other non-MERGED status stops it, because later PRs may depend on that one.
+# A PR with auto-merge enabled that GitHub merges during the CI wait is MERGED
+# with REASON=auto-merge: …; the §6 guard never ran on it. A PR merged during
+# the wait without auto-merge (by someone else) is SKIPPED, which rolls up to WARN.
 # ERROR is the fail-closed catch-all: a read that failed, an unexpected state,
 # or an unclassified merge error. An unreadable result never means "clean".
 #
@@ -143,6 +146,7 @@ PR_REASON=""
 PR_HEAD=""
 PR_MERGE_COMMIT=""
 MC_SETTLED_HEAD=""
+MC_AUTO_MERGE=""
 
 # The §6 guard's read. GraphQL, because `gh pr view --json commits` carries no
 # parent count. The exemption needs both the parent count and the committer:
@@ -161,6 +165,12 @@ result() { PR_STATUS="$1"; PR_REASON="${2:-}"; }
 
 view() { gh pr view "$1" -R "$MC_REPO" --json "$2" 2>/dev/null; }
 
+# 6. After a merge, refresh the local clone for whoever resolves the next conflict.
+refresh_clone() {
+  [ -n "$MC_FETCH_DIR" ] || return 0
+  if git -C "$MC_FETCH_DIR" fetch -q origin >/dev/null 2>&1; then MC_FETCH=ok; else MC_FETCH=failed; fi
+}
+
 # Wait until the PR's checks have all completed on a stable head. Sets
 # PR_HEAD to every head it reads, so a stop reports the head it inspected, and
 # MC_SETTLED_HEAD and MC_MS (mergeStateStatus) on success; calls result() and returns 1
@@ -170,10 +180,20 @@ wait_for_ci() {
   deadline=$((SECONDS + MC_TIMEOUT))
   while :; do
     polls=$((polls + 1))
-    j=$(view "$n" state,headRefOid,mergeStateStatus,statusCheckRollup) ||
+    j=$(view "$n" state,headRefOid,mergeStateStatus,statusCheckRollup,mergeCommit) ||
       { result ERROR "read_failed: gh pr view (checks) failed"; return 1; }
     state=$(jq -r '.state // ""' <<<"$j") || { result ERROR "read_failed: unparseable checks JSON"; return 1; }
-    if [ "$state" = "MERGED" ]; then result SKIPPED "already_merged: merged while waiting for CI"; return 1; fi
+    if [ "$state" = "MERGED" ]; then
+      # Auto-merge was on: GitHub merged it once update-branch's CI went green.
+      # That is the intended outcome, but this script's §6 guard never ran.
+      if [ "$MC_AUTO_MERGE" = "true" ]; then
+        PR_MERGE_COMMIT=$(jq -r '.mergeCommit.oid // ""' <<<"$j")
+        result MERGED "auto-merge: merged by GitHub auto-merge while waiting for CI; §6 guard not applied"
+      else
+        result SKIPPED "already_merged: merged while waiting for CI"
+      fi
+      return 1
+    fi
     if [ "$state" != "OPEN" ]; then result SKIPPED "closed: state became $state while waiting for CI"; return 1; fi
     head=$(jq -r '.headRefOid // ""' <<<"$j")
     [ -n "$head" ] && PR_HEAD="$head"
@@ -229,12 +249,13 @@ wait_for_ci() {
 process_pr() {
   local n="$1" j state draft login is_bot head_ref out rc updates=0 late head mstate
   local missing method
-  PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT="" MC_SETTLED_HEAD=""
+  PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT="" MC_SETTLED_HEAD="" MC_AUTO_MERGE=""
 
-  # 1. State and author.
-  j=$(view "$n" state,isDraft,author,headRefName,headRefOid) ||
+  # 1. State, author, and whether auto-merge is on.
+  j=$(view "$n" state,isDraft,author,headRefName,headRefOid,autoMergeRequest) ||
     { result ERROR "read_failed: gh pr view $n failed"; return; }
   state=$(jq -r '.state // ""' <<<"$j") || { result ERROR "read_failed: unparseable PR JSON"; return; }
+  MC_AUTO_MERGE=$(jq -r 'if .autoMergeRequest then "true" else "false" end' <<<"$j")
   draft=$(jq -r '.isDraft // false' <<<"$j")
   login=$(jq -r '.author.login // ""' <<<"$j")
   is_bot=$(jq -r '.author.is_bot // false' <<<"$j")
@@ -271,7 +292,7 @@ process_pr() {
 
     # 3. Wait for CI on the new head, then read mergeStateStatus.
     MC_MS=""
-    wait_for_ci "$n" || return
+    wait_for_ci "$n" || { [ "$PR_STATUS" = MERGED ] && refresh_clone; return; }
     case "$MC_MS" in
       CLEAN|HAS_HOOKS) break ;;
       BEHIND)
@@ -340,10 +361,7 @@ process_pr() {
     if [ "$mstate" = "MERGED" ]; then
       PR_MERGE_COMMIT=$(jq -r '.mergeCommit.oid // ""' <<<"$j")
       result MERGED ""
-      # 6. Refresh the local clone for whoever resolves the next conflict.
-      if [ -n "$MC_FETCH_DIR" ]; then
-        if git -C "$MC_FETCH_DIR" fetch -q origin >/dev/null 2>&1; then MC_FETCH=ok; else MC_FETCH=failed; fi
-      fi
+      refresh_clone
       return
     fi
     sleep "$MC_POLL"
