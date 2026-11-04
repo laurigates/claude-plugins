@@ -4,7 +4,7 @@ args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-11-02
+modified: 2026-11-04
 reviewed: 2026-09-02
 name: blueprint-prp-execute
 ---
@@ -32,7 +32,7 @@ For detailed report templates, deferred items workflow, feature tracker sync, an
 
 ## Context
 
-- PRP file path: !`find . -maxdepth 1 -name \'docs/prps/${1:-unknown}.md\'`
+- PRP file path: !`find . -maxdepth 3 -path "./docs/prps/${1:-unknown}.md"`
 - PRP confidence score: !`find . -path '*/docs/prps/*' -maxdepth 3 -name "${1:-unknown}.md" -exec grep -m1 "^confidence:" {} +`
 - Feature tracker enabled: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'feature-tracker.json' -type f`
 - Current branch: !`git rev-parse --abbrev-ref HEAD`
