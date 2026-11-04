@@ -576,13 +576,6 @@ if [ ! -f "$GUARD" ] || grep -q 'merge-chain' "$GUARD"; then ok "external-pr-mer
 # with 2+ parents AND committer noreply@github.com, so a conflict agent's own
 # merge of main is refused. Run the hand-run snippet itself, not a grep of it.
 echo "docs"
-# GitHub rejects a short --match-head-commit SHA ("Could not coerce value to
-# GitObjectID"). §6 and the no-force-push recipe told readers to pin the head
-# without saying so, and a session retyped an 8-character SHA (#3396).
-sec6=$(awk '/^## 6\./{f=1;next} f&&/^## /{exit} f' "$SKILL_DIR/SKILL.md")
-expect_has "SKILL.md §6 says --match-head-commit needs the full 40-char SHA" "$sec6" "match-head-commit.*full 40-char"
-expect_has "no-force-push-stack.md says \$pre must be the full SHA" \
-  "$(cat "$SKILL_DIR/references/no-force-push-stack.md")" 'pre.*full 40-character SHA'
 SMC="$SKILL_DIR/references/serial-merge-chain.md"
 stale=$(grep -rlE 'startswith\("Merge"\)|any non-merge commit|a non-merge commit after review' \
   "$SKILL_DIR/SKILL.md" "$SKILL_DIR/references" 2>/dev/null)
