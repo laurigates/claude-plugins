@@ -73,17 +73,7 @@ Follow [references/issue-detection.md](references/issue-detection.md) to match t
    - Add high-confidence matches automatically
    - Include medium-confidence matches if confirmed
 8. **ALWAYS include GitHub issue references** in commit messages:
-   - **Closing keywords** (auto-close when merged to default branch):
-     - `Fixes #N` - for bug fixes that resolve an issue
-     - `Closes #N` - for features that complete an issue
-     - `Resolves #N` - alternative closing keyword
-   - **Reference without closing** (for related context):
-     - `Refs #N` - references issue without closing
-     - `Related to #N` - indicates relationship
-   - **Cross-repository references**:
-     - `Fixes owner/repo#N` - closes issue in different repo
-   - **Multiple issues**: `Fixes #1, fixes #2, fixes #3`
-   - Keywords are case-insensitive and work with optional colon: `Fixes: #123`
+   Keyword catalogue (closing, reference-only, cross-repo, multiple issues): [references/workflow-guidance.md](references/workflow-guidance.md#issue-reference-keywords-step-3).
 
 ### Step 4: Push to Remote (if --push or --pr)
 
@@ -117,16 +107,7 @@ For each post-merge action identified, create a GitHub issue — **not a PR chec
 
 Write the follow-up body to a tempfile with the `Write` tool and pass it via `--body-file`. Inline `--body "..."` mangles backticks and multi-line content via shell escaping; see the **Body content** rule in `github-issue-writing`.
 
-```bash
-# Write tool → /tmp/follow-up.md (markdown body, no shell escaping)
-gh issue create \
-  --title "[Chore] DB: Run migration for new schema" \
-  --body-file /tmp/follow-up.md \
-  --label "chore"
-# Note the returned issue number for the PR body
-```
-
-Common follow-up types: database migrations, production deployments, manual config changes, external documentation updates, customer-facing announcements, dependent follow-on PRs.
+Example `gh issue create --body-file` call and common follow-up types: [references/workflow-guidance.md](references/workflow-guidance.md#follow-up-issue-example-step-5a).
 
 **5b. Create the PR**, including follow-up issue links in the body.
 
@@ -172,15 +153,7 @@ gh pr checks <pr-number> --watch --fail-fast
 - Report: "All checks passed. PR #N is ready for merge."
 - Provide merge command: `gh pr merge <pr-number> --<method> --delete-branch`, where `<method>` is the `METHOD=` that `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --repo <owner>/<repo> --pr <pr-number>` prints (rebase by default; rule table in [merge-strategies.md](../github-pr-title/merge-strategies.md))
 
-> **Pitfall — `--delete-branch` from the PR's own working tree:** before running `gh pr merge <N> --<method> --auto --delete-branch`, switch your working tree to `main` (or any branch other than the PR head). If your cwd or any worktree has the PR's branch checked out, the local-branch-delete step fails with `cannot delete branch 'X' used by worktree at Y` even though the server-side merge is queued correctly. The misleading error makes it look like the merge failed; confirm with `gh pr view <N> --json state`.
->
-> Safer two-step pattern:
->
-> ```bash
-> git switch main
-> git pull
-> gh pr merge <pr-number> --<method> --auto --delete-branch
-> ```
+Before `gh pr merge … --delete-branch`, switch off the PR's branch: [references/workflow-guidance.md](references/workflow-guidance.md#merge-pitfall-deleting-the-branch-from-its-own-worktree).
 
 **On failure (exit 1)**:
 - Report which check(s) failed with details:
