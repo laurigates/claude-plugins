@@ -51,6 +51,26 @@ Run `/health:plugins --fix` to fix plugin registry issues.
 Run `/health:check --fix` to fix settings issues.
 ```
 
+## Summary Table
+
+Include a summary table in the Step 3 report, one row per check:
+
+| Check | Status | Issues |
+|-------|--------|--------|
+| Plugin registry | OK/WARN/ERROR | ... |
+| Settings files | OK/WARN/ERROR | ... |
+| Hooks configuration | OK/WARN/ERROR | ... |
+| MCP servers | OK/WARN/ERROR | ... |
+| SessionStart smoke test | OK/WARN/ERROR | ... |
+| Pre-commit config | OK/WARN/ERROR/SKIP | ... |
+| Permissions coverage | OK/WARN/ERROR | ... |
+| Marketplace enrollment | OK/WARN/ERROR | ... |
+| Registry audit | OK/WARN/ERROR | ... |
+| Stack audit | OK/WARN/ERROR | ... |
+| Agentic audit | OK/WARN/ERROR | ... |
+| Runtime audit | OK/WARN/ERROR | ... |
+| Usage audit | OK/WARN/ERROR/SKIP | ... |
+
 ## Known Issues Database
 
 | Issue | Symptoms | Solution |
