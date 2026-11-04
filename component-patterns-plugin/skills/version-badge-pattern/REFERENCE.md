@@ -2,6 +2,76 @@
 
 Detailed reference material for the version badge pattern across multiple frameworks.
 
+## Pattern Overview
+
+```
+┌──────────────────────────────────────┐
+│  App Header              v1.43.0|004ddd9  ← Trigger (always visible)
+└──────────────────────────────────────┘
+                                 │
+                                 ▼ (on hover/focus)
+                    ┌─────────────────────────┐
+                    │ Build Information       │
+                    │ Version: 1.43.0         │
+                    │ Commit:  004ddd97e8...  │
+                    │ Built:   Dec 11, 10:00  │
+                    │ Branch:  main           │
+                    │─────────────────────────│
+                    │ Recent Changes          │
+                    │ v1.43.0                 │
+                    │ ✨ New feature X        │
+                    │ 🐛 Fixed bug Y          │
+                    └─────────────────────────┘
+```
+
+## React + Tailwind + shadcn/ui: Build Config
+
+### Next.js Config: `next.config.mjs`
+
+```javascript
+import { execSync } from 'child_process';
+
+function getBuildInfo() {
+  const version = process.env.npm_package_version || 'dev';
+  const commit = process.env.VERCEL_GIT_COMMIT_SHA
+    || process.env.GITHUB_SHA
+    || execSyncSafe('git rev-parse HEAD')
+    || 'local';
+  const branch = process.env.VERCEL_GIT_COMMIT_REF
+    || process.env.GITHUB_REF_NAME
+    || execSyncSafe('git branch --show-current')
+    || 'local';
+
+  return { version, commit, branch, buildTime: new Date().toISOString() };
+}
+
+function execSyncSafe(cmd) {
+  try {
+    return execSync(cmd, { encoding: 'utf-8' }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function getChangelog() {
+  try {
+    return execSync('node scripts/parse-changelog.mjs', { encoding: 'utf-8' }).trim();
+  } catch {
+    return '[]';
+  }
+}
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_INFO: JSON.stringify(getBuildInfo()),
+    NEXT_PUBLIC_CHANGELOG: getChangelog(),
+  },
+};
+
+export default nextConfig;
+```
+
 ## Vue 3 + Tailwind Implementation
 
 ### Component: `components/VersionBadge.vue`
