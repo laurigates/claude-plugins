@@ -39,6 +39,19 @@ errs toward *keeping* an ambiguous task, never toward a wrong-repo close.
 owner/repo`; a bare `#N` and the UDAs use the CWD-resolved repo. So a task in
 project A whose description says `owner/B#N` is checked against repo B.
 
+**Ambiguous repo under `--all` (issue #3387):** the CWD repo is only the right
+default for tasks of the CWD's own project. Under `--all`, a ref with no repo
+(bare `#N`, `ghid`, `ghpr`) resolves only when the task's project equals the CWD
+project (`scripts/resolve-project.sh`: basename of the git toplevel) or is a
+dotted child of it (`<cwd-project>.*`; `alphabet` is not a child of `alpha`).
+For every other task the ref is `AMBIGUOUS`: no `gh` call is made, the task is
+`live` with `upstream=AMBIGUOUS`, and it is counted in `AMBIGUOUS_REPO`, so it
+can never be closed. Refs that name their repo resolve in any project under the
+**Cross-repo** rule, and single-project runs are unchanged. Run from `~/repos`, an `OLMap` task citing
+`#65` had resolved against `laurigates/repos-claude-config` PR 65 (`MERGED`)
+while `ForumViriumHelsinki/OLMap` PR 65 was `OPEN`; the scheduled bounded apply
+(`--all --apply --only-verdicts=pr-merged,issue-closed`) would have closed it.
+
 **Kind resolution:** a text ref of unknown kind (`#N`, `owner/repo#N`) is tried
 as a PR first (a merged PR is the common "done" signal); if `gh pr view` returns
 nothing (the number is an issue) it falls back to `gh issue view`.
@@ -72,6 +85,7 @@ when only some of the items have closed:
 | Any ref is… | Task verdict |
 |-------------|--------------|
 | open (PR/issue `OPEN`) | `live` (keep) |
+| `AMBIGUOUS` (`--all`, no repo, task outside the CWD project) | `live` (keep, counts toward `AMBIGUOUS_REPO`) |
 | `UNKNOWN` (unreadable) | `live` (keep, counts toward `UNKNOWN_UPSTREAM`) |
 | all stale, some `pr-closed` | `pr-closed` (ambiguous — kept out of the bounded `--only-verdicts` auto-apply set) |
 | all stale, some `pr-merged` (rest `issue-closed`) | `pr-merged` |
