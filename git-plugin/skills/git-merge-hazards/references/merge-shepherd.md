@@ -23,7 +23,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs 219,22
 | Flag | Meaning |
 |---|---|
 | `--prs` | Merge order. Put a PR that changes a bot which writes to PR branches **last** (§6). |
-| `--review-ts` | Required. Any commit newer than this is unreviewed and stops the PR, except a merge commit GitHub made through `update-branch`: two or more parents **and** committer `noreply@github.com`. The subject line does not count, and a merge commit anyone else pushed is unreviewed like any other commit. A value more than 60 s in the future is a usage error (exit 2): it would mark commits pushed during the run as reviewed. |
+| `--review-ts` | Required. Any commit newer than this is unreviewed and stops the PR, except a merge commit GitHub made through `update-branch`: two or more parents **and** committer `noreply@github.com`. The subject line does not count, and a merge commit anyone else pushed is unreviewed like any other commit. |
 | `--method` | Overrides the method for every PR. Without it, each PR takes the `METHOD=` that `git-plugin/scripts/pr-merge-method.py` prints after `update-branch`: a branch that gained a merge commit squashes, and one that needed no update follows the rest of the rule table. |
 | `--timeout` | Per-PR budget for CI to settle, in seconds (default 1800). |
 | `--fetch-dir` | A clone to `git fetch origin` after each merge, so a conflict agent starts from current `main`. |
