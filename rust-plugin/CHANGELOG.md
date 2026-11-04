@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.0...rust-plugin-v1.8.1) (2026-11-04)
+
+
+### Code Refactoring
+
+* **rust-plugin:** move cargo-llvm-cov detail to REFERENCE.md ([51cf61b](https://github.com/laurigates/claude-plugins/commit/51cf61b6fcd2101544f1d8d946647351fd6e4a75))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.4...rust-plugin-v1.8.0) (2026-11-03)
 
 

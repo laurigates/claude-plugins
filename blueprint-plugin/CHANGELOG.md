@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.51.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.0...blueprint-plugin-v3.51.1) (2026-11-04)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** move blueprint-derive-plans detail to REFERENCE.md ([2e90bf9](https://github.com/laurigates/claude-plugins/commit/2e90bf94567d4a27f4e1847b18a99a07bdeb47a3))
+* **blueprint-plugin:** move blueprint-story-reconcile detail to REFERENCE.md ([91a382d](https://github.com/laurigates/claude-plugins/commit/91a382df25228689b2b30bbc62e543fd184518d1))
+* **blueprint-plugin:** move blueprint-upgrade detail to REFERENCE.md ([a2b2190](https://github.com/laurigates/claude-plugins/commit/a2b21903af584415779fb39f4edfaa1309dc3257))
+* **blueprint-plugin:** move blueprint-work-order detail to REFERENCE.md ([e37a830](https://github.com/laurigates/claude-plugins/commit/e37a8305a357f2e60db8cdb2c1e48a2e919fb029))
+
 ## [3.51.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.50.0...blueprint-plugin-v3.51.0) (2026-11-03)
 
 
