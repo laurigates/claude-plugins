@@ -275,6 +275,7 @@ jobs:
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-routine-prompt.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
+            --only 'scripts/tests/test-check-skill-portability.sh' \
             --only 'scripts/tests/test-check-skill-xrefs.sh' \
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
@@ -602,6 +603,15 @@ jobs:
         # may only go down. Whole-repo, always-on; the self-test step above
         # proves the guard first.
         run: bash scripts/check-positional-references.sh
+
+      - name: Check shipped skills stay environment-neutral (#3308)
+        # A skill naming the maintainer's own repositories or checkout layout
+        # reads as an instruction in someone else's session. Identifiers live in
+        # scripts/skill-portability.conf; hits that predate the rule are held at
+        # scripts/skill-portability-baseline.txt (WARN, exit 0) and the baseline
+        # may only go down. A new hit is ERROR. Whole-repo, always-on; the
+        # self-test step above proves the guard first.
+        run: bash scripts/check-skill-portability.sh
 
       - name: Check shell scripts follow shell-scripting.md
         # Whole-repo invariant (every shell script follows shell-scripting.md:

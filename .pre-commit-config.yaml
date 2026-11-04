@@ -1138,6 +1138,21 @@ repos:
         language: system
         files: '^scripts/(check-positional-references\.sh|positional-references-baseline\.txt|tests/test-check-positional-references\.sh|lib/extract-md-elements\.py)$'
         pass_filenames: false
+      - id: check-skill-portability
+        name: shipped skills/agents/hooks name no maintainer-specific identifiers (baseline ratcheted)
+        entry: bash ./scripts/check-skill-portability.sh
+        language: system
+        # Whole-scope: the ratchet's stale-baseline check needs every file in
+        # scope, so any change under the three trees, the guard, its config or
+        # its baseline triggers a full run.
+        files: '([^/]*-plugin/(skills|agents|hooks)/|^scripts/(check-skill-portability\.sh|skill-portability\.conf|skill-portability-baseline\.txt)$)'
+        pass_filenames: false
+      - id: test-check-skill-portability
+        name: skill-portability guard regression (new hit, baseline, allowlist, ratchet up/down, empty scope)
+        entry: bash ./scripts/tests/test-check-skill-portability.sh
+        language: system
+        files: '^scripts/(check-skill-portability\.sh|skill-portability\.conf|skill-portability-baseline\.txt|tests/test-check-skill-portability\.sh)$'
+        pass_filenames: false
       - id: check-hook-message-pins
         name: blocking-hook suites read the block message, not just the exit code (#2715)
         entry: bash ./scripts/check-hook-message-pins.sh
