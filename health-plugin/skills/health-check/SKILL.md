@@ -1,6 +1,6 @@
 ---
 created: 2026-02-04
-modified: 2026-11-02
+modified: 2026-11-04
 compatibility: claude-code
 reviewed: 2026-06-17
 description: "Claude Code health check — every environment check in one pass, names the broken layer, `--fix` repairs. Use when asked for a health check, or the install misbehaves and the cause is unknown."
@@ -126,23 +126,7 @@ Print a consolidated report grouped by scope:
 5. **Runtime** — `~/.claude.json` size, dead projects/githubRepoPaths, orphaned disabledMcpServers, duplicate MCP naming, legacy per-project history; `history.jsonl` size; effective `cleanupPeriodDays` (read-only — no `--fix` path)
 6. **Usage** — never-fired and dormant skills from session telemetry (read-only — no `--fix` path; SKIPs when history is insufficient)
 
-Use `STATUS=` indicators (OK/WARN/ERROR) and issue counts per scope. Include a summary table:
-
-| Check | Status | Issues |
-|-------|--------|--------|
-| Plugin registry | OK/WARN/ERROR | ... |
-| Settings files | OK/WARN/ERROR | ... |
-| Hooks configuration | OK/WARN/ERROR | ... |
-| MCP servers | OK/WARN/ERROR | ... |
-| SessionStart smoke test | OK/WARN/ERROR | ... |
-| Pre-commit config | OK/WARN/ERROR/SKIP | ... |
-| Permissions coverage | OK/WARN/ERROR | ... |
-| Marketplace enrollment | OK/WARN/ERROR | ... |
-| Registry audit | OK/WARN/ERROR | ... |
-| Stack audit | OK/WARN/ERROR | ... |
-| Agentic audit | OK/WARN/ERROR | ... |
-| Runtime audit | OK/WARN/ERROR | ... |
-| Usage audit | OK/WARN/ERROR/SKIP | ... |
+Use `STATUS=` indicators (OK/WARN/ERROR) and issue counts per scope. Include the one-row-per-check table from [REFERENCE.md § Summary Table](REFERENCE.md#summary-table).
 
 See [REFERENCE.md](REFERENCE.md) for the full report template.
 
