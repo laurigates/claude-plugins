@@ -66,7 +66,6 @@ git-plugin/skills/git-pr-feedback/SKILL.md	3
 git-plugin/skills/git-repo-delete-check/SKILL.md	1
 git-plugin/skills/git-stacked-prs/SKILL.md	3
 git-plugin/skills/git-upstream-fix-check/SKILL.md	1
-git-plugin/skills/git-upstream-pr-diverged/SKILL.md	1
 git-plugin/skills/github-comment-content/SKILL.md	2
 git-plugin/skills/github-issue-autodetect/SKILL.md	1
 git-plugin/skills/release-please-protection/SKILL.md	2
