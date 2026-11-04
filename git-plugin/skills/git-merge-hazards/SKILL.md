@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-02
+modified: 2026-11-04
 reviewed: 2026-08-21
 ---
 
@@ -45,7 +45,7 @@ once `main` drifts the same files.
   that fully landed. Observed reporting three merged branches as unmerged. Same
   trap as "files identical to main". Use the PR state or `git cherry` to decide;
   keep merge-tree only as a positive-containment shortcut.
-- **Fix**: use the encoded recipe rather than re-deriving: `just -g branch-audit`
+- **Fix**: `just -g branch-audit`
   (in `private_dot_config/just/git.just`) prints MERGED vs REVIEW + a paste-ready delete.
   Its REVIEW bucket measured ~90% false positives (#2268), so a REVIEW line is a
   question to settle with `gh pr list --state all --head <branch>`, not a verdict.
@@ -128,8 +128,9 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 `pull_request` workflows, so a branch-writing bot's post-review commits merge
 unread. Before each merge, refuse any post-review commit but GitHub's
 update-branch merge (2+ parents, committer `noreply@github.com`); your own
-`main` merge holds an unreviewed resolution. Pin `--match-head-commit <sha>`; a
-PR changing that bot goes last. See [references/serial-merge-chain.md](references/serial-merge-chain.md).
+`main` merge holds an unreviewed resolution. Pin
+`--match-head-commit "$(git rev-parse <ref>)"`, the full 40-character SHA (GitHub
+rejects a short one); a PR changing that bot goes last. See [references/serial-merge-chain.md](references/serial-merge-chain.md).
 
 ## Merge shepherd
 

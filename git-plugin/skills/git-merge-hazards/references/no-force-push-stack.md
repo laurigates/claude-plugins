@@ -59,6 +59,10 @@ gh pr merge <base> --squash --delete-branch --match-head-commit "$pre"
 squash=$(gh pr view <base> --json mergeCommit --jq .mergeCommit.oid)
 ```
 
+`headRefOid` is the full 40-character SHA, which `--match-head-commit` requires;
+GitHub rejects an abbreviated `pre` and the merge does not run. Pass `pre` on
+unshortened.
+
 If `cat-file` fails, stop before the merge. GitHub keeps the base PR's head as
 `refs/pull/<base PR number>/head` after the branch is deleted, so
 `git fetch origin pull/<base PR number>/head` recovers `pre` first.
