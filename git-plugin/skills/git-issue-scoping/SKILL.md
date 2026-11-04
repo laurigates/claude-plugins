@@ -3,11 +3,20 @@ name: git-issue-scoping
 description: "Read an issue's full comment thread and re-verify its cited evidence at HEAD. Use when scoping a PR or plan from a GitHub issue, or before filing or reversing one in your own tracker."
 allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(git log *), TodoWrite
 created: 2026-08-19
-modified: 2026-09-25
+modified: 2026-11-04
 reviewed: 2026-08-19
 ---
 
 # Git Issue Scoping
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Scoping a PR, plan, or prototype from one issue's full comment thread | Use `git-triage` to sweep a whole backlog for close/merge recommendations |
+| Re-verifying an issue's cited lines and evidence at HEAD before acting on it | Use `workflow-orchestration-plugin:workflow-verify-before-filing` to verify a backlog of bug claims before filing upstream |
+| Searching your own tracker before filing, or reading its history before reversing a decision | Use `github-issue-writing` to draft the issue body and title once filing is decided |
+| Deferring to a design the maintainer converged on in an upstream thread | Use `upstream-pr-contribution` for CONTRIBUTING.md and PR-template gates when opening the PR |
 
 Invoke before building a PR, plan, or prototype off a GitHub issue — including
 issues in repos you own, and before filing or reversing one in your own tracker.
