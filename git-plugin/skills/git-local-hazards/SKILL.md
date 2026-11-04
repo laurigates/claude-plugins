@@ -3,7 +3,7 @@ name: git-local-hazards
 description: Local git traps where a green command is wrong. Use when branching after a squash-merge, cutting a PR branch, after a clean merge or rebase, when a staged file vanishes, or before reset --hard.
 allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh pr list *), Bash(grep *), TodoWrite
 created: 2026-09-24
-modified: 2026-10-26
+modified: 2026-11-04
 reviewed: 2026-09-24
 ---
 
@@ -62,10 +62,7 @@ The framing above assumes you come back later and branch afresh. The quieter
 case is that you **never leave**: the PR is merged mid-session — by CI, by a
 teammate, by the user in another window — and you keep committing to the same
 branch. Every `git push` succeeds, `git status` is clean, and nothing says the
-branch's PR is closed. Observed 2026-08-19: two commits, and the source that
-produced an hour-long delivery render, sat on a branch whose PR had already
-merged. It surfaced only because an unrelated `git switch main` failed on local
-changes.
+branch's PR is closed. Field case: [REFERENCE.md](REFERENCE.md#merged-mid-session-2026-08-19).
 
 - **The tell is on the remote, not locally.** `gh pr list --head <branch>`
   returns nothing (and `--state all` shows MERGED) while you still have commits
@@ -104,14 +101,7 @@ When `main` gains a file that depends on state your branch **removed**, the two
 never touch the same lines, so there is nothing to conflict on — and the merged
 tree is still broken.
 
-> Observed 2026-08 (a data-pipeline repo): a branch removed TimescaleDB by
-> rewriting the three `0001_initial` migrations. Meanwhile `main` gained
-> `measurements/0004`, calling `decompress_chunk()`/`show_chunks()`
-> unconditionally. `git rebase origin/main` reported **success with no
-> conflicts** — different files — and produced a migration tree that cannot
-> apply on the plain PostgreSQL the branch exists to target
-> (`function show_chunks(unknown) does not exist`). Caught by reading `main`'s
-> new commits, not by any gate.
+Field case: [REFERENCE.md](REFERENCE.md#clean-rebase-broken-migrations-2026-08).
 
 - **Check after any rebase that spans many upstream commits**: list what `main`
   added while you were away (`git log --oneline --name-only <old-base>..origin/main`)
@@ -143,12 +133,7 @@ Classic trip: `git mv old new`, edit `new`, then `git add new old` → the stale
 Sibling of the push-by-SHA HEAD race in `git-plugin:git-merge-hazards` (the
 stacked-chain protocol and its three async races): the **index and HEAD are
 process-global**, so a coworker session's commit lands between two of your Bash
-calls with no warning. Observed 2026-07 (dotfiles): a file another session had
-staged (`A `) disappeared from `git status`, then `ls` said it didn't exist,
-then status flapped `A ` → `M ` across consecutive calls. The wrong theory
-("pre-commit's stash dance ate it") was nearly acted on; the truth was the
-coworker had committed the file to `main` mid-flight — every observation was a
-stale read of state the coworker kept moving.
+calls with no warning. Field case: [REFERENCE.md](REFERENCE.md#vanished-staged-file-2026-07).
 
 - **Check first, before any recovery**: `git log --oneline -3` — did HEAD
   move? — and `git log -1 -- <path>`; a fresh commit touching the path is the
