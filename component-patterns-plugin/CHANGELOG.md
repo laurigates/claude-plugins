@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.5.1...component-patterns-plugin-v1.5.2) (2026-11-04)
+
+
+### Code Refactoring
+
+* **component-patterns-plugin:** move version-badge-pattern detail to REFERENCE.md ([e573cb3](https://github.com/laurigates/claude-plugins/commit/e573cb3375e050adf2f87620ea48ae80e5c57dad))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.5.0...component-patterns-plugin-v1.5.1) (2026-10-10)
 
 

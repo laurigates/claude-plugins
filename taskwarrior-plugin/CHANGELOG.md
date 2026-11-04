@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.16.1...taskwarrior-plugin-v1.16.2) (2026-11-04)
+
+
+### Code Refactoring
+
+* **taskwarrior-plugin:** move task-done detail to REFERENCE.md ([790f7dc](https://github.com/laurigates/claude-plugins/commit/790f7dc0387f4fd28ec2e7812cc678ce9536fa8f))
+
 ## [1.16.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.16.0...taskwarrior-plugin-v1.16.1) (2026-11-04)
 
 

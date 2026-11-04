@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.3](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.2...container-plugin-v2.11.3) (2026-11-04)
+
+
+### Code Refactoring
+
+* **container-plugin:** move go-containers detail to REFERENCE.md ([0786ec6](https://github.com/laurigates/claude-plugins/commit/0786ec69029cf4fafdbd1cbffb0031250573225b))
+* **container-plugin:** move skaffold-filesync detail to REFERENCE.md ([9474957](https://github.com/laurigates/claude-plugins/commit/9474957d3f885459e7ed54e274e9509241c96c20))
+
 ## [2.11.2](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.1...container-plugin-v2.11.2) (2026-10-23)
 
 

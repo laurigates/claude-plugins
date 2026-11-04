@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.24.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.0...health-plugin-v1.24.1) (2026-11-04)
+
+
+### Code Refactoring
+
+* **component-patterns-plugin:** move version-badge-pattern detail to REFERENCE.md ([e573cb3](https://github.com/laurigates/claude-plugins/commit/e573cb3375e050adf2f87620ea48ae80e5c57dad))
+* **health-plugin:** move health-check summary table to REFERENCE.md ([5c3db28](https://github.com/laurigates/claude-plugins/commit/5c3db280a0eb74528c161dbc61c7a7510d5105c5))
+
 ## [1.24.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.6...health-plugin-v1.24.0) (2026-11-02)
 
 
