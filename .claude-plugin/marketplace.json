@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.69.0",
+      "version": "2.69.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -890,7 +890,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.16.0",
+      "version": "1.16.1",
       "author": {
         "name": "Lauri Gates"
       },
