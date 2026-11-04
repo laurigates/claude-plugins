@@ -161,11 +161,13 @@ fi
 # Under --all a repo-less ref (bare #N, ghid/ghpr UDA) is only resolved for
 # tasks of the CWD's project. Resolved with the plugin's shared ladder; if the
 # resolver is missing, cwd_project stays empty and every such ref is ambiguous.
+# Resolve from $PWD (where gh looks), not $rc_dir: after the cd above, a relative
+# --project-dir no longer names the same directory.
 cwd_project=""
 if [ "$rc_all" = true ]; then
   rc_resolve="${RC_SCRIPT_DIR}/../../../scripts/resolve-project.sh"
   if [ -f "$rc_resolve" ]; then
-    cwd_project=$(bash "$rc_resolve" --project-dir "$rc_dir" 2>/dev/null \
+    cwd_project=$(bash "$rc_resolve" --project-dir "$PWD" 2>/dev/null \
       | grep -m1 '^PROJECT=' | cut -d= -f2- || true)
   fi
 fi

@@ -230,6 +230,13 @@ check "I: scoped run resolves a repo-less UDA against the cwd repo" "pr-merged" 
   "$(task_field "$UA" verdict "$out")"
 check "I: scoped run reports no AMBIGUOUS_REPO" "" "$(field AMBIGUOUS_REPO "$out")"
 
+# --- I: a relative --project-dir into a repo subdir still finds the project --
+# reconcile.sh cds into --project-dir before resolving the cwd project, so the
+# resolver must be handed the post-cd directory, not the relative argument.
+mkdir -p "${CWD_REPO}/sub"
+out=$(cd "$WORK" && GH_LOG="$GH_LOG" PATH="${BIN}:$PATH" bash "$RECONCILE" --all --project-dir alpha/sub 2>/dev/null)
+check "I: relative --project-dir alpha/sub → CWD_PROJECT=alpha" "alpha" "$(field CWD_PROJECT "$out")"
+
 # --- Summary ----------------------------------------------------------------
 echo "=== RECONCILE REFS TEST ==="
 echo "PASS=${pass}"
