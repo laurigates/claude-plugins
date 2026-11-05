@@ -59,6 +59,15 @@ The appended requirement uses this exact shape:
 
 Choose `FR-N.M` by taking the highest existing FR index in the section and incrementing the trailing component. Never reuse a deleted index.
 
+## Idempotency
+
+Re-running this skill against the same audit + same PRDs must be a no-op. The two mechanisms:
+
+1. Inline status markers (`⚠️ `, `❌ `, `🆕 `) are detected before insertion. If the requirement line already starts with the right marker, skip.
+2. The `## Known Drift` section is **replaced wholesale** by the new content, never appended.
+
+If a re-run produces changes, that is a bug — file it.
+
 ## Idempotency Edge Cases
 
 | Scenario | Behaviour |
@@ -101,6 +110,16 @@ Refs docs/blueprint/audits/2026-04-25-story-audit.md
 ```
 
 The scope is the PRD id when one PRD is touched; omit the scope when multiple PRDs are touched. The PRP/work-order workflow's `feat()` / `fix()` scopes do not apply here — this is documentation only, hence `docs()`.
+
+## What this skill deliberately does NOT do
+
+| Off-limits | Why |
+|------------|-----|
+| Edit source code | Code changes go through `/blueprint:work-order` so the change has a TDD packet behind it |
+| Delete unimplemented requirements | They are the roadmap. `❌` is a tracked status, not a delete signal. |
+| Auto-create GitHub issues for drift | Audit + reconcile are local artifacts; issue filing is an explicit user action |
+| Renumber FRs to "tidy up" | FR numbers are referenced from tests, commits, and other PRDs — renumbering is an unsafe, non-idempotent edit |
+| Commit changes | Commit boundaries are the user's decision; this skill prints the suggested message and stops |
 
 ## Related Skills
 

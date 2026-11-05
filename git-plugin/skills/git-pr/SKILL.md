@@ -65,13 +65,7 @@ git diff $base_ref...HEAD --stat
 
 Before creating the PR, scan for any actions required **after** the PR is merged (deployments, migrations, config changes, external docs). For each:
 
-```bash
-# Create a follow-up issue
-gh issue create \
-  --title "[Chore] DB: Run migration for new schema" \
-  --body "Follow-up to PR that adds user_preferences.\n\nRun: rake db:migrate in production after deploy."
-# Returns: https://github.com/org/repo/issues/456
-```
+Example `gh issue create` call: [REFERENCE.md](REFERENCE.md#follow-up-issue-example-step-3).
 
 Keep a list of created issue numbers to link in the PR body.
 
@@ -87,16 +81,7 @@ gh pr create \
   --body-file /tmp/pr-body.md
 ```
 
-For a short body you can skip the tempfile and stream it over stdin with `--body-file -` and a **quoted** heredoc:
-
-```bash
-gh pr create --title "feat(scope): add feature" --body-file - <<'EOF'
-## Summary
-Use `code`, ${vars}, and $shell syntax freely — they render verbatim.
-EOF
-```
-
-**Inside `<<'EOF'` (quoted delimiter), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` survives into the rendered PR description and needs a follow-up `gh pr edit --body-file` to clean up. (The `Write` tool → `--body-file` path above sidesteps the question entirely and stays the default for non-trivial bodies.)
+For a short body, `--body-file -` with a quoted heredoc also works: [REFERENCE.md](REFERENCE.md#short-bodies-over-stdin-step-4).
 
 Body content of `/tmp/pr-body.md` — the squash body follows the repo's
 `squash_merge_commit_message`: `COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo a
@@ -184,24 +169,11 @@ is incomplete, and the exact condition for `gh pr ready`. A draft without one
 gives nobody a reason to mark it ready, and an automated PR sweep surfaces it
 instead of readying it. Run `gh pr ready` yourself once the work is complete.
 
-| Dependency | How to record it |
-|------------|------------------|
-| PR in the same repo | Stack it: `--base <parent-branch>`; see `git-plugin:git-stacked-prs`. Name the parent in the section as a full URL |
-| PR in another repo | Full URL in the section: `Blocked by https://github.com/<owner>/<repo>/pull/<n>` |
-
-Write every blocking PR as a full URL; the sweep marks the draft ready only when
-all of them have merged. GitHub's `blocked_by` issue dependencies link issues
-only (`gh pr` has no `--blocked-by` flag), so the body is the record.
+How to record a blocking PR (same repo or another repo): [REFERENCE.md](REFERENCE.md#draft-status-dependencies).
 
 ## Pre-merge Verification
 
-Keep pre-merge checks (tests pass, docs updated, breaking changes documented)
-out of the body: a squash merge on a `PR_BODY` repo copies the body into `git log`, where a
-`- [ ]` checklist is noise. Verify them through CI or say so in a PR comment.
-
-Post-merge steps never go in the body either. PR descriptions are closed and
-buried after merge, so post-merge actions are tracked as GitHub issues and
-linked with `Refs #N` (see [REFERENCE.md](REFERENCE.md) § Post-Merge Follow-up Issues).
+Pre-merge checks and post-merge steps stay out of the PR body: [REFERENCE.md](REFERENCE.md#pre-merge-verification).
 
 ## Output
 
@@ -227,18 +199,7 @@ Status: Open
 
 ## Quick Reference
 
-| Action | Command |
-|--------|---------|
-| Create PR | `gh pr create --title "..." --body-file /tmp/pr-body.md` |
-| Draft PR | `gh pr create --draft` |
-| View PR | `gh pr view` |
-| Edit PR | `gh pr edit --title "..." --body-file /tmp/pr-body.md` |
-| List PRs | `gh pr list` |
-| Check status | `gh pr checks` |
-| Verify closing keywords | `gh pr view <num> --json body --jq .body \| grep -oiE '(closes\|fixes\|resolves)[[:space:]]+#[0-9]+'` |
-| Check for stacked dependents | `gh pr list --base <head> --state open --json number,title` |
-| Merge stacked parent | `gh pr merge --<method>` (omit `--delete-branch`; method from [merge-strategies.md](../github-pr-title/merge-strategies.md)) |
-| Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/issue-body.md` |
+Full `gh pr` command table (view, edit, list, stacked-PR merge, follow-up issues): [REFERENCE.md](REFERENCE.md#quick-reference).
 
 ## Agentic Optimizations
 

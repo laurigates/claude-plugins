@@ -390,7 +390,33 @@ Considered, Related ADRs).
 }
 ```
 
+## Task Registry Update
+
+Step 9 updates the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg sha "$(git rev-parse HEAD 2>/dev/null)" \
+  --argjson analyzed "${COMMITS_ANALYZED:-0}" \
+  --argjson created "${DOCS_GENERATED:-0}" \
+  '.task_registry["derive-plans"].last_completed_at = $now |
+   .task_registry["derive-plans"].last_result = "success" |
+   .task_registry["derive-plans"].context.commits_analyzed_up_to = $sha |
+   .task_registry["derive-plans"].context.commits_analyzed_count = $analyzed |
+   .task_registry["derive-plans"].stats.runs_total = ((.task_registry["derive-plans"].stats.runs_total // 0) + 1) |
+   .task_registry["derive-plans"].stats.items_processed = $analyzed |
+   .task_registry["derive-plans"].stats.items_created = $created' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
 ## Summary Report Format
+
+The Step 9 summary report shows:
+   - Commits analyzed with date range
+   - Git quality score
+   - Documents generated (PRD, ADR count, PRP count)
+   - Sections needing review (confidence < 7)
+   - Recommended next steps
 
 ```
 Blueprint Import Complete!
@@ -425,6 +451,12 @@ PRPs: {N} future work items suggested
 ```
 
 ## Next Action Prompt
+
+Step 9 next-action options:
+   - Review and refine documents
+   - Generate project rules from PRD
+   - Generate workflow commands
+   - Exit (documents saved)
 
 After completion, prompt the user with:
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.16.1...taskwarrior-plugin-v1.16.2) (2026-11-04)
+
+
+### Code Refactoring
+
+* **taskwarrior-plugin:** move task-done detail to REFERENCE.md ([790f7dc](https://github.com/laurigates/claude-plugins/commit/790f7dc0387f4fd28ec2e7812cc678ce9536fa8f))
+
+## [1.16.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.16.0...taskwarrior-plugin-v1.16.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **git-plugin,taskwarrior-plugin:** auto-merge reporting, PR issue-link opt-out, reconcile --all refs, skill portability check ([#3412](https://github.com/laurigates/claude-plugins/issues/3412)) ([d4ae41b](https://github.com/laurigates/claude-plugins/commit/d4ae41b4160b1f6f946e2d969de7c198004d6e3b)), closes [#3401](https://github.com/laurigates/claude-plugins/issues/3401) [#3404](https://github.com/laurigates/claude-plugins/issues/3404) [#3387](https://github.com/laurigates/claude-plugins/issues/3387) [#3308](https://github.com/laurigates/claude-plugins/issues/3308)
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.15.1...taskwarrior-plugin-v1.16.0) (2026-11-03)
 
 
