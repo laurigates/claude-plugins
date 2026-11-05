@@ -236,8 +236,14 @@ You are the preflight stage of a skill evaluation. Do NOT evaluate anything.
    evaluate-plugin/references/schemas.md. Always add at least one abstention
    control: an impossible task whose honest answer is a refusal, marked
    "expected_outcome": "abstain", with an absent_regex that fails a fabricated
-   deliverable (schemas.md, Abstention Controls). Prefer TYPED checks over bare
-   strings wherever the assertion is machine-checkable. Write the file to
+   deliverable (schemas.md, Abstention Controls). Sort each expectation you
+   derive from the SKILL.md and the eval prompt: a hard rule a pattern can check
+   (a required prefix, an issue reference, a forbidden phrase) becomes a typed
+   regex / substring / absent_regex object (schemas.md, Typed Checks;
+   .claude/rules/skill-evaluation.md Principle 1); only a graded principle
+   (tone, completeness) stays a bare string, which grades as judge. Expectations
+   are fixed before any run output exists and are never rewritten after outputs
+   have been seen (arXiv 2610.18766). Write the file to
    ${skillDir}/evals.json, then re-run inspect_eval.sh and report the real ids.
    Set evalsCreated true.`
      : `Do NOT create evals.json. If it is absent, report evalIds as an empty
