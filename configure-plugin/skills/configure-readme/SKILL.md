@@ -1,11 +1,11 @@
 ---
 created: 2025-12-17
-modified: 2026-07-05
+modified: 2026-11-05
 reviewed: 2026-02-08
-description: "README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."
+description: "Slim README.md (badges, quick start, docs index) with the detail moved into docs/ pages. Use when creating or auditing a README, splitting a long one, or adding badges."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch
-args: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"
-argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"
+args: "[--check-only] [--fix] [--badges <shields|custom>] [--no-logo]"
+argument-hint: "[--check-only] [--fix] [--badges <shields|custom>] [--no-logo]"
 name: configure-readme
 ---
 
@@ -14,16 +14,35 @@ name: configure-readme
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
 | Creating a README.md for a new project from scratch | Editing specific README content — use direct file editing |
-| Auditing an existing README for missing sections (badges, install, structure) | Writing detailed API documentation — use `/configure:docs` |
-| Standardizing README format across multiple projects | Creating GitHub Pages documentation site — use `/configure:github-pages` |
-| Adding shields.io badges, tech stack table, or project structure section | Writing a changelog — use release-please automation via conventional commits |
-| Ensuring README includes correct install/build/test commands for the detected stack | Only need to update a single section — edit the file directly |
+| Splitting a long README into a slim README plus `docs/` pages | Writing detailed API documentation — use `/configure:docs` |
+| Auditing a README against the slim shape (header, description, quick start, docs index, licence) | Creating a GitHub Pages documentation site — use `/configure:github-pages` |
+| Adding shields.io badges or a documentation index table | Writing a changelog — use release-please automation via conventional commits |
+| Ensuring the quick start uses the correct install command for the detected stack | Only need to update a single section — edit the file directly |
+
+## The Slim Shape
+
+The README is the only template. It is read on the repository page, on package
+registries and often inside release archives, so it stays short and points into
+`docs/` for everything else.
+
+| README.md keeps | `docs/` gets (only pages that have content) |
+|-----------------|---------------------------------------------|
+| Header: logo or banner, title, badges | `usage.md` — command line, configs, outputs, recipes |
+| What the project does, in two or three sentences | `configuration.md` — options, environment variables, config files |
+| Quick start: install, one example command, an outputs table where the tool writes files | `architecture.md` (or `pipeline.md`) — stages, components, technology |
+| Documentation index: a table linking each `docs/` page | `development.md` — building, checks, project layout, contributing, releases |
+| Licence | |
+
+Sections such as Features, Tech Stack, Usage reference, Configuration,
+Architecture, Project Structure, Development, Contributing and Releases belong
+in `docs/`. A README that carries them is non-compliant, and the fix moves them.
 
 ## Context
 
 - Project root: !`pwd`
 - Project name: !`basename $(pwd)`
 - README exists: !`find . -maxdepth 1 -name 'README.md'`
+- Docs pages: !`find . -maxdepth 2 -path './docs/*.md'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Git remotes: !`git remote -v`
 - License file: !`find . -maxdepth 1 -name 'LICENSE*'`
@@ -32,18 +51,12 @@ name: configure-readme
 
 ## Parameters
 
-Parse from command arguments:
+Parse from `$ARGUMENTS`:
 
-- `--check-only`: Report README compliance status without modifications (CI/CD mode)
-- `--fix`: Apply fixes automatically without prompting
-- `--style <minimal|standard|detailed>`: README detail level (default: standard)
+- `--check-only`: Report compliance against the slim shape without modifications (CI/CD mode)
+- `--fix`: Apply the split and README rewrite without prompting
 - `--badges <shields|custom>`: Badge style preference (default: shields)
-- `--no-logo`: Skip logo section even if assets exist
-
-**Style Levels:**
-- `minimal`: Title, description, badges, basic install/usage
-- `standard`: Logo, badges, features, tech stack, getting started, license (recommended)
-- `detailed`: All of standard plus: architecture diagram, API reference, contributing guide, changelog link
+- `--no-logo`: Skip the logo even if assets exist
 
 ## Execution
 
@@ -51,144 +64,115 @@ Execute this README configuration workflow:
 
 ### Step 1: Detect project metadata
 
-Read project metadata from the detected package files:
+Read name, description, version, licence, repository and keywords from the
+detected package file (`package.json`, `pyproject.toml`, `Cargo.toml`, or the
+module path in `go.mod`). With no package file, fall back to the directory name,
+the first line of the existing README, the git remote URL and the LICENSE file.
+Package file formats are in [REFERENCE.md](REFERENCE.md).
 
-1. **package.json** (JavaScript/TypeScript): Extract name, description, version, license, repository, keywords
-2. **pyproject.toml** (Python): Extract project name, description, version, license, keywords, URLs
-3. **Cargo.toml** (Rust): Extract package name, description, version, license, repository, keywords
-4. **go.mod** (Go): Extract module path for owner/repo
+### Step 2: Inventory the README and docs/
 
-**Fallback detection** when no package file matches:
-- Project name: directory name
-- Description: first line of existing README or ask user
-- Repository: git remote URL
-- License: LICENSE file content
+1. Read README.md and classify each `##` section with the section-to-page map in
+   [REFERENCE.md](REFERENCE.md): **keep** (header, description, quick start,
+   documentation index, licence) or **move** (and to which `docs/` page).
+2. Check the kept parts: description is two or three sentences; quick start has
+   an install command and one example command; the documentation index links
+   every `docs/` page; badges and a licence are present.
+3. Read the existing `docs/*.md` pages so moved content merges into them instead
+   of duplicating.
+4. Find files that point at README sections:
+   `rg -n 'README(\.md)?(#|\s*§)' --glob '!node_modules'` plus prose such as
+   "see the README". Each hit that names a section being moved needs repointing.
 
-For detailed package file format examples, see [REFERENCE.md](REFERENCE.md).
+### Step 3: Report compliance
 
-### Step 2: Analyze current README state
+Run the link check and print the compliance report (format in
+[REFERENCE.md](REFERENCE.md)): PASS / PARTIAL / MISSING for each kept part, and
+`MOVE → docs/<page>.md` for each detail section still in the README.
 
-Check existing README.md for these sections:
-
-- [ ] Logo/icon present (centered image at top)
-- [ ] Project title (h1)
-- [ ] Description/tagline
-- [ ] Badges row (license, version, CI status, coverage)
-- [ ] Features section
-- [ ] Tech Stack section
-- [ ] Prerequisites section
-- [ ] Installation instructions
-- [ ] Usage examples
-- [ ] Project structure
-- [ ] Contributing guidelines
-- [ ] License section
-
-Discover logo/icon assets in common locations:
-- `assets/logo.png`, `assets/icon.png`, `assets/logo.svg`
-- `public/logo.png`, `public/icon.svg`
-- `images/logo.png`, `docs/assets/logo.png`
-- `.github/logo.png`, `.github/images/logo.png`
-
-### Step 3: Generate compliance report
-
-Print a section-by-section compliance report showing PASS/MISSING/PARTIAL status for each README section. Include content quality checks (code examples, command correctness, link validity).
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/check-readme-links.sh" --project-dir "$(pwd)"
+```
 
 If `--check-only` is set, stop here.
 
-For the compliance report format, see [REFERENCE.md](REFERENCE.md).
+### Step 4: Move the detail sections into docs/
 
-### Step 4: Apply configuration (if --fix or user confirms)
+Unless `--fix` is set, confirm the planned moves with AskUserQuestion first.
 
-Generate README.md following the standard template structure:
+1. Create only the `docs/` pages that receive content; a project with no
+   configuration gets no `configuration.md`.
+2. Move each section's text as written, demoting headings one level under the
+   page's `#` title. Merge into an existing page rather than creating a second
+   one on the same topic.
+3. Generate the project layout for `development.md` with
+   `tree -L 2 -I 'node_modules|target|__pycache__|.git|dist|build' --dirsfirst`.
+4. Fix relative links inside moved text: a link that was `src/x.py` from the
+   root is `../src/x.py` from `docs/`.
 
-1. Centered logo section (if assets exist and `--no-logo` not set)
-2. Project title and tagline
-3. Badge row with shields.io URLs
-4. Features section with key highlights
-5. Tech Stack table
-6. Getting Started (prerequisites, installation, usage)
-7. Project Structure
-8. Development commands
-9. Contributing section
-10. License section
+### Step 5: Write the slim README
 
-For the full README template and badge URL patterns, see [REFERENCE.md](REFERENCE.md).
-
-### Step 5: Handle logo and assets
-
-If no logo exists but user wants one:
-
-1. Check for existing assets in standard locations
-2. Suggest creating a simple text-based placeholder or using emoji heading
-3. Create assets directory if needed: `mkdir -p assets`
-4. Suggest tools: Shields.io for custom badges, Simple Icons for technology icons
-
-### Step 6: Detect project commands
-
-Auto-detect project commands based on package manager/build tool:
+Write README.md from the slim template in [REFERENCE.md](REFERENCE.md): header
+with logo (unless `--no-logo` or no asset exists) and badges, two or three
+sentences, quick start, documentation index table, licence. Take the install and
+example commands from the detected stack:
 
 | Package Manager | Install | Run | Test | Build |
 |----------------|---------|-----|------|-------|
 | npm/bun (package.json) | Read `scripts` from package.json | `npm run dev` | `npm test` | `npm run build` |
 | uv/poetry (pyproject.toml) | `uv sync` / `poetry install` | `uv run python -m pkg` | `uv run pytest` | - |
-| cargo (Cargo.toml) | `cargo build` | `cargo run` | `cargo test` | `cargo build --release` |
-| go (go.mod) | `go build` | `go run .` | `go test ./...` | `go build` |
+| cargo (Cargo.toml) | `cargo install --path .` | `cargo run` | `cargo test` | `cargo build --release` |
+| go (go.mod) | `go install ./...` | `go run .` | `go test ./...` | `go build` |
 
-### Step 7: Generate project structure
+Test and build commands go in `docs/development.md`, not the README.
 
-Run `tree -L 2 -I 'node_modules|target|__pycache__|.git|dist|build' --dirsfirst` to generate accurate project structure. Skip common generated directories (node_modules, vendor, target, dist, build, __pycache__, .pytest_cache, .git, .venv, venv).
+### Step 6: Repoint references and verify links
 
-### Step 8: Update standards tracking
+1. Update every hit from Step 2.4 to the section's new page, for example
+   `README.md#configuration` becomes `docs/configuration.md`, and prose that
+   cites a README section by name cites the new page instead.
+2. Re-run `check-readme-links.sh` and fix each `broken_link` / `broken_anchor`
+   row until it reports `STATUS=OK`.
 
-Update `.project-standards.yaml`:
+### Step 7: Update standards tracking
+
+Update `.project-standards.yaml`, and remove a `readme_style` key left by an
+earlier version of this skill (the slim shape is the only template):
 
 ```yaml
 components:
-  readme: "2025.1"
-  readme_style: "[minimal|standard|detailed]"
+  readme: "2026.11"
   readme_has_logo: true|false
-  readme_badges: ["license", "stars", "ci", "version"]
+  readme_badges: ["license", "ci", "version"]
+  readme_docs_pages: ["usage", "development"]
 ```
 
-### Step 9: Validate generated README
+### Step 8: Report results
 
-After generating README, validate:
-
-1. Check for markdown syntax errors
-2. Verify all links are accessible (warn only)
-3. Ensure shields.io URLs are correctly formatted
-4. Verify logo/image paths exist
-
-### Step 10: Report configuration results
-
-Print a summary of changes made, the README location, and recommended next steps (customize feature descriptions, add logo, run other configure commands).
-
-For the results report format, see [REFERENCE.md](REFERENCE.md).
-
-When `--style detailed` is specified, also include architecture section with mermaid diagram, API reference link, and changelog link. For detailed style templates, see [REFERENCE.md](REFERENCE.md).
+Print the files written, the sections moved and where, the references repointed,
+and the final link-check status. Results format in [REFERENCE.md](REFERENCE.md).
 
 ## Output
 
 Provide:
-1. Compliance report with section-by-section status
-2. Generated or updated README.md content
-3. List of detected project metadata
-4. Suggestions for improvement (logo, more features, etc.)
+1. Compliance report against the slim shape
+2. The slim README.md and each `docs/` page written or updated
+3. References repointed, and the link-check result
+4. Suggestions (logo, badges, missing quick-start example)
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
 | Quick compliance check | `/configure:readme --check-only` |
-| Auto-fix all issues | `/configure:readme --fix` |
-| Minimal README | `/configure:readme --fix --style minimal` |
-| Full detailed README | `/configure:readme --fix --style detailed` |
+| Split and rewrite without prompting | `/configure:readme --fix` |
+| Check relative links and anchors | `bash "${CLAUDE_SKILL_DIR}/scripts/check-readme-links.sh" --project-dir .` |
+| Find references to README sections | `rg -n 'README(\.md)?(#\|\s*§)' --glob '!node_modules'` |
 | Generate project tree | `tree -L 2 -I 'node_modules\|target\|__pycache__\|.git\|dist\|build' --dirsfirst` |
-| Check README exists | `test -f README.md && echo "EXISTS" \|\| echo "MISSING"` |
 
 ## See Also
 
 - `/configure:docs` - Configure code documentation standards
 - `/configure:github-pages` - Set up documentation hosting
 - `/configure:all` - Run all compliance checks
-- [REFERENCE.md](REFERENCE.md) - README templates, badge reference, section standards, compliance checklists
+- [REFERENCE.md](REFERENCE.md) - Slim README and docs/ page templates, section-to-page map, badge reference, report formats

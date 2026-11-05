@@ -1,38 +1,211 @@
 # configure-readme Reference
 
-README templates, badge reference, section standards, and compliance
-checklists. (Absorbed the former `readme-standards` reference skill.)
+Slim README and `docs/` page templates, the section-to-page map, badge
+reference, and report formats. (Absorbed the former `readme-standards`
+reference skill.)
 
-## Style Levels
+## Why slim
 
-| Style | Best for |
-|-------|----------|
-| Minimal | Libraries, small utilities, internal tools |
-| Standard (recommended) | Most projects, applications, services |
-| Detailed | Open source projects, documentation-heavy projects, developer tools — everything in Standard plus architecture diagrams, API reference, configuration options, changelog link, security policy, code of conduct |
+A long README (features, tech stack, getting started, usage, structure,
+development, contributing) grows past 200 lines on a project with real users.
+It is hard to scan, and the same file is rendered on package registries and
+often shipped inside release archives. The slim README answers three questions
+(what is it, how do I try it, where is the rest) and links into `docs/` for
+everything else. One user-facing CLI went from 215 README lines to 65 with this
+split.
 
-## README Template (Minimal Style)
+## Section-to-Page Map
 
-```markdown
-# project-name
+Classify each `##` section of an existing README by its heading and content.
+Create a `docs/` page only when at least one section maps to it.
+
+| README section (common headings) | Action | Destination |
+|----------------------------------|--------|-------------|
+| Logo, title, tagline, badges | keep | README header |
+| Description, About, Overview | keep, trim to 2–3 sentences | README |
+| Installation, Getting Started, Quick Start | keep install + one example; move the rest | README Quick Start, remainder to `docs/usage.md` |
+| Documentation, Docs | keep, rebuild as the index table | README |
+| License, Licence | keep | README |
+| Features, Highlights | move | `docs/usage.md` (intro) or `docs/architecture.md` when it describes internals |
+| Usage, CLI, Commands, Examples, Recipes, Outputs | move | `docs/usage.md` |
+| Configuration, Options, Environment Variables, Settings | move | `docs/configuration.md` |
+| Architecture, Pipeline, How It Works, Tech Stack, Design | move | `docs/architecture.md` (or `docs/pipeline.md` for a staged tool) |
+| Project Structure, Layout | move | `docs/development.md` |
+| Development, Building, Testing, Linting, Checks | move | `docs/development.md` |
+| Contributing, Releases, Changelog | move | `docs/development.md` (link CONTRIBUTING.md / CHANGELOG.md when they exist) |
+| API, API Reference | move | `docs/api.md`, or the generated reference from `/configure:docs` |
+| Demo, Screenshots | keep one screenshot or link in the header; move galleries | `docs/usage.md` |
+| Status, Roadmap, FAQ, Troubleshooting | move | `docs/usage.md` (FAQ, troubleshooting) or `docs/development.md` (status, roadmap) |
+
+An unknown heading goes to the page whose topic it shares; ask with
+AskUserQuestion when two pages fit equally.
+
+## Slim README Template
+
+````markdown
+<div align="center">
+
+<img src="assets/logo.png" alt="PROJECT_NAME logo" width="128" height="128">
+
+# PROJECT_NAME
 
 [![License](https://img.shields.io/github/license/OWNER/REPO)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/ci.yml?branch=main&label=CI)](https://github.com/OWNER/REPO/actions)
+[![Release](https://img.shields.io/github/v/release/OWNER/REPO)](https://github.com/OWNER/REPO/releases)
 
-Brief description of what this project does.
+</div>
 
-## Installation
+PROJECT_NAME does WHAT for WHOM. One sentence on how it works or what makes it
+different. Optionally one sentence on scope or status.
 
-npm install package-name
+## Quick Start
 
-## Usage
+```bash
+INSTALL_COMMAND
+EXAMPLE_COMMAND
+```
 
-import { feature } from 'package-name';
-feature();
+| Output | Contents |
+|--------|----------|
+| `OUTPUT_FILE_1` | What the file holds |
+| `OUTPUT_FILE_2` | What the file holds |
+
+## Documentation
+
+| Page | Contents |
+|------|----------|
+| [Usage](docs/usage.md) | Command line, configs, outputs, recipes |
+| [Configuration](docs/configuration.md) | Options and environment variables |
+| [Architecture](docs/architecture.md) | Stages, components, technology |
+| [Development](docs/development.md) | Building, checks, layout, contributing, releases |
 
 ## License
 
-MIT
+[LICENSE_TYPE](LICENSE)
+````
+
+Template rules:
+
+- Drop the outputs table when the tool writes no files (a library, a service).
+- List only the `docs/` pages that exist in the documentation index.
+- A multi-step install (for example a Homebrew tap: `brew tap`, then
+  `brew install`) stays in the Quick Start block; alternative install methods
+  go to `docs/usage.md`.
+- Library: the example is a three-to-five-line import-and-call snippet in the
+  project's language instead of a shell command.
+- Web application: the example is the run command plus the local URL; a live
+  demo link goes in the header.
+
+## docs/ Page Templates
+
+Each page opens with a `#` title and a one-line statement of what it covers.
+Moved sections keep their text and drop one heading level.
+
+### docs/usage.md
+
+````markdown
+# Usage
+
+How to run PROJECT_NAME: the command line, configs, outputs and common recipes.
+Start with the [Quick Start](../README.md#quick-start) if you have not
+installed it yet.
+
+## Command line
+
+```bash
+PROJECT_NAME <command> [options]
 ```
+
+| Command | Purpose |
+|---------|---------|
+| `COMMAND` | What it does |
+
+## Outputs
+
+## Recipes
+````
+
+### docs/configuration.md
+
+````markdown
+# Configuration
+
+Every option PROJECT_NAME reads, where it reads it from, and the defaults.
+
+| Option | Environment variable | Default | Purpose |
+|--------|----------------------|---------|---------|
+````
+
+### docs/architecture.md
+
+````markdown
+# Architecture
+
+How PROJECT_NAME is built: its stages or components and the technology behind
+them.
+
+## Stages
+
+## Technology
+
+| Category | Technology |
+|----------|------------|
+````
+
+### docs/development.md
+
+````markdown
+# Development
+
+Building PROJECT_NAME from source, running the checks, the project layout,
+and how changes are contributed and released.
+
+## Building
+
+```bash
+INSTALL_DEPS_COMMAND
+BUILD_COMMAND
+```
+
+## Checks
+
+```bash
+TEST_COMMAND
+LINT_COMMAND
+```
+
+## Layout
+
+```
+PROJECT_NAME/
+├── src/      # Source code
+├── tests/    # Tests
+└── docs/     # Documentation
+```
+
+## Contributing
+
+## Releases
+````
+
+## Link Check
+
+`scripts/check-readme-links.sh --project-dir <dir>` resolves every relative
+link in the project's Markdown files (README.md, `docs/`, and any other `*.md`,
+such as skills that cite README sections). It skips external URLs, code spans,
+fenced code, and `node_modules`/`vendor`/`target`/`dist`/`build`/`.venv`.
+
+| Key | Meaning |
+|-----|---------|
+| `FILES_SCANNED` | Markdown files read |
+| `LINKS_CHECKED` | Relative links resolved |
+| `BROKEN_LINKS` | Links whose file or directory does not exist |
+| `BROKEN_ANCHORS` | Links whose `#anchor` matches no heading (GitHub slug rules) or `<a id>` in the target |
+| `STATUS` | `OK` (exit 0) or `ERROR` (exit 1); `REASON=` names the first finding |
+
+Each finding is an `ISSUES:` row with `TYPE=broken_link|broken_anchor|readme_missing`,
+`FILE=`, `LINE=` and `TARGET=`. The usual fix after a split is to point the link
+at the new page: `README.md#configuration` becomes `docs/configuration.md`.
 
 ## Package File Format Examples
 
@@ -84,125 +257,65 @@ module github.com/owner/repo
 ## Compliance Report Format
 
 ```
-README.md Compliance Report
-===========================
+README.md Compliance Report (slim shape)
+========================================
 Project: [name]
-Style Level: [minimal|standard|detailed]
+README lines: [N]
 
-Structure:
-  Logo/Icon              [PASS | MISSING | N/A (no assets)]
+Kept in README:
+  Header (logo/banner)   [PASS | MISSING | N/A (no assets)]
   Title                  [PASS | MISSING]
-  Description            [PASS | MISSING | TOO SHORT]
   Badges                 [PASS | PARTIAL | MISSING]
-  Features               [PASS | MISSING]
-  Tech Stack             [PASS | MISSING]
-  Getting Started        [PASS | INCOMPLETE | MISSING]
-  Project Structure      [PASS | MISSING | N/A (small project)]
+  Description            [PASS | TOO LONG | MISSING]   (2–3 sentences)
+  Quick start            [PASS | PARTIAL | MISSING]    (install + one example)
+  Documentation index    [PASS | INCOMPLETE | MISSING] (links every docs/ page)
   License                [PASS | MISSING]
 
-Content Quality:
-  Has code examples      [YES | NO]
-  Commands are correct   [YES | OUTDATED]
-  Links are valid        [YES | BROKEN LINKS]
+Detail sections still in README:
+  Features               MOVE → docs/usage.md
+  Tech Stack             MOVE → docs/architecture.md
+  Development            MOVE → docs/development.md
+
+docs/ pages:
+  docs/usage.md          [EXISTS | WILL CREATE]
+  docs/development.md    [EXISTS | WILL CREATE]
+
+Links (check-readme-links.sh):
+  STATUS=[OK | ERROR]  BROKEN_LINKS=[N]  BROKEN_ANCHORS=[N]
+
+References to README sections outside README.md: [N]
 
 Overall: [X issues found]
 ```
 
-## README Template (Standard Style)
+A quick start that has an install command but no example command is
+`PARTIAL`, not `MISSING`.
 
-````markdown
-<div align="center">
-
-<img src="assets/logo.png" alt="PROJECT_NAME Logo" width="128" height="128">
-
-# PROJECT_NAME
-
-**TAGLINE_DESCRIPTION**
-
-[![License](https://img.shields.io/github/license/OWNER/REPO)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/OWNER/REPO)](https://github.com/OWNER/REPO/stargazers)
-[![CI](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/ci.yml?branch=main&label=CI)](https://github.com/OWNER/REPO/actions)
-[![RUNTIME_BADGE](RUNTIME_BADGE_URL)]()
-
-</div>
-
-## Features
-
-- **Feature 1** - Description of the first key feature
-- **Feature 2** - Description of the second key feature
-- **Feature 3** - Description of the third key feature
-- **Feature 4** - Description of the fourth key feature
-
-## Tech Stack
-
-| Category | Technology |
-|----------|------------|
-| Runtime | Node.js / Bun / Python / Rust |
-| Framework | Express / Fastify / FastAPI / Axum |
-| Database | PostgreSQL / SQLite / MongoDB |
-| Testing | Vitest / pytest / cargo-nextest |
-
-## Getting Started
-
-### Prerequisites
-
-- [Prerequisite 1](link) >= version
-- [Prerequisite 2](link) >= version
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/OWNER/REPO.git
-cd REPO
-
-# Install dependencies
-INSTALL_COMMAND
-
-# Run the application
-RUN_COMMAND
-```
-
-### Usage
-
-```bash
-# Example command
-EXAMPLE_COMMAND
-```
-
-## Project Structure
+## Results Report Format
 
 ```
-PROJECT_NAME/
-├── src/               # Source code
-│   ├── components/    # UI components (if applicable)
-│   └── services/      # Business logic
-├── tests/             # Test files
-├── docs/              # Documentation
-└── README.md
+README.md Configuration Results
+===============================
+Project: [name]
+README: [old] → [new] lines
+
+Moved:
+  Features, Usage        → docs/usage.md (created)
+  Tech Stack             → docs/architecture.md (created)
+  Development, Contributing, Project Structure → docs/development.md (merged)
+
+README now holds: header, badges, description, quick start, documentation index, license
+
+References repointed:
+  skills/status/SKILL.md:12  README.md#status → docs/development.md#status
+
+Link check: STATUS=OK (LINKS_CHECKED=[N])
+
+Next Steps:
+  - Review the moved text for sentences that assumed the README context
+  - Add a logo or banner to assets/ (optional)
+  - Run /configure:github-pages to publish docs/ as a site (optional)
 ```
-
-## Development
-
-```bash
-# Run tests
-TEST_COMMAND
-
-# Run linter
-LINT_COMMAND
-
-# Build for production
-BUILD_COMMAND
-```
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a PR.
-
-## License
-
-This project is licensed under the [LICENSE_TYPE](LICENSE) license.
-````
 
 ## Badge URL Patterns
 
@@ -231,10 +344,13 @@ This project is licensed under the [LICENSE_TYPE](LICENSE) license.
 | Rust | `https://img.shields.io/badge/rust-1.75+-orange` |
 | Go | `https://img.shields.io/badge/go-1.22-00ADD8` |
 
+Keep the badge row to three to five badges; a version, CI and licence badge
+cover most projects.
+
 ## Logo Guidelines
 
 - **Format**: PNG (with transparency) or SVG
-- **Size**: 128x128px to 512x512px
+- **Size**: 128x128px to 512x512px; a banner can be wider
 - **Location**: `assets/logo.png` or `assets/icon.svg`
 - **Centering**: `<div align="center"><img src="assets/logo.png" alt="Project Name" width="128"></div>`
 
@@ -268,68 +384,31 @@ Tools for creating logos:
 
 ## Section Writing Standards
 
-### Features — write benefits, not implementation
+### Description — say what it does, for whom
 
 **Good:**
 ```markdown
-- **Automatic Scanner Detection** - Discovers eSCL-compatible scanners via mDNS without manual configuration
-- **Smart Photo Separation** - Intelligently detects and crops multiple photos from a single scan using edge analysis
+widget-cli turns scanner output into searchable photo albums. It discovers
+eSCL scanners on the local network and crops each photo out of a multi-photo
+scan.
 ```
 
 **Compare — implementation-focused (less effective):**
 ```markdown
-- Uses mDNS for scanner discovery
-- Has edge detection algorithm
+A Rust CLI using mDNS and an edge-detection algorithm.
 ```
 
-### Getting Started — always include
+### Features in docs/usage.md — write benefits, not implementation
 
-1. Prerequisites with version requirements
-2. Clone instructions
-3. Install dependencies command
-4. Run command
-5. (Optional) Environment setup
+```markdown
+- **Automatic Scanner Detection** - Discovers eSCL-compatible scanners via mDNS without manual configuration
+- **Smart Photo Separation** - Detects and crops multiple photos from a single scan
+```
 
-### Project Structure — keep it scannable
+### Layout in docs/development.md — keep it scannable
 
 - 2-3 levels deep, only meaningful directories, brief comments for
   non-obvious folders
-
-## Project-Type-Specific Sections
-
-| Project type | Add to the template |
-|--------------|---------------------|
-| CLI tool | Global-install variants (`npm install -g` / `bun install -g` / `npx`), a `tool-name <command> [options]` usage block enumerating commands and flags |
-| Library/package | An `## API` section per exported function: signature, parameter table, return type |
-| Web application | `## Demo` (live link), `## Screenshots` (centered images), `## Environment Variables` (`.env` example) |
-
-## Compliance Checklists
-
-### Minimal
-- [ ] Title (h1)
-- [ ] Description (1-2 sentences)
-- [ ] License badge
-- [ ] Installation instructions
-- [ ] Basic usage example
-- [ ] License section
-
-### Standard (all of minimal plus)
-- [ ] Logo or emoji header
-- [ ] 3+ badges (license, stars, CI)
-- [ ] Features section (4+ items)
-- [ ] Tech stack table
-- [ ] Prerequisites
-- [ ] Development commands
-- [ ] Project structure
-- [ ] Contributing mention
-
-### Detailed (all of standard plus)
-- [ ] Architecture diagram
-- [ ] API reference or link
-- [ ] Configuration options
-- [ ] Changelog link
-- [ ] Security policy mention
-- [ ] Code of conduct mention
 
 ## Cookiecutter Integration
 
@@ -339,63 +418,3 @@ cookiecutter`, then `cookiecutter <template-url>`). Cookiecutter is ideal for
 organization-wide templates and whole-project scaffolding; `/configure:readme`
 is better for updating existing projects and compliance-checking existing
 READMEs.
-
-## Results Report Format
-
-```
-README.md Compliance Report (After Configuration)
-=================================================
-Project: [name]
-Style Level: [minimal|standard|detailed]
-
-Changes Made:
-  Added centered logo section
-  Generated badge row (license, stars, CI)
-  Created Features section with 4 highlights
-  Added Tech Stack table
-  Generated Getting Started with correct commands
-  Created Project Structure from actual layout
-  Added License section
-
-README Location: ./README.md
-Preview: Open in VS Code or view on GitHub
-
-Next Steps:
-  - Review and customize feature descriptions
-  - Add a logo image to assets/ (optional)
-  - Run /configure:github-pages to publish documentation
-  - Consider adding CONTRIBUTING.md and CHANGELOG.md
-```
-
-## Detailed Style Additions
-
-When `--style detailed` is specified, also include:
-
-### Architecture Section
-
-```markdown
-## Architecture
-
-```mermaid
-graph TD
-    A[Client] --> B[API Gateway]
-    B --> C[Service Layer]
-    C --> D[Database]
-```
-```
-
-### API Reference Link
-
-```markdown
-## API Reference
-
-See the [API Documentation](docs/api.md) for detailed endpoint information.
-```
-
-### Changelog Link
-
-```markdown
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
-```
