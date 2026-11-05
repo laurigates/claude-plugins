@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-10-18
+modified: 2026-11-05
 reviewed: 2026-04-21
 ---
 
@@ -116,8 +116,8 @@ All commits and PR titles must follow the pattern:
 
 - **Commits:** Use `git commit -m "feat(plugin): description"` with issue references
 - **PR titles:** MUST match conventional format - used as commit message on squash-merge
-- **Scope:** Plugin or feature name (e.g., `feat(git-plugin)`, `fix(skill-development)`)
-- **Types:** `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`
+- **Scope:** The plugin directory name (e.g., `feat(git-plugin)`). It is a changelog label only; the files touched decide which packages release
+- **Types:** `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`, `revert`
 
 See `.claude/rules/conventional-commits.md` for complete guide and examples.
 
