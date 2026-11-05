@@ -23,25 +23,7 @@ A reusable UI pattern for displaying application version with build metadata and
 
 ## Pattern Overview
 
-```
-┌──────────────────────────────────────┐
-│  App Header              v1.43.0|004ddd9  ← Trigger (always visible)
-└──────────────────────────────────────┘
-                                 │
-                                 ▼ (on hover/focus)
-                    ┌─────────────────────────┐
-                    │ Build Information       │
-                    │ Version: 1.43.0         │
-                    │ Commit:  004ddd97e8...  │
-                    │ Built:   Dec 11, 10:00  │
-                    │ Branch:  main           │
-                    │─────────────────────────│
-                    │ Recent Changes          │
-                    │ v1.43.0                 │
-                    │ ✨ New feature X        │
-                    │ 🐛 Fixed bug Y          │
-                    └─────────────────────────┘
-```
+A trigger (`v1.43.0|004ddd9`) stays visible in the header; hover or focus opens a tooltip with build information and recent changes. Layout diagram: [REFERENCE.md](REFERENCE.md#pattern-overview).
 
 ## Data Flow
 
@@ -307,51 +289,9 @@ export function VersionBadge() {
 }
 ```
 
-### Next.js Config: `next.config.mjs`
+### Next.js Config
 
-```javascript
-import { execSync } from 'child_process';
-
-function getBuildInfo() {
-  const version = process.env.npm_package_version || 'dev';
-  const commit = process.env.VERCEL_GIT_COMMIT_SHA
-    || process.env.GITHUB_SHA
-    || execSyncSafe('git rev-parse HEAD')
-    || 'local';
-  const branch = process.env.VERCEL_GIT_COMMIT_REF
-    || process.env.GITHUB_REF_NAME
-    || execSyncSafe('git branch --show-current')
-    || 'local';
-
-  return { version, commit, branch, buildTime: new Date().toISOString() };
-}
-
-function execSyncSafe(cmd) {
-  try {
-    return execSync(cmd, { encoding: 'utf-8' }).trim();
-  } catch {
-    return null;
-  }
-}
-
-function getChangelog() {
-  try {
-    return execSync('node scripts/parse-changelog.mjs', { encoding: 'utf-8' }).trim();
-  } catch {
-    return '[]';
-  }
-}
-
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  env: {
-    NEXT_PUBLIC_BUILD_INFO: JSON.stringify(getBuildInfo()),
-    NEXT_PUBLIC_CHANGELOG: getChangelog(),
-  },
-};
-
-export default nextConfig;
-```
+Inject `NEXT_PUBLIC_BUILD_INFO` and `NEXT_PUBLIC_CHANGELOG` at build time from `next.config.mjs`: [REFERENCE.md](REFERENCE.md#nextjs-config-nextconfigmjs).
 
 For Vue 3, Svelte, and plain CSS implementations, as well as accessibility checklist, see [REFERENCE.md](REFERENCE.md).
 

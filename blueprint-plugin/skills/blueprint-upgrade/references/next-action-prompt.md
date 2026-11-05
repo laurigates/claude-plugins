@@ -15,3 +15,9 @@ Skipped when `$NONINTERACTIVE` is `true`.
      - label: "Commit changes"
        description: "Stage and commit the migration"
    ```
+
+   **Based on selection:**
+   - "Check status" → Run `/blueprint:status`
+   - "Regenerate rules" → Run `/blueprint:generate-rules`
+   - "Update CLAUDE.md" → Run `/blueprint:claude-md`
+   - "Commit changes" → Run `/git:commit` with migration message

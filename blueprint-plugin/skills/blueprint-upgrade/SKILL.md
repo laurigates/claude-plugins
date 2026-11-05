@@ -161,30 +161,6 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    If `$NONINTERACTIVE` is `true`, skip this prompt entirely — print the report from step 10 and return. The batch caller owns follow-up (status checks, commits, etc.).
 
-   Otherwise, ask with the prompt in [references/next-action-prompt.md](references/next-action-prompt.md).
+   Otherwise, ask with the prompt in [references/next-action-prompt.md](references/next-action-prompt.md), and act on the selection as that file maps it.
 
-   **Based on selection:**
-   - "Check status" → Run `/blueprint:status`
-   - "Regenerate rules" → Run `/blueprint:generate-rules`
-   - "Update CLAUDE.md" → Run `/blueprint:claude-md`
-   - "Commit changes" → Run `/git:commit` with migration message
-
-**Post-migration assertion**:
-After any version bump, verify `format_version` actually changed to the target. This catches silent failures where `jq` operated on the wrong path and exited 0 with empty output:
-
-```bash
-actual=$(jq -r '.format_version' "$MANIFEST")
-if [[ "$actual" != "$target" ]]; then
-  echo "ERROR: Migration failed — format_version is '$actual', expected '$target'"
-  echo "Check that $MANIFEST was written correctly and rerun the migration step."
-  exit 1
-fi
-echo "Migration verified: format_version = $actual in $MANIFEST"
-```
-
-**Rollback**:
-If upgrade fails:
-- Check git status for changes made
-- Use `git checkout -- .claude/` and `git checkout -- docs/blueprint/` to restore original structure
-- Manually move content back if needed
-- Report specific failure point for debugging
+**Post-migration assertion**: after any version bump, run the `format_version` check in [REFERENCE.md](REFERENCE.md#post-migration-assertion). **Rollback**: if the upgrade fails, follow [REFERENCE.md](REFERENCE.md#rollback).

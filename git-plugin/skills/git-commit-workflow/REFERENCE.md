@@ -326,3 +326,52 @@ git commit -m "first logical group"
 git add group2-file.ts
 git commit -m "second logical group"
 ```
+
+## Bulk-edit / per-plugin commit loops
+
+### Why inline loops fail
+
+| Pattern | What blocks it |
+|---------|----------------|
+| `for d in a b c; do git add "$d/" && git commit -m "..."; done` | `bash-antipatterns.sh` blocks `git add ... && git commit ...` — chaining index-modifying git commands risks an `index.lock` race condition |
+| `git add -A`, `git add --all`, `git add .` | `bash-antipatterns.sh` blocks broad staging — sweeps in `.env`, large binaries, and **any coworker session's in-flight files** in a shared checkout (see `.claude/rules/agent-coworker-detection.md`) |
+| Repeating `git add <paths>; git commit -m "..."` as separate Bash tool calls per plugin | Works, but ~3 tool calls × N plugins becomes hundreds of round-trips for a 40-plugin sweep |
+
+### Canonical recipe
+
+Write the loop to `/tmp/commit-loop-<slug>.sh`, then run it in **one** Bash call. The hook treats the file as a script, not a chain — index-modifying commands are sequential within bash, not racing through separate tool invocations.
+
+```bash
+#!/bin/bash
+# /tmp/commit-loop-trim-descriptions.sh
+set -uo pipefail
+cd "$REPO_ROOT" || exit 1
+
+for p in plugin-a plugin-b plugin-c; do
+  # Skip plugins with nothing staged or modified inside them
+  [ -z "$(git status --porcelain "$p/")" ] && continue
+
+  git add "$p/skills/"            # explicit path, never -A or .
+  git commit -m "docs($p): trim skill descriptions for listing budget"
+done
+```
+
+Invoke once:
+
+```bash
+bash /tmp/commit-loop-trim-descriptions.sh
+```
+
+Each iteration runs pre-commit hooks and produces a clean per-plugin commit. Use `;` or newlines (not `&&`) between `git add` and `git commit` inside the script.
+
+### Failure recovery
+
+If the loop aborts mid-way (a pre-commit hook fails on plugin K of N), the commits for plugins 1..K-1 have **already landed** — they are not rolled back. Recovery rules:
+
+| Situation | Action |
+|-----------|--------|
+| Pre-commit hook caught a real issue in plugin K | Fix the issue, re-run the script — the `[ -z ... ] && continue` guard skips plugins with no remaining changes |
+| Script re-run picks up plugin K's leftover staged paths | Good — the unstaged-or-staged check via `git status --porcelain "$p/"` catches both |
+| You want to skip plugin K and continue | Edit the script to remove plugin K from the list, re-run |
+
+Do **not** re-stage paths that already committed cleanly; `git status` is the source of truth for what's left.

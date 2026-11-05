@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-10-29
+modified: 2026-11-04
 reviewed: 2026-05-19
 ---
 
@@ -32,7 +32,7 @@ are `.claude/rules/agent-coworker-detection.md`.
 
 Bulk-edit and commit-loop workflows (`git-commit-workflow` "Bulk-edit / per-plugin commit loops", per-package release-please loops, mass refactors) **MUST** run this check **up front, before staging any files** — not opportunistically partway through.
 
-**Why front-loaded, not opportunistic.** A real divergence scenario from the field: two Claude sessions converged on the same trim-descriptions task. Session A used `general-purpose` subagents in the main checkout; session B used worktrees + per-plugin commits. Session B landed 11 clean per-plugin commits and stopped. Session A's first commit then grabbed **all 30 remaining plugins** in a single mega-commit, because session A had previously hit a `git commit -a` failure that left everything pre-staged, and session B's loop never noticed because it ran `/git:coworker-check` *during* its work rather than *before*. The end result was correct, but the commit history said `docs(configure-plugin): ...` for changes spanning 30 plugins.
+**Why front-loaded, not opportunistic:** a mid-loop check lets whichever session looks first win. Field scenario: [references/field-evidence.md § Why the check is front-loaded](references/field-evidence.md#why-the-check-is-front-loaded).
 
 The rule: **the orchestrator stops before fan-out if the playing field is contended.** Mid-loop checks let "the agent who happens to look first wins" — which is non-deterministic and produces misleading commit histories.
 
@@ -119,7 +119,7 @@ Parse the `VERDICT=` line from the script's output:
 | `clear` | No coworker detected | Proceed; still prefer explicit `git add <paths>` over `git add -A` |
 | `drift_detected` | Files appeared since baseline but no other process/marker/claim found | Inspect `NEW_STATUS_LINES` — may be coworker or may be a forgotten earlier edit. Ask the user before stashing. |
 | `worktree_leak_suspected` | Untracked file in parent matches a path held by a linked worktree (issue #1319) | **Do not stash or commit** the matching path. Wait for the child worktree's commit to reclaim it. Avoid committing on the parent branch until child agents are done. |
-| `bare_flip_suspected` | `CORE_BARE=true` on a shared working checkout, or a `LEAKED_GIT_DIR` / `LEAKED_GIT_WORK_TREE` env points away from the repo (issue #1692) | **Stop and recover.** Flip `core.bare` back to false and/or unset the leaked env before any further git ops — see the Recovery section below. Recover any wiped untracked work from the reflog / agent worktree branches. |
+| `bare_flip_suspected` | `CORE_BARE=true` on a shared working checkout, or a `LEAKED_GIT_DIR` / `LEAKED_GIT_WORK_TREE` env points away from the repo (issue #1692) | **Stop and recover.** Flip `core.bare` back to false and/or unset the leaked env before any further git ops — see [Recovery](#recovery). Recover any wiped untracked work from the reflog / agent worktree branches. |
 | `coworker_detected` | Another agent/process/taskwarrior claim is active in this clone | **Do not stash, restore, or reset.** Report the `MARKER_PID` / `PROC_PID` / `TW_CLAIM_*` entries. Recommend the user switch to a worktree. |
 
 The six signals are independent — any one of `MARKER_COUNT > 0`, `PROC_COUNT > 0`, or `TW_CLAIM_COUNT > 0` raises `coworker_detected`. A non-zero `WORKTREE_LEAK_COUNT` on its own raises `worktree_leak_suspected`, and a non-zero `BARE_FLIP_COUNT` raises `bare_flip_suspected` (ranked first, since a bare flip breaks git for every linked worktree). `OWN_CLAIM_*` lines are this session's own taskwarrior claims and do not contribute to the count.
@@ -156,9 +156,4 @@ When detection failed to prevent a collision, or the verdict is `bare_flip_suspe
 
 ## Related Skills
 
-- `/git:maintain` — invokes this before any stash/clean operation
-- `/git:commit` — invokes this before staging when working in a shared checkout
-- `git-commit-workflow` — invokes this as a precondition for bulk-edit / per-plugin commit loops
-- `git-branch-pr-workflow` — recommends worktrees as the structural fix
-- `/taskwarrior:task-claim` — sister signal; writes the `+ACTIVE` claim that this skill now reads
-- `/taskwarrior:task-release` — drops the claim that contributes to `TW_CLAIM_COUNT`
+Skills that invoke this check, and its taskwarrior sister skills: [references/integration.md § Related Skills](references/integration.md#related-skills).

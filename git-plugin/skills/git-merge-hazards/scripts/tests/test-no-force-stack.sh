@@ -1969,6 +1969,17 @@ check "sync-notes: no bare '(next bullet)' pointer remains" yes "$(yn lacks "$SN
 check "control: a file with the bare '(next bullet)' pointer fails that pin" no \
     "$(yn lacks "$sandbox/next-bullet.md" '(next bullet)')"
 
+# #3396: GitHub rejects a short SHA for --match-head-commit ("Could not coerce
+# value ... to GitObjectID"), so the docs must say the SHA is the full one.
+write_lines "$sandbox/short-sha-skill.md" '`main` merge holds an unreviewed resolution. Pin `--match-head-commit <sha>`; a'
+check "SKILL §6: --match-head-commit is shown taking git rev-parse output" yes \
+    "$(has "$SF" '--match-head-commit "$(git rev-parse <ref>)"')"
+check "SKILL §6: the full 40-character SHA is required" yes "$(has "$SF" 'full 40-character SHA')"
+check "control: the pre-#3396 §6 line fails the full-SHA pin" no \
+    "$(has "$sandbox/short-sha-skill.md" 'full 40-character SHA')"
+check "no-force: \$pre is noted as a full SHA that must stay full-length" yes \
+    "$(has "$NF" '`headRefOid` is the full 40-character SHA')"
+
 printf '%s\n' "test-no-force-stack.sh: ${pass} passed, ${fail} failed"
 [ "$fail" -eq 0 ] || exit 1
 exit 0

@@ -1,6 +1,6 @@
 # Blueprint Upgrade — Reference
 
-Reference templates for `/blueprint:upgrade`: the v3.0.0 manifest schema produced by step 9, and the standard upgrade report template emitted by step 10.
+Reference templates for `/blueprint:upgrade`: the v3.0.0 manifest schema produced by step 9, the standard upgrade report template emitted by step 10, the post-migration assertion, and the rollback procedure.
 
 ## v3.0.0 Manifest Schema
 
@@ -91,3 +91,25 @@ New v3.0 architecture:
 - Custom layer: Your overrides, never auto-modified
 - Removed: .claude/blueprints/generated/ (no longer needed)
 ```
+
+## Post-Migration Assertion
+
+After any version bump, verify `format_version` actually changed to the target. This catches silent failures where `jq` operated on the wrong path and exited 0 with empty output:
+
+```bash
+actual=$(jq -r '.format_version' "$MANIFEST")
+if [[ "$actual" != "$target" ]]; then
+  echo "ERROR: Migration failed — format_version is '$actual', expected '$target'"
+  echo "Check that $MANIFEST was written correctly and rerun the migration step."
+  exit 1
+fi
+echo "Migration verified: format_version = $actual in $MANIFEST"
+```
+
+## Rollback
+
+If upgrade fails:
+- Check git status for changes made
+- Use `git checkout -- .claude/` and `git checkout -- docs/blueprint/` to restore original structure
+- Manually move content back if needed
+- Report specific failure point for debugging
