@@ -243,6 +243,20 @@ read rules: `Read` denies apply to files reached through a symlink by IDE
 `AGENTS.md` symlinked outside the working directories no longer loads under
 `blockReadsOutsideWorkingDirectories` or a `Read` deny (2.1.290).
 
+`permissions.blockWritesOutsideWorkingDirectories` (2.1.314) is the write-side
+sibling: Write, Edit and NotebookEdit refuse paths outside the working
+directories in every permission mode. It covers the file tools; a Bash write is
+governed by the shell checks above. `--restricted` sessions no longer upload
+files from outside the working directories that a Read allow rule covered
+(2.1.316).
+
+Settings-source fixes: `--setting-sources` exclusion is complete since 2.1.314
+(an excluded file used to still supply auto-mode rules and saved permission
+consents). Claude's file tools ask before editing the local copy of the org's
+server-managed settings (2.1.314); Team/Enterprise server-managed settings apply
+without an approval prompt, and a stored copy that does not verify is refused
+(2.1.316).
+
 ### Safe Patterns
 
 ```yaml

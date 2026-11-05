@@ -99,7 +99,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `background` | bool | No | Set `true` to always run as a background task |
 | `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
 | `skills` | list | No | Skill names to preload into agent context at startup; at most 32, each once (2.1.295) |
-| `autoCompactWindow` | not stated upstream | No | Auto-compact the subagent earlier than the main conversation's window (2.1.296); also accepted in `--agents` definitions. Not yet in `check-agent-frontmatter-keys.sh`'s `DOCUMENTED_FIELDS`, so an agent using it fails that check until the list is refreshed from the docs |
+| `autoCompactWindow` | not stated upstream | No | Auto-compact the subagent earlier than the main conversation's window (2.1.296); also accepted in `--agents` definitions. Since 2.1.312 it also lowers a window set by `CLAUDE_CODE_AUTO_COMPACT_WINDOW`; it never raises one. Not yet in `check-agent-frontmatter-keys.sh`'s `DOCUMENTED_FIELDS`, so an agent using it fails that check until the list is refreshed from the docs |
 | `mcpServers` | list | No | MCP server names or inline configs available to this agent |
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
@@ -191,9 +191,11 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 
 **Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
 
+**Effort resolution (2.1.316+):** per-spawn `Agent(effort: …)` > agent frontmatter `effort:` > `CLAUDE_CODE_SUBAGENT_EFFORT` > the session's effort. Before 2.1.316 a subagent that no layer named an effort for inherited the session's. `CLAUDE_CODE_EFFORT_LEVEL` overrides the per-spawn and frontmatter values (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list)).
+
 On an org account that restricts model choice, an agent's `model: opus` frontmatter steps down to the newest org-allowed model in the Opus family rather than falling back to the parent session's model (2.1.222); a hard-restricted request instead warns and runs the parent's model (2.1.223).
 
-> **Note (fast mode)**: Fast mode is available only on Opus 5.5, Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
+> **Note (fast mode)**: Fast mode is available only on Opus 5.5, Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. **Opus 4.8 fast mode is deprecated** as of 2026-10-30 and is removed on 2026-11-30 (2.1.316). After removal a fast-mode request on Opus 4.8 returns an error and does not fall back to standard Opus 4.8; migrate to Opus 5.5, and drop Opus 4.8 from this list after that date. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
 
 ## Context Isolation
 

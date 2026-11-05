@@ -104,7 +104,7 @@ ask.
 | `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running; the prompt names the flagged `rm` and suggests a `${VAR:?}` guard (2.1.277) | |
 | Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode; an unanswered dangerous-`rm` prompt denies after 2 minutes with a rewrite hint (2.1.281) | |
 
-Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above.
+Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above. Two fixes in 2.1.316 touch such a list: an `autoMode.allow` list without `"$defaults"` no longer removes the built-in rule on scheduled-task prompts, and a managed one no longer gets the built-in exceptions back from a host app's `--settings`, a first `/permissions` rule or `/auto-mode-setup`.
 
 `autoMode.classifyAllShell` routes *every* Bash/PowerShell command through the classifier, not just patterns that look like arbitrary code execution — use it for a stricter posture than the defaults above. Denial reasons are now surfaced in the transcript, a toast, and `/permissions` (2.1.193).
 
@@ -178,7 +178,7 @@ If blocking happens **3 times in a row** or **20 times total** in a session, aut
 
 In `-p` (non-interactive) mode there is no user to prompt — repeated blocks abort the session.
 
-When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280). Since 2.1.296 such a call shows as a dim "Not run" row instead of a red error.
+When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280). Since 2.1.296 such a call shows as a dim "Not run" row instead of a red error, and since 2.1.314 it is no longer reported as blocked. Blocked-call messages name the command and point to `/permissions`, and its recently-blocked list refuses to approve a call it cannot show in full (2.1.314). In Cowork cloud, a hook's allow of an MCP tool call counts as no answer (2.1.314).
 
 ## Cost and Latency
 

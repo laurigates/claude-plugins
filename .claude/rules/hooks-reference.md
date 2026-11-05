@@ -119,7 +119,7 @@ These are the two most commonly confused events:
 | **Scope** | Session-level | Per-subagent |
 | **Use case** | Git reminders, session-end notifications | Per-task validation, quality gates |
 | **Blocking** | Can block next user turn with `"decision": "block"` | Can block subagent from being considered complete |
-| **Frequency** | Once per response cycle | Once per Task tool invocation |
+| **Frequency** | Once per response cycle | Once per Task tool invocation (before 2.1.311, about twice a minute for each running subagent) |
 
 ```json
 // Stop — blocks the session from completing the turn
@@ -147,7 +147,7 @@ Default timeouts vary by hook type:
 | `prompt` | 30 seconds |
 | `agent` | 60 seconds |
 
-The command hook default was increased from 60 seconds in Claude Code 2.1.50.
+The command hook default was increased from 60 seconds in Claude Code 2.1.50. For `prompt` and `agent` hooks a `timeout` under 1 second counts as 1 second, and their concurrency is capped per session (2.1.312; cap and queueing in `prompt-agent-hooks.md` § Optimization Tips).
 
 | Hook Type | Recommended Timeout | Notes |
 |-----------|---------------------|-------|
@@ -353,6 +353,8 @@ Fires after `/add-dir` or the SDK `register_repo_root` control request registers
 ```json
 {"decision": "block"}
 ```
+
+Since 2.1.314 each `PreCompact` hook's output is cut at 10,000 characters; larger output used to make compaction fail or repeat.
 
 ### PostCompact (2.1.76+)
 
@@ -1051,6 +1053,11 @@ default in auto and bypassPermissions modes, elsewhere only with the user- or
 managed-scope `bashEditDiffEnabled`) — `blueprint-plugin/hooks/lib/doc-paths.sh`
 reads both payload shapes.
 
+Hooks that match `Bash` also run on shell commands the Monitor tool starts
+(2.1.314). They can block or ask on those commands but cannot approve or rewrite
+them, and an `if` condition such as `Monitor(tail *)` matches Monitor's
+commands the way `Bash(tail *)` matches Bash's.
+
 ### MCP Tool Matching
 
 MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex patterns:
@@ -1084,7 +1091,7 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 
 > **Note**: `WorktreeCreate` and `WorktreeRemove` treat any non-zero exit code as a failure (not just exit code 2).
 
-Exit code 2 blocks even when the hook's stdout JSON fails schema validation (2.1.214), and PowerShell hooks block on exit code 2 as documented (2.1.309).
+Exit code 2 blocks even when the hook's stdout JSON fails schema validation (2.1.214), and PowerShell hooks block on exit code 2 as documented (2.1.309), including a command that begins with a type cast, `param`, `using` or an attribute (2.1.316).
 
 ---
 

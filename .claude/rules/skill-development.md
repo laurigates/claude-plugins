@@ -43,7 +43,7 @@ Use `/reload-skills` after scaffolding a new skill so it becomes invocable immed
 
 ### Nested `.claude/skills` Directories (2.1.178+)
 
-Skills in **nested** `.claude/skills` directories (not just the project root) now load. When two skills collide on name across scopes, the skill is surfaced in disambiguated `plugin:name` form so both remain addressable. Combine with the project-root auto-load behavior in `.claude/rules/plugin-structure.md` (§ Local `.claude/skills` Plugins).
+Skills in **nested** `.claude/skills` directories (not just the project root) now load. When two skills collide on name across scopes, the skill is surfaced in disambiguated `plugin:name` form so both remain addressable. Combine with the project-root auto-load behavior in `.claude/rules/plugin-structure.md` (§ Local `.claude/skills` Plugins). Since 2.1.312 per-directory and `paths:` skills are also found after a Bash `cd` deeper into a git repo.
 
 ### Hiding Bundled Skills (2.1.169+)
 
@@ -294,7 +294,7 @@ Follow this structure for consistency:
 | Workflow-focused | `bun-development`, `bun-package-manager` |
 | Framework-focused | `biome-tooling`, `typescript-strict` |
 
-A skill is found by the `name` in its SKILL.md even when the folder name differs, and the listing shows both (2.1.290). A `name` over 256 characters is ignored (2.1.292).
+A skill is found by the `name` in its SKILL.md even when the folder name differs, and the listing shows both (2.1.290). A `name` over 256 characters is ignored (2.1.292). Before 2.1.312 one command with an invalid name stopped every command from loading, and `claude -p` could end with no output; on older clients, an invalid name anywhere in the loaded set looks like a global outage.
 
 Do not name a skill `verify` unless it is meant to gate commits: since 2.1.286, when project or user skills include one named `verify`, Claude is told to run it right before committing, except for docs-only and tests-only commits. No skill in this marketplace is named `verify`.
 
