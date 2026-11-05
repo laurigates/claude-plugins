@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -283,7 +283,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. `SendMessage` finds a subagent by name again after a CLI restart and resume (2.1.299); a name given before the last compaction still needs the agent ID. Fixed too: background subagents in auto mode sent their final report twice (2.1.299), and messaged subagents vanished from `/tasks` after finishing (2.1.300). Foreground/background defaults per surface: `agent-runtime.md` § Background Execution. What stays here is the per-agent body convention:
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. `SendMessage` finds a subagent by name again after a CLI restart and resume (2.1.299); a name given before the last compaction still needs the agent ID. Fixed too: background subagents in auto mode sent their final report twice (2.1.299), and messaged subagents vanished from `/tasks` after finishing (2.1.300). Security fix (2.1.309): split-pane teammates inherit the tool deny rules and `--tools` rules from the leader's command line; before, they did not, so a leader's command-line deny did not bind them. Foreground/background defaults per surface: `agent-runtime.md` § Background Execution. What stays here is the per-agent body convention:
 
 ### Team Configuration
 

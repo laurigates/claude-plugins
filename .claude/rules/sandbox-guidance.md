@@ -1,6 +1,6 @@
 ---
 created: 2026-03-03
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -130,6 +130,18 @@ If a sandboxed session previously failed to start in a repo that symlinks `.clau
 - On macOS, a denied path was reachable through a symlink; fixed. `allowRead`/`allowWrite` globs are re-checked when their root is replaced by a symlink.
 - `denyRead`/`allowRead` globs containing braces, parentheses or backslashes parse the same in settings checks and in the sandbox, so such a deny no longer matches differently at the two layers.
 - Also fixed: the WSL2 `bwrap` mkdir failure, and an empty `.config.json` left by a sandboxed command that made sign-in, MCP and trust appear lost. If those symptoms appear on an older version, that file is the cause.
+
+### Startup-File, Symlink and Background Hardening (2.1.309)
+
+- Sandboxed Bash on macOS and Linux no longer runs the shell's startup files outside the sandbox before each command.
+- macOS `denyWrite` globs apply at the real path when the folder is reached through a symlink.
+- Linux write denies no longer lift when a background command outlives the session.
+
+Diagnostics: `/sandbox` and the startup warning name Ubuntu's AppArmor restriction on user namespaces, and how to lift it, when it keeps bubblewrap from starting (2.1.310). A `denyRead` glob with brackets that are not a character class no longer stops the sandbox from starting (2.1.304).
+
+### Nested User Namespaces on Linux — `sandbox.allowNestedUserNamespaces` (2.1.305+)
+
+Opt-in setting that lets sandboxed commands on Linux create user namespaces, which Chromium and rootless podman need. Upstream warns that it lets those commands get around the sandbox's file protections, so enable it only for a skill that must run such a tool.
 
 ### Apple Events on macOS — `sandbox.allowAppleEvents` (2.1.181+)
 
@@ -354,6 +366,8 @@ Three later fixes removed per-run prompts for inline code under sandbox auto-all
 An `excludedCommands` glob exempts a compound Bash command from the sandbox only when every part matches; before 2.1.277 one matching part exempted the whole command. Since 2.1.281 a pattern also matches `git rev-parse --git-dir`, programs named like shell builtins, and commit messages containing `[WIP]` or `#`.
 
 Project and local `excludedCommands` entries are ignored when managed settings or `--settings` set `allowUnsandboxedCommands: false`, or managed settings set `allowManagedDomainsOnly: true` (2.1.282). A skill cannot rely on its repo's `.claude/settings.json` to exempt a command in those environments.
+
+When the sandbox is enabled but cannot run, excluded commands ask before writing to the sandbox's write-list paths, and the unsandboxed fallback is refused (2.1.309).
 
 ### `NO_COLOR` / `FORCE_COLOR` Scoping (2.1.143+)
 

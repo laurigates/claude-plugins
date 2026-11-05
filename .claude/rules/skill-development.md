@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -37,7 +37,7 @@ Editing an existing skill hot-reloads, but **adding** a new skill directory need
 | `/reload-skills` command | Re-scans skill directories without restarting the session |
 | `SessionStart` hook returning `reloadSkills: true` | Makes newly installed skills available in the same session |
 
-Since 2.1.299 `/reload-skills` also re-sends the full skill list to the model, which is how to recover skills dropped from view after compaction (skills vanishing from the list after `/rewind` was fixed in 2.1.301).
+Since 2.1.299 `/reload-skills` also re-sends the skill list to the model (skills vanishing from the list after `/rewind` was fixed in 2.1.301). Since 2.1.304 compaction re-sends the list on its own, `/reload-skills` sends only new or changed skills, and resumed and cloud sessions no longer re-send the whole list each time plugins reload at startup. A skill in an `--add-dir` folder whose name is already taken is offered as `<folder>:<name>` (2.1.309).
 
 Use `/reload-skills` after scaffolding a new skill so it becomes invocable immediately. The `SessionStart` hook form is the way an installer hook (e.g. one that drops skills into place on session start) surfaces those skills without a restart.
 
@@ -139,7 +139,7 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Before 2.1.295, a skill's `allowed-tools` and `effort` were dropped when the Skill tool finished before the response stream ended, which denied the skill's Bash commands in `-p` runs — intermittent CI denials on older clients can have this cause. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
 - **`when_to_use`**: Additional triggering guidance beyond `description`, for a skill whose activation conditions need more than one or two sentences to disambiguate from siblings.
 - **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`). Keep brace groups (`{a,b,c}`) modest — a `paths:` value with many brace groups could OOM-kill or stall the CLI at startup before 2.1.217 added a budget bound; the bound caps the blast radius today, but an enormous glob is still wasted startup cost.
-- **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
+- **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent. The skills of one source (a repo, the user's folder or a plugin) share a cap of 1,024 hooks and 16,384 matcher characters per session (2.1.304; `hooks-reference.md`). When policy allows hooks from plugins only, a main-conversation skill whose hooks are kept out also loses its `allowed-tools` (2.1.304).
 
 > **Note**: The `description` field must be a string type. Multi-line YAML strings using `|` or `>` are supported. Non-string values cause a crash (fixed in 2.1.51).
 

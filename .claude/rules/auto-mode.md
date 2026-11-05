@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -29,6 +29,8 @@ Auto mode is conditional on every row of this table. If any row is unmet, auto m
 | Admin | On Team / Enterprise, available by default; admins can disable via `permissions.disableAutoMode` in managed settings |
 
 Admins can lock it off project-wide by setting `permissions.disableAutoMode: "disable"` in [managed settings](https://code.claude.com/docs/en/permissions#managed-settings).
+
+`/auto-mode-setup` (2.1.304) walks through enabling it, including on Bedrock, Vertex, Foundry, the apps gateway and telemetry-off sessions.
 
 A "Auto mode unavailable" message means a requirement above is unmet — it is not a transient outage. A "cannot determine the safety of an action" message is a separate transient classifier outage.
 
@@ -81,7 +83,9 @@ instead of prompting. The guard is best-effort, not airtight — several
 directory-tracking bypasses in this same class were fixed as late as 2.1.271
 and 2.1.273 (multi-`cd` chains, a subshell, a `cd`+`git` chain, and commands
 the permission checker cannot fully analyze), so do not rely on it as a hard
-boundary against adversarial input in a security-sensitive skill.
+boundary against adversarial input in a security-sensitive skill. Since 2.1.310
+the first-read prompt says that blocking those reads also makes shell commands
+ask.
 
 ## What the Classifier Blocks by Default
 
@@ -166,8 +170,8 @@ Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode.
 
 When the classifier blocks an action:
 
-1. The action is denied and a notification surfaces in `/permissions` under "Recently denied"
-2. The user can press `r` to retry it with a manual approval
+1. The action is denied and a notification surfaces in `/permissions` under "Recently denied", which shows the denied command (2.1.307)
+2. The user can press `r` to retry it with a manual approval; the local classifier honours an approval made there (2.1.307)
 3. Claude receives the reason and tries an alternative
 
 If blocking happens **3 times in a row** or **20 times total** in a session, auto mode pauses and Claude Code resumes prompting. Approving the prompted action resumes auto mode. Any allowed action resets the consecutive counter; the total counter persists for the session and only resets when its own threshold triggers a fallback. These thresholds are not configurable.

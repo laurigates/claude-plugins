@@ -174,6 +174,10 @@ done
 | Server asks the user to open a URL | URL-mode elicitation, supported on 2026-07-28 protocol connections (2.1.281) and on 2025-11-25 servers (2.1.287) |
 | Progress lost on a backgrounded tool call | Progress notifications are now kept (2.1.283) |
 | Stdio server process left behind at exit | Servers still starting at session end are cleaned up (2.1.283) |
+| HTTP tool call not retried after a dropped connection | Retried only when the tool is read-only or idempotent (2.1.307); mark such tools so in the server |
+| A `setMcpServers` or cloud-session server replaced by one from the user's settings | Fixed: a same-named server in the user's own settings no longer overrides it (2.1.305) |
+| A managed server the `allowedMcpServers` list used to block now loads | Behaviour change (2.1.305): `allowedMcpServers` no longer filters `managed-mcp.json` stdio servers that use `${VAR}` only in `env`; list the server in `deniedMcpServers` to keep it off |
+| Claude repeats a call after a non-interactive elicitation timed out | Since 2.1.310 the timeout result tells Claude not to repeat the call |
 
 ### SDK MCP server race condition (2.1.49/2.1.50)
 

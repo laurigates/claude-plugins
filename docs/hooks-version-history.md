@@ -12,3 +12,15 @@ Dated record of hook bugs Claude Code has since fixed. [`.claude/rules/hooks-ref
 | 2.1.199 | `SessionStart` | `SessionStart`, `Setup` and `SubagentStart` hooks hid stderr on exit code 2; the error text now shows in the transcript like other command hooks. |
 | 2.1.239 | Remote sessions | Remote/web sessions now send keep-alives while a long `SessionStart`/`Setup` hook runs, so the container is no longer idle-reaped mid-hook (relevant to the 300-600s `SessionStart` timeout recommendation). |
 | 2.1.239 | Working directory | If the session's working directory is deleted mid-session, hooks no longer fail with `posix_spawn ENOENT`; they run from the project root or the user's home directory. |
+| 2.1.72 | Permissions | A `PreToolUse` hook returning `"allow"` could bypass `deny` rules, including managed ones. `deny` rules now always take precedence. |
+| 2.1.74, 2.1.268 | `SessionEnd` | `SessionEnd` hooks were hard-capped at 1.5 seconds regardless of `hook.timeout`. 2.1.74 let `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` raise it for hooks with an explicit per-hook `timeout`; hooks without one stayed capped until 2.1.268. |
+| 2.1.214 | Exit codes | Exit code 2 was silently downgraded to a pass-through when the hook's stdout JSON failed schema validation. It now blocks. |
+| 2.1.233 | `Notification` | `Notification` hooks were silently skipped for permission prompts under Claude Desktop and VS Code. They now fire. |
+| 2.1.275 | Matchers | A `SubagentStop` hook with a specific `matcher` also fired for every stopping subagent whose agent type was empty. |
+| 2.1.285 | Background processes | A synchronous hook that started a background process (`some-daemon &`) holding stdout open hung Claude Code. The hook now finishes shortly after its own process exits. |
+| 2.1.290 | `updatedInput` | Some permission rules and safety checks were not re-applied after a hook rewrote the input with `updatedInput`. |
+| 2.1.292 | Permissions | A hook `allow` (or auto mode) skipped the prompt for file reads from network (UNC) paths. |
+| 2.1.295 | Output | Hooks in background sessions inherited `FORCE_COLOR=3`, which put color escape codes into the output Claude reads. |
+| 2.1.295 | Async | An async hook's JSON output was ignored when printed over several lines, and an async `SessionStart` hook's unchanged context was re-added on every resume. On older clients, emit async JSON on one line (`jq -c`). |
+| 2.1.304 | `PreToolUse` | A `PreToolUse` hook's deny reason was replaced by a timeout error when an Agent SDK callback hook on the same tool call timed out. |
+| 2.1.304 | Headless runs | A plugin could keep a headless run going past `--max-turns`, Stop or ended input by spawning or re-running subagents. |

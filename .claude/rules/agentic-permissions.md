@@ -1,6 +1,6 @@
 ---
 created: 2026-01-16
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -213,6 +213,9 @@ A further round tightened the permission analyzer itself:
 - (2.1.288–2.1.296) Now prompt: a `BASHPID` assignment the shell would evaluate as arithmetic (2.1.288); read-only commands such as `rg` and `git grep` whose arguments the shell would expand as wildcards, `pyright`, which is no longer read-only, more forms of `ps`, and commands whose variable names zsh reads differently from bash (2.1.290); a `BASH_ARGV0` assignment that is then used (2.1.296). For-loops over glob patterns are checked more accurately since 2.1.295.
 - (2.1.289–2.1.290) Under sandbox auto-allow, deny and ask rules no longer miss a command behind an env-var prefix with an expanded value (`TZ="$HOME" rm -rf build`) or a bare assignment (2.1.289); and deny and ask rules no longer miss a name taken from a variable set as a prefix on `declare`/`typeset`/`export`/`readonly` (2.1.290).
 - (2.1.299) `rm` prompts on shell `-c` scripts that never run `rm` were fixed. A run-time-built `rm` inside a script Claude Code cannot read no longer prompts unless `CLAUDE_CODE_STRICT_INLINE_SHELL_RM_PROMPT=1`.
+- (2.1.304) `rm -r` of a mounted drive or a top-level folder (`/Volumes`, `/media`, `/mnt/c`) gets the safety prompt.
+- (2.1.309) Bypasses fixed: the Bash check no longer trusts a variable set by a command whose redirect can fail to open; a wrapped or prefixed `cd` before `git` in a compound command prompts, as a plain `cd` does; an `Edit(path)` deny blocks a Bash redirect to that path in commands that also contain a subshell; on Windows, PowerShell `Set-Location`/`cd` to the current directory with extra arguments prompts. In bypass mode in the Desktop app and VS Code, the dangerous-`rm` prompt denies at once with a rewrite hint.
+- (2.1.309) `sed -i` gets the standard Bash prompt and runs as written, with no simulated file-edit preview, and `/rewind` no longer restores its edits, as with any other Bash edit. The `bash-antipatterns` hook's `sed -i` block keeps its exit 2 on correctness grounds (`hook-block-vs-nudge.md`).
 
 ### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273/2.1.280)
 
@@ -490,6 +493,13 @@ Background sessions launched from `claude agents` honor `permissions.defaultMode
 The `tool_decision` event gains `classifier_verdict`, `permission_mode` and `classifier_category`, which tell a classifier decision apart from a rule decision when auditing why a call ran or was refused.
 
 Classifier model selection (2.1.302): `CLAUDE_CODE_AUTO_MODE_MODEL` picks the **client-side** classifier's model only, and a conversation too long for the server-side classifier's safety check is compacted instead of having every checked call denied; detail in `auto-mode.md`.
+
+### MCP Config and Managed-Policy Changes (2.1.305–2.1.309)
+
+- **Behaviour change (2.1.305):** `allowedMcpServers` no longer filters `managed-mcp.json` stdio servers that use `${VAR}` only in `env`. On upgrade, a server the allowlist used to leave out now loads; list it in `deniedMcpServers` to keep it off.
+- Sandboxed commands and auto-accepted edits cannot modify the file passed with `--mcp-config` (2.1.309). A disabled MCP server is no longer reconnected by a later permission prompt in print and SDK sessions (2.1.309).
+- Under `allowManagedPermissionRulesOnly`, plugins that Claude Desktop mounts by path lose their `allowed-tools` (2.1.305).
+- `claude ultrareview` requires workspace trust (2.1.309): on a terminal it asks, otherwise it refuses. A script passes `--trust-workspace` (no value) or sets `CLAUDE_CODE_DISABLE_ULTRAREVIEW_TRUST_CHECK=1`.
 
 ### Hook `if` Condition Matching (2.1.147+)
 

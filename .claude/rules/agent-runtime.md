@@ -1,6 +1,6 @@
 ---
 created: 2026-10-02
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-10-02
 paths:
   - "**/agents/**"
@@ -114,7 +114,7 @@ Agent tool with run_in_background: true
 
 A background session resumes a carried workflow through the Workflow tool's approval rather than running it from the handoff file (2.1.300). Fixed in 2.1.301: workflow agents sometimes skipped their step, with the run still reporting success, after reading the harness note that their task text carries no user authority (so a green run does not prove every step ran; check each agent's output), and workflow scripts asked for permission after a Bash `cd`. `ScheduleWakeup` did not fire while a background task ran in SDK, IDE and remote-control sessions before 2.1.299.
 
-> **Resume and completion caveats** — `resumeFromRunId` re-runs already-succeeded worktree agents and opens duplicate PRs (#1868); `Workflow` agents are not `SendMessage`-addressable and their worktrees pin branches until a scoped, non-force removal gated on the run's completion notification (#2614). Full mechanics: `agent-patterns-plugin:parallel-agent-dispatch` § "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and its `references/worktree-hazards.md` § "Workflow agents are unreachable and their worktrees pin branches"; cleanup scoping in `.claude/rules/agent-coworker-detection.md`.
+> **Resume and completion caveats** — `resumeFromRunId` re-runs already-succeeded worktree agents and opens duplicate PRs (#1868). Claude Code 2.1.305 says resume serves completed `pipeline()`/`parallel()` agents from the run's journal instead of re-running them; that is unverified here for `isolation: "worktree"` agents, so the #1868 re-dispatch-fresh guidance stays; `Workflow` agents are not `SendMessage`-addressable and their worktrees pin branches until a scoped, non-force removal gated on the run's completion notification (#2614). Full mechanics: `agent-patterns-plugin:parallel-agent-dispatch` § "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and its `references/worktree-hazards.md` § "Workflow agents are unreachable and their worktrees pin branches"; cleanup scoping in `.claude/rules/agent-coworker-detection.md`.
 
 > **Script-authoring caveat — a `.then` wrapper hides `agent()` failures from `filter(Boolean)`.** A failed/killed `agent()` resolves to `null`, but the idiomatic label-attaching wrapper `agent(...).then(r => ({ pair, judge, r }))` re-wraps that `null` in a **truthy object**, so `results.filter(Boolean)` passes it straight through and the `null` payload explodes later (e.g. `jr.dimensions` at the final rollup — this crashed a 24-agent run at the last step, after all judging cost was spent). Filter on the payload field, not the wrapper: `results.filter(x => x && x.r)` — and guard rollup loops (`jr && jr.dimensions`) so one dead agent degrades to a gap instead of aborting the run. (Benchmark run `wf_9e402a8b`, 2026-07-03.)
 
