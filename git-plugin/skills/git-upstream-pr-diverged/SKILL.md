@@ -5,7 +5,7 @@ args: "<sha> [--topic <slug>]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git remote *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git cherry-pick *), Bash(git reset *), Bash(git commit *), Bash(git push *), Bash(git stash *), Bash(git rev-list *), Bash(git rev-parse *), Bash(git branch *), Bash(git cat-file *), Bash(git patch-id *), Bash(gh pr *), Bash(gh repo *), Bash(bash *), Bash(uv *), Bash(pytest *), Bash(ruff *), Bash(python3 *), Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: "<sha-to-send-upstream>"
 created: 2026-04-29
-modified: 2026-06-18
+modified: 2026-11-04
 reviewed: 2026-04-29
 ---
 
@@ -26,33 +26,7 @@ Submit a single commit from a heavily-diverged fork back to upstream as a clean,
 
 ## Configuration
 
-Per-project configuration lives at `.claude/upstream-pr.local.md` (gitignored). All fields are optional; sensible defaults apply.
-
-```markdown
----
-upstream_remote: upstream
-upstream_repo: owner/repo
-branch_prefix: pr-upstream/
-linter_cmd: uv run ruff check
-test_cmd: uv run pytest -q
-pr_body_template_path: docs/UPSTREAM_PR_TEMPLATE.md
----
-
-# Notes
-
-Free-form notes — fork drift hotspots, files to never touch upstream, etc.
-```
-
-| Field | Default | Used by |
-|-------|---------|---------|
-| `upstream_remote` | `upstream` | All scripts |
-| `upstream_repo` | Parsed from `git remote get-url <upstream_remote>` | `gh pr create --repo` |
-| `branch_prefix` | `pr-upstream/` | Branch name in `prepare-branch.sh` |
-| `linter_cmd` | (empty — pre-flight skipped) | Pre-flight stash-roundtrip |
-| `test_cmd` | (empty — pre-flight skipped) | Pre-flight stash-roundtrip |
-| `pr_body_template_path` | (empty — built-in template) | PR body |
-
-Add `.claude/*.local.md` to `.gitignore`.
+Optional per-project settings live in `.claude/upstream-pr.local.md` (gitignored): `upstream_remote` (default `upstream`), `upstream_repo`, `branch_prefix` (default `pr-upstream/`), `linter_cmd` and `test_cmd` (empty skips the pre-flight), `pr_body_template_path`. Field table, defaults and an example file: [REFERENCE.md § Configuration](REFERENCE.md#configuration).
 
 ## Context
 
@@ -129,7 +103,7 @@ Re-derive is the right call when:
 - Upstream's version of the file has **additional lines the fork removed** — re-derive lets you cover them with the same heuristic rather than rationalizing missing hunks.
 - The cherry-pick conflict count exceeds roughly **20 blocks across >2 files**.
 
-Heuristic: extract the original commit's `before → after` map (e.g. `git show <sha> | grep -E '^[-+].*pattern'`) and use it as the rulebook when re-applying against upstream. The PR body should disclose the re-derive (see template below).
+Heuristic: extract the original commit's `before → after` map (e.g. `git show <sha> | grep -E '^[-+].*pattern'`) and use it as the rulebook when re-applying against upstream. The PR body should disclose the re-derive (see [REFERENCE.md § Built-in PR body template](REFERENCE.md#built-in-pr-body-template)).
 
 ### Step 4: Pre-flight regression check
 
@@ -195,40 +169,10 @@ git push origin <branch>
 gh pr create --repo <upstream_repo> --base main \
   --head <fork-owner>:<branch> \
   --title "<conventional-commit subject>" \
-  --body "<see body template below>"
+  --body "<body template: REFERENCE.md>"
 ```
 
-If `pr_body_template_path` is configured, use that template; otherwise use the built-in template:
-
-```markdown
-## Description
-
-<one or two paragraphs explaining the problem and the fix from the
-maintainer's perspective — not from the fork's perspective>
-
-## Related Issue(s)
-
-None.  <or upstream issue numbers only>
-
-## Type of Change
-
-- [x] Bug fix (non-breaking change that fixes an issue)
-
-## Testing Performed
-
-- [x] `<linter_cmd> <changed-files>` — N issues (matches upstream baseline)
-- [x] `<test_cmd>` — M passed (matches upstream baseline)
-
-## Notes
-
-Originally authored on a downstream fork; the branch was cut from
-`<upstream_repo>:main` and a single commit cherry-picked onto it so
-it applies cleanly.
-
-<If re-derived: "The fork's version of this change collided heavily with
-upstream's current code; the diff was re-derived against upstream's files
-using the original commit's transformation rules.">
-```
+If `pr_body_template_path` is configured, use that template; otherwise use the built-in one in [REFERENCE.md § Built-in PR body template](REFERENCE.md#built-in-pr-body-template).
 
 ## Agentic Optimizations
 

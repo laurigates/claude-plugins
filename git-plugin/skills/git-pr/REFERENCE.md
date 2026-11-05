@@ -218,3 +218,62 @@ Fixes #123
 Refs #456
 Refs #457
 ```
+
+## Follow-up issue example (Step 3)
+
+```bash
+# Create a follow-up issue
+gh issue create \
+  --title "[Chore] DB: Run migration for new schema" \
+  --body "Follow-up to PR that adds user_preferences.\n\nRun: rake db:migrate in production after deploy."
+# Returns: https://github.com/org/repo/issues/456
+```
+
+## Short bodies over stdin (Step 4)
+
+For a short body you can skip the tempfile and stream it over stdin with `--body-file -` and a **quoted** heredoc:
+
+```bash
+gh pr create --title "feat(scope): add feature" --body-file - <<'EOF'
+## Summary
+Use `code`, ${vars}, and $shell syntax freely — they render verbatim.
+EOF
+```
+
+**Inside `<<'EOF'` (quoted delimiter), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` survives into the rendered PR description and needs a follow-up `gh pr edit --body-file` to clean up. (The `Write` tool → `--body-file` path in [SKILL.md](SKILL.md) Step 4 sidesteps the question entirely and stays the default for non-trivial bodies.)
+
+## Draft status dependencies
+
+| Dependency | How to record it |
+|------------|------------------|
+| PR in the same repo | Stack it: `--base <parent-branch>`; see `git-plugin:git-stacked-prs`. Name the parent in the section as a full URL |
+| PR in another repo | Full URL in the section: `Blocked by https://github.com/<owner>/<repo>/pull/<n>` |
+
+Write every blocking PR as a full URL; the sweep marks the draft ready only when
+all of them have merged. GitHub's `blocked_by` issue dependencies link issues
+only (`gh pr` has no `--blocked-by` flag), so the body is the record.
+
+## Pre-merge Verification
+
+Keep pre-merge checks (tests pass, docs updated, breaking changes documented)
+out of the body: a squash merge on a `PR_BODY` repo copies the body into `git log`, where a
+`- [ ]` checklist is noise. Verify them through CI or say so in a PR comment.
+
+Post-merge steps never go in the body either. PR descriptions are closed and
+buried after merge, so post-merge actions are tracked as GitHub issues and
+linked with `Refs #N` (see [REFERENCE.md](REFERENCE.md) § Post-Merge Follow-up Issues).
+
+## Quick Reference
+
+| Action | Command |
+|--------|---------|
+| Create PR | `gh pr create --title "..." --body-file /tmp/pr-body.md` |
+| Draft PR | `gh pr create --draft` |
+| View PR | `gh pr view` |
+| Edit PR | `gh pr edit --title "..." --body-file /tmp/pr-body.md` |
+| List PRs | `gh pr list` |
+| Check status | `gh pr checks` |
+| Verify closing keywords | `gh pr view <num> --json body --jq .body \| grep -oiE '(closes\|fixes\|resolves)[[:space:]]+#[0-9]+'` |
+| Check for stacked dependents | `gh pr list --base <head> --state open --json number,title` |
+| Merge stacked parent | `gh pr merge --<method>` (omit `--delete-branch`; method from [merge-strategies.md](../github-pr-title/merge-strategies.md)) |
+| Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/issue-body.md` |

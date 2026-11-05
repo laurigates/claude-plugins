@@ -13,3 +13,9 @@ options:
   - label: "I'm done for now"
     description: "Exit - work-order is saved and ready"
 ```
+
+**Based on selection:**
+- "Execute this work-order" → Run `/project:continue` with work-order context
+- "Create another work-order" → Run `/blueprint:work-order` again
+- "Delegate to subagent" → Provide handoff instructions for subagent execution
+- "I'm done" → Exit

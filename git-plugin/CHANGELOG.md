@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.69.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.1...git-plugin-v2.69.2) (2026-11-04)
+
+
+### Code Refactoring
+
+* **git-plugin:** move git-commit-push-pr detail to REFERENCE.md ([fd9f65f](https://github.com/laurigates/claude-plugins/commit/fd9f65fb34b01809632611aef959b44bd2955bed))
+* **git-plugin:** move git-commit-workflow detail to REFERENCE.md ([a887e3e](https://github.com/laurigates/claude-plugins/commit/a887e3ef9eebfc68d0dd6f133a6bbafdec19384d))
+* **git-plugin:** move git-conflicts detail to REFERENCE.md ([f36f304](https://github.com/laurigates/claude-plugins/commit/f36f3044249236de361363f2efdc43d98a373170))
+* **git-plugin:** move git-coworker-check detail to REFERENCE.md ([d3495e1](https://github.com/laurigates/claude-plugins/commit/d3495e14a6dcf066740f31c3cbc6d97627f3402b))
+* **git-plugin:** move git-fork-workflow detail to REFERENCE.md ([db33e58](https://github.com/laurigates/claude-plugins/commit/db33e582e9fcba3cd95907c209eb2eea18b5c480))
+* **git-plugin:** move git-local-hazards detail to REFERENCE.md ([dfe75cd](https://github.com/laurigates/claude-plugins/commit/dfe75cdc8f1c80d381b8bdbab94381fdba57a402))
+* **git-plugin:** move git-merge-driver detail to REFERENCE.md ([34b8b53](https://github.com/laurigates/claude-plugins/commit/34b8b530cc5decff4ecd7e968f2157a607461adc))
+* **git-plugin:** move git-pr detail to REFERENCE.md ([dfac39e](https://github.com/laurigates/claude-plugins/commit/dfac39e59abcd08c2481a62b3ed18b4b7122618f))
+* **git-plugin:** move git-triage detail to REFERENCE.md ([f80b86c](https://github.com/laurigates/claude-plugins/commit/f80b86c5559a1e714b5d1563ffb377f412861165))
+* **git-plugin:** move git-upstream-pr-diverged detail to REFERENCE.md ([899ec5d](https://github.com/laurigates/claude-plugins/commit/899ec5d3fa00b8b671944d050d85d7f8abaebcda))
+
+## [2.69.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.0...git-plugin-v2.69.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **git-plugin,taskwarrior-plugin:** auto-merge reporting, PR issue-link opt-out, reconcile --all refs, skill portability check ([#3412](https://github.com/laurigates/claude-plugins/issues/3412)) ([d4ae41b](https://github.com/laurigates/claude-plugins/commit/d4ae41b4160b1f6f946e2d969de7c198004d6e3b)), closes [#3401](https://github.com/laurigates/claude-plugins/issues/3401) [#3404](https://github.com/laurigates/claude-plugins/issues/3404) [#3387](https://github.com/laurigates/claude-plugins/issues/3387) [#3308](https://github.com/laurigates/claude-plugins/issues/3308)
+
 ## [2.69.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.4...git-plugin-v2.69.0) (2026-11-03)
 
 

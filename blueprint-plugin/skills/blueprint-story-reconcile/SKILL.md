@@ -198,24 +198,9 @@ Use AskUserQuestion to surface the obvious follow-on:
 - **Re-run the audit to confirm green** → invoke `/blueprint:story-audit`
 - **I'm done** → exit
 
-## What this skill deliberately does NOT do
+## Scope and Idempotency
 
-| Off-limits | Why |
-|------------|-----|
-| Edit source code | Code changes go through `/blueprint:work-order` so the change has a TDD packet behind it |
-| Delete unimplemented requirements | They are the roadmap. `❌` is a tracked status, not a delete signal. |
-| Auto-create GitHub issues for drift | Audit + reconcile are local artifacts; issue filing is an explicit user action |
-| Renumber FRs to "tidy up" | FR numbers are referenced from tests, commits, and other PRDs — renumbering is an unsafe, non-idempotent edit |
-| Commit changes | Commit boundaries are the user's decision; this skill prints the suggested message and stops |
-
-## Idempotency
-
-Re-running this skill against the same audit + same PRDs must be a no-op. The two mechanisms:
-
-1. Inline status markers (`⚠️ `, `❌ `, `🆕 `) are detected before insertion. If the requirement line already starts with the right marker, skip.
-2. The `## Known Drift` section is **replaced wholesale** by the new content, never appended.
-
-If a re-run produces changes, that is a bug — file it.
+The off-limits table (source code, deleting requirements, issue filing, FR renumbering, commits) is in [REFERENCE.md](REFERENCE.md#what-this-skill-deliberately-does-not-do); the two no-op-on-re-run mechanisms are in [REFERENCE.md](REFERENCE.md#idempotency).
 
 ## Agentic Optimizations
 
