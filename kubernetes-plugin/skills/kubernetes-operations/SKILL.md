@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-31
+modified: 2026-11-05
 reviewed: 2026-04-25
 name: kubernetes-operations
 description: "Kubernetes operations — deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
@@ -182,3 +182,5 @@ kubectl --context=<ctx> get crd <name> --show-managed-fields -o json \
 | Logs (bounded) | `kubectl logs <pod> -n <ns> --tail=50` |
 
 For detailed debugging commands, troubleshooting patterns, Helm workflows, and advanced K8s operations, see REFERENCE.md.
+
+To move a StatefulSet to a new source (chart to plain manifests, a new image) while keeping its PVC, see [references/statefulset-in-place-migration.md](references/statefulset-in-place-migration.md). Keep the immutable fields identical, and prove the change with a server-side dry run plus a control that must fail.
