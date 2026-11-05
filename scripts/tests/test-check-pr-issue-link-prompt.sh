@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Self-test for scripts/check-pr-issue-link-prompt.sh (issue #3404).
+# Self-test for scripts/check-pr-issue-link-prompt.sh (issues #3404, #3413).
 #
-# Runs the guard over the real git-plugin/hooks.json, over the pre-fix prompt
-# (must fail on the three opt-out rules and nothing else), and over single
+# Runs the guard over the real git-plugin/hooks.json, over the pre-#3404 prompt
+# (fails on the three opt-out and three non-closing-ref rules), over the
+# pre-#3413 prompt (fails on exactly the three non-closing-ref rules), and over single
 # mutations of the fixed prompt, so a guard that stops seeing a rule fails here.
 #
 # Run: bash scripts/tests/test-check-pr-issue-link-prompt.sh
@@ -15,7 +16,7 @@ REAL="$ROOT_DIR/git-plugin/hooks.json"
 MATCHER="mcp__github__create_pull_request"
 
 WORK=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
-[ -n "$WORK" ] && [ -d "$WORK" ] || { echo "mktemp -d returned no directory" >&2; exit 1; }
+if [ -z "$WORK" ] || [ ! -d "$WORK" ]; then echo "mktemp -d returned no directory" >&2; exit 1; fi
 trap 'rm -rf "$WORK"' EXIT
 
 PASS=0
@@ -64,13 +65,39 @@ prefix_prompt='Check the '"'"'body'"'"' field in tool_input for GitHub issue clo
 f=$(write_fixture prefix "$prefix_prompt")
 out=$(bash "$GUARD" --hooks-json "$f")
 assert_contains "B1: pre-fix STATUS=ERROR" "STATUS=ERROR" "$out"
-assert_contains "B2: pre-fix ISSUE_COUNT=3" "ISSUE_COUNT=3" "$out"
+assert_contains "B2: pre-fix ISSUE_COUNT=6 (three opt-out + three non-closing-ref rules)" "ISSUE_COUNT=6" "$out"
 assert_contains "B3: pre-fix names optout_phrase" "TYPE=optout_phrase" "$out"
 assert_contains "B4: pre-fix names optout_passes" "TYPE=optout_passes" "$out"
 assert_contains "B5: pre-fix names reason_names_optout" "TYPE=reason_names_optout" "$out"
 assert_lacks "B6: pre-fix keeps the existing contract" "TYPE=contract_" "$out"
 assert_exit "B7: pre-fix exits 1 under --strict" 1 bash "$GUARD" --hooks-json "$f" --strict
 assert_valid_contract "B8: ERROR output satisfies the structured-output contract" "$out"
+
+# F: the pre-#3413 prompt (origin/main after #3404) fails on exactly the
+# three non-closing-reference rules: it has the opt-out but blocks `Refs #N`.
+IFS= read -r -d '' pre3413_prompt <<'EOF' || true
+Check the 'body' field in tool_input for GitHub issue closing keywords: closes, fixes, resolves (case-insensitive, followed by #N or owner/repo#N). If the body already contains closing keywords, return {"ok": true}. If the body contains a line starting 'No linked issue:' (case-insensitive) followed by a reason, the author is stating that no issue exists for this PR, so return {"ok": true}; do not judge whether the reason is good enough. If the PR title or body is clearly for infrastructure, documentation, or dependency updates with no bug or feature issue to close, return {"ok": true}. If the title or body describes a bug fix or feature implementation but the body has neither closing keywords nor a 'No linked issue:' line, return {"ok": false, "reason": "PR body is missing issue closing keywords. Add 'Closes #N', 'Fixes #N', or 'Resolves #N' to automatically close the related issue when this PR merges to the default branch. Use 'Fixes' for bugs, 'Closes' for features/enhancements, 'Resolves' for general issues. For multiple issues repeat the keyword: Fixes #1, Fixes #2. If no issue exists for this work, add a line 'No linked issue: <reason>' instead; do not create an issue only to close it."}
+EOF
+pre3413_prompt="${pre3413_prompt%$'\n'}"
+f=$(write_fixture pre3413 "$pre3413_prompt")
+out=$(bash "$GUARD" --hooks-json "$f")
+assert_contains "F1: pre-#3413 STATUS=ERROR" "STATUS=ERROR" "$out"
+assert_contains "F2: pre-#3413 ISSUE_COUNT=3" "ISSUE_COUNT=3" "$out"
+assert_contains "F3: pre-#3413 names nonclosing_ref_phrase" "TYPE=nonclosing_ref_phrase" "$out"
+assert_contains "F4: pre-#3413 names nonclosing_ref_passes" "TYPE=nonclosing_ref_passes" "$out"
+assert_contains "F5: pre-#3413 names reason_names_nonclosing_ref" "TYPE=reason_names_nonclosing_ref" "$out"
+assert_lacks "F6: pre-#3413 keeps the opt-out rules" "TYPE=optout" "$out"
+assert_exit "F7: pre-#3413 exits 1 under --strict" 1 bash "$GUARD" --hooks-json "$f" --strict
+assert_valid_contract "F8: pre-#3413 output satisfies the structured-output contract" "$out"
+
+# G: dropping only the non-closing-ref hint from the block reason fails reason_names_nonclosing_ref alone.
+ref_hint=" If the PR is part of a larger issue it should not close, reference it with 'Refs #N' or 'Part of #N' instead of a closing keyword."
+grep -qF -- "$ref_hint" <<<"$real_prompt" || fail "G0: real prompt carries the exact ref hint G removes"
+mutated="${real_prompt/"$ref_hint"/}"
+f=$(write_fixture no-ref-hint "$mutated")
+out=$(bash "$GUARD" --hooks-json "$f")
+assert_contains "G1: ref-hint-less reason names reason_names_nonclosing_ref" "TYPE=reason_names_nonclosing_ref" "$out"
+assert_contains "G2: ref-hint-less reason is the only finding" "ISSUE_COUNT=1" "$out"
 
 # C: dropping only the opt-out hint from the block reason fails reason_names_optout alone.
 mutated="${real_prompt% If no issue exists*}\"}"
