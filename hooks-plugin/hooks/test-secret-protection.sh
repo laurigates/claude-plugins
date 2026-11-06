@@ -800,6 +800,46 @@ else
     assert_exit "a here-string (not the allowlisted argument shape) still blocks" 2 \
         'gh issue comment 1 --body-file - <<< "cat .env"'
 
+    # Issue #3424: a secret variable named only inside a single-quoted script
+    # that runs remotely (`kubectl exec … -- sh -c '…'`, `ssh host '…'`) is
+    # never expanded by the local shell, so the secret-variable check lifts.
+    echo ""
+    echo "remote single-quoted scripts naming a secret variable (#3424):"
+    assert_exit "kubectl exec -- sh -c '…\$REDIS_PASSWORD…' (issue repro) is allowed" 0 \
+        "kubectl --context prod -n redis exec redis-master-0 -- sh -c 'export REDISCLI_AUTH=\"\$REDIS_PASSWORD\"; redis-cli INFO keyspace; redis-cli INFO persistence | grep -E \"aof_enabled\"'"
+    assert_exit "ssh host 'echo \"\$X_PASSWORD\"' is allowed" 0 \
+        "ssh host 'echo \"\$X_PASSWORD\"'"
+    assert_exit "ssh -p 2222 user@host 'printf %s \${DB_PASSWORD}' is allowed" 0 \
+        "ssh -p 2222 user@host 'printf %s \${DB_PASSWORD}'"
+    # Controls: local expansion, local execution, or a secret reference the
+    # local shell expands anywhere else in the command keeps the block.
+    assert_exit "echo \$REDIS_PASSWORD still blocks" 2 'echo $REDIS_PASSWORD'
+    assert_exit "kubectl exec -- sh -c \"echo \$REDIS_PASSWORD\" (double-quoted, local expansion) still blocks" 2 \
+        'kubectl exec pod -- sh -c "echo $REDIS_PASSWORD"'
+    assert_exit "kubectl exec -- echo \$REDIS_PASSWORD (unquoted, local expansion) still blocks" 2 \
+        'kubectl exec pod -- echo $REDIS_PASSWORD'
+    assert_exit "sh -c '…' runs locally: still blocks" 2 "sh -c 'echo \$REDIS_PASSWORD'"
+    assert_exit "kubectl exec without -- (script not after the separator) still blocks" 2 \
+        "kubectl exec pod 'echo \$X_TOKEN'"
+    assert_exit "kubectl get (not exec) with a single-quoted script still blocks" 2 \
+        "kubectl get pods 'echo \$X_TOKEN'"
+    assert_exit "ssh with a locally expanded secret after the remote script still blocks" 2 \
+        "ssh host 'echo hi' \$X_TOKEN"
+    assert_exit "ssh with a secret fed on stdin by a here-string still blocks" 2 \
+        "ssh host 'cat -' <<<\"\$API_TOKEN\""
+    assert_exit "ssh -o ProxyCommand (runs locally) still blocks" 2 \
+        "ssh -o 'ProxyCommand=echo \$X_TOKEN' host"
+    assert_exit "ssh output piped to a local shell still blocks" 2 \
+        "ssh host 'echo \$X_TOKEN' | sh"
+    assert_exit "ssh inside a command substitution still blocks" 2 \
+        "out=\$(ssh host 'echo \$X_TOKEN')"
+    assert_exit "a local echo after a remote script still blocks" 2 \
+        "kubectl exec pod -- sh -c 'echo \$X_TOKEN'; echo \$X_TOKEN"
+    assert_exit "ssh rebound as a function: no exemption" 2 \
+        "ssh() { eval \"\$2\"; }; ssh host 'echo \$X_TOKEN'"
+    assert_exit "FOO=1 ssh (not the plain remote shape) still blocks" 2 \
+        "FOO=1 ssh host 'echo \$X_TOKEN'"
+
     # Fail-safe polarity: with the parser suppressed, the regex alone decides.
     rc=0
     jq -nc --arg cmd 'git commit -m "docs: never cat .env in CI"' '{tool_name:"Bash",tool_input:{command:$cmd}}' \
@@ -824,7 +864,13 @@ else
     SQ_CONTEXTS=("bash -c 'X'" "sh -c 'X'" "ssh host 'X'" "eval 'X'" "watch 'X'" "Y='X'; eval \"\$Y\"")
     SPELLINGS=()
     for r in "${READS[@]}"; do
-        for c in "${CONTEXTS[@]}" "${SQ_CONTEXTS[@]}"; do SPELLINGS+=("${c%%X*}$r${c#*X}"); done
+        for c in "${CONTEXTS[@]}" "${SQ_CONTEXTS[@]}"; do
+            # A secret-variable print inside `ssh host '…'` runs on the remote
+            # host and is allowed since #3424 (asserted above), so the pre-fix
+            # baseline's block of it is not a lost block.
+            case "$c|$r" in "ssh host 'X'|echo "* | "ssh host 'X'|printf "*) continue ;; esac
+            SPELLINGS+=("${c%%X*}$r${c#*X}")
+        done
         SPELLINGS+=("$(heredoc "bash <<'EOF'" "$r")")
         SPELLINGS+=("$(heredoc 'git commit -F - <<EOF' "\$($r)")")
         SPELLINGS+=("$(heredoc 'gh pr create --title t --body-file - <<EOF' "\`$r\`")")

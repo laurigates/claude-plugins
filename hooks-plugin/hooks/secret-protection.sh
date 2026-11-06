@@ -96,6 +96,21 @@ block() {
 #   - an unquoted-delimiter heredoc body holding a backtick: tree-sitter-bash
 #     does not parse a backtick substitution there (`$(…)` it does).
 #
+# One more exemption applies to the secret-VARIABLE check only (issue #3424):
+# a single-quoted script run on another host, which the local shell never
+# expands — `kubectl … exec … -- sh -c '… $REDIS_PASSWORD …'`, `ssh host
+# 'echo "$X_PASSWORD"'`. A raw_string (single-quoted argument) is remote
+# (rule `r`) when it is a direct argument of a command whose text starts with
+# `ssh ` (and names no `*Command` option: ProxyCommand/LocalCommand run
+# locally), or with `kubectl … exec ` and the argument comes after `--`; and
+# the command is not inside a pipeline or a `$(…)`/`<(…)`, whose output a
+# local program could run. The remote exemption is dropped for the whole
+# command when a secret-variable reference appears anywhere outside those
+# remote scripts (`ssh host 'cat -' <<<"$API_TOKEN"`, `ssh host 'x' $X_TOKEN`):
+# the local shell expands that one. `bash -c '…'`, `sh -c '…'`, `eval '…'` and
+# `watch '…'` run locally and stay blocked. Sensitive-FILE reads inside a
+# remote script (`ssh host 'cat .env'`) are not covered and still block.
+#
 # The re-check reads COMMAND with every backslash-newline continuation turned
 # into two spaces (SP_VIEW, same byte length so the parser's offsets still
 # line up), so a read the shell joins across lines is seen as one line.
@@ -169,6 +184,27 @@ rule:
                           - kind: concatenation
                             inside: @CMD@
 ---
+id: r
+language: bash
+rule:
+  kind: raw_string
+  any:
+    - inside:
+        kind: command
+        regex: '^ssh\s'
+        not: { regex: '(?i)command' }
+    - inside:
+        kind: command
+        regex: '^kubectl\s(.*\s)?exec\s'
+      follows: { kind: word, regex: '^--$', stopBy: end }
+  not:
+    inside:
+      stopBy: end
+      any:
+        - kind: pipeline
+        - kind: command_substitution
+        - kind: process_substitution
+---
 id: err
 language: bash
 rule:
@@ -189,6 +225,8 @@ SP_STATE=""     # "" = not built yet, "floor" = exempt nothing, "ready"
 SP_N_START=()
 SP_N_END=()
 SP_EXEMPT=" "   # " start:end start:end … "
+SP_REMOTE=" "   # rule `r` ranges, same shape; honored only while SP_REMOTE_ON=1
+SP_REMOTE_ON=0
 
 sp_build() {
   local astgrep="" out rows id s e
@@ -208,9 +246,27 @@ sp_build() {
       err) return 0 ;;
       n) SP_N_START+=("$s"); SP_N_END+=("$e") ;;
       e) SP_EXEMPT+="$s:$e " ;;
+      r) SP_REMOTE+="$s:$e " ;;
     esac
   done <<<"$rows"
   SP_STATE="ready"
+  sp_remote_guard
+}
+
+# Drop every remote range (#3424) when a secret-variable reference survives
+# outside them: the local shell expands that reference, so no part of the
+# command gets the remote exemption.
+sp_remote_guard() {
+  local LC_ALL=C masked=$SP_VIEW r s e pad
+  [ "$SP_REMOTE" = " " ] && return 0
+  for r in $SP_REMOTE; do
+    s=${r%%:*}
+    e=${r##*:}
+    printf -v pad '%*s' "$((e - s))" ''
+    masked="${masked:0:s}${pad}${masked:e}"
+  done
+  if grep -Eq "$SP_SECRETVAR" <<<"$masked"; then SP_REMOTE=" "; fi
+  return 0
 }
 
 # Exit 0 when byte offset $1 of COMMAND lies in exempt text (see above).
@@ -228,6 +284,9 @@ sp_offset_exempt() {
   done
   [ "$best" -ge 0 ] || return 1
   case "$SP_EXEMPT" in *" $best_s:$best_e "*) return 0 ;; esac
+  if [ "$SP_REMOTE_ON" = 1 ]; then
+    case "$SP_REMOTE" in *" $best_s:$best_e "*) return 0 ;; esac
+  fi
   return 1
 }
 
@@ -343,7 +402,15 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   secret_var_verbs='(echo|printf|cat|env|printenv|export)'
   # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
   secret_var_re="(^${secret_var_verbs}|[^A-Za-z0-9_.-]${secret_var_verbs})"'[[:space:]][^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
-  if grep -Eq "$secret_var_re" <<<"$SP_VIEW" && sp_confirm "$secret_var_verbs" "$secret_var_re" 1; then
+  # SP_REMOTE_ON adds the remote single-quoted script exemption (#3424) for
+  # this check only.
+  sp_secret_var_blocks=0
+  if grep -Eq "$secret_var_re" <<<"$SP_VIEW"; then
+    SP_REMOTE_ON=1
+    sp_confirm "$secret_var_verbs" "$secret_var_re" 1 && sp_secret_var_blocks=1
+    SP_REMOTE_ON=0
+  fi
+  if [ "$sp_secret_var_blocks" = 1 ]; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 ${OVERRIDE_NOTE}"
