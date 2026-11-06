@@ -199,7 +199,15 @@ config file; the tuple form carries the options):
   the plugin file's location), `k` (push top-k, default 5), `endpoint` /
   `model` (embeddings; default `http://localhost:11434` /
   `nomic-embed-text`), `pins` (skill ids always injected first; unknown ids
-  warn and skip). Invalid values warn and fall back to defaults.
+  warn and skip), `sessionNudges` (default `true`; `false` turns off
+  session-plugin's spinup and end nudges). Invalid values warn and fall back
+  to defaults.
+- Runs session-plugin's spinup and end nudges (`opencode/session-nudges.ts`,
+  #2802): the SessionStart hook script on `session.created`, its context
+  pushed onto the system prompt until the session settles, and the Stop
+  hook's gates over the session's messages on idle, with the offer sent by
+  `session.promptAsync`. See
+  [`docs/opencode-export.md`](../docs/opencode-export.md) § Session nudges.
 - Push injection rides `experimental.chat.system.transform` (declared
   unconditionally — older OpenCode versions silently never call unknown
   hook names) and ranks against the latest user message captured via

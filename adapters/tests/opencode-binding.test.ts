@@ -123,6 +123,7 @@ describe("options handling (resolveOptions)", () => {
       endpoint: DEFAULT_ENDPOINT,
       model: DEFAULT_MODEL,
       pins: [],
+      sessionNudges: true,
     });
     expect(warnings).toEqual([]);
   });
