@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit [--runs 3] [--baseline] [--harness headles
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-10-05
+modified: 2026-11-05
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -129,7 +129,7 @@ Look for `<plugin-name>/skills/<skill-name>/evals.json`.
    - `description`: What this test validates
    - `prompt`: The user prompt to simulate
    - `expected_outcome`: `abstain` on the abstention control; omit it (defaults to `comply`) elsewhere
-   - `expectations`: List of assertion strings the output should satisfy
+   - `expectations`: What the output must satisfy. Sort each criterion you derive from the SKILL.md and the eval prompt. A **hard rule** a pattern can check (a required prefix, an issue reference, a forbidden phrase) becomes a typed object: `regex` or `substring` for what must appear, `absent_regex` for what must not. Only a **graded principle** (tone, completeness, "explains the trade-off") stays a bare string, which grades as `judge`. Shapes: `evaluate-plugin/references/schemas.md` § Typed Checks (deterministic grading); rationale: `.claude/rules/skill-evaluation.md` Principle 1. Expectations are fixed before any run output exists and are never rewritten after outputs have been seen, because criteria shaped by the responses they grade carry a measured bias (arXiv 2610.18766).
    - `tags`: Categorization tags
 4. Write the generated cases to `<plugin-name>/skills/<skill-name>/evals.json`.
 
