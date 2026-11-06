@@ -22,6 +22,11 @@ the exceptions listed in this file. Read it when syncing that rule.
   the three §2 bullets **Check the base first**, **No-force alternative** and
   **Delta-apply**. The chezmoi rule does not carry those three §2 bullets yet. Mirror them there, or the
   next sync removes them from this skill.
+- Skill-only, not in `pr-merge-hazards.md`: §2's **Fork PR on an open upstream
+  PR's head** bullet and [fork-upstream-base.md](fork-upstream-base.md) (#3445).
+  Mirror the bullet into the chezmoi rule, or the next sync removes it from this
+  skill. The Agentic Optimizations table dropped its merge-over-red row to make
+  room under the 10,000-character band; §4's prose carries the same two checks.
 - Skill-only, not in the body of `pr-merge-hazards.md`: §1's REVIEW-bucket sentence,
   the last sentence of the **Fix** bullet (#2268). The chezmoi rule keeps that
   sentence in its notes outside the body. Move it into the body there, or the next

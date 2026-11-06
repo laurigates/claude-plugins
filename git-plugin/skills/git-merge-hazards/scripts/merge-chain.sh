@@ -58,6 +58,11 @@
 # PR is touched. Release-please and Renovate PRs are skipped; they have their
 # own merge flows.
 #
+# Upstream PRs: when --repo is a fork, a PR whose base branch is not the default
+# branch and is the head of an open PR in the fork's parent is skipped
+# (base_is_upstream_pr_head), because merging it pushes into that upstream PR
+# (#3445). An unreadable repository or parent PR list is ERROR.
+#
 # Exit: 0 when STATUS is OK or WARN, 1 on ERROR, 2 on a usage error.
 
 set -uo pipefail
@@ -167,6 +172,19 @@ result() { PR_STATUS="$1"; PR_REASON="${2:-}"; }
 
 view() { gh pr view "$1" -R "$MC_REPO" --json "$2" 2>/dev/null; }
 
+# Repository metadata, read once per run: the default branch, and the fork
+# parent (empty when --repo is not a fork). Returns 1 when it cannot be read.
+MC_DEFAULT_BRANCH=""
+MC_PARENT=""
+repo_meta() {
+  [ -n "$MC_DEFAULT_BRANCH" ] && return 0
+  local j
+  j=$(gh api "repos/$MC_REPO" 2>/dev/null) || return 1
+  MC_DEFAULT_BRANCH=$(jq -r '.default_branch // ""' <<<"$j") || return 1
+  MC_PARENT=$(jq -r 'if .fork then (.parent.full_name // "") else "" end' <<<"$j") || return 1
+  [ -n "$MC_DEFAULT_BRANCH" ]
+}
+
 # 6. After a merge, refresh the local clone for whoever resolves the next conflict.
 refresh_clone() {
   [ -n "$MC_FETCH_DIR" ] || return 0
@@ -265,11 +283,11 @@ wait_for_ci() {
 
 process_pr() {
   local n="$1" j state draft login is_bot head_ref out rc updates=0 late head mstate
-  local missing method pre_head stale_head
+  local missing method pre_head stale_head base_ref up_head up_prs
   PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT="" MC_SETTLED_HEAD="" MC_AUTO_MERGE=""
 
   # 1. State, author, and whether auto-merge is on.
-  j=$(view "$n" state,isDraft,author,headRefName,headRefOid,autoMergeRequest) ||
+  j=$(view "$n" state,isDraft,author,headRefName,headRefOid,baseRefName,autoMergeRequest) ||
     { result ERROR "read_failed: gh pr view $n failed"; return; }
   state=$(jq -r '.state // ""' <<<"$j") || { result ERROR "read_failed: unparseable PR JSON"; return; }
   MC_AUTO_MERGE=$(jq -r 'if .autoMergeRequest then "true" else "false" end' <<<"$j")
@@ -277,6 +295,7 @@ process_pr() {
   login=$(jq -r '.author.login // ""' <<<"$j")
   is_bot=$(jq -r '.author.is_bot // false' <<<"$j")
   head_ref=$(jq -r '.headRefName // ""' <<<"$j")
+  base_ref=$(jq -r '.baseRefName // ""' <<<"$j")
   PR_HEAD=$(jq -r '.headRefOid // ""' <<<"$j")
   case "$state" in
     MERGED) result SKIPPED "already_merged: nothing to do"; return ;;
@@ -295,6 +314,24 @@ process_pr() {
         [[ "$login" == *"[bot]" || "$login" == app/* ]]; }; }; then
     result SKIPPED "non_self_author: author '${login:-unknown}' is neither $MC_SELF nor a bot; review it, do not chain-merge it"
     return
+  fi
+
+  # 1b. In a fork, a base branch that is also the head of an open PR against
+  #     the parent: merging pushes this PR's commits into that upstream PR, an
+  #     outward-facing change to someone else's review (#3445). A same-repo
+  #     stacked base is the ordinary case and is not checked.
+  repo_meta || { result ERROR "read_failed: gh api repos/$MC_REPO (default branch, fork parent) failed"; return; }
+  [ -n "$base_ref" ] || { result ERROR "read_failed: PR $n has no baseRefName"; return; }
+  if [ -n "$MC_PARENT" ] && [ "$base_ref" != "$MC_DEFAULT_BRANCH" ]; then
+    up_head=$(jq -rn --arg h "${MC_REPO%%/*}:$base_ref" '$h | @uri')
+    out=$(gh api "repos/$MC_PARENT/pulls?state=open&head=$up_head&per_page=100" 2>/dev/null) ||
+      { result ERROR "read_failed: could not list open PRs in $MC_PARENT for head ${MC_REPO%%/*}:$base_ref"; return; }
+    up_prs=$(jq -r --arg p "$MC_PARENT" '[.[] | "\($p)#\(.number)"] | join(", ")' <<<"$out") ||
+      { result ERROR "read_failed: unparseable open-PR list from $MC_PARENT"; return; }
+    if [ -n "$up_prs" ]; then
+      result SKIPPED "base_is_upstream_pr_head: base '$base_ref' is the head of open $up_prs; merging would push into it, so merge by hand once that is intended"
+      return
+    fi
   fi
 
   while :; do
