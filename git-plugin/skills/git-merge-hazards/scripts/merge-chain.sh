@@ -28,7 +28,9 @@
 #   MERGE_CHAIN_POLL_SECONDS  CI poll interval (default 20).
 #   MERGE_CHAIN_METHOD_CMD    Replaces pr-merge-method.py (tests use a stub).
 #
-# Per PR, in order: read state and author; `gh pr update-branch`; wait until
+# Per PR, in order: read state and author; `gh pr update-branch`; unless gh said
+# the branch was already up-to-date, ignore reads that still show the pre-update
+# head (its checks are not the merging head's); wait until
 # every check on the head completes and two consecutive reads agree; read
 # mergeStateStatus; refuse any commit newer than --review-ts other than a
 # GitHub-made update-branch merge, and a head that moved after CI settled; resolve the merge method; merge
@@ -174,9 +176,11 @@ refresh_clone() {
 # Wait until the PR's checks have all completed on a stable head. Sets
 # PR_HEAD to every head it reads, so a stop reports the head it inspected, and
 # MC_SETTLED_HEAD and MC_MS (mergeStateStatus) on success; calls result() and returns 1
-# when the PR must stop here.
+# when the PR must stop here. $2, when set, is the pre-update head: update-branch
+# reported an update, so a read still showing that head carries the OLD head's
+# checks and is not judged at all (#3421).
 wait_for_ci() {
-  local n="$1" deadline polls=0 prev="" j state head ms total pending failed sig
+  local n="$1" stale="${2:-}" deadline polls=0 prev="" j state head ms total pending failed sig
   deadline=$((SECONDS + MC_TIMEOUT))
   while :; do
     polls=$((polls + 1))
@@ -198,6 +202,19 @@ wait_for_ci() {
     head=$(jq -r '.headRefOid // ""' <<<"$j")
     [ -n "$head" ] && PR_HEAD="$head"
     ms=$(jq -r '.mergeStateStatus // ""' <<<"$j")
+    # GitHub has not caught up with update-branch yet: this rollup is the
+    # pre-update head's, and a failure there (an infra flake, a fixed bug) says
+    # nothing about the head that will merge. Do not count this read toward
+    # settling or toward the empty-rollup wait either.
+    if [ -n "$stale" ] && [ "$head" = "$stale" ]; then
+      prev="" polls=0
+      if [ "$SECONDS" -ge "$deadline" ]; then
+        result ERROR "head_not_updated: update-branch reported an update, but the head is still ${stale:0:8} after ${MC_TIMEOUT}s"
+        return 1
+      fi
+      sleep "$MC_POLL"
+      continue
+    fi
     # The rollup lists every run of a check on the head, so a run cancelled by
     # workflow concurrency sits beside the run that superseded it. GitHub counts
     # only the latest, so keep the latest CheckRun per (workflowName, name). A run
@@ -248,7 +265,7 @@ wait_for_ci() {
 
 process_pr() {
   local n="$1" j state draft login is_bot head_ref out rc updates=0 late head mstate
-  local missing method
+  local missing method pre_head stale_head
   PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT="" MC_SETTLED_HEAD="" MC_AUTO_MERGE=""
 
   # 1. State, author, and whether auto-merge is on.
@@ -282,6 +299,8 @@ process_pr() {
 
   while :; do
     # 2. Bring the branch up to date with its base (no-op when already current).
+    #    PR_HEAD is the head as last read (step 1, or the previous CI wait).
+    pre_head="$PR_HEAD"
     out=$(gh pr update-branch "$n" -R "$MC_REPO" 2>&1); rc=$?
     if [ "$rc" -ne 0 ]; then
       if grep -qi 'conflict' <<<"$out"; then result CONFLICT "update_branch_conflict: $(oneline <<<"$out")"
@@ -289,10 +308,15 @@ process_pr() {
       else result ERROR "update_branch_failed: $(oneline <<<"$out")"; fi
       return
     fi
+    # gh prints "PR branch already up-to-date" when the branch was not behind
+    # (cli/cli pkg/cmd/pr/update-branch, BehindBy == 0); the head stays put.
+    # Anything else moved the head, and reads may lag behind that move.
+    stale_head=""
+    grep -qiE 'already up.to.date' <<<"$out" || stale_head="$pre_head"
 
     # 3. Wait for CI on the new head, then read mergeStateStatus.
     MC_MS=""
-    wait_for_ci "$n" || { [ "$PR_STATUS" = MERGED ] && refresh_clone; return; }
+    wait_for_ci "$n" "$stale_head" || { [ "$PR_STATUS" = MERGED ] && refresh_clone; return; }
     case "$MC_MS" in
       CLEAN|HAS_HOOKS) break ;;
       BEHIND)

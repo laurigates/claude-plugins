@@ -30,6 +30,9 @@
 #   - a --review-ts more than 60 s in the future is a usage error (#3400).
 #   - a PR GitHub auto-merges during the CI wait is MERGED, not SKIPPED/WARN;
 #     one merged during the wait without auto-merge stays SKIPPED (#3401).
+#   - after update-branch reports an update, reads that still show the
+#     pre-update head are not judged: that head's failed run does not stop the
+#     PR, and a head that never moves is ERROR head_not_updated (#3421).
 #
 # Needs bash and jq.
 
@@ -83,6 +86,11 @@ case "$1 $2" in
     # last one sticks. Only reads that ask for statusCheckRollup consume it.
     fields=""; prev=""
     for a in "$@"; do [ "$prev" = "--json" ] && fields="$a"; prev="$a"; done
+    # _head_lag: update-branch reported "updated", but the next N checks reads
+    # still return the pre-update head and its rollup; then ._pending applies.
+    if [[ "$fields" == *statusCheckRollup* ]]; then
+      save "$n" 'if (._head_lag // 0) > 0 then ._head_lag -= 1 elif ._pending then ._pending else . end'
+    fi
     if [[ "$fields" == *statusCheckRollup* ]] && [ "$(jq '(._rollup_seq // []) | length' "$(f "$n")")" -gt 0 ]; then
       save "$n" '.statusCheckRollup = ._rollup_seq[0] | ._rollup_seq = ._rollup_seq[1:]'
     fi
@@ -116,9 +124,14 @@ case "$1 $2" in
     case "$beh" in
       conflict) echo "X Cannot update PR branch due to conflicts" >&2; exit 1 ;;
       denied) echo "HTTP 403: Resource not accessible by integration" >&2; exit 1 ;;
-      noop) echo "✓ PR branch already up to date"; exit 0 ;;
+      # gh's own wording (cli/cli pkg/cmd/pr/update-branch: BehindBy == 0).
+      noop) echo "✓ PR branch already up-to-date"; exit 0 ;;
     esac
+    cp "$(f "$n")" "$STUB_STATE/.pre-update-$n.json"
+    # Each real update makes a new merge commit, so a repeat update (BEHIND
+    # again) must not reuse the head it replaces: alternate a… and 9….
     new=$(printf 'a%039d' "$n")
+    [ "$new" = "$(jq -r .headRefOid "$(f "$n")")" ] && new=$(printf '9%039d' "$n")
     # _ms_seq: mergeStateStatus after each successive update, then _ms_after.
     save "$n" ".headRefOid = \"$new\"
       | .mergeStateStatus = (if (._ms_seq // []) | length > 0 then ._ms_seq[0] else (._ms_after // \"CLEAN\") end)
@@ -128,6 +141,14 @@ case "$1 $2" in
       late=$(printf 'c%039d' "$n")
       save "$n" ".headRefOid = \"$late\"
         | .commits += [{oid: \"$late\", committedDate: \"2026-10-27T09:05:00Z\", messageHeadline: \"style: bot auto-fix\"}]"
+    fi
+    # _head_lag: keep serving the pre-update state (with _stale_rollup as its
+    # checks) and park the updated state in ._pending until the lag runs out.
+    if [ "$(jq -r '._head_lag // 0' "$(f "$n")")" -gt 0 ]; then
+      tmp=$(mktemp)
+      jq --slurpfile new "$(f "$n")" '._pending = ($new[0] | del(._head_lag, ._stale_rollup, ._pending))
+        | .statusCheckRollup = (._stale_rollup // .statusCheckRollup)' "$STUB_STATE/.pre-update-$n.json" >"$tmp" &&
+        mv "$tmp" "$(f "$n")"
     fi
     echo "✓ PR branch updated"; exit 0 ;;
   "pr merge")
@@ -419,6 +440,28 @@ mkpr 316 '.statusCheckRollup = [
      status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:24Z"}]'
 run_chain 316
 expect_line "startedAt tie decided by completedAt -> MERGED" "$(section 316)" "STATUS=MERGED"
+
+# update-branch said "updated", but the first checks read still returns the
+# pre-update head and that head's failed run (#3421: gitleaks failed on
+# 7b8eb86c for a DNS error, passed on the post-update 71093960, and the chain
+# stopped CI_RED anyway). Failures count only once the head has moved.
+mkpr 317 '._head_lag = 1 | ._stale_rollup = [{__typename: "CheckRun", name: "scan-secrets / gitleaks", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 317
+expect_line "the pre-update head's failed run does not stop the PR -> MERGED" "$(section 317)" "STATUS=MERGED"
+expect_has "merged on the post-update head" "$LOG" "^STUB_GH pr merge 317 -R o/r --squash --delete-branch --match-head-commit a000000000000000000000000000000000000317$"
+# A head that never moves after a reported update is not judged on the old
+# head's checks either: it fails closed with its own reason.
+mkpr 318 '._head_lag = 1000 | ._stale_rollup = [{__typename: "CheckRun", name: "scan-secrets / gitleaks", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 318 --timeout 0
+expect_line "head never moves after update-branch -> ERROR" "$(section 318)" "STATUS=ERROR"
+expect_has "REASON=head_not_updated names the stale head" "$(section 318)" "^REASON=head_not_updated: .*f0000000"
+expect_no "no merge while the head is still the pre-update one" "$LOG" "pr merge"
+# Control: a no-op update leaves the head where it was, so its failed check
+# is judged at once.
+mkpr 319 '._update = "noop" | .mergeStateStatus = "CLEAN" | .statusCheckRollup = [{__typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 319 --timeout 0
+expect_line "no-op update: the unchanged head's failed check -> CI_RED" "$(section 319)" "STATUS=CI_RED"
+expect_has "REASON names it" "$(section 319)" "^REASON=check_failed: lint$"
 
 # BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
 mkpr 306 '._ms_seq = ["BEHIND"]'

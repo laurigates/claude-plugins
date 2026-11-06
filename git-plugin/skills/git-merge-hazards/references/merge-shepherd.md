@@ -29,7 +29,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs 219,22
 | `--fetch-dir` | A clone to `git fetch origin` after each merge, so a conflict agent starts from current `main`. |
 
 Per PR the script reads state and author, runs `gh pr update-branch`, waits
-until every check on the head has completed and two reads agree, reads
+for the head to move off the pre-update head (unless gh reported the branch
+already up-to-date), waits until every check on the head has completed and two reads agree, reads
 `mergeStateStatus` (§4), applies the §6 guard (no late commit other than
 GitHub's own update-branch merges, and the head unchanged since CI settled), resolves the merge method, and merges
 with `--match-head-commit` and the **full 40-character** head SHA. GitHub rejects a
@@ -54,7 +55,7 @@ carries `REMAINING=`, the PRs still to merge, with the stopped PR first.
 | `CI_RED` | stops | Dispatch one agent for this PR: [Dispatch only on CONFLICT or CI_RED](#dispatch-only-on-conflict-or-ci_red). `REASON=check_failed: <names>`, `ci_timeout`, `unstable` (§4: merging over red needs both checks), or `still_behind`. |
 | `GUARD_LATE_COMMIT` | stops | A commit landed after your review, or the head moved after CI settled. Read the commits it names, and verify or revert them, before resuming. Recovery if any already merged: [serial-merge-chain.md](serial-merge-chain.md). |
 | `DENIED` | stops | A 403 or branch protection refused the update or merge. Report it and stop: [Denials](#denials). |
-| `ERROR` | stops | Fail-closed: a read failed, a state was unexpected, or a merge error was unclassified. Fix the cause named in `REASON=`. Never treat it as clean. |
+| `ERROR` | stops | Fail-closed: a read failed, a state was unexpected, or a merge error was unclassified. Fix the cause named in `REASON=`. Never treat it as clean. `head_not_updated` means `update-branch` reported an update but the head never moved within `--timeout`; check the PR's head on GitHub before re-running. |
 
 ## Dispatch only on CONFLICT or CI_RED
 
