@@ -11,6 +11,13 @@
 # (`No linked issue: <reason>`), and its block reason names that line, so a
 # blocked agent learns the way through on the first refusal.
 #
+# THE BEHAVIOUR THIS ALSO PINS (issue #3413)
+# A PR that is one part of a larger issue should reference that issue without
+# closing it. The prompt blocked `Refs #N` / `Part of #N` bodies and pushed
+# agents toward a premature `Closes #N`. It now accepts a non-closing reference
+# (`Refs`, `Part of`, `Related to`, with `#N` or `owner/repo#N`) as a valid
+# link, and its block reason names that option too.
+#
 # WHY A DEDICATED SCRIPT
 # The artefact is a prompt string inside git-plugin/hooks.json, so neither
 # plugin-compliance-check.sh (SKILL.md files) nor the bash hook's suite
@@ -112,6 +119,16 @@ require optout_passes "the opt-out line is not tied to an {\"ok\": true} verdict
 # A blocked agent is told about the opt-out in the block reason itself.
 require reason_names_optout "the ok:false reason does not name the 'No linked issue:' opt-out" \
     'no linked issue:' "$reason_text"
+
+# A non-closing reference to an existing issue is recognised (issue #3413).
+require nonclosing_ref_phrase "the prompt does not recognise a non-closing 'Refs #N' / 'Part of #N' reference" \
+    "(refs|references|part of|related to)[ :'\"]*#n"
+# Recognising it lets the PR through: the reference sits on the ok:true side.
+require nonclosing_ref_passes "the non-closing reference is not tied to an {\"ok\": true} verdict" \
+    '(refs|references|part of|related to)[^{]*\{\\?"ok\\?": true\}'
+# A blocked agent is told about the non-closing reference in the block reason.
+require reason_names_nonclosing_ref "the ok:false reason does not name the 'Refs #N' / 'Part of #N' option" \
+    "(refs|references|part of|related to)[ :'\"]*#n" "$reason_text"
 
 # Existing contract and checks must survive (issue scope: add the opt-out only).
 require contract_ok_true "the {\"ok\": true} response shape is gone" '\{\\?"ok\\?": true\}'

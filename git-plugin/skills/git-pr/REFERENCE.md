@@ -68,6 +68,10 @@ Refs #124
 - When no issue exists for the work, write a line `No linked issue: <reason>`
   instead of filing an issue only for the PR to close; the
   `mcp__github__create_pull_request` prompt hook accepts it
+- When the PR is one part of a larger issue that must stay open, reference it
+  with `Refs #N` or `Part of #N` (`Related to #N` and `owner/repo#N` also
+  work) rather than `Closes #N`; the same prompt hook accepts a non-closing
+  reference as a valid link
 
 > **Do NOT use markdown tables to track linked issues.** GitHub's auto-close
 > machinery only fires on `Fixes #N` / `Closes #N` / `Resolves #N` keywords
