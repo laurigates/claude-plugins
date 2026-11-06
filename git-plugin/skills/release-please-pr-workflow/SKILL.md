@@ -1,6 +1,6 @@
 ---
 created: 2026-01-09
-modified: 2026-10-26
+modified: 2026-11-06
 reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
@@ -232,6 +232,29 @@ git pull origin main
 
 **Cause:** release-please.yml doesn't have `workflow_dispatch`
 **Solution:** Wait for next push to main, or make a commit to trigger
+
+### Release Creation Fails: `Resource not accessible by integration`
+
+**Symptom:** every run logs `Creating 1 releases for pull #N`, then
+`release-please failed: Resource not accessible by integration` on
+`releases#create-a-release`. Every later run retries the same release.
+**Cause:** the token is a GitHub App without **Workflows: write**, and the
+release's tag target (the release PR's merge commit) has different
+`.github/workflows/` content from `main`. A workflow-file change landed
+between the release PR merge and its release run. A `concurrency` group keeps
+only one pending run, so the merge commit's own run can be cancelled by the
+next push (claude-plugins #3364: run 2541 `cancelled`, run 2542 failed).
+**Check:** `git diff --stat <merge-sha> origin/main -- .github/workflows`.
+**Solution:** grant the App Workflows: write. To unblock without it, create
+the release by hand at `<merge-sha>` with a token that can write workflows,
+then relabel the PR `autorelease: tagged` and re-run the workflow.
+
+### Red Run, Release Exists
+
+**Symptom:** `release-please failed: <!DOCTYPE html> … Unicorn!` (a GitHub
+5xx) during release creation.
+**Action:** the release is often created anyway. Before treating the run as a
+miss, check `gh release view <tag>` and the PR's `autorelease: tagged` label.
 
 ### "Already Merged" Message
 
