@@ -1,6 +1,6 @@
 ---
 created: 2026-11-01
-modified: 2026-11-01
+modified: 2026-11-06
 reviewed: 2026-11-01
 ---
 
@@ -17,6 +17,7 @@ reconciled whenever their implementations are not cleanly compatible.
 |------|-----|
 | Group related issues under an `epic` tracking issue, or a milestone | Attach as a native sub-issue (`git-plugin:git-issue-hierarchy`); record ordering with `blocked_by` |
 | File new issues into an existing group | Before `gh issue create`, list open epics (`gh api 'repos/{o}/{r}/issues?labels=epic&state=open'`) and attach the new issue to the one that fits; name a new epic only for three or more related issues |
+| Check for an open PR before starting an issue | The daily issue-resolving Routine opens PRs too. Before implementing, list open PRs whose head branch or body names the issue (`gh api 'repos/{o}/{r}/pulls?state=open'`), and stop if one exists |
 | Implement a group together | One agent and one PR per group's actionable members, one commit per issue; blocked siblings are named, not worked around |
 | Recurring machine-filed and feedback issues are exempt | They stand alone by design; the list is `scripts/issue-grouping-exempt.txt` (lifecycle: #3346) |
 
