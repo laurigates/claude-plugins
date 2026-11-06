@@ -98,7 +98,10 @@ check_eq() {
 
 # Guarded sandbox (check-git-sandbox-guards.sh: every mktemp -d must be guarded).
 SANDBOX="$(mktemp -d)" || { echo "mktemp failed"; exit 1; }
-[ -n "$SANDBOX" ] || { echo "empty sandbox path"; exit 1; }
+[ -n "$SANDBOX" ] && [ -d "$SANDBOX" ] || { echo "empty sandbox path"; exit 1; }
+# Canonicalise once: macOS mktemp returns /var/..., a symlink to /private/var,
+# and the survey reports physical checkout paths (check-mktemp-canonical.sh).
+SANDBOX=$(cd -P -- "$SANDBOX" && pwd -P) || { echo "cannot resolve sandbox"; exit 1; }
 trap 'rm -rf "$SANDBOX"' EXIT
 
 # Neutralize inherited git context so the sandbox git ops can never reach the
