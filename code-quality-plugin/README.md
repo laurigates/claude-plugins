@@ -23,6 +23,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `code-license-position` | Check a vendor's licence FAQ, discussion threads, and commit authors before calling a `LICENSE` restriction a blocker |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
 | `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
+| `/code-quality:code-context-leakage` | Audit a repo for names and defaults tied to one person's setup — home paths, personal channels, dated run tags, time-of-day recipe names, OS-only commands, stale self-references — classify each, then rename the approved ones behind a `--name … --strict` gate |
 | `/code-quality:bulk-sweep-classify` | Route a bulk sweep by target: code renames go through `ast-grep-search` structurally; prose/docs sweeps use the four-category classify-then-transform discipline with allowlist-aware verification; parallel sweeps resolve a central rename map before dispatch and brief auditors with the artifact's purpose |
 | `ast-grep-search` | AST-based code search for structural pattern matching, and the LSP → `ast-grep` → `rg` ladder for finding references before a change |
 | `code-review-checklist` | Checklist for security, correctness, and performance review — secrets/injection, error handling, N+1 queries |
