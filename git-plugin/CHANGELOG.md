@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.6...git-plugin-v2.69.7) (2026-11-06)
+
+
+### Bug Fixes
+
+* **git-plugin:** accept non-closing issue references in the PR issue-link prompt hook ([#3418](https://github.com/laurigates/claude-plugins/issues/3418)) ([a42bd4b](https://github.com/laurigates/claude-plugins/commit/a42bd4bc48a04162987314f3a802a04ed436164c)), closes [#3413](https://github.com/laurigates/claude-plugins/issues/3413)
+
 ## [2.69.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.5...git-plugin-v2.69.6) (2026-11-06)
 
 
