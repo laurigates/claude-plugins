@@ -18,6 +18,8 @@ on:
       - 'scripts/check-context-command-execution.sh'
       - 'scripts/lib/extract-md-elements.py'
       - 'scripts/audit-skill-descriptions.py'
+      - 'scripts/check-description-discriminators.py'
+      - 'scripts/description-discriminators.tsv'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
       - 'scripts/tests/test-lint-package-references.sh'
@@ -80,6 +82,12 @@ jobs:
         # surfaces via plugin-compliance-check.sh recommendations.
         # See .claude/rules/skill-quality.md "Description Length and the Listing Budget".
         run: python3 scripts/audit-skill-descriptions.py --strict-length
+
+      - name: Check sibling-skill description discriminators
+        # Pins in scripts/description-discriminators.tsv keep each #2244
+        # cluster rewrite's distinguishing phrase in place, so a later
+        # length pass (#2119) cannot compress it away.
+        run: python3 scripts/check-description-discriminators.py
 
       - name: Lint taskwarrior-plugin docs for hyphenated tag names
         run: ./scripts/lint-taskwarrior-tags.sh
