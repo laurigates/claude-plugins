@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.1...rust-plugin-v1.8.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **skills:** unescape quotes in the remaining context find commands ([#3410](https://github.com/laurigates/claude-plugins/issues/3410)) ([ee44ac9](https://github.com/laurigates/claude-plugins/commit/ee44ac94e07a0ca87312918438df708b944f8378)), closes [#3207](https://github.com/laurigates/claude-plugins/issues/3207)
+
 ## [1.8.1](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.0...rust-plugin-v1.8.1) (2026-11-04)
 
 
