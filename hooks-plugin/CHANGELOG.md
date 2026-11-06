@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.19.0...hooks-plugin-v2.19.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow secret references inside remote single-quoted scripts ([#3431](https://github.com/laurigates/claude-plugins/issues/3431)) ([25fea8a](https://github.com/laurigates/claude-plugins/commit/25fea8aa150c947c66ecd6592669b6d47c551615)), closes [#3424](https://github.com/laurigates/claude-plugins/issues/3424)
+
 ## [2.19.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.18.0...hooks-plugin-v2.19.0) (2026-11-03)
 
 

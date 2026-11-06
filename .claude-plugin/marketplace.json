@@ -276,7 +276,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.42.2",
+      "version": "1.43.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.69.5",
+      "version": "2.69.6",
       "author": {
         "name": "Lauri Gates"
       },
@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.19.0",
+      "version": "2.19.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -709,7 +709,7 @@
       "name": "obsidian-plugin",
       "source": "./obsidian-plugin",
       "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
-      "version": "1.3.6",
+      "version": "1.3.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -828,7 +828,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.8.2",
+      "version": "1.8.3",
       "author": {
         "name": "Lauri Gates"
       },

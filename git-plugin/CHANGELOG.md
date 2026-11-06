@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.69.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.5...git-plugin-v2.69.6) (2026-11-06)
+
+
+### Bug Fixes
+
+* **git-plugin,rust-plugin:** bring seven skill descriptions under 200 characters ([f653a3b](https://github.com/laurigates/claude-plugins/commit/f653a3b12c385d8dcbacb2f7761a5382a23b2bbb))
+* **git-plugin:** refuse a future --review-ts in merge-chain.sh ([#3409](https://github.com/laurigates/claude-plugins/issues/3409)) ([cde2d21](https://github.com/laurigates/claude-plugins/commit/cde2d2134f23a80531a8579de6637d29085c8ac9)), closes [#3400](https://github.com/laurigates/claude-plugins/issues/3400)
+
+
+### Documentation
+
+* **git-plugin:** add When to Use tables to three skills ([4822b79](https://github.com/laurigates/claude-plugins/commit/4822b79327c7509ce8be395c304514ecc9dd28d7))
+
 ## [2.69.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.4...git-plugin-v2.69.5) (2026-11-06)
 
 
