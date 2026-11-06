@@ -40,6 +40,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from itertools import combinations
 from pathlib import Path
 
@@ -113,7 +114,12 @@ PROMOTION_KINDS = ("rule", "claude_md")
 # this too, and drafts no entry for these kinds.
 WAIVER_EXEMPT_KINDS = {
     "always_loaded_budget": "aggregate over every always-loaded document; no single file to hash",
-    "frontmatter_coverage": "aggregate over every rule; the fix is adding reviewed: dates",
+    "frontmatter_coverage": (
+        "aggregate over every rule; the fix is adding reviewed: dates -- each rule's "
+        "content date (git log --follow), never a bulk-move date -- and the stamping "
+        "commit becomes each rule's last change, so a date over STALE_DAYS old trips "
+        "review_staleness once it lands"
+    ),
     "corpus_unreadable": "the file could not be read, so there is no content hash to record",
     "agent_discovery_misfire": "the probe misfired; waiving it would hide a broken run",
     "coverage_metric_broken": "the metric failed its own control; waiving it would hide that",
@@ -397,38 +403,103 @@ def _shallow_boundaries(repo_dir: str) -> frozenset[str]:
         return frozenset()
 
 
-def git_last_change(path: Path) -> tuple[str | None, bool]:
-    """`(date, at_shallow_boundary)` for the commit that last touched `path`.
+GIT_LOG_TIMEOUT = 10  # seconds one file's history walk may take
 
-    In a shallow clone, `git log -1 -- <file>` answers the BOUNDARY commit for
-    every file whose real last change predates it: the boundary is a grafted
-    root, so it diffs against nothing and "changes" every file it contains. That
-    date is not the file's last change, it is the clone's depth (#3110). The
-    second element flags it so the caller can treat the date as unknown -- not
-    report staleness from it, and not cache it, since an unshallow keeps the
-    content hash the cache is keyed on. A full clone never sets the flag.
+
+def _content_run_start(lines) -> tuple[str, str] | None:
+    """The oldest `(commit, date)` whose copy of the file equals the newest copy.
+
+    `lines` is `git log --follow --format=%x01%H %cs --raw --no-abbrev` output,
+    newest first. Each commit's `--raw` line carries the file's blob at that
+    commit (field 4), so a pure rename (`R100`) or a mode-only change keeps the
+    blob and stays in the run, and the first commit with a different blob ends
+    it. A commit with no raw line (a merge, which `--raw` does not diff) says
+    nothing about the content and is skipped. A file whose log carries no raw
+    line at all falls back to its newest commit, the pre-#3442 answer.
+
+    Returns None for an empty log. A generator, so the caller can stop reading
+    -- and stop git -- at the end of the run instead of walking all history.
+    """
+    newest: tuple[str, str] | None = None
+    run_start: tuple[str, str] | None = None
+    current: tuple[str, str] | None = None
+    blob: str | None = None
+    seen_raw = False
+    for line in lines:
+        if line.startswith("\x01"):
+            parts = line[1:].split()
+            current = (parts[0], parts[1]) if len(parts) == 2 else None
+            seen_raw = False
+            if newest is None:
+                newest = current
+            continue
+        if not line.startswith(":") or current is None or seen_raw:
+            continue
+        seen_raw = True
+        fields = line.split("\t", 1)[0].split()
+        if len(fields) < 4:
+            continue
+        if blob is None:
+            blob = fields[3]
+        elif fields[3] != blob:
+            break
+        run_start = current
+    return run_start or newest
+
+
+def git_last_change(path: Path) -> tuple[str | None, bool]:
+    """`(date, at_shallow_boundary)` for the last commit that changed `path`'s CONTENT.
+
+    "Changed" means the file's text, not its path: the answer is the oldest
+    commit in the unbroken run of commits whose copy of the file is identical
+    to the newest one, following renames (#3442). `git log -1 -- <file>` dated
+    a file to whatever commit last touched its path, so a bulk move re-dated
+    every moved document (laurigates/dotfiles#558: 50 of 52 rules) and a rule
+    stamped with its real content date then fired review_staleness. A revert
+    to older text still dates to the revert: the run is unbroken, not "any
+    commit with this blob". `_content_run_start` does the walk; git is stopped
+    as soon as the run ends, so a typical file reads only a few commits.
+
+    In a shallow clone, the BOUNDARY commit is a grafted root: it diffs against
+    nothing and "adds" every file it contains, so a run that reaches it ends
+    there whatever the file's real history. That date is the clone's depth, not
+    the file's last change (#3110). The second element flags it so the caller
+    can treat the date as unknown -- not report staleness from it, and not
+    cache it, since an unshallow keeps the content hash the cache is keyed on.
+    A full clone never sets the flag.
     """
     try:
-        out = subprocess.run(
+        proc = subprocess.Popen(
             [
                 "git",
                 "-C",
                 str(path.parent),
                 "log",
-                "-1",
-                "--format=%H %cs",
+                "--follow",
+                "--format=%x01%H %cs",
+                "--raw",
+                "--no-abbrev",
                 "--",
                 path.name,
             ],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
-            timeout=10,
-        ).stdout.split()
-    except (OSError, subprocess.SubprocessError):
+        )
+    except OSError:
         return None, False
-    if len(out) != 2:
+    timer = threading.Timer(GIT_LOG_TIMEOUT, proc.kill)
+    timer.start()
+    try:
+        found = _content_run_start(proc.stdout)
+    finally:
+        timer.cancel()
+        proc.kill()
+        proc.stdout.close()
+        proc.wait()
+    if found is None:
         return None, False
-    commit, date = out
+    commit, date = found
     return date, commit in _shallow_boundaries(str(path.parent))
 
 
@@ -1178,7 +1249,9 @@ def check_frontmatter(rules) -> list[Finding]:
         Finding(
             "info",
             "frontmatter_coverage",
-            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
+            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them; "
+            "stamp each with the date its text last changed (git log --follow), not a bulk-move date, "
+            f"and expect the stamping commit to trip review_staleness for any date over {STALE_DAYS} days old",
         )
     ]
 

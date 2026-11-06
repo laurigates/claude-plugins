@@ -1177,6 +1177,11 @@ assert_eq "an agent with no reviewed: does not move frontmatter_coverage" \
     "$(missing_reviewed "$out")" "$guard_missing"
 assert_contains "the frontmatter_coverage denominator still reads 'rules'" \
     "$(fm_coverage_summary "$out")" " rules carry no reviewed:"
+# #3442: the remedy says which date to stamp and what stamping does to staleness.
+assert_contains "the frontmatter_coverage remedy names the content date, not a move date" \
+    "$(fm_coverage_summary "$out")" "(git log --follow), not a bulk-move date"
+assert_contains "...and warns that the stamping commit trips review_staleness" \
+    "$(fm_coverage_summary "$out")" "stamping commit to trip review_staleness"
 
 # check_stub_integrity is guarded on the KIND, not on the `stub` substring. A
 # CLAUDE.md quoting the house phrasing is describing the convention, not
@@ -2616,6 +2621,97 @@ assert_contains "status output carries FINDING_SHALLOW_CLONE=1" "$st" "FINDING_S
 assert_contains "status output is WARN, not a silent OK" "$st" "STATUS=WARN"
 rm -rf "$GROOT"
 unset -f sg sg_commit_at run_g stale_paths
+
+echo "TEST 27: a pure rename is not a content change for review_staleness (#3442)"
+# The regression: `git log -1 -- <file>` dates a file's last change to whatever
+# commit last touched its path, and a commit that only MOVES a file touches it.
+# laurigates/dotfiles#558 moved 52 rules; afterwards 50 of them read as changed
+# on the move date, so a rule stamped with its real content date fired
+# review_staleness for text that had not changed in 260 days. The fix dates the
+# oldest commit in the unbroken run whose copy is identical to the newest one,
+# following renames. Like TEST 26 this runs WITHOUT --fast.
+RROOT=$(mktemp -d)
+if [ -z "$RROOT" ] || [ ! -d "$RROOT" ]; then
+    echo "FAIL: could not create TEST 27 root"
+    exit 1
+fi
+RROOT=$(cd "$RROOT" && pwd -P)
+rg_() {  # sandboxed git, as in TEST 26
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+        -u GIT_COMMON_DIR GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        git -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+        -c core.hooksPath=/dev/null -c init.defaultBranch=main "$@"
+}
+rg_commit_at() {  # rg_commit_at <iso-date> <msg>
+    GIT_AUTHOR_DATE="$1T12:00:00+00:00" GIT_COMMITTER_DATE="$1T12:00:00+00:00" \
+        rg_ -C "$RREPO" commit -q -m "$2" >/dev/null 2>&1
+}
+RREPO="$RROOT/repo"
+mkdir -p "$RREPO/.claude/rules/old" "$RROOT/home/.claude/rules"
+rg_ init -q "$RREPO" >/dev/null 2>&1
+# All three are reviewed 2020-01-01 and written 2020-01-02 (1 day: current).
+printf -- '---\nreviewed: 2020-01-01\n---\n# Moved Doc\nThe kiln log records every bisque firing.\n' \
+    > "$RREPO/.claude/rules/old/moved-doc.md"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Edited Doc\nThe glaze shelf holds the test tiles.\n' \
+    > "$RREPO/.claude/rules/old/edited-doc.md"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Reverted Doc\nThe wedging table stays dry overnight.\n' \
+    > "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2020-01-02 "write all three"
+# moved-doc and edited-doc: a pure rename (R100) into a new directory.
+rg_ -C "$RREPO" mv .claude/rules/old/moved-doc.md .claude/rules/moved-doc.md >/dev/null 2>&1
+rg_ -C "$RREPO" mv .claude/rules/old/edited-doc.md .claude/rules/edited-doc.md >/dev/null 2>&1
+rg_commit_at 2026-03-01 "move rules out of old/"
+# edited-doc: a real content edit after the move -> GENUINELY stale.
+printf 'A sentence added after the move.\n' >> "$RREPO/.claude/rules/edited-doc.md"
+# reverted-doc: changed, then changed back. Its last change is the revert, not
+# the original write: the run of identical copies is broken by the edit.
+printf 'A temporary sentence.\n' >> "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2026-05-01 "edit edited-doc; temporarily edit reverted-doc"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Reverted Doc\nThe wedging table stays dry overnight.\n' \
+    > "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2026-06-01 "revert reverted-doc"
+# moved-doc: a second pure rename, so the walk must follow more than one hop.
+rg_ -C "$RREPO" mv .claude/rules/moved-doc.md .claude/rules/moved-doc-2.md >/dev/null 2>&1
+rg_commit_at 2026-07-01 "rename moved-doc again"
+# FIXTURE VALIDITY: the trap is armed -- plain `git log -1` dates moved-doc-2 to
+# the last rename, which is what the pre-fix analyzer reported.
+assert_eq "FIXTURE: git log -1 dates moved-doc-2 to its last rename" \
+    "$(rg_ -C "$RREPO" log -1 --format=%cs -- .claude/rules/moved-doc-2.md 2>/dev/null)" "2026-07-01"
+run_r() {
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE GIT_CONFIG_GLOBAL=/dev/null \
+        GIT_CONFIG_NOSYSTEM=1 HOME="$RROOT/home" \
+        python3 "$ANALYZER" --root "$RREPO" --no-embed --format=json 2>/dev/null
+}
+stale_names() {
+    printf '%s' "$1" | python3 -c 'import json,os,sys
+d = json.load(sys.stdin)
+print(" ".join(sorted(os.path.basename(p) for f in d["findings"]
+      if f["kind"] == "review_staleness" for p in f["paths"])) or "NONE")' 2>/dev/null || echo ERR
+}
+cached_date() {  # the gitdates cache row for a basename, or NONE
+    python3 -c 'import json,sys
+from pathlib import Path
+p = Path(sys.argv[1])
+d = json.loads(p.read_text()) if p.is_file() else {}
+print(next((v for k, v in d.items() if k.split(":")[0].endswith("/" + sys.argv[2])), "NONE"))' \
+        "$RROOT/home/.cache/config-drift/gitdates.json" "$2" 2>/dev/null || echo ERR
+}
+out=$(run_r)
+# THE REGRESSION: moved-doc-2's text dates from 2020-01-02; two renames are not edits.
+# CONTROLS: a real edit after a rename still fires, and a revert still dates to the revert.
+assert_eq "only the edited and the reverted doc are stale, not the renamed one" \
+    "$(stale_names "$out")" "edited-doc.md reverted-doc.md"
+assert_eq "the renamed doc is dated to its content, across two renames" \
+    "$(cached_date "$out" moved-doc-2.md)" "2020-01-02"
+assert_eq "CONTROL: an edit after a rename is that doc's last change" \
+    "$(cached_date "$out" edited-doc.md)" "2026-05-01"
+assert_eq "CONTROL: a revert breaks the run, so it is the last change" \
+    "$(cached_date "$out" reverted-doc.md)" "2026-06-01"
+rm -rf "$RROOT"
+unset -f rg_ rg_commit_at run_r stale_names cached_date
 
 echo
 echo "=== CONFIG DRIFT TESTS ==="
