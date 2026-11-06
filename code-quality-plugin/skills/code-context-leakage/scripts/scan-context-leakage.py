@@ -49,31 +49,74 @@ import subprocess
 import sys
 
 CATEGORIES = [
-    "home-path", "checkout-layout", "personal-channel", "dated-tag",
-    "time-of-day", "os-specific", "stale-repo-name", "identifier", "old-name",
+    "home-path",
+    "checkout-layout",
+    "personal-channel",
+    "dated-tag",
+    "time-of-day",
+    "os-specific",
+    "stale-repo-name",
+    "identifier",
+    "old-name",
 ]
 
 DEFAULT_EXCLUDES = [
-    "CHANGELOG*", "*/CHANGELOG*", "HISTORY*", "*/HISTORY*",
-    "adr/*", "*/adr/*", "adrs/*", "*/adrs/*", "*/decisions/*", "decisions/*",
-    "*.lock", "*.lockb", "package-lock.json", "*/package-lock.json",
-    "pnpm-lock.yaml", "*/pnpm-lock.yaml", "go.sum", "*/go.sum",
+    "CHANGELOG*",
+    "*/CHANGELOG*",
+    "HISTORY*",
+    "*/HISTORY*",
+    "adr/*",
+    "*/adr/*",
+    "adrs/*",
+    "*/adrs/*",
+    "*/decisions/*",
+    "decisions/*",
+    "*.lock",
+    "*.lockb",
+    "package-lock.json",
+    "*/package-lock.json",
+    "pnpm-lock.yaml",
+    "*/pnpm-lock.yaml",
+    "go.sum",
+    "*/go.sum",
 ]
 
 # Generic stand-ins a document uses on purpose (/home/user, owner/repo) say
 # nothing about one person's setup, so they are not hits.
-PLACEHOLDER_NAMES = {"user", "username", "you", "me", "name", "example", "owner", "org",
-                     "your-org", "your-name", "your-user", "repo", "repository", "your-repo"}
-NOT_PLACEHOLDER = r"(?!(?i:%s)\b)" % "|".join(sorted(re.escape(n) for n in PLACEHOLDER_NAMES))
+PLACEHOLDER_NAMES = {
+    "user",
+    "username",
+    "you",
+    "me",
+    "name",
+    "example",
+    "owner",
+    "org",
+    "your-org",
+    "your-name",
+    "your-user",
+    "repo",
+    "repository",
+    "your-repo",
+}
+NOT_PLACEHOLDER = r"(?!(?i:%s)\b)" % "|".join(
+    sorted(re.escape(n) for n in PLACEHOLDER_NAMES)
+)
 
 LINE_RULES = {
     "home-path": [
-        re.compile(r"/Users/(?!(?:Shared|runner)\b)" + NOT_PLACEHOLDER + r"[A-Za-z][\w.-]*"),
-        re.compile(r"/home/(?!(?:runner|linuxbrew)\b)" + NOT_PLACEHOLDER + r"[a-z][\w.-]*"),
+        re.compile(
+            r"/Users/(?!(?:Shared|runner)\b)" + NOT_PLACEHOLDER + r"[A-Za-z][\w.-]*"
+        ),
+        re.compile(
+            r"/home/(?!(?:runner|linuxbrew)\b)" + NOT_PLACEHOLDER + r"[a-z][\w.-]*"
+        ),
         re.compile(r"[A-Za-z]:\\\\?Users\\\\?" + NOT_PLACEHOLDER + r"[A-Za-z][\w.-]*"),
     ],
     "checkout-layout": [
-        re.compile(r"(?:~|\$HOME|\$\{HOME\})/(?:repos|src|code|projects|dev|git|work|workspace|Developer)/"),
+        re.compile(
+            r"(?:~|\$HOME|\$\{HOME\})/(?:repos|src|code|projects|dev|git|work|workspace|Developer)/"
+        ),
     ],
     "personal-channel": [
         re.compile(r"(?i)\btelegram\b"),
@@ -91,19 +134,26 @@ LINE_RULES = {
         re.compile(r"\bdate -j\b|\bdate -v[+-]"),
         re.compile(r"\bdate -d\b|\bgrep -P\b"),
         re.compile(r"\b(?:pbcopy|pbpaste|osascript|launchctl)\b"),
-        re.compile(r"/opt/homebrew/|/usr/local/Cellar/|/Applications/|/System/Library/|/Library/Fonts/"),
+        re.compile(
+            r"/opt/homebrew/|/usr/local/Cellar/|/Applications/|/System/Library/|/Library/Fonts/"
+        ),
         re.compile(r"\b(?:Menlo|Monaco|SF Mono|Helvetica Neue|Apple Color Emoji)\b"),
     ],
 }
 
 TIME_WORDS = r"(?:overnight|nightly|morning|evening|afternoon|midnight|weekend)"
 TIME_IN_NAME = re.compile(r"(?i)(?<![A-Za-z])" + TIME_WORDS + r"(?![A-Za-z])")
-RECIPE_FILES = re.compile(r"(?:^|/)(?:[Jj]ustfile|\.justfile|[^/]*\.just|[Mm]akefile|GNUmakefile|[^/]*\.mk)$")
+RECIPE_FILES = re.compile(
+    r"(?:^|/)(?:[Jj]ustfile|\.justfile|[^/]*\.just|[Mm]akefile|GNUmakefile|[^/]*\.mk)$"
+)
 RECIPE_DEF = re.compile(r"^@?([A-Za-z0-9_][\w-]*)[^:=\n]*:(?!=)")
 
 SELF_REF_KEYS = re.compile(
-    r"org\.opencontainers\.image\.(?:source|url)|\"?repository\"?\s*[:=]|\"?homepage\"?\s*[:=]")
-REPO_URL = re.compile(r"(?:github|gitlab|codeberg)\.(?:com|org)[/:]([\w.-]+)/([\w.-]+?)(?:\.git)?(?=[\s\"'/#)>]|$)")
+    r"org\.opencontainers\.image\.(?:source|url)|\"?repository\"?\s*[:=]|\"?homepage\"?\s*[:=]"
+)
+REPO_URL = re.compile(
+    r"(?:github|gitlab|codeberg)\.(?:com|org)[/:]([\w.-]+)/([\w.-]+?)(?:\.git)?(?=[\s\"'/#)>]|$)"
+)
 
 
 def usage_error(msg):
@@ -141,14 +191,22 @@ def read_config(path):
                 try:
                     patterns.append(re.compile(line.strip()))
                 except re.error as exc:
-                    usage_error("%s:%d: invalid identifier regex %r: %s" % (path, lineno, line.strip(), exc))
+                    usage_error(
+                        "%s:%d: invalid identifier regex %r: %s"
+                        % (path, lineno, line.strip(), exc)
+                    )
             elif section == "[allow]":
                 parts = line.split("\t")
                 if len(parts) < 3 or not parts[2].strip():
-                    usage_error("%s:%d: allow entry needs path<TAB>matched text<TAB>reason" % (path, lineno))
+                    usage_error(
+                        "%s:%d: allow entry needs path<TAB>matched text<TAB>reason"
+                        % (path, lineno)
+                    )
                 allow[(parts[0].strip(), parts[1])] = parts[2].strip()
             else:
-                usage_error("%s:%d: line outside [identifiers] / [allow]" % (path, lineno))
+                usage_error(
+                    "%s:%d: line outside [identifiers] / [allow]" % (path, lineno)
+                )
     return patterns, allow
 
 
@@ -169,23 +227,42 @@ def scan_line(rel, line, rules, cats, current_repo, is_recipe_file):
     if "stale-repo-name" in cats and current_repo and SELF_REF_KEYS.search(line):
         for m in REPO_URL.finditer(line):
             named = "%s/%s" % (m.group(1), m.group(2))
-            if m.group(1).lower() in PLACEHOLDER_NAMES or m.group(2).lower() in PLACEHOLDER_NAMES:
+            if (
+                m.group(1).lower() in PLACEHOLDER_NAMES
+                or m.group(2).lower() in PLACEHOLDER_NAMES
+            ):
                 continue
             if named.lower() != current_repo.lower():
                 yield "stale-repo-name", named
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Find context-dependent names and personal-environment leakage.")
+    ap = argparse.ArgumentParser(
+        description="Find context-dependent names and personal-environment leakage."
+    )
     ap.add_argument("--project-dir", default=".")
     ap.add_argument("--config")
-    ap.add_argument("--include", action="append", default=[], help="git pathspec (repeatable)")
-    ap.add_argument("--exclude", action="append", default=[], help="fnmatch glob (repeatable)")
+    ap.add_argument(
+        "--include", action="append", default=[], help="git pathspec (repeatable)"
+    )
+    ap.add_argument(
+        "--exclude", action="append", default=[], help="fnmatch glob (repeatable)"
+    )
     ap.add_argument("--no-default-excludes", action="store_true")
-    ap.add_argument("--name", action="append", default=[], help="old name regex for the rename gate (repeatable)")
+    ap.add_argument(
+        "--name",
+        action="append",
+        default=[],
+        help="old name regex for the rename gate (repeatable)",
+    )
     ap.add_argument("--only", help="comma-separated categories")
     ap.add_argument("--strict", action="store_true", help="any reported hit is ERROR")
-    ap.add_argument("--max-hits", type=int, default=200, help="HIT= lines printed (counts are always complete)")
+    ap.add_argument(
+        "--max-hits",
+        type=int,
+        default=200,
+        help="HIT= lines printed (counts are always complete)",
+    )
     args = ap.parse_args()
 
     proj_dir = os.path.abspath(args.project_dir)
@@ -197,7 +274,10 @@ def main():
         cats = {c.strip() for c in args.only.split(",") if c.strip()}
         unknown = sorted(cats - set(CATEGORIES))
         if unknown:
-            usage_error("unknown category %s (known: %s)" % (", ".join(unknown), ", ".join(CATEGORIES)))
+            usage_error(
+                "unknown category %s (known: %s)"
+                % (", ".join(unknown), ", ".join(CATEGORIES))
+            )
 
     patterns, allow = ([], {})
     if args.config:
@@ -216,10 +296,12 @@ def main():
 
     proc = git(proj_dir, "ls-files", "-z", "--", *args.include)
     if proc.returncode != 0:
-        usage_error("git ls-files failed: %s" % proc.stderr.decode("utf-8", "replace").strip())
+        usage_error(
+            "git ls-files failed: %s" % proc.stderr.decode("utf-8", "replace").strip()
+        )
     files = sorted(p for p in proc.stdout.decode("utf-8", "replace").split("\0") if p)
 
-    hits = {}            # (path, match) -> [(cat, line_no, text)]
+    hits = {}  # (path, match) -> [(cat, line_no, text)]
     scanned, excluded, binary = set(), 0, 0
     for rel in files:
         if any(fnmatch.fnmatch(rel, g) for g in excludes):
@@ -237,10 +319,14 @@ def main():
         if "time-of-day" in cats:
             t = TIME_IN_NAME.search(os.path.basename(rel))
             if t:
-                hits.setdefault((rel, t.group(0)), []).append(("time-of-day", 0, "(file name)"))
+                hits.setdefault((rel, t.group(0)), []).append(
+                    ("time-of-day", 0, "(file name)")
+                )
         recipe_file = bool(RECIPE_FILES.search(rel))
         for idx, line in enumerate(data.decode("utf-8", "replace").split("\n"), 1):
-            for cat, match in scan_line(rel, line, rules, cats, current_repo, recipe_file):
+            for cat, match in scan_line(
+                rel, line, rules, cats, current_repo, recipe_file
+            ):
                 hits.setdefault((rel, match), []).append((cat, idx, one_line(line)))
 
     counts = {c: 0 for c in CATEGORIES if c in cats}
@@ -257,9 +343,20 @@ def main():
     errors, warns = [], []
     for key in sorted(allow):
         if key not in hits:
-            errors.append(("stale_allowlist", "allow entry %s %r matches nothing; delete it" % key))
+            errors.append(
+                (
+                    "stale_allowlist",
+                    "allow entry %s %r matches nothing; delete it" % key,
+                )
+            )
     if not scanned:
-        errors.append(("nothing_scanned", "no tracked files left to scan in %s; check --include/--exclude" % proj_dir))
+        errors.append(
+            (
+                "nothing_scanned",
+                "no tracked files left to scan in %s; check --include/--exclude"
+                % proj_dir,
+            )
+        )
     for cat, path, line_no, match, _ in rows:
         msg = "%s:%d [%s] %r" % (path, line_no, cat, match)
         (errors if args.strict else warns).append(("hit", msg))
@@ -283,7 +380,7 @@ def main():
     print("HITS_TOTAL=%d" % sum(counts.values()))
     print("ALLOWED_HITS=%d" % allowed_hits)
     print("REPORTED_HITS=%d" % reported)
-    for cat, path, line_no, match, text in rows[:args.max_hits]:
+    for cat, path, line_no, match, text in rows[: args.max_hits]:
         print("HIT=%s|%s:%d|%s|%s" % (cat, path, line_no, match, text[:160]))
     if reported > args.max_hits:
         print("HITS_TRUNCATED=%d" % (reported - args.max_hits))
