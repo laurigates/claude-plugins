@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -29,6 +29,8 @@ Auto mode is conditional on every row of this table. If any row is unmet, auto m
 | Admin | On Team / Enterprise, available by default; admins can disable via `permissions.disableAutoMode` in managed settings |
 
 Admins can lock it off project-wide by setting `permissions.disableAutoMode: "disable"` in [managed settings](https://code.claude.com/docs/en/permissions#managed-settings).
+
+`/auto-mode-setup` (2.1.304) walks through enabling it, including on Bedrock, Vertex, Foundry, the apps gateway and telemetry-off sessions.
 
 A "Auto mode unavailable" message means a requirement above is unmet — it is not a transient outage. A "cannot determine the safety of an action" message is a separate transient classifier outage.
 
@@ -81,7 +83,9 @@ instead of prompting. The guard is best-effort, not airtight — several
 directory-tracking bypasses in this same class were fixed as late as 2.1.271
 and 2.1.273 (multi-`cd` chains, a subshell, a `cd`+`git` chain, and commands
 the permission checker cannot fully analyze), so do not rely on it as a hard
-boundary against adversarial input in a security-sensitive skill.
+boundary against adversarial input in a security-sensitive skill. Since 2.1.310
+the first-read prompt says that blocking those reads also makes shell commands
+ask.
 
 ## What the Classifier Blocks by Default
 
@@ -100,7 +104,7 @@ boundary against adversarial input in a security-sensitive skill.
 | `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running; the prompt names the flagged `rm` and suggests a `${VAR:?}` guard (2.1.277) | |
 | Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode; an unanswered dangerous-`rm` prompt denies after 2 minutes with a rewrite hint (2.1.281) | |
 
-Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above.
+Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above. Two fixes in 2.1.316 touch such a list: an `autoMode.allow` list without `"$defaults"` no longer removes the built-in rule on scheduled-task prompts, and a managed one no longer gets the built-in exceptions back from a host app's `--settings`, a first `/permissions` rule or `/auto-mode-setup`.
 
 `autoMode.classifyAllShell` routes *every* Bash/PowerShell command through the classifier, not just patterns that look like arbitrary code execution — use it for a stricter posture than the defaults above. Denial reasons are now surfaced in the transcript, a toast, and `/permissions` (2.1.193).
 
@@ -166,15 +170,15 @@ Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode.
 
 When the classifier blocks an action:
 
-1. The action is denied and a notification surfaces in `/permissions` under "Recently denied"
-2. The user can press `r` to retry it with a manual approval
+1. The action is denied and a notification surfaces in `/permissions` under "Recently denied", which shows the denied command (2.1.307)
+2. The user can press `r` to retry it with a manual approval; the local classifier honours an approval made there (2.1.307)
 3. Claude receives the reason and tries an alternative
 
 If blocking happens **3 times in a row** or **20 times total** in a session, auto mode pauses and Claude Code resumes prompting. Approving the prompted action resumes auto mode. Any allowed action resets the consecutive counter; the total counter persists for the session and only resets when its own threshold triggers a fallback. These thresholds are not configurable.
 
 In `-p` (non-interactive) mode there is no user to prompt — repeated blocks abort the session.
 
-When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280). Since 2.1.296 such a call shows as a dim "Not run" row instead of a red error.
+When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280). Since 2.1.296 such a call shows as a dim "Not run" row instead of a red error, and since 2.1.314 it is no longer reported as blocked. Blocked-call messages name the command and point to `/permissions`, and its recently-blocked list refuses to approve a call it cannot show in full (2.1.314). In Cowork cloud, a hook's allow of an MCP tool call counts as no answer (2.1.314).
 
 ## Cost and Latency
 

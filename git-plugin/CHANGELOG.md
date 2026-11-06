@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.69.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.4...git-plugin-v2.69.5) (2026-11-06)
+
+
+### Documentation
+
+* **git-plugin:** warn that a COMMIT_MESSAGES squash body keeps reverted commits footers ([5e56691](https://github.com/laurigates/claude-plugins/commit/5e5669181bbc07d6241cf89e4b4fa54483563c9d))
+
+## [2.69.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.3...git-plugin-v2.69.4) (2026-11-06)
+
+
+### Documentation
+
+* **git-plugin:** document release-please App workflow-diff release failure ([#3432](https://github.com/laurigates/claude-plugins/issues/3432)) ([7f776bd](https://github.com/laurigates/claude-plugins/commit/7f776bd7221a816f84428210157900b6f369dd71)), closes [#3364](https://github.com/laurigates/claude-plugins/issues/3364)
+* **git-plugin:** split 405 by body and read PR state before retrying a failed merge ([#3426](https://github.com/laurigates/claude-plugins/issues/3426)) ([c191526](https://github.com/laurigates/claude-plugins/commit/c19152616c1bf8dc57cf089f968779a098c31344)), closes [#3425](https://github.com/laurigates/claude-plugins/issues/3425)
+
 ## [2.69.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.2...git-plugin-v2.69.3) (2026-11-05)
 
 

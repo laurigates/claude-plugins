@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.56.1",
+      "version": "2.56.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -128,7 +128,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.51.1",
+      "version": "3.51.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -255,7 +255,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.5.2",
+      "version": "1.5.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -293,7 +293,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.11.3",
+      "version": "2.11.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -350,7 +350,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.69.3",
+      "version": "2.69.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -828,7 +828,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.8.1",
+      "version": "1.8.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1014,7 +1014,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.17.1",
+      "version": "1.17.2",
       "author": {
         "name": "Lauri Gates"
       },

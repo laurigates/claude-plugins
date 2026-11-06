@@ -89,6 +89,12 @@ Each row carries the author's report (`fix`, including `followups` and
 `decisions_for_user`) and every verdict, so a re-dispatch starts from the state
 packet rather than from memory (`.claude/rules/loop-integrity.md` Pillar 2).
 
+Read every verdict's defect list before integrating, including on a `PASS`. A
+verifier can pass the code and still report a defect outside it, such as an open
+PR elsewhere that already carries the same fix. A gate on the status or on a
+defect count misses that. Observed 2026-11-04: a passing verdict named two
+duplicate PRs, and the orchestrator found them only after a CI failure.
+
 ## Workflow harness (template)
 
 `workflows/implement-verify.workflow.js` and `workflows/repair-round.workflow.js` ship beside

@@ -51,6 +51,26 @@ Two things generalise:
   and keep the literal strings in the throwaway file. Documenting the trap is
   the one context where you are *guaranteed* to type the trap.
 
+### And not only the PR body — a squash commit carries the branch's footers
+
+On a repo whose squash commit body is built from the branch's commit messages
+(`squash_merge_commit_message: COMMIT_MESSAGES`), the merge commit on the
+default branch repeats every footer on the branch. That includes the closing
+footers of commits the branch later **reverted**. GitHub acts on closing
+keywords in default-branch commits, so the merge closes the issues the reverted
+work named, even though the PR no longer fixes them.
+
+> Observed 2026-11-04 (claude-plugins #3412). The branch reverted three fixes
+> because other PRs already carried them. The default squash body would still
+> have contained their closing footers and closed two issues those other PRs
+> were meant to close. Caught by scanning `git log --format=%B origin/main..<branch>`
+> before merging.
+
+Before squash-merging a branch with reverts, scan its commit messages, not only
+the PR body. If a reverted commit's footer would close something, pass an
+explicit commit message (`commit_message` on the REST merge endpoint, `--body`
+on `gh pr merge`) that names only what the net diff fixes.
+
 **Audit the body before merging, with a control.** Scan every PR you are about to
 merge for a closing verb adjacent to an issue reference, allowing an optional
 `[` and an optional `owner/repo` between them, and prove the scan works by

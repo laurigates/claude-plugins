@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.1...workflow-orchestration-plugin-v1.17.2) (2026-11-06)
+
+
+### Documentation
+
+* **workflow-orchestration-plugin:** read every verifier defect, including on PASS ([8f7447f](https://github.com/laurigates/claude-plugins/commit/8f7447ffa727bc5aeca84ed7d84f82310288b61a))
+
 ## [1.17.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.0...workflow-orchestration-plugin-v1.17.1) (2026-11-02)
 
 

@@ -43,6 +43,21 @@ For one-line append tables not marked `merge=union`,
 `.gitattributes` allowlist is an optimization (clears the conflict in local
 and CI merges), not the only safety net.
 
+**Union also runs on local `git revert` and `git cherry-pick`**, and there it
+keeps lines it should drop. Both are three-way merges, so a union-marked file
+takes both sides:
+
+- A revert of a commit that appended a row leaves the row in place: the revert
+  wants it gone, the current tree has it, and union keeps it.
+- Cherry-picking a follow-up commit that *edits* a row onto a branch that already
+  has the original keeps both versions side by side.
+
+Observed 2026-11-04 (#3412): reverting three duplicate fixes and cherry-picking a
+verifier's follow-up left two stale rows and one duplicate in
+`docs/regression-ledger.md`, with every command exiting 0. After a revert or
+cherry-pick that touches a union-marked file, diff that file against the base
+and remove leftovers by hand in the same PR.
+
 ## GitHub does not honor `merge=union` server-side
 
 **Empirically confirmed (PR #1759, 2026-06):** GitHub's mergeability check and
