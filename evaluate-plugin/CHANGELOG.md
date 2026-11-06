@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.19.0...evaluate-plugin-v1.20.0) (2026-11-06)
+
+
+### Features
+
+* **evaluate-plugin:** generate typed checks for mechanical expectations in --create-evals ([#3428](https://github.com/laurigates/claude-plugins/issues/3428)) ([d089744](https://github.com/laurigates/claude-plugins/commit/d089744a9146a30cf10cf2977da8187e30abc65e)), closes [#3098](https://github.com/laurigates/claude-plugins/issues/3098)
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.18.0...evaluate-plugin-v1.19.0) (2026-11-03)
 
 
