@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-09-22
-reviewed: 2026-09-22
+modified: 2026-11-03
+reviewed: 2026-11-03
 name: publish-sync
 description: "Obsidian Publish and Sync operations. Use when publishing notes, managing change sets, pausing/resuming sync, or recovering sync-deleted files."
 user-invocable: false
@@ -73,6 +73,10 @@ obsidian publish:open file="Public Note"
 ```
 
 ## Obsidian Sync
+
+These commands control Sync **inside the running desktop app**. To sync a
+vault from the command line without the desktop app, use Obsidian Headless
+(Headless Sync) — a separate tool, not part of this CLI.
 
 ### Status & Pause/Resume
 
