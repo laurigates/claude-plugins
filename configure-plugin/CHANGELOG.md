@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.2...configure-plugin-v1.43.0) (2026-11-06)
+
+
+### Features
+
+* **configure-plugin:** make the slim README with docs/ pages the configure-readme default ([#3420](https://github.com/laurigates/claude-plugins/issues/3420)) ([67bea78](https://github.com/laurigates/claude-plugins/commit/67bea78f399efc10b9465bb0867ccc00f1b2da09)), closes [#3307](https://github.com/laurigates/claude-plugins/issues/3307)
+
 ## [1.42.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.1...configure-plugin-v1.42.2) (2026-11-03)
 
 

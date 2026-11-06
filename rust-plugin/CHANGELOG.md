@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.2...rust-plugin-v1.8.3) (2026-11-06)
+
+
+### Bug Fixes
+
+* **git-plugin,rust-plugin:** bring seven skill descriptions under 200 characters ([f653a3b](https://github.com/laurigates/claude-plugins/commit/f653a3b12c385d8dcbacb2f7761a5382a23b2bbb))
+
 ## [1.8.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.1...rust-plugin-v1.8.2) (2026-11-06)
 
 
