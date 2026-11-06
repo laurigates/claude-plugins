@@ -29,7 +29,7 @@
 # 17. which <tool> in context: exits 1 SILENTLY (nothing on stderr) when the tool
 #     is absent, aborting the skill before its body runs (issue #2145)
 # 18. escaped single quotes (\'file\') reach the command literally, so a find
-#     -name probe never matches (issue #3207) — WARN
+#     -name probe never matches (issue #3207)
 #
 # Exit codes:
 #   0 - no issues
@@ -290,6 +290,18 @@ while IFS= read -r match; do
     "start the walk from '.' so it tolerates a missing .claude/: find . -maxdepth 2 -path '*/.claude/settings.json'"
 done < <(grep -rn '^- .*!`find \.claude' --include='SKILL.md' --include='skill.md' ./health-plugin 2>/dev/null || true)
 
+# Escaped single quotes (\'file\') in context commands: the shell does not
+# strip them, so the quote characters reach the command as part of the argument
+# and `find -name \'.gitleaks.toml\'` looks for a file literally named
+# '.gitleaks.toml' (quotes included) — it never matches.
+# Landed as WARN in #3392; promoted to ERROR once #3410 left the tree clean.
+# Regression: configure-status and 15 sibling configure-plugin skills (issue #3207;
+# configure-security fixed the same shape in #1919)
+check_pattern ERROR \
+  "escaped-single-quote" \
+  "^- .*!\`[^\`]*\\\\'" \
+  "drop the backslashes: -name '.file'; if the value contains '/', use -path './dir/file' with a -maxdepth deep enough to reach it (-name never matches a slash)"
+
 ##############################
 # WARNINGS - likely to break
 ##############################
@@ -320,18 +332,6 @@ check_pattern WARN \
   "shell-operator-semicolon" \
   '^- .*!`[^`]*; [^`]*`' \
   "remove ; operator; split into separate context commands"
-
-# Escaped single quotes (\'file\') in context commands: the shell does not
-# strip them, so the quote characters reach the command as part of the argument
-# and `find -name \'.gitleaks.toml\'` looks for a file literally named
-# '.gitleaks.toml' (quotes included) — it never matches.
-# WARN while the remaining offenders are fixed; promoted to ERROR once clean.
-# Regression: configure-status and 15 sibling configure-plugin skills (issue #3207;
-# configure-security fixed the same shape in #1919)
-check_pattern WARN \
-  "escaped-single-quote" \
-  "^- .*!\`[^\`]*\\\\'" \
-  "drop the backslashes: -name '.file'; if the value contains '/', use -path './dir/file' with a -maxdepth deep enough to reach it (-name never matches a slash)"
 
 ##############################
 # Summary
