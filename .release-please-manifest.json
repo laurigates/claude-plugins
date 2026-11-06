@@ -20,7 +20,7 @@
   "feedback-plugin": "1.14.1",
   "finops-plugin": "1.4.4",
   "foundryvtt-plugin": "1.6.1",
-  "git-plugin": "2.69.4",
+  "git-plugin": "2.69.5",
   "github-actions-plugin": "1.13.5",
   "health-plugin": "1.24.1",
   "home-assistant-plugin": "1.4.1",
@@ -46,6 +46,6 @@
   "session-plugin": "1.15.0",
   "software-design-plugin": "1.2.0",
   "video-plugin": "1.1.0",
-  "workflow-orchestration-plugin": "1.17.1",
+  "workflow-orchestration-plugin": "1.17.2",
   "youtube-plugin": "1.1.0"
 }
