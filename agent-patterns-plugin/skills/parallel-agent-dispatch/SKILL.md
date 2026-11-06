@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-10-21
+modified: 2026-11-05
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -389,6 +389,11 @@ re-firing its outward side effects — an agent that opened a PR opens a
 [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Opposite
 failure to the `SendMessage` case above (there the resume loses its worktree;
 here it re-runs the whole agent).
+
+Claude Code 2.1.305 says resume no longer re-runs completed `pipeline()` and
+`parallel()` agents and serves them from the run's journal. That is unverified
+here for worktree agents, so the guidance in this section stands until a
+resume on 2.1.305+ is shown not to re-open a PR.
 
 So to retry a few failed worktree agents, do **not** resume the whole run —
 **re-dispatch only the failed agents** in a fresh **sequential** pass (which

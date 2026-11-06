@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -20,9 +20,13 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 
 > **Fail-closed (2.1.288, 2.1.295)**: Since 2.1.288, a `PreToolUse` or `PermissionRequest` call is **blocked** when matching its hooks fails or the tool input cannot be serialized to JSON; before, the hook was silently skipped. Every other command and HTTP hook still fails open unless it sets `onFailure: "block"` (2.1.295), which blocks the action when the hook cannot start, times out, or exits with an unexpected code. Set it only on safety hooks: a nudge that fails closed dead-ends work (`.claude/rules/hook-block-vs-nudge.md`). Since 2.1.296, a managed-settings `PreToolUse` hook denying with `"continue": false`, or a managed `prompt` hook that blocks, also ends the turn; before, it refused the call and the turn went on.
 
-> **Plugin-hook fail-closed (2.1.299)**: Extends the notes above. An action a plugin hook can block is **refused** when the hook cannot be handed the action or cannot hand back its answer, and a tool that already ran has its result withheld. Values nested deeper than 28,000 levels are refused; before, plugin hooks were skipped on very deeply nested tool input. On Windows, `PreToolUse`/`PermissionRequest` hooks that set no shell used to fail open when Git for Windows was missing; a guard that fails there now blocks the call.
+> **Plugin-hook fail-closed (2.1.299)**: Extends the notes above. An action a plugin hook can block is **refused** when the hook cannot be handed the action or cannot hand back its answer, and a tool that already ran has its result withheld. Values nested deeper than 28,000 levels are refused; before, plugin hooks were skipped on very deeply nested tool input.
 
-> **Version-history sidecar**: dated notes for bugs fixed long ago (matcher/`if` fixes 2.1.147-2.1.191, worktree `transcript_path`, `SessionStart` stderr, keep-alives, working-directory deletion) moved to [`docs/hooks-version-history.md`](../../docs/hooks-version-history.md). The behaviour described in this file is current; the sidecar records only what used to be broken.
+> **Windows fail-open fixes (2.1.299, 2.1.309, 2.1.310)**: `PreToolUse`/`PermissionRequest` hooks no longer let a call through when Git for Windows is missing: hooks that set no shell (2.1.299), `"shell": "powershell"` hooks (2.1.309), and hooks whose command is only quoted strings, such as a quoted path (2.1.310). A Windows guard that cannot run now blocks the call.
+
+> **Skill hook cap (2.1.304)**: the skills of one source (a repo, the user's own folder or a plugin) can register at most **1,024 hooks and 16,384 matcher characters per session**. A plugin that spreads hooks across many skills' frontmatter shares one budget.
+
+> **Version-history sidecar**: dated notes for bugs since fixed (matcher/`if` fixes 2.1.147-2.1.191, worktree `transcript_path`, `SessionStart` stderr, keep-alives, working-directory deletion, async JSON, exit-code and output fixes 2.1.214-2.1.304) moved to [`docs/hooks-version-history.md`](../../docs/hooks-version-history.md). The behaviour described in this file is current; the sidecar records only what used to be broken.
 
 ## Hook Events
 
@@ -115,9 +119,7 @@ These are the two most commonly confused events:
 | **Scope** | Session-level | Per-subagent |
 | **Use case** | Git reminders, session-end notifications | Per-task validation, quality gates |
 | **Blocking** | Can block next user turn with `"decision": "block"` | Can block subagent from being considered complete |
-| **Frequency** | Once per response cycle | Once per Task tool invocation |
-
-Before 2.1.275, a `SubagentStop` hook with a specific `matcher` also fired for every stopping subagent whose agent type was empty.
+| **Frequency** | Once per response cycle | Once per Task tool invocation (before 2.1.311, about twice a minute for each running subagent) |
 
 ```json
 // Stop — blocks the session from completing the turn
@@ -145,12 +147,12 @@ Default timeouts vary by hook type:
 | `prompt` | 30 seconds |
 | `agent` | 60 seconds |
 
-The command hook default was increased from 60 seconds in Claude Code 2.1.50.
+The command hook default was increased from 60 seconds in Claude Code 2.1.50. For `prompt` and `agent` hooks a `timeout` under 1 second counts as 1 second, and their concurrency is capped per session (2.1.312; cap and queueing in `prompt-agent-hooks.md` § Optimization Tips).
 
 | Hook Type | Recommended Timeout | Notes |
 |-----------|---------------------|-------|
 | `SessionStart` | 300–600s | Dependency installs can be slow |
-| `SessionEnd` | 60–120s | Configurable via `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (fixed in 2.1.74 for hooks with an explicit per-hook `timeout`; hooks with no per-hook `timeout` were still capped at 1.5s until 2.1.268) |
+| `SessionEnd` | 60–120s | Configurable via `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` |
 | `PreToolUse` | 10–30s | Keep fast to avoid blocking tool execution |
 | `PostToolUse` | 30–120s | Formatting, linting, logging |
 | `Stop` / `SubagentStop` | 30–60s | Notifications, git checks |
@@ -160,7 +162,7 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 | `TeammateIdle` | 10–30s | Should assign work quickly |
 | `TaskCompleted` | 30–60s | Validation before acceptance |
 
-> **Note (2.1.285, 2.1.296)**: A synchronous hook that starts a background process (`some-daemon &`) holding stdout open no longer hangs Claude Code; the hook finishes shortly after its own process exits (2.1.285). To find a slow hook, run with `--debug`: command hooks on tool calls, prompts, SessionStart and Stop log their command, plugin, outcome and duration (2.1.296).
+> **Note (2.1.296)**: To find a slow hook, run with `--debug`: command hooks on tool calls, prompts, SessionStart and Stop log their command, plugin, outcome and duration.
 
 Set timeout explicitly even though the default is now 10 minutes — explicit timeouts document intent. The unit is **seconds**; `5000` is 83 minutes, not 5 s, and under `onFailure: "block"` a budget that never fires leaves a safety hook able to hang a session. `scripts/check-hook-timeout-units.sh` fails any plugin hook `timeout` >= 1000 (#3079):
 
@@ -352,6 +354,8 @@ Fires after `/add-dir` or the SDK `register_repo_root` control request registers
 {"decision": "block"}
 ```
 
+Since 2.1.314 each `PreCompact` hook's output is cut at 10,000 characters; larger output used to make compaction fail or repeat.
+
 ### PostCompact (2.1.76+)
 
 ```json
@@ -406,7 +410,7 @@ Output can override `action`/`content`. Exit code 2 changes action to `decline`.
 }
 ```
 
-`source` is `"agent_needs_input"` or `"agent_completed"` for background-agent notifications (`claude agents`), alongside the pre-existing desktop/system-notification cases. As of 2.1.233, `Notification` hooks also correctly fire for permission prompts under Claude Desktop and VS Code — previously silently skipped there.
+`source` is `"agent_needs_input"` or `"agent_completed"` for background-agent notifications (`claude agents`), alongside the pre-existing desktop/system-notification cases. `Notification` hooks also fire for permission prompts under Claude Desktop and VS Code (2.1.233+).
 
 ---
 
@@ -474,7 +478,7 @@ interruption. See `.claude/rules/hook-block-vs-nudge.md` for whether to gate at
 all, and `feedback-plugin/hooks/check-open-pr.sh` for a worked example of the
 `ask` → `deny` reclassification.
 
-> **Security Note (2.1.72)**: Prior to 2.1.72, returning `"allow"` from a PreToolUse hook could bypass `deny` rules (including enterprise managed settings). This is now fixed — `deny` rules always take precedence. Two later gaps in the same family: before 2.1.290 some permission rules and safety checks were not re-applied after a hook rewrote the input with `updatedInput`, and before 2.1.292 a hook `allow` (or auto mode) skipped the prompt for file reads from network (UNC) paths.
+> **Security Note (2.1.72+)**: A hook `"allow"` never overrides a `deny` rule, managed ones included. The bypasses fixed in 2.1.72, 2.1.290 and 2.1.292 are in the version-history sidecar.
 
 Optionally modify the tool input before execution:
 
@@ -697,7 +701,9 @@ replayed transcript" as deliberately as "never reaches a diff."
 
 > **Note (2.1.280)**: The `hook_execution_complete` OTel event reports output sizes and a count of oversized outputs, so hook output cost can be measured rather than estimated. The `UserPromptSubmit` timeout notice names the hook that timed out.
 
-> **Note (2.1.292, 2.1.295)**: `<system-reminder>` tags written in hook output are escaped before they reach Claude (2.1.292), so a hook cannot pose as a harness reminder. Hooks in background sessions inherited `FORCE_COLOR=3` before 2.1.295, which put color escape codes into the output Claude reads.
+> **Note (2.1.292)**: `<system-reminder>` tags written in hook output are escaped before they reach Claude, so a hook cannot pose as a harness reminder.
+
+> **Note (2.1.307)**: The `claude_code.safety_event` OTel event is emitted for each tool call that a permission rule, auto mode, a safety check, a hook or the sandbox stopped, prompted or sent back, so hook blocks can be counted beside the other layers.
 
 ### Which output the model sees (and replays)
 
@@ -898,8 +904,6 @@ Use async hooks for non-blocking side effects like logging, metrics, and notific
 
 > **Note (2.1.75)**: Async hook completion messages are suppressed by default. Use `--verbose` or transcript mode to see them.
 
-> **Note (2.1.295)**: Before 2.1.295, an async hook's JSON output was ignored when printed over several lines, and an async SessionStart hook's unchanged context was re-added on every resume. On older clients, emit async JSON on one line (`jq -c`).
-
 ---
 
 ## Hook Handler Fields
@@ -917,13 +921,13 @@ Set `once: true` on a hook handler to run it only once per session. Subsequent t
 }
 ```
 
-Useful for `SessionStart` setup scripts or one-time validation checks.
+Useful for `SessionStart` setup scripts or one-time validation checks. Since 2.1.304 a skill's `once` hook no longer removes another skill's identical hook after it runs.
 
 ---
 
 ## Hooks in Skill/Agent Frontmatter
 
-Skills and agents can define scoped hooks in their YAML frontmatter. These hooks are only active when the skill/agent is loaded.
+Skills and agents can define scoped hooks in their YAML frontmatter. These hooks are only active when the skill/agent is loaded. Skill hooks count toward the per-source cap of 1,024 hooks and 16,384 matcher characters (2.1.304; top of this file).
 
 ### Skill Frontmatter Hooks
 
@@ -983,7 +987,7 @@ exit 0
 
 ### `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (2.1.74+)
 
-Override the `SessionEnd` hook timeout in milliseconds. Prior to 2.1.74, `SessionEnd` hooks were hard-capped at 1.5 seconds regardless of `hook.timeout`. Set this to allow longer cleanup hooks:
+Override the `SessionEnd` hook timeout in milliseconds, to allow longer cleanup hooks:
 
 ```bash
 export CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=30000  # 30 seconds
@@ -1049,6 +1053,11 @@ default in auto and bypassPermissions modes, elsewhere only with the user- or
 managed-scope `bashEditDiffEnabled`) — `blueprint-plugin/hooks/lib/doc-paths.sh`
 reads both payload shapes.
 
+Hooks that match `Bash` also run on shell commands the Monitor tool starts
+(2.1.314). They can block or ask on those commands but cannot approve or rewrite
+them, and an `if` condition such as `Monitor(tail *)` matches Monitor's
+commands the way `Bash(tail *)` matches Bash's.
+
 ### MCP Tool Matching
 
 MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex patterns:
@@ -1082,7 +1091,7 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 
 > **Note**: `WorktreeCreate` and `WorktreeRemove` treat any non-zero exit code as a failure (not just exit code 2).
 
-> **Note (2.1.214)**: Exit code 2 blocks the operation as documented even when the hook's stdout JSON fails schema validation — malformed JSON no longer silently downgrades a block to a pass-through.
+Exit code 2 blocks even when the hook's stdout JSON fails schema validation (2.1.214), and PowerShell hooks block on exit code 2 as documented (2.1.309), including a command that begins with a type cast, `param`, `using` or an attribute (2.1.316).
 
 ---
 

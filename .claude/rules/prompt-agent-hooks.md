@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-10-22
+modified: 2026-11-05
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -242,7 +242,7 @@ Respond with {"ok": true} if [all checks pass], or {"ok": false, "reason": "spec
 - Reserve `agent` hooks for checks that genuinely require LLM judgment AND tool access
 - Set appropriate timeouts (don't use 120s when 30s suffices)
 - Use the `model` field to pick the cheapest model that works
-- Prompt and agent hooks run at most **12 of one event at a time** (2.1.302); the rest queue, so a prompt/agent hook on a high-fan-out event (`PreToolUse` during parallel tool calls) adds queueing latency on top of its own 1-60s
+- Prompt and agent hooks run at most **24 at a time per session**, sub-agents included, plus at most 12 that have waited longer than their event's timeout (2.1.312; this replaced the 2.1.302 cap of 12 per event). The rest queue, so a prompt/agent hook on a high-fan-out event (`PreToolUse` during parallel tool calls) adds queueing latency on top of its own 1-60s. A `timeout` under 1 second counts as 1 second (2.1.312)
 
 ### Anti-Patterns
 
