@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.2...git-plugin-v2.69.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* **git-plugin:** require the full SHA for --match-head-commit in git-merge-hazards ([#3408](https://github.com/laurigates/claude-plugins/issues/3408)) ([f600c4a](https://github.com/laurigates/claude-plugins/commit/f600c4a29f98fd6b3dde6a4f934fe14930ecaf33)), closes [#3396](https://github.com/laurigates/claude-plugins/issues/3396)
+
 ## [2.69.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.1...git-plugin-v2.69.2) (2026-11-04)
 
 
