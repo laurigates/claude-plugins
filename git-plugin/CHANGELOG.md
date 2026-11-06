@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.4...git-plugin-v2.69.5) (2026-11-06)
+
+
+### Documentation
+
+* **git-plugin:** warn that a COMMIT_MESSAGES squash body keeps reverted commits footers ([5e56691](https://github.com/laurigates/claude-plugins/commit/5e5669181bbc07d6241cf89e4b4fa54483563c9d))
+
 ## [2.69.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.3...git-plugin-v2.69.4) (2026-11-06)
 
 
