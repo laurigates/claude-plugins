@@ -583,3 +583,39 @@ describe("tool.execute.before — Claude Code variables (#2662)", () => {
     expect(nonString.command).toBe(42);
   });
 });
+
+describe("shell.env — OPENCODE_SESSION_ID for distill-survey.sh (#2725)", () => {
+  type ShellEnv = NonNullable<Hooks["shell.env"]>;
+  async function runShellEnv(hooks: Hooks, input: Parameters<ShellEnv>[0]) {
+    const output = { env: {} as Record<string, string> };
+    await hooks["shell.env"]?.(input, output);
+    return output.env;
+  }
+
+  test("exports OpenCode's raw session id on a bash call", async () => {
+    const hooks = await makeHooks();
+    expect(hooks["shell.env"]).toBeDefined();
+    const env = await runShellEnv(hooks, {
+      cwd: fixtureRoot,
+      sessionID: "ses_abc123",
+      callID: "c1",
+    });
+    // Raw, not derived: `opencode export` looks the session up by this id.
+    expect(env.OPENCODE_SESSION_ID).toBe("ses_abc123");
+  });
+
+  test("a shell call without a session sets nothing", async () => {
+    const hooks = await makeHooks();
+    const env = await runShellEnv(hooks, { cwd: fixtureRoot });
+    expect(env).toEqual({});
+  });
+
+  test("mutates output.env in place and keeps what another plugin set", async () => {
+    const hooks = await makeHooks();
+    const output = { env: { OTHER: "1" } as Record<string, string> };
+    const before = output.env;
+    await hooks["shell.env"]?.({ cwd: fixtureRoot, sessionID: "ses_x" }, output);
+    expect(output.env).toBe(before);
+    expect(output.env).toEqual({ OTHER: "1", OPENCODE_SESSION_ID: "ses_x" });
+  });
+});

@@ -24,7 +24,9 @@
  * Claude Code variables (#2662): a `tool.execute.before` hook rewrites `bash`
  * calls that reference `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_ROOT}` or
  * `${CLAUDE_SESSION_ID}`, using the resolver pi's binding shares
- * (core/claude-env.ts).
+ * (core/claude-env.ts). A `shell.env` hook sets OPENCODE_SESSION_ID (the raw
+ * `ses_…` id) on every bash call, the transcript hint session-distill's
+ * collector reads through `opencode export` (#2725).
  */
 
 import { basename, dirname, isAbsolute, resolve } from "node:path";
@@ -240,6 +242,16 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
         },
         input.directory,
       );
+    },
+
+    // Transcript hint for session-distill (#2725): distill-survey.sh reads the
+    // session through `opencode export "$OPENCODE_SESSION_ID"`, so the RAW
+    // `ses_…` id goes in, unlike the derived CLAUDE_SESSION_ID. The bash tool
+    // (tool/shell.ts, verified at v1.18.3 and v1.19.5) merges output.env over
+    // process.env for every call, so no command rewrite is needed. Mutated in
+    // place: Plugin.trigger hands every plugin the same output object.
+    "shell.env": async (shellInput, output) => {
+      if (shellInput.sessionID) output.env.OPENCODE_SESSION_ID = shellInput.sessionID;
     },
 
     "experimental.chat.messages.transform": async (_input, output) => {

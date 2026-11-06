@@ -119,8 +119,12 @@ Three OpenCode specifics:
   begin with a time-ordered segment, so the raw id's first eight characters,
   which `task-claim` and `git-coworker-check` use as an agent identity, would
   collide between sessions started close together.
-- **No transcript hint.** Nothing like pi's `PI_SESSION_FILE` is exported, so
-  `session-distill` still re-reads the conversation under OpenCode.
+- **The transcript hint is the raw session id.** OpenCode keeps sessions in
+  its database rather than in files, so there is no `PI_SESSION_FILE`
+  equivalent. A `shell.env` hook sets `OPENCODE_SESSION_ID` (the raw `ses_…`
+  id) on every `bash` call, and `session-distill`'s collector reads the
+  session through `opencode export` (#2725, see
+  [`session-plugin/README.md`](../session-plugin/README.md#transcript-sources)).
 
 Verified against the OpenCode v1.18.3 source (`session/tools.ts`,
 `tool/shell.ts`, `plugin/index.ts`) and the stubbed hook tests in

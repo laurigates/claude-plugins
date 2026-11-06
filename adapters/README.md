@@ -219,7 +219,9 @@ config file; the tuple form carries the options):
   input, so the `export` line shows in the transcript. OpenCode's shell
   permission scan ignores it (`export` parses as a declaration, not a
   command). `CLAUDE_SESSION_ID` is hashed from OpenCode's `ses_…` id, whose
-  prefix is time-ordered too. No `PI_SESSION_FILE` equivalent is exported.
+  prefix is time-ordered too. A `shell.env` hook sets `OPENCODE_SESSION_ID`
+  (the raw id) on every `bash` call, which `distill-survey.sh` passes to
+  `opencode export` to read the session (#2725).
   See [`docs/opencode-export.md`](../docs/opencode-export.md) § Claude Code
   variables in OpenCode.
 
