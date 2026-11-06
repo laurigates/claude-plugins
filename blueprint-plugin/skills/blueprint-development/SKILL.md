@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-06
 reviewed: 2026-02-14
 name: blueprint-development
-description: Generate project-specific rules from PRDs for Blueprint Development. Use when generating architecture, testing, or quality rules from requirements documents.
+description: Full Blueprint Development setup in one pass - PRD-derived rules, workflow commands, manifest mapping. Use when bootstrapping rules and commands together; for rules alone use blueprint-generate-rules.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
@@ -17,6 +17,7 @@ Guide and reference for the Blueprint Development methodology that generates pro
 | Use this skill when... | Use alternative when... |
 |------------------------|-------------------------|
 | Starting Blueprint Development in a project | Project is already using Blueprint (use `/blueprint:status`) |
+| Setting up rules, commands and the manifest mapping together | Regenerating rules alone (use `/blueprint:generate-rules`) |
 | Need to generate rules from PRDs | Starting a brand new project with no PRD yet |
 | Want project-specific behavioral guidelines | Using generic development practices |
 | Creating workflow automation for a project | Working on isolated tasks without project context |
