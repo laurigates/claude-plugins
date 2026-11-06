@@ -106,7 +106,7 @@ merged into their configure siblings' `REFERENCE.md` files
 | Skill | Description |
 |-------|-------------|
 | `configure-docs` | Documentation standards and generators |
-| `configure-readme` | README.md with logo, badges, features, tech stack sections |
+| `configure-readme` | Slim README.md (header and badges, short description, quick start, docs index, licence) with the detail sections moved into `docs/` pages; link check after the split |
 | `configure-surface` | Surface doc↔code drift gate (deterministic, SHA-pinned) |
 
 ### Feature Flags
