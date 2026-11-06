@@ -15,8 +15,9 @@
 #   E. the REAL repo has no `which` left in any Context block — pins the
 #      project-init fix so a revert is caught
 #   F. a Context command with escaped single quotes (`-name \'file\'`) is
-#      reported WARN under rule `escaped-single-quote` and, without --strict,
-#      exits 0 (issue #3207 — the quote characters reach find, so it never matches)
+#      reported ERROR under rule `escaped-single-quote` and the script exits 1
+#      (issue #3207 — the quote characters reach find, so it never matches;
+#      promoted from WARN once the tree was clean)
 #   G. the same command with plain single quotes is NOT flagged
 #   H. no configure-plugin SKILL.md carries the escaped-quote shape — pins the
 #      #3207 part-1 fix so a revert is caught
@@ -170,11 +171,11 @@ e_out="$( cd "$repo_root" && bash "$linter" 2>&1 )"
 grep -q 'which-in-context' <<<"$e_out" && e_ok=false || e_ok=true
 assert "E: no \`which\` remains in any Context block repo-wide" "$e_ok"
 
-# F. escaped single quotes -> WARN [escaped-single-quote], exit 0 without --strict
+# F. escaped single quotes -> ERROR [escaped-single-quote], exit 1
 f_out="$(run_lint escaped-quote)"
 f_rc="$(lint_rc escaped-quote)"
-grep -q 'WARN \[escaped-single-quote\]' <<<"$f_out" && [ "$f_rc" -eq 0 ] && f_ok=true || f_ok=false
-assert "F: Context find with escaped single quotes is WARN [escaped-single-quote] and exits 0 (#3207)" "$f_ok"
+grep -q 'ERROR \[escaped-single-quote\]' <<<"$f_out" && [ "$f_rc" -eq 1 ] && f_ok=true || f_ok=false
+assert "F: Context find with escaped single quotes is ERROR [escaped-single-quote] and exits 1 (#3207)" "$f_ok"
 
 # G. plain single quotes -> not flagged
 g_out="$(run_lint plain-quote)"
@@ -182,12 +183,12 @@ grep -q 'All context commands OK' <<<"$g_out" && g_ok=true || g_ok=false
 assert "G: plain single-quoted Context find commands are NOT flagged" "$g_ok"
 
 # H. no configure-plugin file carries the escaped-quote shape (pins #3207 part 1)
-h_hits="$(grep -A0 'WARN \[escaped-single-quote\]' <<<"$e_out" | grep -c 'configure-plugin/' || true)"
+h_hits="$(grep -A0 '\[escaped-single-quote\]' <<<"$e_out" | grep -c 'configure-plugin/' || true)"
 [ "$h_hits" -eq 0 ] && h_ok=true || h_ok=false
 assert "H: no configure-plugin Context command carries escaped single quotes (found $h_hits)" "$h_ok"
 
 # I. no SKILL.md anywhere carries the escaped-quote shape (pins #3207 part 2)
-i_hits="$(grep -c 'WARN \[escaped-single-quote\]' <<<"$e_out" || true)"
+i_hits="$(grep -c '\[escaped-single-quote\]' <<<"$e_out" || true)"
 [ "$i_hits" -eq 0 ] && i_ok=true || i_ok=false
 assert "I: no Context command in any SKILL.md carries escaped single quotes (found $i_hits)" "$i_ok"
 
