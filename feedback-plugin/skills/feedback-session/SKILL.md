@@ -6,7 +6,7 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 model: opus
 argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-11-02
+modified: 2026-11-07
 compatibility: claude-code
 reviewed: 2026-06-28
 ---
@@ -60,7 +60,7 @@ with no prose falls back to the transcript scan as before.
 
 Execute this session feedback workflow:
 
-### Step 1: Resolve target repo and ensure labels exist
+### Step 1: Resolve target repo and check label policy
 
 **1a. Determine target repo**
 
@@ -100,9 +100,9 @@ Run `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If it succeeds, rec
 
 Thresholds and evidence: [references/target-repo-resolution.md](references/target-repo-resolution.md) — read before editing this step.
 
-**1b–1c. Check IaC-managed labels, then create missing labels**
+**1b. Check whether labels are IaC-managed**
 
-Follow [references/labels.md](references/labels.md): detect IaC-managed labels (may set `$SKIP_SESSION_LABELS=true`), then create any missing feedback labels.
+Follow step 1b of [references/labels.md](references/labels.md): detect IaC-managed labels (may set `$SKIP_SESSION_LABELS=true`). This step only reads; labels are created in Step 5a, once at least one finding is approved.
 
 ### Step 2: Collect findings (seed prose first, then conversation history)
 
@@ -169,7 +169,9 @@ approved.
 
 ### Step 5: Create approved issues
 
-For each approved finding, create a GitHub issue in `$TARGET_REPO`:
+**5a. Create missing labels.** Only when at least one finding is approved and `$SKIP_SESSION_LABELS` is not `true`: follow step 5a of [references/labels.md](references/labels.md). Creating them here, not in Step 1, keeps `--dry-run` read-only and writes nothing when every finding deduped away.
+
+**5b.** For each approved finding, create a GitHub issue in `$TARGET_REPO`:
 
 **Title format**: `feedback(<plugin-name>): <description>`
 
