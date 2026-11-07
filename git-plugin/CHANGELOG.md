@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.70.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.10...git-plugin-v2.70.0) (2026-11-07)
+
+
+### Features
+
+* **git-plugin:** nudge when .claude/worktrees/ is not git-ignored ([#3477](https://github.com/laurigates/claude-plugins/issues/3477)) ([174417f](https://github.com/laurigates/claude-plugins/commit/174417f55d3db6dcf2de88724f3ee6009074a7d3))
+
 ## [2.69.10](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.9...git-plugin-v2.69.10) (2026-11-07)
 
 
