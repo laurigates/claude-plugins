@@ -7,14 +7,13 @@ agent-patterns-plugin/skills/expose-tunable-knob/SKILL.md	1
 agent-patterns-plugin/skills/harness-tool-errors/SKILL.md	2
 agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	2
-agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md	6
+agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md	5
 agent-patterns-plugin/skills/probe-input-integrity/SKILL.md	3
 agent-patterns-plugin/skills/tool-result-traps/SKILL.md	1
 bevy-plugin/skills/bevy-game-engine/SKILL.md	1
 blueprint-plugin/skills/blueprint-claude-md/SKILL.md	1
 blueprint-plugin/skills/blueprint-derive-plans/SKILL.md	1
 blueprint-plugin/skills/blueprint-feature-tracker-sync/SKILL.md	1
-blueprint-plugin/skills/blueprint-status/SKILL.md	1
 blueprint-plugin/skills/blueprint-story-audit/SKILL.md	2
 blueprint-plugin/skills/blueprint-sync-ids/SKILL.md	1
 blueprint-plugin/skills/blueprint-work-order/SKILL.md	1

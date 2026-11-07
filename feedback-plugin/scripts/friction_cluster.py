@@ -20,6 +20,13 @@ Deliverable mapping:
                             -> watch: reported for prevalence, never prescribed; the
                                fix lives in the emitting hook (e.g. #2652). See #2659.
 
+Build share (#3220): every run also reports, per plugin, the share of
+build-stamped hook blocks (the `plugin`/`version` fields friction_parse.py
+reads off the harness wrapper path) per version, with the current release
+marked. It is `build_share` in the JSON and the standing `## Build share`
+section of the PR body. The current release is the user-scope version in
+`--installed-plugins`, or `--current-version PLUGIN=VERSION`.
+
 `classify-required` clusters are reported in the PR body with sample evidence
 so a human can decide which (if any) rule is justified. They never write a
 committed file or auto-prescribe a fix. See issue #1110.
@@ -144,6 +151,117 @@ def cluster(events: list[dict]) -> dict[str, list[dict]]:
     return buckets
 
 
+def version_key(version: str) -> tuple:
+    """Sort key that orders 2.9.0 before 2.10.0; non-numeric parts sort last."""
+    parts = []
+    for piece in version.replace("-", ".").split("."):
+        parts.append((0, int(piece), "") if piece.isdigit() else (1, 0, piece))
+    return tuple(parts)
+
+
+def current_versions(installed_path: str, overrides: list[str]) -> dict[str, str]:
+    """Current release per plugin name.
+
+    The user-scope entry of `installed_plugins.json` is the build a fresh
+    project gets, so it stands for the current release (#3220). An explicit
+    `--current-version PLUGIN=VERSION` wins over the file. A missing or
+    unreadable file yields no entries, never an error: the row then reports the
+    shares with no version marked current.
+    """
+    found: dict[str, str] = {}
+    path = Path(installed_path).expanduser() if installed_path else None
+    if path and path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+        for key, entries in (data.get("plugins") or {}).items():
+            for entry in entries if isinstance(entries, list) else []:
+                if isinstance(entry, dict) and entry.get("scope") == "user":
+                    version = entry.get("version")
+                    if version:
+                        found[key.split("@", 1)[0]] = version
+    for spec in overrides:
+        plugin, sep, version = spec.partition("=")
+        if not sep or not plugin or not version:
+            raise SystemExit(f"--current-version expects PLUGIN=VERSION, got {spec!r}")
+        found[plugin] = version
+    return found
+
+
+def build_share(events: list[dict], current: dict[str, str]) -> dict:
+    """Per plugin, the share of build-stamped hook blocks that ran on each version.
+
+    A fix that ships in a release only lowers a cluster once the release runs;
+    project-scope installs pinned below the user-scope version keep firing the
+    old build (#3220). The denominator is the plugin's stamped hook blocks, so
+    unstamped blocks (no cache path in the wrapper) are counted separately and
+    never diluted into a version's share.
+    """
+    blocks = [e for e in events if e.get("kind") == "hook_block"]
+    per_plugin: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for ev in blocks:
+        plugin, version = ev.get("plugin"), ev.get("version")
+        if plugin and version:
+            per_plugin[plugin][version] += 1
+    plugins = []
+    for plugin in sorted(per_plugin):
+        counts = per_plugin[plugin]
+        total = sum(counts.values())
+        cur = current.get(plugin)
+        plugins.append(
+            {
+                "plugin": plugin,
+                "stamped_blocks": total,
+                "current_version": cur,
+                "current_share_pct": round(100.0 * counts.get(cur, 0) / total, 1)
+                if cur
+                else None,
+                "versions": [
+                    {
+                        "version": version,
+                        "count": counts[version],
+                        "share_pct": round(100.0 * counts[version] / total, 1),
+                        "current": version == cur,
+                    }
+                    for version in sorted(counts, key=version_key, reverse=True)
+                ],
+            }
+        )
+    return {
+        "hook_blocks": len(blocks),
+        "stamped_blocks": sum(p["stamped_blocks"] for p in plugins),
+        "plugins": plugins,
+    }
+
+
+def render_build_share(share: dict) -> list[str]:
+    """The standing build-share section of the PR body; rendered every run."""
+    lines = [
+        "## Build share",
+        "",
+        f"Build-stamped hook blocks: {share['stamped_blocks']} of "
+        f"{share['hook_blocks']}. Share of each plugin's stamped blocks per "
+        "version that ran; `(current)` marks the current release.",
+        "",
+    ]
+    if not share["plugins"]:
+        return lines + ["_No build-stamped hook blocks in the window._", ""]
+    lines += ["| Plugin | Version | Blocks | Share |", "|---|---|---|---|"]
+    for p in share["plugins"]:
+        for v in p["versions"]:
+            marker = " (current)" if v["current"] else ""
+            lines.append(
+                f"| `{p['plugin']}` | {v['version']}{marker} | {v['count']} | "
+                f"{v['share_pct']:.1f}% |"
+            )
+        if p["current_version"] and not any(v["current"] for v in p["versions"]):
+            lines.append(
+                f"| `{p['plugin']}` | {p['current_version']} (current) | 0 | 0.0% |"
+            )
+    return lines + [""]
+
+
 def propose(signature: str, hits: list[dict]) -> dict:
     spec = DELIVERABLES.get(signature)
     if spec is None:
@@ -227,7 +345,11 @@ def propose(signature: str, hits: list[dict]) -> dict:
 
 
 def render_pr_body(
-    proposals: list[dict], total_events: int, total_sessions: int, window: str
+    proposals: list[dict],
+    total_events: int,
+    total_sessions: int,
+    window: str,
+    share: dict | None = None,
 ) -> str:
     week = datetime.now(tz=timezone.utc).strftime("%G-W%V")
     lines = [
@@ -249,6 +371,9 @@ def render_pr_body(
             f"| `{p['signature']}` | {p['count']} | {p['sessions']} | "
             f"{p['repeat_sessions']} | {p['kind']} | `{p['path'] or '—'}` |"
         )
+    lines += [""] + render_build_share(
+        share or {"hook_blocks": 0, "stamped_blocks": 0, "plugins": []}
+    )
     classify = [p for p in proposals if p["kind"] == "classify-required"]
     if classify:
         lines += [
@@ -310,9 +435,25 @@ def main() -> int:
         help="Also write a PR body markdown to this path",
     )
     ap.add_argument("--window", default="7d")
+    ap.add_argument(
+        "--installed-plugins",
+        default="~/.claude/plugins/installed_plugins.json",
+        help="Registry whose user-scope versions mark the current release in "
+        "the build-share row ('' to skip)",
+    )
+    ap.add_argument(
+        "--current-version",
+        action="append",
+        default=[],
+        metavar="PLUGIN=VERSION",
+        help="Current release of a plugin; overrides --installed-plugins (repeatable)",
+    )
     args = ap.parse_args()
 
     events = load_events(args.infile)
+    share = build_share(
+        events, current_versions(args.installed_plugins, args.current_version)
+    )
     buckets = cluster(events)
     proposals_all = [propose(sig, hits) for sig, hits in buckets.items()]
     actionable = [p for p in proposals_all if p["count"] >= args.min_count]
@@ -326,6 +467,7 @@ def main() -> int:
         "min_count": args.min_count,
         "actionable": actionable,
         "watch": [p for p in proposals_all if p["count"] < args.min_count],
+        "build_share": share,
     }
 
     out = sys.stdout if args.out == "-" else open(args.out, "w", encoding="utf-8")
@@ -337,7 +479,9 @@ def main() -> int:
             out.close()
 
     if args.render_pr_body:
-        body = render_pr_body(actionable, len(events), len(sessions), args.window)
+        body = render_pr_body(
+            actionable, len(events), len(sessions), args.window, share
+        )
         Path(args.render_pr_body).write_text(body, encoding="utf-8")
         sys.stderr.write(f"wrote PR body to {args.render_pr_body}\n")
 

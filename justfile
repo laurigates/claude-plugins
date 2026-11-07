@@ -45,6 +45,26 @@ lint-taskwarrior-tags:
 catalog:
     python3 scripts/generate-catalog.py
 
+# Re-render docs/diagrams/plugin-relationships.svg with the d2 version the .svg records.
+# Uses d2 on PATH, else the docs-refresh cloud-session install under tmp/d2/.
+render-diagrams:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    svg=docs/diagrams/plugin-relationships.svg
+    want="$(grep -o 'data-d2-version="[^"]*"' "$svg" | cut -d'"' -f2)"
+    d2_bin="$(command -v d2 || true)"
+    [ -n "$d2_bin" ] || { [ -x "tmp/d2/d2-$want/bin/d2" ] && d2_bin="tmp/d2/d2-$want/bin/d2"; } || true
+    if [ -z "$d2_bin" ]; then
+        echo "d2 $want not found. Install it: .claude/skills/docs-refresh/SKILL.md § Cloud sessions" >&2
+        exit 1
+    fi
+    have="$("$d2_bin" --version)"
+    if [ "$have" != "$want" ]; then
+        echo "d2 is $have but $svg was rendered with $want; install $want (.claude/skills/docs-refresh/SKILL.md § Cloud sessions)" >&2
+        exit 1
+    fi
+    "$d2_bin" docs/diagrams/plugin-relationships.d2 "$svg"
+
 # Render docs/assets: the social-preview PNG, and the README banner with its text
 # outlined so it renders identically whatever fonts the viewer has
 brand-assets:
