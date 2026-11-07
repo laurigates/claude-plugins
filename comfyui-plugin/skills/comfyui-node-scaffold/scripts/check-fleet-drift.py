@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Report drift between the ComfyUI pack fleet and the scaffold template.
 
-`scaffold.py` generates the pack repos under ~/repos/laurigates/comfyui-nodes.
+`scaffold.py` generates the pack repos; this script reads them from the fleet
+root (`--fleet-root`, else `$COMFYUI_FLEET_ROOT`, else the current directory).
 The files it emits drift over time and, before this checker, nothing detected
 it: `tests/test_publish_hygiene.py` was supposed to stay byte-identical
 fleet-wide with no gate at all, and a stale `just assets` recipe silently
@@ -34,6 +35,7 @@ import argparse
 import contextlib
 import importlib.util
 import io
+import os
 import re
 import sys
 import tomllib
@@ -44,7 +46,14 @@ from typing import Any
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCAFFOLD_PY = SKILL_DIR / "scaffold.py"
 DEFAULT_POLICY = SKILL_DIR / "fleet-policy.toml"
-DEFAULT_FLEET_ROOT = Path.home() / "repos" / "laurigates" / "comfyui-nodes"
+# The fleet root comes from context: --fleet-root, else $COMFYUI_FLEET_ROOT,
+# else the current directory (where the pack clones sit side by side).
+FLEET_ROOT_ENV = "COMFYUI_FLEET_ROOT"
+
+
+def default_fleet_root() -> Path:
+    return Path(os.environ.get(FLEET_ROOT_ENV) or ".")
+
 
 # Never treated as a pack directory. `.claude/worktrees/` holds full repo clones
 # (issues #1492, #1548) and `dist/` is generated output (#2214); walking either
@@ -356,12 +365,12 @@ def emit_issue_body(
             print(f"| `{rel}` | {', '.join(sorted(names))} |")
         print()
 
-    # Deliberately the DEFAULT fleet root, not the swept one: in CI that is a
-    # throwaway clone directory, and pasting it would give a reader a path that
-    # does not exist on their machine.
+    # Not the swept root: in CI that is a throwaway clone directory, and pasting
+    # it would give a reader a path that does not exist on their machine.
     print("---\n")
     print(
-        "Reproduce locally (defaults to `~/repos/laurigates/comfyui-nodes`):\n\n```\n"
+        "Reproduce locally from the directory holding your pack clones (or pass "
+        f"`--fleet-root`, or set `{FLEET_ROOT_ENV}`):\n\n```\n"
         "python3 comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py\n"
         "```\n"
     )
@@ -375,8 +384,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fleet-root",
         type=Path,
-        default=DEFAULT_FLEET_ROOT,
-        help="directory holding the pack repos (default: ~/repos/laurigates/comfyui-nodes)",
+        default=None,
+        help=(
+            f"directory holding the pack repos (default: ${FLEET_ROOT_ENV}, "
+            "else the current directory)"
+        ),
     )
     parser.add_argument(
         "--pack",
@@ -405,7 +417,11 @@ def main(argv: list[str] | None = None) -> int:
     # (issue #2057).
     args = parser.parse_args(argv)
 
-    fleet_root = args.fleet_root.expanduser()
+    fleet_root = (
+        args.fleet_root.expanduser()
+        if args.fleet_root
+        else default_fleet_root().expanduser().resolve()
+    )
     policy, policy_problems, subfamily_map = load_policy(args.policy.expanduser())
     module = load_scaffold()
     templates = derive_invariant_templates(module)

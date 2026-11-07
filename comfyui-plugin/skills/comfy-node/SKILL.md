@@ -24,10 +24,10 @@ generates the local repo). Use `comfyui-node-scaffold` alone if you just want
 the files; use **this** when you want the GitHub repo created, pushed, and
 adopted into gitops too.
 
-> **Canonical owner of the gitops repo-adoption procedure.** Phases 3–5 below
+> **Canonical owner of the gitops adoption procedure.** Phases 3–5 below
 > (seed `main` → open the gitops PR → human gate → remove the import block),
 > the branch-protection hook note, and the generic failure-mode rows are the
-> single source of truth for **every** laurigates repo class, not just ComfyUI
+> single source of truth for **every** repo class, not just ComfyUI
 > packs. `foundryvtt-plugin:foundryvtt-module` carries only its own deltas and
 > defers here. If you arrived from another skill, read
 > [Adapting Phases 3–5 to another repo class](#adapting-phases-35-to-another-repo-class)
@@ -49,13 +49,32 @@ idea → `scaffold.py` → `gh repo create` + seed `main` → gitops PR → **hu
 
 ## Preconditions
 
-- Run from the workspace root `repos/laurigates/` (new repo lands as a sibling
-  of the reference packs; modal-variant primitive copy resolves there).
+- Run from the directory that holds your pack clones (the new repo lands as a
+  sibling of the reference packs; modal-variant primitive copy resolves there).
 - `gh auth status` is a **personal** account that can create repos. The gitops
   GitHub App *cannot* create repos on user accounts — that is exactly why the
   repo is created out-of-band here and then imported into Terraform state.
-- The gitops repo is clean (no uncommitted `repositories.tf` / `main.tf`
+- `<iac-dir>` is clean (no uncommitted `repositories.tf` / `main.tf`
   changes) so the orchestrator's gitops PR is isolated.
+
+## Values from context
+
+The commands in Phases 1–5 use three placeholders. Resolve them before Phase 1;
+none of them has a default.
+
+| Placeholder | Meaning | Where it comes from |
+|---|---|---|
+| `<owner>` | GitHub account that owns the pack repos; also the scaffold's `--publisher` | `PublisherId` in a sibling pack's `pyproject.toml`, else `gh api user --jq .login` |
+| `<iac-repo>` | `owner/name` of the repo that manages repository settings as code | `iac_repo:` in `.claude/comfyui-plugin.local.md` |
+| `<iac-dir>` | Local clone of `<iac-repo>` | `iac_dir:` in the same file |
+
+When the settings file has no `iac_repo:`, ask once how this user's repo
+settings and secrets are managed: infrastructure as code, organization
+secrets, or by hand. Offer to save the answer to `.claude/comfyui-plugin.local.md`
+so later runs skip the question. Phases 4–5 assume a Terraform/OpenTofu repo
+with a `repositories.tf` map and `import` blocks; for any other answer, set
+the secrets and branch protection the way the user named, and skip the
+`<iac-repo>` steps.
 
 ## Phase 0 — Derive and confirm the spec
 
@@ -85,11 +104,11 @@ test ! -e comfyui-touch-resize && echo "local: free" || echo "local: EXISTS"
 ```
 
 ```sh
-grep -q '"comfyui-touch-resize"' gitops/repositories.tf && echo "gitops: EXISTS" || echo "gitops: free"
+grep -q '"comfyui-touch-resize"' <iac-dir>/repositories.tf && echo "gitops: EXISTS" || echo "gitops: free"
 ```
 
 ```sh
-gh repo view laurigates/comfyui-touch-resize >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
+gh repo view <owner>/comfyui-touch-resize >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
 ```
 
 All three must report free. Stop and surface any collision.
@@ -97,7 +116,7 @@ All three must report free. Stop and surface any collision.
 ## Phase 2 — Scaffold + local green check
 
 ```sh
-python3 ${CLAUDE_SKILL_DIR}/../comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
+python3 ${CLAUDE_SKILL_DIR}/../comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture --publisher <owner>
 ```
 
 Then bring the pack to green locally (the scaffold prints these too):
@@ -157,7 +176,7 @@ git commit -m "feat: scaffold comfyui-touch-resize (gesture pack)"
 ```
 
 ```sh
-gh repo create laurigates/comfyui-touch-resize --public --source . --remote origin --push
+gh repo create <owner>/comfyui-touch-resize --public --source . --remote origin --push
 ```
 
 > **Branch-protection hook note (expect this):** in a Claude Code session the
@@ -167,7 +186,7 @@ gh repo create laurigates/comfyui-touch-resize --public --source . --remote orig
 > paste-safe line to run with the `! ` prefix, e.g.:
 >
 > ```
-> cd <repo> && git add -A && git commit -m "feat: scaffold <name> (gesture pack)" && gh repo create laurigates/<name> --public --source . --remote origin --push
+> cd <repo> && git add -A && git commit -m "feat: scaffold <name> (gesture pack)" && gh repo create <owner>/<name> --public --source . --remote origin --push
 > ```
 >
 > (`git add -A` and `&&`-chaining are fine in the *user's* shell — those hooks
@@ -179,9 +198,9 @@ The `--push` makes the seeded `main` the default branch.
 
 ## Phase 4 — Open the gitops PR (entry + transient import block)
 
-Two edits in the `gitops/` repo, on a dedicated branch.
+Two edits in `<iac-dir>`, on a dedicated branch.
 
-**`gitops/repositories.tf`** — add to the active repositories `locals` block,
+**`<iac-dir>/repositories.tf`** — add to the active repositories `locals` block,
 next to the other `comfyui-*` entries (mirror `comfyui-touch-connect`):
 
 ```hcl
@@ -194,7 +213,7 @@ next to the other `comfyui-*` entries (mirror `comfyui-touch-connect`):
     }
 ```
 
-**`gitops/main.tf`** — add a transient `import` block alongside the existing
+**`<iac-dir>/main.tf`** — add a transient `import` block alongside the existing
 ones at the top of the file:
 
 ```hcl
@@ -204,41 +223,41 @@ import {
 }
 ```
 
-Validate, branch, commit, push, open the PR (run inside `gitops/`):
+Validate, branch, commit, push, open the PR (run inside `<iac-dir>`):
 
 ```sh
 just check
 ```
 
 ```sh
-git -C gitops switch -c feat/adopt-comfyui-touch-resize
+git -C <iac-dir> switch -c feat/adopt-comfyui-touch-resize
 ```
 
 ```sh
-git -C gitops add repositories.tf main.tf
+git -C <iac-dir> add repositories.tf main.tf
 ```
 
 ```sh
-git -C gitops commit -m "feat: adopt comfyui-touch-resize (comfy_registry)"
+git -C <iac-dir> commit -m "feat: adopt comfyui-touch-resize (comfy_registry)"
 ```
 
 ```sh
-git -C gitops push -u origin feat/adopt-comfyui-touch-resize
+git -C <iac-dir> push -u origin feat/adopt-comfyui-touch-resize
 ```
 
 ```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore -l opentofu --title "feat: adopt comfyui-touch-resize (comfy_registry)" --body-file /tmp/gitops-pr-body.md
+gh pr create -R <iac-repo> -a @me -l chore -l opentofu --title "feat: adopt comfyui-touch-resize (comfy_registry)" --body-file /tmp/gitops-pr-body.md
 ```
 
 Write a short body (to `/tmp/gitops-pr-body.md`) rather than `--fill` — it's an
 infra PR that triggers an apply, so spell out what merge does: imports the repo,
 pushes `REGISTRY_ACCESS_TOKEN` + release-please credentials, applies the
 branch-protection ruleset, and that a follow-up PR removes the import block. Use
-labels `chore` + `opentofu` (both exist in the gitops repo; check
-`gh label list -R laurigates/gitops` if unsure).
+labels `chore` + `opentofu` (check they exist with
+`gh label list -R <iac-repo>`).
 
-Set metadata per `github-metadata-hygiene` (assignee `laurigates`; skip
-self-reviewer — the author is the running user). The `tofu-plan.yml` workflow
+Set metadata per `github-metadata-hygiene` (assignee `@me`, the running user;
+skip self-reviewer, since the author is the running user). The `tofu-plan.yml` workflow
 posts the plan as a comment on the PR; the expected plan **imports** the repo
 and **creates** the
 `REGISTRY_ACCESS_TOKEN` secret + release-please var/secret + branch-protection
@@ -255,11 +274,11 @@ After the user confirms the tofu apply landed, verify the wiring and remove the
 now-dead import block:
 
 ```sh
-gh secret list -R laurigates/comfyui-touch-resize
+gh secret list -R <owner>/comfyui-touch-resize
 ```
 
 ```sh
-gh api repos/laurigates/comfyui-touch-resize/actions/variables/RELEASE_PLEASE_APP_ID --jq .name
+gh api repos/<owner>/comfyui-touch-resize/actions/variables/RELEASE_PLEASE_APP_ID --jq .name
 ```
 
 `REGISTRY_ACCESS_TOKEN` should be listed; the variable lookup should return its
@@ -267,21 +286,21 @@ name. Then open the import-block-removal follow-up PR (it is a one-time
 adoption artifact — leaving it is harmless but untidy):
 
 ```sh
-git -C gitops switch -c chore/remove-comfyui-touch-resize-import
+git -C <iac-dir> switch -c chore/remove-comfyui-touch-resize-import
 ```
 
 Remove the `import { … "comfyui-touch-resize" … }` block from `main.tf`, then:
 
 ```sh
-git -C gitops commit -am "chore: remove one-time import block for comfyui-touch-resize"
+git -C <iac-dir> commit -am "chore: remove one-time import block for comfyui-touch-resize"
 ```
 
 ```sh
-git -C gitops push -u origin chore/remove-comfyui-touch-resize-import
+git -C <iac-dir> push -u origin chore/remove-comfyui-touch-resize-import
 ```
 
 ```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore --fill --title "chore: remove comfyui-touch-resize import block"
+gh pr create -R <iac-repo> -a @me -l chore --fill --title "chore: remove comfyui-touch-resize import block"
 ```
 
 ## Adapting Phases 3–5 to another repo class
@@ -295,7 +314,7 @@ substitute them and the phases read verbatim:
 | Substitute | ComfyUI pack (the examples above) | How to find yours |
 |---|---|---|
 | Repo name | `comfyui-touch-resize` | The caller skill's Phase 0 spec |
-| Workspace → gitops path | `gitops/` (run from `repos/laurigates/`) | `gitops/` if the clone is a sibling; `../gitops/` from a nested workspace |
+| `<iac-dir>` | A sibling clone of the pack directory | The clone's path relative to where you run, e.g. `../<name>` from a nested workspace |
 | `repositories.tf` adoption flags | `release_please = true` + `comfy_registry = true` | `release_please = true` is universal; extra flags are per-repo-class |
 | Seed commit subject | `feat: scaffold <name> (gesture pack)` | `feat: scaffold <name> (<variant> <noun>)` |
 | Phase 5 verification | `gh secret list` (`REGISTRY_ACCESS_TOKEN`) **and** the `RELEASE_PLEASE_APP_ID` variable lookup | Check one probe per flag you set; `release_please` always means the `RELEASE_PLEASE_APP_ID` variable |
@@ -342,9 +361,9 @@ When a phase fails — `publish.yml` `--token` error, empty release-please `app-
 ## Notes
 
 - The orchestrator never runs `tofu apply` — all applies go through the gitops
-  repo's `tofu-apply.yml` GitHub Actions workflow, triggered by publishing the
-  release-please release (see `gitops/CLAUDE.md`). Local gitops work is
-  `plan`/`validate` only.
+  repo's apply workflow (here, `tofu-apply.yml` triggered by publishing the
+  release-please release; see `<iac-dir>/CLAUDE.md` or its README). Local
+  `<iac-dir>` work is `plan`/`validate` only.
 - The scaffold now emits the registry finishing-pass pieces (icon/banner SVGs +
   wiring, renovate + registry-health + clear-autorelease workflows) and audits
   for the rest; `just assets` (rsvg-convert) produces the served PNGs. See the

@@ -38,7 +38,12 @@ Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
 {frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS stub's
 `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the standalone-modal
 skeleton instead of the widget-intercept one; ignored by `gesture` and `shim`),
-`--publisher` (default `laurigates`), `--dir` (parent dir, default cwd).
+`--publisher` (default `laurigates`; pass your own registry publisher / GitHub
+owner), `--workflows-repo` (`owner/repo` whose published
+`reusable-clear-autorelease-labels.yml` the emitted
+`clear-autorelease-labels.yml` calls; default `WORKFLOWS_REPO_DEFAULT` in
+`scaffold.py`), `--dir`
+(parent dir, default cwd).
 
 It refuses to overwrite an existing directory.
 

@@ -50,7 +50,8 @@
 # Block 18 pins the fleet back-ports from issue #2494 (fleet-policy.toml
 # `shared` rows where the fleet leads): release-please.yml on ubuntu-slim +
 # release-please-action@v5, clear-autorelease-labels.yml as the thin caller of
-# laurigates/.github's reusable workflow, and — the direction the fleet does NOT
+# the published reusable workflow (scaffold.py --workflows-repo, whose override
+# 18b also checks), and — the direction the fleet does NOT
 # lead — .gitattributes keeping bun.lock rather than the stale package-lock.json
 # line a plurality of packs still carries.
 #
@@ -740,6 +741,24 @@ check "18b: clear-autorelease no longer fires on release publish" "no" \
 check "18b: clear-autorelease forwards label and dry_run" "yes" \
     "$(grep -qF 'label: ${{ inputs.label }}' "$FB_CA" \
         && grep -qF 'dry_run: ${{ inputs.dry_run }}' "$FB_CA" && echo yes || echo no)"
+
+# 18b-override. The reusable workflow is a published default, not the only
+#      option (#3308, .claude/rules/skill-portability.md): --workflows-repo
+#      points the caller at another repository, in both the `uses:` line and
+#      the comment that names where the workflow lives.
+FBO="$WORK/comfyui-fp-workflows-repo"
+python3 "$SCAFFOLD" --name comfyui-fp-workflows-repo --display "FP Workflows Repo" \
+    --desc "Workflows-repo override fixture." --variant frontend --widgets seed \
+    --workflows-repo example-org/shared-workflows --dir "$WORK" >/dev/null 2>&1
+FBO_CA="$FBO/.github/workflows/clear-autorelease-labels.yml"
+check "18b-override: clear-autorelease emitted with --workflows-repo" "yes" \
+    "$([ -s "$FBO_CA" ] && echo yes || echo no)"
+check "18b-override: uses: names the overriding repository" "yes" \
+    "$(grep -qE '^    uses: example-org/shared-workflows/\.github/workflows/reusable-clear-autorelease-labels\.yml@main$' "$FBO_CA" && echo yes || echo no)"
+check "18b-override: the default repository is gone from the caller" "no" \
+    "$(grep -q 'laurigates' "$FBO_CA" && echo yes || echo no)"
+check "18b-override: no unsubstituted placeholder left" "no" \
+    "$(grep -q '@@' "$FBO_CA" && echo yes || echo no)"
 
 # 18c. .gitattributes: the direction the fleet does NOT lead. All 13 packs ship
 #      bun.lock and none has package-lock.json, yet 6/13 still carry the

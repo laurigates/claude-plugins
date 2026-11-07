@@ -119,7 +119,7 @@ Once several packs exist they drift — from the template and from each other.
 `scripts/check-fleet-drift.py` sweeps the whole fleet:
 
 ```
-python3 scripts/check-fleet-drift.py                    # ~/repos/laurigates/comfyui-nodes
+python3 scripts/check-fleet-drift.py                    # $COMFYUI_FLEET_ROOT, else the current directory
 python3 scripts/check-fleet-drift.py --pack comfyui-X   # scope to one pack
 ```
 

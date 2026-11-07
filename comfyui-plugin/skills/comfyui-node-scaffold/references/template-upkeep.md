@@ -21,22 +21,25 @@ this template and from each other. Entry point: [`../SKILL.md`](../SKILL.md) §
   @laurigates/comfy-modal-kit version`. `test-finishing-pass.sh` prints an
   advisory NOTE when the published latest falls outside the pinned range.
 
-## The committed-bundle gate depends on a gitops rule
+## The committed-bundle gate depends on a Renovate rule outside the pack
 
 The emitted `ci.yml` fails a branch whose committed `web/dist` differs from a
 fresh `bun run build` ("Verify committed web/dist is up to date"), and the
 emitted `renovate.json` has no rebuild step. A Renovate bump of a bundled
-dependency such as `@laurigates/comfy-modal-kit` passes that gate only because
-the global Renovate config in `laurigates/gitops` (`renovate-config.js`, package
-rule "comfyui packs commit their bundle", added in laurigates/gitops#290) runs
-`bun run build` as a `postUpgradeTasks` command and commits `web/dist/**`.
+dependency such as `@laurigates/comfy-modal-kit` passes that gate only if the
+Renovate config that processes the pack runs `bun run build` as a
+`postUpgradeTasks` command and commits `web/dist/**`. `postUpgradeTasks` run
+only on a self-hosted Renovate whose administrator allows the command, so this
+rule lives in that instance's global config, not in the pack. The template was
+built against a global config that applies such a rule to repositories matching
+`<owner>/comfyui-*`.
 
-That rule selects packs with `matchRepositories: ["laurigates/comfyui-*"]`. A
-pack outside the glob gets no rebuild, and every Renovate PR that touches a
-bundled dependency fails the gate. `derive()` only warns when a name lacks the
-`comfyui-` prefix, so nothing here stops such a pack being generated. Keep new
-packs named `laurigates/comfyui-*`, or widen the gitops glob in the same change
-that adds one.
+Check which Renovate runs on your packs and whether it has that rule. Without
+it, or for a pack outside the rule's repository selector, every Renovate PR that
+touches a bundled dependency fails the gate. `derive()` only warns when a name
+lacks the `comfyui-` prefix, so nothing here stops such a pack being generated.
+Keep new pack names inside the selector, or widen the selector in the same
+change that adds the pack.
 
 ## Fleet drift (the packs vs this template)
 
@@ -50,8 +53,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py
 
 It imports this generator, derives the context-invariant templates from
 `build_file_map` (never a hand-copied list), and compares them against every
-pack under `--fleet-root` (default `~/repos/laurigates/comfyui-nodes`;
-`--pack <name>` scopes it). Per-file authority lives in
+pack under `--fleet-root` (default `$COMFYUI_FLEET_ROOT`, else the current
+directory; `--pack <name>` scopes it). Per-file authority lives in
 [`fleet-policy.toml`](../fleet-policy.toml) — `managed` (byte-identity, ERROR),
 `seed` (never compared), `shared` (the fleet leads, the template back-ports),
 and `block` (a named `##########` section of a placeholder-carrying template —
