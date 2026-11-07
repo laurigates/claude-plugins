@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-08-09
+modified: 2026-11-06
 reviewed: 2026-08-09
-description: Generate project-specific rules from PRDs with path-scoped frontmatter. Use when auto-creating architecture, testing, or quality rules from docs/prds/.
+description: (Re)generate path-scoped rules from PRDs into generated_rules_path, with hash-based conflict checks. Use when creating or refreshing rules from docs/prds/; for full setup use blueprint-development.
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
 ---
@@ -17,6 +17,7 @@ Generate project-specific rules from Product Requirements Documents.
 | Want path-scoped rules for specific file types | Use `/blueprint:claude-md` for general project instructions |
 | Automating rule creation from requirements | Writing custom rules without PRD reference |
 | Extracting architecture/testing patterns from PRDs | Need to create one-off rules for specific contexts |
+| Refreshing rules after a PRD changes | Setting up rules, workflow commands and the manifest mapping in one pass (use `blueprint-development`) |
 
 Rules are generated to the directory configured in `structure.generated_rules_path` (defaults to `.claude/rules/` when the field is absent). Rules with `paths` frontmatter are loaded conditionally when working on matching files.
 

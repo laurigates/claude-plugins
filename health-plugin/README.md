@@ -104,9 +104,9 @@ one document shape, and each check names the kinds it applies to explicitly:
 | `rule_covered_by_skill` | INFO | rule | A resident rule whose content a skill already carries |
 | `promotion_candidate` | INFO | rule, claude_md | The same guidance at two scopes with no declared parent — a candidate for `/agent-patterns:meta-promote`. **Semantic tier only** |
 | `always_loaded_budget` | WARN | rule, claude_md | The every-turn surface creeping past its ceiling |
-| `review_staleness` | WARN | all four | An artifact changed after its declared `reviewed:` date |
+| `review_staleness` | WARN | all four | An artifact's text changed after its declared `reviewed:` date. The last change is the oldest commit in the unbroken run whose copy of the file is identical to the newest one, following renames, so a pure move (`R100`) or a mode change does not re-date it |
 | `shallow_clone` | WARN | all four | Documents `review_staleness` skipped because their last-change date is a shallow-clone boundary commit (the clone depth, not the history); unshallow the clone to evaluate them |
-| `frontmatter_coverage` | INFO | rule | Rules with no `reviewed:` date, so staleness cannot be tracked |
+| `frontmatter_coverage` | INFO | rule | Rules with no `reviewed:` date, so staleness cannot be tracked. Stamp each with the date its text last changed (`git log --follow`), not the date of a bulk move. The stamping commit then becomes the rule's last change, so any date more than 120 days (`STALE_DAYS`) old trips `review_staleness` once that commit lands |
 
 `duplicate_claude_md_lexical` is INFO rather than WARN because a CLAUDE.md pair
 is very often duplication that is *correct* — a vendored clone and its upstream,
