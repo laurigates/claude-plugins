@@ -25,8 +25,8 @@ Grouped by the job they do. Each links to its detail section below.
 
 | Skill | Use when |
 |-------|----------|
-| [`comfy-node`](#comfy-node) | Releasing or spinning up a new pack end to end — scaffold, create + seed the repo, open the gitops adoption PR |
-| [`comfyui-node-scaffold`](#comfyui-node-scaffold) | Bootstrapping the local repo only (TypeScript + bun build, CI, release-please, vitest + pytest) |
+| [`comfy-node`](#comfy-node) | Standing up a new pack end to end — scaffold, create + seed the GitHub repo, open the gitops adoption PR |
+| [`comfyui-node-scaffold`](#comfyui-node-scaffold) | Generating a new pack's local files only, no GitHub repo (TypeScript + bun build, CI, release-please, vitest + pytest) |
 | [`comfyui-screenshot-pipeline`](#comfyui-screenshot-pipeline) | Generating README screenshots for a pack (Docker + Playwright) |
 
 **Author, verify, and publish** — general ComfyUI knowledge, any pack:
