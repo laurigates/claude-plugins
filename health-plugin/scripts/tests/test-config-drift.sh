@@ -18,6 +18,14 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANALYZER="${SCRIPT_DIR}/../config-drift.py"
+# The gitdates cache filename is versioned (#3442); read the shipped constant
+# rather than retyping it, so a bump does not silently point the tests at a file
+# the analyzer no longer reads.
+GITDATES_FILE=$(sed -n 's/^GITDATES_CACHE = "\(.*\)"$/\1/p' "$ANALYZER")
+if [ -z "$GITDATES_FILE" ]; then
+    echo "FAIL: could not read GITDATES_CACHE from $ANALYZER"
+    exit 1
+fi
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "SKIP: python3 not available"
@@ -1177,6 +1185,11 @@ assert_eq "an agent with no reviewed: does not move frontmatter_coverage" \
     "$(missing_reviewed "$out")" "$guard_missing"
 assert_contains "the frontmatter_coverage denominator still reads 'rules'" \
     "$(fm_coverage_summary "$out")" " rules carry no reviewed:"
+# #3442: the remedy says which date to stamp and what stamping does to staleness.
+assert_contains "the frontmatter_coverage remedy names the content date, not a move date" \
+    "$(fm_coverage_summary "$out")" "(git log --follow), not a bulk-move date"
+assert_contains "...and warns that the stamping commit trips review_staleness" \
+    "$(fm_coverage_summary "$out")" "stamping commit to trip review_staleness"
 
 # check_stub_integrity is guarded on the KIND, not on the `stub` substring. A
 # CLAUDE.md quoting the house phrasing is describing the convention, not
@@ -2122,21 +2135,21 @@ from pathlib import Path
 from lib.probe import sha
 print(sha(Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")))' "$1"
 }
-# seed_date <home> <file> <YYYY-MM-DD>: warm the gitdates cache for the file's
+# seed_date <home> <file> <YYYY-MM-DD> [cache-file]: warm the gitdates cache for the file's
 # CURRENT content exactly as a scheduled (non --fast) run would, so a --fast run
 # can report staleness without spawning git. The key is `path:hash`, so an edit
 # needs its own row -- which is also why a cache can never serve a stale date.
 seed_date() {
-    PYTHONPATH="$LIB_PARENT" python3 - "$1" "$2" "$3" <<'PYSEED'
+    PYTHONPATH="$LIB_PARENT" python3 - "$1" "$2" "$3" "${4:-$GITDATES_FILE}" <<'PYSEED'
 import json
 import sys
 from pathlib import Path
 
 from lib.probe import sha
 
-home, f, date = sys.argv[1:4]
+home, f, date, name = sys.argv[1:5]
 p = Path(f)
-cache = Path(home) / ".cache" / "config-drift" / "gitdates.json"
+cache = Path(home) / ".cache" / "config-drift" / name
 cache.parent.mkdir(parents=True, exist_ok=True)
 data = json.loads(cache.read_text()) if cache.is_file() else {}
 data[f"{p}:{sha(p.read_text(encoding='utf-8', errors='replace'))}"] = date
@@ -2608,7 +2621,7 @@ assert_eq "shallow clone: no boundary date is written to the gitdates cache" \
 from pathlib import Path
 p = Path(sys.argv[1])
 d = json.loads(p.read_text()) if p.is_file() else {}
-print(sum(1 for k in d if "/shallow/" in k))' "$GROOT/home-shallow/.cache/config-drift/gitdates.json" 2>/dev/null)" "0"
+print(sum(1 for k in d if "/shallow/" in k))' "$GROOT/home-shallow/.cache/config-drift/$GITDATES_FILE" 2>/dev/null)" "0"
 # Text mode surfaces it too, through the same FINDING_<KIND>= counter every
 # other kind uses.
 st=$(run_g "$GROOT/shallow" "$GROOT/home-shallow" --format=status)
@@ -2616,6 +2629,277 @@ assert_contains "status output carries FINDING_SHALLOW_CLONE=1" "$st" "FINDING_S
 assert_contains "status output is WARN, not a silent OK" "$st" "STATUS=WARN"
 rm -rf "$GROOT"
 unset -f sg sg_commit_at run_g stale_paths
+
+echo "TEST 27: a pure rename is not a content change for review_staleness (#3442)"
+# The regression: `git log -1 -- <file>` dates a file's last change to whatever
+# commit last touched its path, and a commit that only MOVES a file touches it.
+# laurigates/dotfiles#558 moved 52 rules; afterwards 50 of them read as changed
+# on the move date, so a rule stamped with its real content date fired
+# review_staleness for text that had not changed in 260 days. The fix dates the
+# oldest commit in the unbroken run whose copy is identical to the newest one,
+# following renames. Like TEST 26 this runs WITHOUT --fast.
+RROOT=$(mktemp -d)
+if [ -z "$RROOT" ] || [ ! -d "$RROOT" ]; then
+    echo "FAIL: could not create TEST 27 root"
+    exit 1
+fi
+RROOT=$(cd "$RROOT" && pwd -P)
+rg_() {  # sandboxed git, as in TEST 26
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+        -u GIT_COMMON_DIR GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        git -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+        -c core.hooksPath=/dev/null -c init.defaultBranch=main "$@"
+}
+rg_commit_at() {  # rg_commit_at <iso-date> <msg>
+    GIT_AUTHOR_DATE="$1T12:00:00+00:00" GIT_COMMITTER_DATE="$1T12:00:00+00:00" \
+        rg_ -C "$RREPO" commit -q -m "$2" >/dev/null 2>&1
+}
+RREPO="$RROOT/repo"
+mkdir -p "$RREPO/.claude/rules/old" "$RROOT/home/.claude/rules"
+rg_ init -q "$RREPO" >/dev/null 2>&1
+# All three are reviewed 2020-01-01 and written 2020-01-02 (1 day: current).
+printf -- '---\nreviewed: 2020-01-01\n---\n# Moved Doc\nThe kiln log records every bisque firing.\n' \
+    > "$RREPO/.claude/rules/old/moved-doc.md"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Edited Doc\nThe glaze shelf holds the test tiles.\n' \
+    > "$RREPO/.claude/rules/old/edited-doc.md"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Reverted Doc\nThe wedging table stays dry overnight.\n' \
+    > "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2020-01-02 "write all three"
+# moved-doc and edited-doc: a pure rename (R100) into a new directory.
+rg_ -C "$RREPO" mv .claude/rules/old/moved-doc.md .claude/rules/moved-doc.md >/dev/null 2>&1
+rg_ -C "$RREPO" mv .claude/rules/old/edited-doc.md .claude/rules/edited-doc.md >/dev/null 2>&1
+rg_commit_at 2026-03-01 "move rules out of old/"
+# edited-doc: a real content edit after the move -> GENUINELY stale.
+printf 'A sentence added after the move.\n' >> "$RREPO/.claude/rules/edited-doc.md"
+# reverted-doc: changed, then changed back. Its last change is the revert, not
+# the original write: the run of identical copies is broken by the edit.
+printf 'A temporary sentence.\n' >> "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2026-05-01 "edit edited-doc; temporarily edit reverted-doc"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Reverted Doc\nThe wedging table stays dry overnight.\n' \
+    > "$RREPO/.claude/rules/reverted-doc.md"
+rg_ -C "$RREPO" add .claude >/dev/null 2>&1
+rg_commit_at 2026-06-01 "revert reverted-doc"
+# moved-doc: a second pure rename, so the walk must follow more than one hop.
+rg_ -C "$RREPO" mv .claude/rules/moved-doc.md .claude/rules/moved-doc-2.md >/dev/null 2>&1
+rg_commit_at 2026-07-01 "rename moved-doc again"
+# FIXTURE VALIDITY: the trap is armed -- plain `git log -1` dates moved-doc-2 to
+# the last rename, which is what the pre-fix analyzer reported.
+assert_eq "FIXTURE: git log -1 dates moved-doc-2 to its last rename" \
+    "$(rg_ -C "$RREPO" log -1 --format=%cs -- .claude/rules/moved-doc-2.md 2>/dev/null)" "2026-07-01"
+run_r() {
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE GIT_CONFIG_GLOBAL=/dev/null \
+        GIT_CONFIG_NOSYSTEM=1 HOME="$RROOT/home" \
+        python3 "$ANALYZER" --root "$RREPO" --no-embed --format=json 2>/dev/null
+}
+stale_names() {
+    printf '%s' "$1" | python3 -c 'import json,os,sys
+d = json.load(sys.stdin)
+print(" ".join(sorted(os.path.basename(p) for f in d["findings"]
+      if f["kind"] == "review_staleness" for p in f["paths"])) or "NONE")' 2>/dev/null || echo ERR
+}
+cached_date() {  # the gitdates cache row for a basename, or NONE
+    python3 -c 'import json,sys
+from pathlib import Path
+p = Path(sys.argv[1])
+d = json.loads(p.read_text()) if p.is_file() else {}
+print(next((v for k, v in d.items() if k.split(":")[0].endswith("/" + sys.argv[2])), "NONE"))' \
+        "$RROOT/home/.cache/config-drift/$GITDATES_FILE" "$2" 2>/dev/null || echo ERR
+}
+out=$(run_r)
+# THE REGRESSION: moved-doc-2's text dates from 2020-01-02; two renames are not edits.
+# CONTROLS: a real edit after a rename still fires, and a revert still dates to the revert.
+assert_eq "only the edited and the reverted doc are stale, not the renamed one" \
+    "$(stale_names "$out")" "edited-doc.md reverted-doc.md"
+assert_eq "the renamed doc is dated to its content, across two renames" \
+    "$(cached_date "$out" moved-doc-2.md)" "2020-01-02"
+assert_eq "CONTROL: an edit after a rename is that doc's last change" \
+    "$(cached_date "$out" edited-doc.md)" "2026-05-01"
+assert_eq "CONTROL: a revert breaks the run, so it is the last change" \
+    "$(cached_date "$out" reverted-doc.md)" "2026-06-01"
+rm -rf "$RROOT"
+unset -f rg_ rg_commit_at run_r stale_names cached_date
+
+echo "TEST 28: merges, timeouts, pre-fix cache rows and discarded side edits in the content walk (#3442)"
+# Four gaps in TEST 27's walk, each a wrong last-change date that then gets
+# cached under path:hash:
+#   (a) plain `--raw` prints no diff for a merge, so a merge that CREATED the
+#       current blob (both sides edited the file) was skipped and the file was
+#       dated to the next commit's blob, older than the text it holds;
+#   (b) a git walk killed by the timeout ended at EOF mid-run and returned the
+#       oldest commit read so far, a too-new date;
+#   (c) rows written by the pre-#3442 `git log -1` survived in gitdates.json
+#       and `--fast` only reads the cache.
+#   (d) a merge that discarded a side branch's edit left that side commit's
+#       blob first in the --follow walk, and it was taken as the current text.
+MROOT=$(mktemp -d)
+if [ -z "$MROOT" ] || [ ! -d "$MROOT" ]; then
+    echo "FAIL: could not create TEST 28 root"
+    exit 1
+fi
+MROOT=$(cd "$MROOT" && pwd -P)
+mg_() {  # sandboxed git, as in TEST 26
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+        -u GIT_COMMON_DIR GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        git -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+        -c core.hooksPath=/dev/null -c init.defaultBranch=main -C "$MREPO" "$@"
+}
+mg_at() {  # mg_at <iso-date> <git args...>: run a committing command at a pinned date
+    local d="$1"
+    shift
+    GIT_AUTHOR_DATE="${d}T12:00:00+00:00" GIT_COMMITTER_DATE="${d}T12:00:00+00:00" \
+        mg_ "$@" >/dev/null 2>&1
+}
+MREPO="$MROOT/repo"
+R="$MREPO/.claude/rules"
+mkdir -p "$R" "$MROOT/home/.claude/rules"
+mg_ init -q . >/dev/null 2>&1
+# merged-doc: both sides edit it, so the merge produces text neither side had.
+# side-doc: only the side branch edits it, so the merge equals the side copy.
+# renamed-doc: written 2020-01-02, purely renamed on 2026-03-01.
+{ printf -- '---\nreviewed: 2020-01-01\n---\n# Merged Doc\n'; seq 1 30; } > "$R/merged-doc.md"
+{ printf -- '---\nreviewed: 2020-01-01\n---\n# Side Doc\n'; seq 1 30; } > "$R/side-doc.md"
+printf -- '---\nreviewed: 2020-01-01\n---\n# Renamed Doc\nThe pug mill is cleaned on Fridays.\n' \
+    > "$R/renamed-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2020-01-02 commit -q -m "write all three"
+mg_ mv .claude/rules/renamed-doc.md .claude/rules/renamed-doc-2.md >/dev/null 2>&1
+mg_at 2026-03-01 commit -q -m "rename renamed-doc"
+mg_ switch -q -c side >/dev/null 2>&1
+sed -i.bak '5s/.*/side line/' "$R/merged-doc.md" "$R/side-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-01 commit -q -m "side edits"
+mg_ switch -q main >/dev/null 2>&1
+sed -i.bak '30s/.*/main line/' "$R/merged-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-02 commit -q -m "main edits merged-doc"
+mg_at 2026-05-01 merge -q --no-ff -m "merge side" side
+# FIXTURE VALIDITY: the merge really is a clean two-sided merge.
+assert_eq "FIXTURE: HEAD is a merge commit" \
+    "$(mg_ rev-list --parents -n 1 HEAD 2>/dev/null | wc -w | tr -d ' ')" "3"
+assert_eq "FIXTURE: merged-doc holds both sides' lines" \
+    "$(grep -c -e '^side line$' -e '^main line$' "$R/merged-doc.md")" "2"
+last_change() {  # the shipped git_last_change() on one file, as "date shallow"
+    PYTHONPATH="$LIB_PARENT" env -u GIT_DIR -u GIT_WORK_TREE GIT_CONFIG_GLOBAL=/dev/null \
+        GIT_CONFIG_NOSYSTEM=1 python3 -c 'import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+d, b = m.git_last_change(Path(sys.argv[2]))
+print(d, b)' "$ANALYZER" "$1" 2>/dev/null || echo ERR
+}
+# (a) THE REGRESSION: the merge created merged-doc's current text.
+assert_eq "a merge that produced the current text is the last change" \
+    "$(last_change "$R/merged-doc.md")" "2026-05-01 False"
+# CONTROL: a merge that took the side copy unchanged did not create it, so
+# side-doc dates to the side commit, as `git log -1` does.
+assert_eq "CONTROL: a merge that took one side unchanged is not a change" \
+    "$(last_change "$R/side-doc.md")" "2026-04-01 False"
+assert_eq "CONTROL: git log -1 agrees on side-doc" \
+    "$(mg_ log -1 --format=%cs -- .claude/rules/side-doc.md 2>/dev/null)" "2026-04-01"
+# CONTROL: TEST 27's rename case still holds with --diff-merges in the walk.
+assert_eq "CONTROL: a pure rename still dates to the content" \
+    "$(last_change "$R/renamed-doc-2.md")" "2020-01-02 False"
+
+# (b) A timed-out walk is unknown, not the partial run. The stand-in for git
+# prints two commits sharing one blob, then hangs until the timer kills it; the
+# unfixed walk returned the second commit's date.
+assert_eq "a walk killed by the timeout returns an unknown date" \
+    "$(PYTHONPATH="$LIB_PARENT" python3 -c 'import importlib.util, subprocess, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+blob = "a" * 40
+log = "".join(
+    "\\001%s %s\\n\\n:100644 100644 %s %s M\\tf.md\\n" % (c * 40, d, "b" * 40, blob)
+    for c, d in (("1", "2026-05-01"), ("2", "2026-04-01"))
+)
+real = subprocess.Popen
+def fake(args, **kw):
+    return real(["sh", "-c", "printf \"$0\"; exec sleep 30", log], **kw)
+m.subprocess.Popen = fake
+m.GIT_LOG_TIMEOUT = 1
+d, b = m.git_last_change(Path(sys.argv[2]))
+print(d, b)' "$ANALYZER" "$R/merged-doc.md" 2>/dev/null || echo ERR)" "None False"
+
+# (c) A pre-fix cache row is not read. Seed renamed-doc-2's row with the
+# pre-#3442 answer (its rename date) under the old file name: an unversioned
+# cache would serve it to --fast, which reports staleness without spawning git.
+run_m_fast() {  # run_m_fast <home>
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE GIT_CONFIG_GLOBAL=/dev/null \
+        GIT_CONFIG_NOSYSTEM=1 HOME="$1" \
+        python3 "$ANALYZER" --root "$MREPO" --no-embed --fast --format=json 2>/dev/null
+}
+m_stale() {
+    printf '%s' "$1" | python3 -c 'import json,os,sys
+d = json.load(sys.stdin)
+print(" ".join(sorted(os.path.basename(p) for f in d["findings"]
+      if f["kind"] == "review_staleness" for p in f["paths"])) or "NONE")' 2>/dev/null || echo ERR
+}
+mkdir -p "$MROOT/home-old/.claude/rules" "$MROOT/home-new/.claude/rules"
+seed_date "$MROOT/home-old" "$R/renamed-doc-2.md" 2026-03-01 gitdates.json
+assert_eq "a row in the pre-#3442 cache file is ignored by --fast" \
+    "$(m_stale "$(run_m_fast "$MROOT/home-old")")" "NONE"
+# CONTROL: the same row in the current cache file IS read, so the assertion
+# above is about the file name and not a --fast path that never reports.
+seed_date "$MROOT/home-new" "$R/renamed-doc-2.md" 2026-03-01
+assert_eq "CONTROL: the same row in the current cache file is served" \
+    "$(m_stale "$(run_m_fast "$MROOT/home-new")")" "renamed-doc-2.md"
+
+# (d) A merge that DISCARDS a side branch's edit. History simplification would
+# drop the side branch, but `--follow` turns it off, so the side commit stays in
+# the date-ordered walk, and the merge, whose first-parent diff is empty, prints
+# no raw line. A walk that took the first blob it read as the current text dated
+# the file to that side commit, whose blob the file does not hold.
+#   discard-doc: main and side both rewrite line 5; the merge keeps main's.
+#   mode-doc:    main edits it, later chmods it; side edits it in between and
+#                the merge keeps main's copy. The mode change keeps the blob, so
+#                the content date is main's edit, not the chmod.
+MREPO="$MROOT/repo-discard"
+R="$MREPO/.claude/rules"
+mkdir -p "$R"
+mg_ init -q . >/dev/null 2>&1
+seq 1 40 > "$R/discard-doc.md"
+seq 1 40 > "$R/mode-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2020-01-01 commit -q -m "write both"
+mg_ switch -q -c side >/dev/null 2>&1
+mg_ switch -q main >/dev/null 2>&1
+sed -i.bak '5s/.*/main wording/' "$R/discard-doc.md" "$R/mode-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-03-01 commit -q -m "main edits both"
+mg_ switch -q side >/dev/null 2>&1
+sed -i.bak '5s/.*/side wording/' "$R/discard-doc.md" "$R/mode-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-05 commit -q -m "side edits both"
+mg_ switch -q main >/dev/null 2>&1
+chmod +x "$R/mode-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-10 commit -q -m "main chmods mode-doc"
+mg_at 2026-05-01 merge -q --no-ff --no-commit side
+mg_ checkout HEAD -- .claude/rules/discard-doc.md .claude/rules/mode-doc.md >/dev/null 2>&1
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-05-01 commit -q --no-edit
+# FIXTURE VALIDITY: a real merge that kept main's text, and the side commit
+# reaches the --follow walk with a blob other than the current one.
+assert_eq "FIXTURE: the discarding commit is a merge" \
+    "$(mg_ rev-list --parents -n 1 HEAD 2>/dev/null | wc -w | tr -d ' ')" "3"
+assert_eq "FIXTURE: discard-doc holds main's wording" \
+    "$(sed -n 5p "$R/discard-doc.md")" "main wording"
+assert_eq "FIXTURE: the side commit is in the --follow walk" \
+    "$(mg_ log --follow --format=%cs -- .claude/rules/discard-doc.md 2>/dev/null | tr '\n' ' ')" \
+    "2026-04-05 2026-03-01 2020-01-01 "
+assert_eq "a merge that discarded a side edit dates to the kept content" \
+    "$(last_change "$R/discard-doc.md")" "2026-03-01 False"
+assert_eq "CONTROL: git log -1 agrees on discard-doc" \
+    "$(mg_ log -1 --format=%cs -- .claude/rules/discard-doc.md 2>/dev/null)" "2026-03-01"
+assert_eq "a side edit between a content edit and a mode change is skipped" \
+    "$(last_change "$R/mode-doc.md")" "2026-03-01 False"
+rm -rf "$MROOT"
+unset -f mg_ mg_at last_change run_m_fast m_stale
 
 echo
 echo "=== CONFIG DRIFT TESTS ==="

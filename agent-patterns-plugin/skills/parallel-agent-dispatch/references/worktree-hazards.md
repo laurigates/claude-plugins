@@ -3,7 +3,8 @@
 The individually-rare, collectively-expensive ways `isolation: "worktree"`
 fails to isolate what you meant: a cwd reset writing to the main checkout, an
 exported `GIT_DIR` hijacking every sibling worktree, a nested repo the harness
-never worktreed, two agents colliding in one shared scratchpad clone, a worktree
+never worktreed, a briefed worktree path a guard relocates into an un-ignored
+`.claude/worktrees/`, two agents colliding in one shared scratchpad clone, a worktree
 deleted out from under a live agent, a fixed target branch another session
 already holds, an `isolation: "remote"` dispatch that quietly ran in a local
 worktree, and a fresh agent that cannot take a PR branch still pinned by the
@@ -114,8 +115,28 @@ target_root=$(git -C "<target-dir>" rev-parse --show-toplevel)
 | Rule | Why |
 |------|-----|
 | When the target's enclosing repo ≠ the session repo, do not assume `isolation: "worktree"` isolated the target. | The harness worktrees the session repo; the nested repo is absent from it. |
-| (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main` as its first step. | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
+| (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <nested-repo>/.claude/worktrees/<name> origin/main` as its first step (the path rule is in [§ Briefed worktree paths](#briefed-worktree-paths-belong-under-claudeworktrees-3436)). | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
 | Have the agent operate inside that nested-repo worktree (prefix `git -C "$WORKTREE"`, per the #1480 cwd-reset rule) and open its PR from there. | Keeps the work isolated and avoids the shared-checkout collisions `shared-checkout-branch-isolation.md` guards against. |
+
+## Briefed worktree paths belong under `.claude/worktrees/` (#3436)
+
+A Workflow briefed each implementer to run
+`git worktree add <home>/wt/<repo>-<n> …`, a path outside the checkout.
+`hooks-plugin`'s `worktree-location-guard.sh` denies any `git worktree add`
+outside the target repo's `<repo>/.claude/worktrees/` and prints a corrected
+command, so the agents created `<repo>/.claude/worktrees/<name>` instead. The
+relocation reached the orchestrator only through the agents' free-text reports.
+The verify and repair stages, templated on the briefed path, pointed at
+directories that did not exist, and the run had to be resumed with the script
+edited. In both target repos `.claude/worktrees/` was not git-ignored, so the
+worktrees also showed up as untracked files, and a Stop hook asked for them to
+be committed.
+
+| Rule | Why |
+|------|-----|
+| Brief `<target-repo>/.claude/worktrees/<name>`, or a path under `$TMPDIR`, never a sibling or home-relative path. | The guard denies anything else, and the path the agent then uses differs from the one every later stage was templated on. |
+| Template later stages on the path each agent **reports**, not the briefed one. | A guard, a collision or a cwd reset can still move it. |
+| Before dispatch, check `git -C <target-repo> check-ignore -q .claude/worktrees/x`. On exit 1, add `.claude/worktrees/` to `$(git -C <target-repo> rev-parse --git-path info/exclude)` or to the repo's `.gitignore` (`configure-plugin:configure-gitignore`). | Otherwise each worktree is an untracked directory in the main checkout. The guard prints the same exclude command on a deny, and as context on an allowed add, but writes nothing itself. |
 
 ## Shared scratchpad collisions (#2370)
 

@@ -789,6 +789,16 @@ fix the agent can make itself.
 - **Silent:** paths the hook cannot resolve without the shell (`$VAR`, `$(…)`,
   backticks, globs), quoted mentions, other `worktree` subcommands, a non-repo
   cwd, and `ssh`/`docker`/`podman`/`kubectl`/`nerdctl` remote-exec.
+- **Not git-ignored:** when `git check-ignore` reports that
+  `<main-repo>/.claude/worktrees/` is not ignored, every worktree there shows up
+  as an untracked directory in the main checkout, and an untracked-files Stop
+  hook asks to commit it (issue #3436). The deny message then adds the
+  `echo '.claude/worktrees/' >> '<info/exclude>'` command (the exclude path
+  comes from `git rev-parse --git-path info/exclude`, so a linked worktree names
+  the shared file), and an allowed add gets the same note as `additionalContext`
+  without being blocked. The hook never writes the exclude file itself: a
+  PreToolUse hook that mutates the repo would act on a command that has not run
+  yet. A `check-ignore` error says nothing.
 
 Both sides are canonicalised (deepest existing ancestor through `pwd -P`) before
 comparison, so `..`, `~` and macOS's `/tmp` → `/private/tmp` symlink compare
@@ -803,13 +813,14 @@ correctly.
 ### Testing
 
 ```bash
-bash hooks-plugin/hooks/test-worktree-location-guard.sh   # 35 passed, 0 failed
+bash hooks-plugin/hooks/test-worktree-location-guard.sh   # 49 passed, 0 failed
 ```
 
 The suite builds its fixture repos under `$HOME/.cache`, not `mktemp -d`: the
 hook exempts temp dirs, so fixtures there would be allowed wholesale. It
 extracts the suggested fix from the deny message and re-feeds it, asserting the
-hook allows its own correction.
+hook allows its own correction. It does the same with the printed exclude
+command: it runs it in a fresh fixture repo and asserts the warning is gone.
 
 ### Exit Codes
 

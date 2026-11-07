@@ -68,6 +68,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | Flag | Disables | Source |
 |---|---|---|
 | `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC` | PreToolUse nudge when a PR branch is behind / merged before commit/push | `git-plugin/hooks/check-branch-sync-on-push.sh` |
+| `CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE` | The `worktrees_not_ignored` SessionStart drift signal alone (main checkout's `.claude/worktrees/` not git-ignored; `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` also silences it, via the aggregator) | `git-plugin/hooks/git-drift-probe.sh` |
 
 ### taskwarrior-plugin
 

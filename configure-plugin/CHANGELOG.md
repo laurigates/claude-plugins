@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.43.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.1...configure-plugin-v1.43.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** config-drift dates content changes, not renames ([#3455](https://github.com/laurigates/claude-plugins/issues/3455)) ([da439c8](https://github.com/laurigates/claude-plugins/commit/da439c883bdc163ee2101f7b70a07603dce33897))
+
+## [1.43.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.0...configure-plugin-v1.43.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **skills:** match Context probes with -path and repair Claude workflow templates ([#3454](https://github.com/laurigates/claude-plugins/issues/3454)) ([6dad0a9](https://github.com/laurigates/claude-plugins/commit/6dad0a9a686de0f1386093a6d86d88b90fb74691))
+
 ## [1.43.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.42.2...configure-plugin-v1.43.0) (2026-11-06)
 
 

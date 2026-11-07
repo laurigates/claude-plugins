@@ -407,5 +407,5 @@ jobs:
             --model opus \
             --effort medium \
             --max-turns 20 \
-            --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr *),Bash(jq *)" \
+            --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr comment *),Bash(jq *)" \
             -

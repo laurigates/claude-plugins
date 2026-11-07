@@ -1,0 +1,1 @@
+| docs/PLUGIN-MAP.md header total ("N plugins and M+ skills") drifts silently — only the README headline was guarded | check-docs-index.sh Check 3 parsed the README intro but never the PLUGIN-MAP.md header line | check-docs-index.sh PLUGIN-MAP header guard (+ test-check-docs-index.sh cases) | issue #1948 |

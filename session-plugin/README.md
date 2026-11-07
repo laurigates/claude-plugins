@@ -33,7 +33,7 @@ adapters that honour that marker list them.
 |---|---|
 | Claude Code | Full: skills, both hooks, `${CLAUDE_SKILL_DIR}`, the session transcript |
 | pi, with the claude-plugins adapter | Skills work. The adapter resolves `${CLAUDE_SKILL_DIR}` and exports `PI_SESSION_FILE`, which `distill-survey.sh` reads as a second transcript format. Where `AskUserQuestion` or the Skill tool is absent, the skills ask in plain text and read sibling `SKILL.md` files directly. The adapter runs both nudges: the spinup hook unchanged on `session_start`, and the end nudge's gates over pi's session on `agent_settled` ([`docs/pi-export.md`](../docs/pi-export.md#session-nudges)) |
-| OpenCode, with the claude-plugins adapter | Skills work as in pi: the adapter resolves `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` ([#2662](https://github.com/laurigates/claude-plugins/issues/2662)), and the plain-text fallbacks apply where `AskUserQuestion` or the Skill tool is absent. There is no transcript hint, so distill falls back to re-reading the conversation. The nudge hooks do not run ([#2802](https://github.com/laurigates/claude-plugins/issues/2802)) |
+| OpenCode, with the claude-plugins adapter | Skills work as in pi: the adapter resolves `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` ([#2662](https://github.com/laurigates/claude-plugins/issues/2662)), and the plain-text fallbacks apply where `AskUserQuestion` or the Skill tool is absent. The adapter sets `OPENCODE_SESSION_ID` on every `bash` call, and `distill-survey.sh` reads the session through `opencode export` as a third transcript format ([#2725](https://github.com/laurigates/claude-plugins/issues/2725)). The adapter runs both nudges: the spinup hook unchanged on `session.created`, and the end nudge's gates over the session's messages on idle ([`docs/opencode-export.md`](../docs/opencode-export.md#session-nudges), [#2802](https://github.com/laurigates/claude-plugins/issues/2802)) |
 
 ## Configuration (`session-plugin.local.md`)
 
@@ -260,6 +260,29 @@ lists that checkout's log, `BLUEPRINT` reads its `docs/blueprint/`. So on the
 `workspace-root` rung those two describe the nested checkout while `GIT` and
 `PRS` describe the outer repo. Both sites carry a comment saying so.
 
+#### A workspace root of several checkouts (#3435)
+
+A cloud session's working directory is often a workspace root holding sibling
+checkouts (each attached repository is cloned there), and is not itself a repo,
+so `GIT` says `IN_GIT=false` and `PRS` says `GH_FAIL_REASON=no-remote`. When the
+cwd is not in a repo, the full digest therefore also surveys every **direct
+child directory that is the top of its own checkout**, dot-directories included:
+
+| Section | Where | Rows |
+|---|---|---|
+| `CHECKOUTS` | After `GIT` (no network) | `CHECKOUT_COUNT`, `CHECKOUT_TRUNCATED`, and per checkout `CHECKOUT_<n>_DIR`, `_REPO` (`<owner>/<repo>` from origin, empty when unresolvable), `_BRANCH`, `_DIRTY`, `_UNPUSHED`, `_BEHIND` |
+| `CHECKOUT_PRS` | Last, after every other section | Per checkout `CHECKOUT_<n>_GH_READY`; on `false`, `_GH_FAIL_REASON` (and `_GH_FAIL_DETAIL`, same vocabulary as the top-level pair); on `true`, `_PR_COUNT` and `_PR_<m>_NUMBER` / `_STATE` / `_TITLE` / `_URL` / `_STALE_DAYS`, the `--author @me` and `--head <branch>` lists unioned |
+
+Every row is prefixed `CHECKOUT_<n>_` so a line-wise reader taking the first
+`^KEY=` match still gets the top-level `GIT` / `PRS` value. Numbering follows the
+directory names in C collation. At most 8 checkouts are surveyed, because each
+costs two `gh` calls; past that `CHECKOUT_TRUNCATED=true` and `CHECKOUT_FOUND=`
+gives the number found. A child whose name holds a control character is skipped.
+Both sections are absent when the cwd is in a repo and in `--summary` (the
+SessionStart hook's 15s budget); a scan that finds nothing prints
+`CHECKOUT_COUNT=0`. Taskwarrior, `COMMITS` and `BLUEPRINT` still read only
+`PROJECT_DIR`.
+
 ### Availability and linkage keys (#2360)
 
 A zero in the digest means "nothing there" only when the query behind it ran.
@@ -440,6 +463,7 @@ back to its LLM-re-read behaviour.
 |---|---|---|
 | `claude-code` | `<home>/.claude/projects/<slug>/<session-id>.jsonl` | Always tried first |
 | `pi` | The file named by `PI_SESSION_FILE` (`~/.pi/agent/sessions/--<cwd-slug>--/<ts>_<id>.jsonl`), whose line 1 is a `{"type":"session",…}` header | The Claude lookup found nothing |
+| `opencode` | `opencode export "$OPENCODE_SESSION_ID"`, run in the project dir; the OpenCode adapter sets the variable to the raw `ses_…` id | Neither the Claude lookup nor pi found anything, and `opencode` is on `PATH` |
 
 The pi window is the sibling `*.jsonl` files in that directory, excluding any
 whose header carries `parentSession`: subagent, fork and `/new` sessions share
@@ -451,7 +475,18 @@ per-kind `DENIAL_*` rows. A pi-format file found under the Claude projects
 directory is rejected rather than parsed as Claude, and without `--session-id`
 the pi header's `id` is used.
 
-Test seams: `DISTILL_SURVEY_PROJECTS_DIR`, `DISTILL_SURVEY_JUST_BIN`, `PI_SESSION_FILE`.
+The OpenCode window comes from `opencode session list --format json -n <N>`,
+which lists the project's root sessions, so subagent sessions are left out; an
+export whose `info.parentID` is set is dropped as well. Each session is read
+with `opencode export <id>` and must report that `id` in `info.id`. Commands
+come from `bash` tool parts and hot files from `edit`/`write` tool parts with
+`state.status` `completed`, since a failed edit is recorded with status
+`error`. Every CLI call starts an OpenCode instance, so a full window costs one
+start per session. A failed listing leaves the current session as the whole
+window. The OpenCode digest also carries `RULE_HINTS_RECORDED=false`, and
+without `--session-id` the OpenCode id is reported.
+
+Test seams: `DISTILL_SURVEY_PROJECTS_DIR`, `DISTILL_SURVEY_JUST_BIN`, `DISTILL_SURVEY_OPENCODE_BIN`, `PI_SESSION_FILE`, `OPENCODE_SESSION_ID`.
 Regression test: `scripts/tests/test-distill-survey.sh` (run directly with
 bash).
 

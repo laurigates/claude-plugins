@@ -8,8 +8,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COLLECTOR="$SCRIPT_DIR/../distill-survey.sh"
-# The pi harness exports PI_SESSION_FILE into bash calls; keep the suite hermetic.
-unset PI_SESSION_FILE
+# The pi harness exports PI_SESSION_FILE and the OpenCode adapter exports
+# OPENCODE_SESSION_ID into bash calls; keep the suite hermetic.
+unset PI_SESSION_FILE OPENCODE_SESSION_ID
 
 pass=0
 fail=0
@@ -370,6 +371,157 @@ check "N: stable args are sorted and capped by entry, not by comma count" "$ncan
   "_STABLE_ARGS='a,b',dst/beta/,node_modules/"
 check "N: only the four stable shapes remain" "$ncand" "COUNT=4"
 check "N: summary count agrees with the digest" "$(run_n --summary)" "RECIPE_CANDIDATE_COUNT=4"
+
+# --- OpenCode fixture (#2725): the same logical session as the Claude fixture --
+# OpenCode keeps sessions in its own database; `opencode export <id>` prints
+# {"info": Session, "messages": [{"info": Message, "parts": [Part]}]} and
+# `opencode session list --format json [-n N]` lists the project's ROOT
+# sessions as [{id,title,updated,created,projectId,directory}]. Shapes taken
+# from packages/opencode/src/cli/cmd/{export,session}.ts at v1.18.3 and v1.19.5
+# and the ToolPart / ToolState types of @opencode-ai/sdk 1.19.5; no real
+# session was available, so the content is synthetic. Tool parts carry
+# {type:"tool", tool, callID, state:{status, input}}; edit/write take filePath.
+OC_FIX="$SANDBOX/oc-fixtures"
+mkdir -p "$OC_FIX"
+OC_ID="ses_0a1b2c3d4ffeABCDEFGHIJKLMN"
+OC_OLD="ses_0a1b2c3d3ffeOLDERSESSIONAA"
+OC_CHILD="ses_0a1b2c3d5ffeCHILDSESSIONAA"
+oc_tool() {  # $1 = call id, $2 = tool, $3 = status, $4 = input JSON
+  jq -cn --arg id "$1" --arg t "$2" --arg s "$3" --argjson i "$4" \
+    '{id:("prt_"+$id),sessionID:"x",messageID:"m",type:"tool",callID:$id,tool:$t,
+      state:(if $s == "error"
+             then {status:$s,input:$i,error:"failed",time:{start:1,end:2}}
+             else {status:$s,input:$i,output:"ok",title:"",metadata:{},time:{start:1,end:2}} end)}'
+}
+oc_bash() { oc_tool "$1" bash completed "$(jq -cn --arg c "$2" '{command:$c,description:"run"}')"; }
+oc_edit() { oc_tool "$1" edit "$3" "$(jq -cn --arg p "$2" '{filePath:$p,oldString:"a",newString:"b"}')"; }
+oc_session() {  # $1 = id, $2 = parentID or "", then part JSON lines on stdin
+  jq -s --arg id "$1" --arg parent "$2" '{
+    info: ({id:$id,projectID:"prj_1",directory:"/repo",title:"t",version:"1.19.5",
+            time:{created:1,updated:2}} + (if $parent == "" then {} else {parentID:$parent} end)),
+    messages: [
+      {info:{id:"msg_u",sessionID:$id,role:"user",time:{created:1},agent:"build",
+             model:{providerID:"p",modelID:"m"}},
+       parts:[{id:"prt_u",sessionID:$id,messageID:"msg_u",type:"text",text:"go"}]},
+      {info:{id:"msg_a",sessionID:$id,role:"assistant",time:{created:2},parentID:"msg_u"},
+       parts: .}
+    ]}'
+}
+{
+  oc_bash c1 'git status'
+  oc_bash c2 'terraform apply -auto-approve'
+  oc_bash c3 'kubectl apply -f deploy/'
+  oc_bash c3b 'docker compose up -d'
+  oc_bash c4 'helm upgrade myrel ./chart'
+  oc_bash c5 'git commit -m "ship it"'
+  oc_bash c6 'just deploy'
+  oc_edit e1 /repo/config.yaml completed
+  oc_edit e2 /repo/config.yaml completed
+  oc_edit e3 /repo/config.yaml completed
+  oc_edit e4 /repo/config.yaml error      # a failed edit — must not count
+  oc_tool w1 write completed "$(jq -cn '{filePath:"/repo/main.tf",content:"x"}')"
+} | oc_session "$OC_ID" "" > "$OC_FIX/$OC_ID.json"
+oc_bash c1 'terraform apply -auto-approve' | oc_session "$OC_OLD" "" > "$OC_FIX/$OC_OLD.json"
+# A subagent session: the CLI lists roots only, but a listing that still
+# carries one must not widen the window.
+oc_bash c1 'kubectl apply -f deploy/' | oc_session "$OC_CHILD" "$OC_ID" > "$OC_FIX/$OC_CHILD.json"
+jq -n --arg a "$OC_ID" --arg b "$OC_OLD" --arg c "$OC_CHILD" \
+  '[{id:$a,title:"t",updated:3000,created:1,projectId:"prj_1",directory:"/repo"},
+    {id:$c,title:"t",updated:2500,created:1,projectId:"prj_1",directory:"/repo"},
+    {id:$b,title:"t",updated:1000,created:1,projectId:"prj_1",directory:"/repo"}]' \
+  > "$OC_FIX/list.json"
+
+# opencode stub (test seam). Unknown argv FAILS loudly, like the just stub.
+# OC_ARGV_LOG records "<cwd>|<argv>" per call; OC_LIST_FAIL makes the listing fail.
+cat > "$STUB/opencode" <<'OCSTUB'
+#!/usr/bin/env bash
+if [ -n "${OC_ARGV_LOG:-}" ]; then printf '%s|%s\n' "$PWD" "$*" >> "$OC_ARGV_LOG"; fi
+case "$1" in
+  export)
+    echo "Exporting session: $2" >&2
+    f="$OC_FIXTURES/$2.json"
+    [ -f "$f" ] || { echo "Session not found: $2" >&2; exit 1; }
+    cat "$f" ;;
+  session)
+    [ "$2" = list ] || { echo "opencode stub: unexpected argv: $*" >&2; exit 1; }
+    [ -z "${OC_LIST_FAIL:-}" ] || exit 1
+    cat "$OC_FIXTURES/list.json" ;;
+  *) echo "opencode stub: unexpected argv: $*" >&2; exit 1 ;;
+esac
+OCSTUB
+chmod +x "$STUB/opencode"
+
+run_oc() {
+  DISTILL_SURVEY_PROJECTS_DIR="$NO_CLAUDE" DISTILL_SURVEY_JUST_BIN="$STUB/just" \
+    DISTILL_SURVEY_OPENCODE_BIN="$STUB/opencode" OC_FIXTURES="$OC_FIX" OPENCODE_SESSION_ID="${OC_SID:-$OC_ID}" \
+    bash "$COLLECTOR" --project-dir "$PROJ" "$@"
+}
+
+# --- TEST O: OpenCode transcript — groups B, C, F, G parity (#2725) -----------
+export OC_ARGV_LOG="$SANDBOX/oc-argv.log"
+: > "$OC_ARGV_LOG"
+out=$(run_oc)
+check "O: opencode transcript available" "$out" "TRANSCRIPT_AVAILABLE=true"
+check "O: opencode format reported" "$out" "TRANSCRIPT_FORMAT=opencode"
+check "O: session id falls back to the OpenCode id" "$out" "SESSION_ID=${OC_ID}"
+check "O: subagent session excluded from the window" "$out" "SESSIONS_SCANNED=2"
+cand=$(printf '%s' "$out" | sed -n '/=== RECIPE_CANDIDATES ===/,/=== END RECIPE_CANDIDATES ===/p')
+check "O/B: candidate count matches Claude fixture" "$cand" "COUNT=2"
+check "O/B: cross-session recurring command surfaces" "$cand" "CANDIDATE_1=terraform apply -auto-approve"
+check "O/B: recurrence count is 2" "$cand" "CANDIDATE_1_SESSIONS=2"
+check "O/B: commit-bracketed command surfaces" "$cand" "CANDIDATE_2=docker compose up -d"
+check "O/B: bracketed-only command not counted in the child session" "$cand" "CANDIDATE_2_SESSIONS=1"
+check_absent "O/B: churn (git status) excluded" "$cand" "git status"
+check_absent "O/B: just-recipe-body command excluded" "$cand" "helm upgrade myrel"
+hot=$(printf '%s' "$out" | sed -n '/=== HOT_FILES ===/,/=== END HOT_FILES ===/p')
+check "O/C: hot file surfaced from state.input.filePath" "$hot" "HOT_1_FILE=/repo/config.yaml"
+check "O/C: failed edit excluded, total is 3" "$hot" "HOT_1_TOTAL=3"
+check_absent "O/C: below-threshold file not surfaced" "$hot" "main.tf"
+rh=$(printf '%s' "$out" | sed -n '/=== RULE_HINTS_FROM_TOOLING ===/,/=== END RULE_HINTS_FROM_TOOLING ===/p')
+check "O/F: no denial signal from OpenCode" "$rh" "RULES_SIGNAL=none_mechanical"
+check "O/F: OpenCode marks rule hints as unrecorded" "$rh" "RULE_HINTS_RECORDED=false"
+oc_log=$(cat "$OC_ARGV_LOG")
+check "O: listing asks for JSON, bounded by the session window" "$oc_log" "$PROJ|session list --format json -n 10"
+check "O: the export runs in the project dir" "$oc_log" "$PROJ|export $OC_ID"
+sm=$(run_oc --summary)
+check "O/G: recipe candidate count" "$sm" "RECIPE_CANDIDATE_COUNT=2"
+check "O/G: hot file count" "$sm" "HOT_FILE_COUNT=1"
+check "O/G: format in summary" "$sm" "TRANSCRIPT_FORMAT=opencode"
+# A --session-id (the derived CLAUDE_SESSION_ID) is reported as given.
+check "O: --session-id is kept" "$(run_oc --session-id "$SID" --summary)" "SESSION_ID=${SID}"
+
+# --- TEST P: OpenCode guards ----------------------------------------------------
+# P1: no opencode binary → SKIP, exit 0.
+out=$(DISTILL_SURVEY_PROJECTS_DIR="$NO_CLAUDE" DISTILL_SURVEY_OPENCODE_BIN="$SANDBOX/no-such-opencode" \
+  OPENCODE_SESSION_ID="$OC_ID" bash "$COLLECTOR" --project-dir "$PROJ")
+rc=$?
+check "P1: missing opencode binary exits 0" "$rc" "0"
+check "P1: missing opencode binary → unavailable" "$out" "TRANSCRIPT_AVAILABLE=false"
+# P2: an id the export does not know → SKIP.
+out=$(OC_SID="ses_unknown" run_oc 2>&1)
+check "P2: unknown session → unavailable" "$out" "TRANSCRIPT_AVAILABLE=false"
+check_absent "P2: stub stderr does not leak into the digest" "$out" "Exporting session"
+# P3: an export whose info.id is another session is not trusted.
+cp "$OC_FIX/$OC_OLD.json" "$OC_FIX/ses_mismatch.json"
+out=$(OC_SID="ses_mismatch" run_oc)
+check "P3: export for a different id → unavailable" "$out" "TRANSCRIPT_AVAILABLE=false"
+# P4: a failed listing keeps the current session as the whole window.
+out=$(OC_LIST_FAIL=1 run_oc)
+check "P4: failed listing still reads the current session" "$out" "TRANSCRIPT_FORMAT=opencode"
+check "P4: window is the current session alone" "$out" "SESSIONS_SCANNED=1"
+# P5: without OPENCODE_SESSION_ID nothing is exported.
+: > "$OC_ARGV_LOG"
+out=$(DISTILL_SURVEY_PROJECTS_DIR="$NO_CLAUDE" DISTILL_SURVEY_OPENCODE_BIN="$STUB/opencode" \
+  OC_FIXTURES="$OC_FIX" bash "$COLLECTOR" --project-dir "$PROJ")
+check "P5: no OPENCODE_SESSION_ID → unavailable" "$out" "TRANSCRIPT_AVAILABLE=false"
+check_absent "P5: opencode never invoked" "$(cat "$OC_ARGV_LOG")" "|"
+# P6: the Claude transcript stays authoritative over OPENCODE_SESSION_ID.
+out=$(DISTILL_SURVEY_OPENCODE_BIN="$STUB/opencode" OC_FIXTURES="$OC_FIX" OPENCODE_SESSION_ID="$OC_ID" run)
+check "P6: Claude lookup stays authoritative" "$out" "TRANSCRIPT_FORMAT=claude-code"
+# P7: PI_SESSION_FILE wins over OPENCODE_SESSION_ID when both are set.
+out=$(PI_SESSION_FILE="$PI_FILE" run_oc)
+check "P7: pi fallback is tried before OpenCode" "$out" "TRANSCRIPT_FORMAT=pi"
+unset OC_ARGV_LOG
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

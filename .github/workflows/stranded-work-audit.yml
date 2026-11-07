@@ -66,3 +66,10 @@ jobs:
           title: 'Stranded work: branches that never reached main ({date})'
           title-prefix: 'Stranded work:'
           assignee: laurigates
+          # The report's lifecycle (#3346, docs/issue-lifecycle.md).
+          processing: |
+            ## Processing
+
+            - **Processed by:** Lauri.
+            - **Completed means:** every listed branch has been landed, deleted, or kept on purpose.
+            - **Closes:** by hand once processed. The weekly audit files no new report while this one is open. See `docs/issue-lifecycle.md`.

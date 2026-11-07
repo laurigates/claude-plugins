@@ -72,11 +72,12 @@ while IFS= read -r -d '' f; do
 #
 # Three paths are pruned because their JOB is to carry the broken form:
 #   .claude/rules/  — rules that teach the hazard.
-#   docs/regression-ledger.md
-#                   — the hazard log; its row must name the dead endpoint to
+#   docs/regression-ledger/
+#                   — the hazard log; its entry must name the dead endpoint to
 #                     record that it was fixed (moved out of
-#                     .claude/rules/regression-testing.md by #2667). Pruned by
-#                     exact path so the rest of docs/ is still scanned.
+#                     .claude/rules/regression-testing.md by #2667, split into
+#                     one file per entry by #2947). Pruned by exact path so the
+#                     rest of docs/ is still scanned.
 #   scripts/tests/  — a guard's fixtures must contain the very string it
 #                     detects, or the test proves nothing.
 # Same discrimination check-branch-containment-guidance.sh makes by scanning
@@ -85,7 +86,7 @@ while IFS= read -r -d '' f; do
 done < <(cd "$PROJ_DIR" && find . \
     -path '*/.claude/worktrees/*' -prune -o \
     -path '*/.claude/rules/*' -prune -o \
-    -path './docs/regression-ledger.md' -prune -o \
+    -path './docs/regression-ledger' -prune -o \
     -path './scripts/tests/*' -prune -o \
     -path '*/dist/*' -prune -o \
     -path '*/node_modules/*' -prune -o \
