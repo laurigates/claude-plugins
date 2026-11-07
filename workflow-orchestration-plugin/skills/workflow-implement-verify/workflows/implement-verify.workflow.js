@@ -24,6 +24,11 @@
  * agent, which runs once, after every pipeline has finished. Implementers,
  * verifiers and repairers are commit-local.
  *
+ * A unit may carry its own `repo` and `root` (an absolute clone path), so one run
+ * can span several repositories. Such a unit's agents make their own worktrees
+ * under `<root>/.claude/worktrees/` instead of using harness isolation, and the
+ * finalise agent pushes and opens its PR in that unit's repository.
+ *
  * The Verify/Repair half is shared byte-for-byte with repair-round.workflow.js
  * (the region between the `shared:` markers). A repair-round run can take this
  * run's rows unchanged. `scripts/tests/test-templates.sh` fails when the two
@@ -80,7 +85,29 @@ const UNITS = (INPUT.units ?? (INPUT.issues ?? []).map((n) => ({ id: `issue-${n}
     gates: u.gates ?? [],
     tier: ['sonnet', 'haiku'].includes(u.tier) ? u.tier : 'opus',
     labels: u.labels ?? [],
+    // Optional per-unit repository: `repo` (owner/name) and `root` (absolute clone
+    // path) together, plus `base` and `setup` for that clone.
+    repo: u.repo,
+    root: u.root,
+    base: u.base,
+    setup: u.setup,
   }))
+
+// The context a unit's agents see. A unit in another repository drops the run's
+// gates and setup, which are commands for the run's own repository.
+const ctxFor = (u) => {
+  if (!u.root) return CTX
+  const same = u.repo === CTX.repo
+  return {
+    ...CTX,
+    repo: u.repo,
+    root: u.root,
+    base: u.base ?? CTX.base,
+    gates: same ? CTX.gates : [],
+    setup: u.setup ?? (same ? CTX.setup : []),
+    worktrees: `${u.root.replace(/[\\/]+$/, '')}/.claude/worktrees`,
+  }
+}
 
 // <shared:begin> — keep byte-identical with repair-round.workflow.js
 
@@ -188,6 +215,12 @@ const FIX_SCHEMA = {
   },
 }
 
+// A unit whose clone is not the session's repository sets ctx.worktrees: a
+// harness `isolation: 'worktree'` agent would get a worktree of the wrong
+// repository, so the agent makes its own under that clone's .claude/worktrees/.
+const isolationOf = (ctx) => (ctx.worktrees ? {} : { isolation: 'worktree' })
+const worktreeAdd = (ctx, dir, args) => `git -C ${ctx.root} fetch origin -q && git -C ${ctx.root} worktree add ${args.replace('<path>', `${ctx.worktrees}/${dir}`)}`
+
 const listOr = (xs, none) => (xs.length ? xs.map((x) => `  - ${x}`).join('\n') : `  ${none}`)
 const common = (ctx) => `Repository: ${ctx.repo}. Main checkout: ${ctx.root} — never edit it or change its branch.
 ${ctx.decisions.length ? `Decisions the user made for this run (relay as given):\n${listOr(ctx.decisions, '')}\n` : ''}${
@@ -200,7 +233,9 @@ You did not write this change and have no stake in it passing.
 
 ${common(ctx)}
 
-Work in your own worktree. Establish the change from refs, never from any checkout:
+${ctx.worktrees ? `Create your own detached worktree, work only inside it, and remove it (never --force) when done:
+  ${worktreeAdd(ctx, `verify-${u.id}`, `--detach <path> ${u.branch}`)}
+` : 'Work in your own worktree. '}Establish the change from refs, never from any checkout:
   git fetch origin -q; git switch --detach ${u.branch}
   git log --oneline ${ctx.base}..${u.branch}; git diff ${ctx.base}...${u.branch}
 Do not commit, push, or touch GitHub, the branch, or any other worktree.
@@ -226,7 +261,7 @@ const FIX_PROMPT = (ctx, u, findings) => `You repair unit ${u.id} on the EXISTIN
 ${common(ctx)}
 
 Work in your own worktree:
-  git fetch origin -q; git switch ${u.branch}
+  ${ctx.worktrees ? worktreeAdd(ctx, `repair-${u.id}`, `<path> ${u.branch}`) : `git fetch origin -q; git switch ${u.branch}`}
   (If git says the branch is already used by another worktree, a finished agent forgot to detach:
   find it with \`git worktree list\`, run \`git -C <that path> switch --detach\`, and retry.)
 ${ctx.setup.length ? `Bootstrap:\n${listOr(ctx.setup, '')}\n` : ''}
@@ -260,7 +295,7 @@ const verifyStage = (ctx, phase) => (u, claims, label) =>
     schema: VERDICT_SCHEMA,
     model: 'opus',
     effort: 'high',
-    isolation: 'worktree',
+    ...isolationOf(ctx),
   })
 
 const repairStage = (ctx) => (u, verdict) => {
@@ -275,7 +310,7 @@ const repairStage = (ctx) => (u, verdict) => {
     schema: FIX_SCHEMA,
     model: 'opus',
     effort: 'high',
-    isolation: 'worktree',
+    ...isolationOf(ctx),
   })
 }
 
@@ -314,21 +349,21 @@ const repairThenReverify = (ctxOf, rounds) => async (r) => {
 
 // <shared:end>
 
-const IMPL_PROMPT = (u) => `You implement ONE unit of work in a fresh git worktree, test-first.
+const IMPL_PROMPT = (u, ctx) => `You implement ONE unit of work in a fresh git worktree, test-first.
 
-${common(CTX)}
+${common(ctx)}
 
 Unit ${u.id}${u.issues.length ? ` — issues ${u.issues.map((n) => `#${n}`).join(', ')}` : ''}
 ${u.brief}
 ${u.issues.length ? 'Read each issue with its full comment thread (gh issue view <n> --comments) and re-verify cited file:line at HEAD, per git-plugin:git-issue-scoping.' : ''}
 ${u.owns.length ? `You own these paths; do not edit outside them without saying why: ${u.owns.join(', ')}` : ''}
 
-1. git fetch origin -q && git switch -c ${u.branch} ${CTX.base}
-${CTX.setup.length ? `   then bootstrap:\n${listOr(CTX.setup, '')}` : ''}
+1. ${ctx.worktrees ? `Create your worktree and work only inside it: ${worktreeAdd(ctx, u.id, `-b ${u.branch} <path> ${ctx.base}`)}` : `git fetch origin -q && git switch -c ${u.branch} ${ctx.base}`}
+${ctx.setup.length ? `   then bootstrap:\n${listOr(ctx.setup, '')}` : ''}
 2. Write the failing test, run it red, implement, run it green.
-3. Run the gates: ${[...CTX.gates, ...u.gates].join('; ') || 'the project gates'}.
+3. Run the gates: ${[...ctx.gates, ...u.gates].join('; ') || 'the project gates'}.
 4. Commit (conventional subject, body says why; Fixes #n only when fully resolved, otherwise Refs #n).
-${CTX.trailer ? `   End every commit message with exactly these lines:\n${CTX.trailer}\n` : ''}5. git log --oneline ${CTX.base}..HEAD must list only your commits.
+${ctx.trailer ? `   End every commit message with exactly these lines:\n${ctx.trailer}\n` : ''}5. git log --oneline ${ctx.base}..HEAD must list only your commits.
 6. Run \`git switch --detach\` so a verifier can check the branch out next.
 
 Do not push, open PRs, or comment on issues — a later sequential stage does that.
@@ -336,13 +371,14 @@ Change only what the unit needs; put pre-existing problems in followups, not the
 If it is already fixed at the base, return status "no-change" with evidence and commit nothing.
 Draft pr_title and pr_body for the finalise stage.`
 
-const IMPL_OPTS = (u) => ({ label: `implement:${u.id}`, phase: 'Implement', schema: FIX_SCHEMA, isolation: 'worktree' })
+const IMPL_OPTS = (u, ctx) => ({ label: `implement:${u.id}`, phase: 'Implement', schema: FIX_SCHEMA, ...isolationOf(ctx) })
 // PRESERVE: one literal call site per tier so every model and effort is checkable.
 // A cheaper implementer is only acceptable because an opus verifier follows.
 const implement = (u) => {
-  if (u.tier === 'haiku') return agent(IMPL_PROMPT(u), { ...IMPL_OPTS(u), model: 'haiku', effort: 'medium' })
-  if (u.tier === 'sonnet') return agent(IMPL_PROMPT(u), { ...IMPL_OPTS(u), model: 'sonnet', effort: 'high' })
-  return agent(IMPL_PROMPT(u), { ...IMPL_OPTS(u), model: 'opus', effort: 'high' })
+  const ctx = ctxFor(u)
+  if (u.tier === 'haiku') return agent(IMPL_PROMPT(u, ctx), { ...IMPL_OPTS(u, ctx), model: 'haiku', effort: 'medium' })
+  if (u.tier === 'sonnet') return agent(IMPL_PROMPT(u, ctx), { ...IMPL_OPTS(u, ctx), model: 'sonnet', effort: 'high' })
+  return agent(IMPL_PROMPT(u, ctx), { ...IMPL_OPTS(u, ctx), model: 'opus', effort: 'high' })
 }
 
 // ---------------------------------------------------------------------------
@@ -357,7 +393,14 @@ if (UNITS.length > MAX_UNITS) {
   log(`${UNITS.length} units (> ${MAX_UNITS}) — split into several runs; abort without truncating`)
   return { abort: true, reason: 'over-cap', units: UNITS.map((u) => u.id) }
 }
-const dupBranches = UNITS.map((u) => u.branch).filter((b, i, a) => a.indexOf(b) !== i)
+// A unit names its repository with `repo` and `root` together, `root` absolute.
+const badRepo = UNITS.filter((u) => (u.repo || u.root) && !(u.repo && u.root && /^(\/|[A-Za-z]:[\\/])/.test(u.root)))
+if (badRepo.length) {
+  log(`units need both repo and an absolute root, or neither: ${badRepo.map((u) => u.id).join(', ')} — abort`)
+  return { abort: true, reason: 'incomplete-repo', units: badRepo.map((u) => u.id) }
+}
+// Two repositories may use the same branch name; one repository may not.
+const dupBranches = UNITS.map((u) => `${u.repo ?? CTX.repo}:${u.branch}`).filter((b, i, a) => a.indexOf(b) !== i)
 if (dupBranches.length) {
   log(`two units share a branch (${dupBranches.join(', ')}) — make them one unit; abort`)
   return { abort: true, reason: 'shared-branch', branches: dupBranches }
@@ -370,10 +413,6 @@ if (dupBranches.length) {
 phase('Implement')
 log(`${UNITS.length} units, repair rounds ${REPAIR_ROUNDS}, land ${LAND}`)
 
-const verify = verifyStage(CTX, 'Verify')
-const reverify = verifyStage(CTX, 'Repair')
-const repair = repairStage(CTX)
-
 const rows = []
 {
   // PRESERVE the literal bound in the fan-out: the scale guard counts it.
@@ -382,15 +421,19 @@ const rows = []
     (u) => implement(u),
     async (fix, u) => {
       if (!hasCommits(fix)) return { u, fix, verdict: null }
-      return { u, fix, verdict: await verify(u, fix, `verify:${u.id}`) }
+      return { u, fix, verdict: await verifyStage(ctxFor(u), 'Verify')(u, fix, `verify:${u.id}`) }
     },
-    repairThenReverify(CTX, REPAIR_ROUNDS),
+    repairThenReverify(ctxFor, REPAIR_ROUNDS),
   )
   got.forEach((r, j) => {
     const u = UNITS[j]
-    if (!r) return rows.push({ unit: u.id, branch: u.branch, status: 'FAILED', fix: null, verdicts: [] })
+    const { repo, root, base } = ctxFor(u)
+    if (!r) return rows.push({ unit: u.id, repo, root, base, branch: u.branch, status: 'FAILED', fix: null, verdicts: [] })
     rows.push({
       unit: u.id,
+      repo,
+      root,
+      base,
       branch: u.branch,
       labels: u.labels,
       status: rowStatus(r.merged, r.final, r.repaired),
@@ -403,6 +446,9 @@ const rows = []
 const landable = rows.filter((r) => r.status === 'PASS' || r.status === 'REPAIRED_PASS')
 const finalisePlan = landable.map((r) => ({
   unit: r.unit,
+  repo: r.repo,
+  root: r.root,
+  base: r.base,
   branch: r.branch,
   head_sha: r.fix.head_sha,
   labels: r.labels,
@@ -444,15 +490,16 @@ const FINALISE_SCHEMA = {
   },
 }
 const finalised = await agent(
-  `You land verified branches one at a time, in the order given. Repository ${CTX.repo}; run git from ${CTX.root} without changing its branch or files.
+  `You land verified branches one at a time, in the order given. Each entry names its repository (repo) and the clone to run git from (root);
+run every git command as git -C <root> without changing that clone's branch or files, and pass -R <repo> to every gh command.
 
 ${JSON.stringify(finalisePlan, null, 1)}
 
 For each entry, in order:
-1. git log --oneline ${CTX.base}..<branch> must show only that unit's commits, and its tip must equal head_sha. If not, record "skipped" with the reason; do not repair it.
-2. gh pr list --head <branch> --state all --json number,state. MERGED or CLOSED → "skipped" (do not reopen). OPEN → push and record "updated".
-3. git push -u origin <head_sha>:refs/heads/<branch> (never force).
-4. If no PR exists: gh pr create --base ${CTX.base.replace(/^origin\//, '')} --head <branch> --title <pr_title> --body-file <tmp file> -a ${PR.assignee}${PR.labels.length ? ` -l ${PR.labels.join(',')}` : ''} plus the entry's labels. The body is pr_body, then "Fixes #n" / "Refs #n" lines from fixes/refs${PR.footer ? `, then:\n${PR.footer}` : ''}.
+1. git -C <root> log --oneline <base>..<branch> must show only that unit's commits, and its tip must equal head_sha. If not, record "skipped" with the reason; do not repair it.
+2. gh pr list -R <repo> --head <branch> --state all --json number,state. MERGED or CLOSED → "skipped" (do not reopen). OPEN → push and record "updated".
+3. git -C <root> push -u origin <head_sha>:refs/heads/<branch> (never force).
+4. If no PR exists: gh pr create -R <repo> --base <base without its origin/ prefix> --head <branch> --title <pr_title> --body-file <tmp file> -a ${PR.assignee}${PR.labels.length ? ` -l ${PR.labels.join(',')}` : ''} plus the entry's labels. The body is pr_body, then "Fixes #n" / "Refs #n" lines from fixes/refs${PR.footer ? `, then:\n${PR.footer}` : ''}.
 Do not merge, approve, or request review from the PR author. Stop at the first push that fails and mark the rest "skipped".`,
   { label: 'finalise', phase: 'Finalise', schema: FINALISE_SCHEMA, model: 'opus', effort: 'medium' },
 )

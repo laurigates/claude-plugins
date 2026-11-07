@@ -173,6 +173,12 @@ const FIX_SCHEMA = {
   },
 }
 
+// A unit whose clone is not the session's repository sets ctx.worktrees: a
+// harness `isolation: 'worktree'` agent would get a worktree of the wrong
+// repository, so the agent makes its own under that clone's .claude/worktrees/.
+const isolationOf = (ctx) => (ctx.worktrees ? {} : { isolation: 'worktree' })
+const worktreeAdd = (ctx, dir, args) => `git -C ${ctx.root} fetch origin -q && git -C ${ctx.root} worktree add ${args.replace('<path>', `${ctx.worktrees}/${dir}`)}`
+
 const listOr = (xs, none) => (xs.length ? xs.map((x) => `  - ${x}`).join('\n') : `  ${none}`)
 const common = (ctx) => `Repository: ${ctx.repo}. Main checkout: ${ctx.root} — never edit it or change its branch.
 ${ctx.decisions.length ? `Decisions the user made for this run (relay as given):\n${listOr(ctx.decisions, '')}\n` : ''}${
@@ -185,7 +191,9 @@ You did not write this change and have no stake in it passing.
 
 ${common(ctx)}
 
-Work in your own worktree. Establish the change from refs, never from any checkout:
+${ctx.worktrees ? `Create your own detached worktree, work only inside it, and remove it (never --force) when done:
+  ${worktreeAdd(ctx, `verify-${u.id}`, `--detach <path> ${u.branch}`)}
+` : 'Work in your own worktree. '}Establish the change from refs, never from any checkout:
   git fetch origin -q; git switch --detach ${u.branch}
   git log --oneline ${ctx.base}..${u.branch}; git diff ${ctx.base}...${u.branch}
 Do not commit, push, or touch GitHub, the branch, or any other worktree.
@@ -211,7 +219,7 @@ const FIX_PROMPT = (ctx, u, findings) => `You repair unit ${u.id} on the EXISTIN
 ${common(ctx)}
 
 Work in your own worktree:
-  git fetch origin -q; git switch ${u.branch}
+  ${ctx.worktrees ? worktreeAdd(ctx, `repair-${u.id}`, `<path> ${u.branch}`) : `git fetch origin -q; git switch ${u.branch}`}
   (If git says the branch is already used by another worktree, a finished agent forgot to detach:
   find it with \`git worktree list\`, run \`git -C <that path> switch --detach\`, and retry.)
 ${ctx.setup.length ? `Bootstrap:\n${listOr(ctx.setup, '')}\n` : ''}
@@ -245,7 +253,7 @@ const verifyStage = (ctx, phase) => (u, claims, label) =>
     schema: VERDICT_SCHEMA,
     model: 'opus',
     effort: 'high',
-    isolation: 'worktree',
+    ...isolationOf(ctx),
   })
 
 const repairStage = (ctx) => (u, verdict) => {
@@ -260,7 +268,7 @@ const repairStage = (ctx) => (u, verdict) => {
     schema: FIX_SCHEMA,
     model: 'opus',
     effort: 'high',
-    isolation: 'worktree',
+    ...isolationOf(ctx),
   })
 }
 
