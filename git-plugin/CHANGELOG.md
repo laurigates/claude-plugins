@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.10](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.9...git-plugin-v2.69.10) (2026-11-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** merge-chain.sh stale-head CI read and fork upstream-PR base ([#3453](https://github.com/laurigates/claude-plugins/issues/3453)) ([a28e90b](https://github.com/laurigates/claude-plugins/commit/a28e90be91b26a23170b56aa2afb94dc59025dca))
+
 ## [2.69.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.8...git-plugin-v2.69.9) (2026-11-07)
 
 
