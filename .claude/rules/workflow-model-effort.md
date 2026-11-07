@@ -43,11 +43,10 @@ workflow is a **cost and quality trade**, judged per workflow:
   alias since 2.1.293). The 2026-10 re-evaluation
   (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) rated every invoking
   workflow here *keep* or *needs-test*. The nearest candidates are
-  `plugin-pr-checks`, `release-pr-doc-audit`, `scheduled-audits`,
-  `research-radar` and `skill-splitter`. Each needs a replayed run against the
-  opus output, and two of them gate a required check, where a weaker model's
-  `error_max_turns` fails the PR. Lift the guard per workflow when a replay
-  passes, not before.
+  `release-pr-doc-audit`, `scheduled-audits`, `research-radar` and
+  `skill-splitter` (`plugin-pr-checks` was one until its Claude review was
+  removed, #3199). Each needs a replayed run against the opus output. Lift the
+  guard per workflow when a replay passes, not before.
 
 State it plainly when editing: we are not claiming workflows contaminate a
 main loop. The tiers are a cost and quality trade, judged per workflow.
@@ -84,7 +83,7 @@ quality looks off from its declared effort.
 
 | Job shape | Effort | Examples |
 |-----------|--------|----------|
-| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `plugin-pr-checks`, `scheduled-audits`, `release-pr-doc-audit`, `skill-splitter` |
+| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `scheduled-audits`, `release-pr-doc-audit`, `skill-splitter` |
 | Structured triage / transformation with light judgment | `medium` | `changelog-review`, `obsidian-cli-changelog`, `research-radar` |
 | Open-ended reasoning (diagnose-and-fix, merge-intent reconciliation) | `medium` | `github-workflow-auto-fix`, `auto-resolve-conflicts` |
 | Interactive / human-facing | `medium` (never `low`; no `--max-turns` cap) | `claude` (@mentions) |
@@ -99,7 +98,6 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 
 | Workflow | Model + effort | Rationale |
 |----------|----------------|-----------|
-| `plugin-pr-checks.yml` | `opus` / `low` | Mechanical checklist vs fixed rubric |
 | `scheduled-audits.yml` | `opus` / `low` | Data pre-computed; Claude only formats |
 | `release-pr-doc-audit.yml` | `opus` / `low` | Mechanical compliance; turns are for file reads |
 | `skill-splitter.yml` | `opus` / `low` | Mechanical content split |
