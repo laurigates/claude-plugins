@@ -846,7 +846,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "author": {
         "name": "Lauri Gates"
       },
