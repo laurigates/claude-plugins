@@ -150,7 +150,9 @@ RECIPE_FILES = re.compile(
 # A recipe line: a name, then either just parameters (`name a b="x:y" +rest:`,
 # where a default value may hold `=` and `:`) or Make-style target text with no
 # `=` (`nightly.tar build/x:`). An assignment (`X = a:b`, `x := y`) is neither.
-_PARAM_DEFAULT = r"(?:\"(?:[^\"\\\n]|\\.)*\"|'[^'\n]*'|`[^`\n]*`|\([^)\n]*\)|[^\s:='\"`()]+)"
+_PARAM_DEFAULT = (
+    r"(?:\"(?:[^\"\\\n]|\\.)*\"|'[^'\n]*'|`[^`\n]*`|\([^)\n]*\)|[^\s:='\"`()]+)"
+)
 _PARAM = r"[+*]?\$?[A-Za-z_][\w-]*(?:\s*=\s*" + _PARAM_DEFAULT + r")?"
 RECIPE_DEF = re.compile(
     r"^@?([A-Za-z0-9_][\w-]*)(?:(?:\s+" + _PARAM + r")*\s*|[^:=\n]*):(?!=)"
