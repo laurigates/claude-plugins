@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.71.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.71.0...git-plugin-v2.71.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** take squash and merge settings from the repo, not the maintainer's IaC ([#3514](https://github.com/laurigates/claude-plugins/issues/3514)) ([98647c6](https://github.com/laurigates/claude-plugins/commit/98647c622897d6bbc5c065c27d08c5016ed5ecb5)), closes [#3308](https://github.com/laurigates/claude-plugins/issues/3308)
+
 ## [2.71.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.70.1...git-plugin-v2.71.0) (2026-11-07)
 
 
