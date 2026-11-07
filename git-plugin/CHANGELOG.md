@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.69.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.8...git-plugin-v2.69.9) (2026-11-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** say to run gh pr edit as a separate command in the PR-metadata block ([#3452](https://github.com/laurigates/claude-plugins/issues/3452)) ([d95c5d6](https://github.com/laurigates/claude-plugins/commit/d95c5d6caebe9c3c2cd25a3306094c25d8f9b700))
+
+## [2.69.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.7...git-plugin-v2.69.8) (2026-11-07)
+
+
+### Code Refactoring
+
+* **git-plugin:** split git-issue-scoping incidents into REFERENCE.md ([#3458](https://github.com/laurigates/claude-plugins/issues/3458)) ([7b024c9](https://github.com/laurigates/claude-plugins/commit/7b024c96ae4a2250c0ba93f3b27425e06132f0ec)), closes [#3437](https://github.com/laurigates/claude-plugins/issues/3437)
+
 ## [2.69.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.6...git-plugin-v2.69.7) (2026-11-06)
 
 
