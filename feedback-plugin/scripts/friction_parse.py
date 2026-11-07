@@ -7,6 +7,9 @@ one friction event per line on stdout (or to --out). A friction event looks like
     {"session": "...", "ts": "...", "kind": "hook_block", "signature": "...",
      "tool": "Bash", "evidence": "first EVIDENCE_MAX_CHARS of the offending content"}
 
+A hook_block whose harness wrapper names the plugin cache path also carries
+"plugin" and "version" (the build that ran; see build_stamp, #3220).
+
 Kinds:
   hook_block         PreToolUse exit-2 or explicit "blocked by a hook" in content
   tool_error         tool_use_result with is_error: true that is not a hook block
@@ -98,6 +101,20 @@ STOP_PROMPT_NEEDLES = (
     ),
 )
 STASH_ENTRY_RE = re.compile(r"^\s+stash@\{\d+\}", re.M)
+
+# Build stamp of a hook block (#3220). When the harness names the hook command
+# in its wrapper ("PreToolUse:Bash hook error: [bash <home>/.claude/plugins/
+# cache/<marketplace>/<plugin>/<version>/hooks/<name>.sh]: ..."), the install
+# path carries the plugin and the version that actually ran. Project-scope
+# installs pinned below the user-scope version keep running the old build, so a
+# fix can look ineffective when it was never deployed; the weekly report's
+# build-share row is computed from these two fields. A wrapper that names no
+# cache path ("[command hook 6]", an unexpanded ${CLAUDE_PLUGIN_ROOT}) is
+# unstamped, and the event carries neither field.
+BUILD_STAMP_RE = re.compile(
+    r"plugins[/\\]cache[/\\][^/\\\s\]]+[/\\]([^/\\\s\]]+)[/\\]([^/\\\s\]]+)"
+    r"[/\\]hooks[/\\]"
+)
 
 EDIT_VERB_RE = re.compile(
     r"\b(add|addition|fix|change|remove|delete|drop|rename|refactor|"
@@ -342,6 +359,12 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     return f"{kind}:{tool.lower()}"
 
 
+def build_stamp(evidence: str) -> tuple[str, str] | None:
+    """(plugin, version) of the hook that produced a block, else None (#3220)."""
+    m = BUILD_STAMP_RE.search(evidence or "")
+    return (m.group(1), m.group(2)) if m else None
+
+
 def stop_hook_signature(body: str) -> str:
     """Key a Stop-hook reason on the hook that emitted it.
 
@@ -581,7 +604,7 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                     kind = "push_to_pr_branch"
                 else:
                     kind = "tool_error"
-                yield {
+                event = {
                     "session": session,
                     "ts": ts,
                     "kind": kind,
@@ -589,6 +612,12 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                     "signature": canonical_signature(kind, tool, body),
                     "evidence": redact(body[:EVIDENCE_MAX_CHARS]),
                 }
+                # Only stamped hook blocks gain the two keys, so every other
+                # event stays byte-identical to the pre-#3220 parser's output.
+                stamp = build_stamp(body) if kind == "hook_block" else None
+                if stamp:
+                    event["plugin"], event["version"] = stamp
+                yield event
 
         elif rtype == "assistant":
             msg = rec.get("message", {})

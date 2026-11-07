@@ -612,6 +612,50 @@ def _parser_module():
     return mod
 
 
+BUILD_STAMP_FIXTURE = FIXTURES / "build_stamp"
+# Keys only a stamped hook_block carries (#3220). The dual-parser check drops
+# them before comparing, so an additive stamp is not read as an altered event.
+BUILD_STAMP_KEYS = ("plugin", "version")
+
+
+def test_hook_block_carries_build_stamp_from_wrapper_path():
+    """#3220: the plugin and version that ran come from the cache path in the
+    harness wrapper. Unstamped wrappers and non-hook errors carry neither key.
+    """
+    events = run_parser(BUILD_STAMP_FIXTURE)
+    stamped = [
+        (e["plugin"], e["version"]) for e in events if "plugin" in e or "version" in e
+    ]
+    assert stamped == [
+        ("hooks-plugin", "2.15.2"),
+        ("hooks-plugin", "2.15.2"),
+        ("hooks-plugin", "2.15.2"),
+        ("hooks-plugin", "2.15.5"),
+        ("git-plugin", "1.40.0"),
+    ], stamped
+    # "[command hook 6]" names no command path: a hook block, but unstamped.
+    blocks = [e for e in events if e["kind"] == "hook_block"]
+    assert len(blocks) == 6, [e["signature"] for e in events]
+    # A tool error that merely prints a cache path is not a build stamp.
+    errors = [e for e in events if e["kind"] == "tool_error"]
+    assert errors and all("version" not in e for e in errors), errors
+    # The stamp does not move the signature: classification is unchanged.
+    assert {e["signature"] for e in blocks[:4]} == {
+        "hook:bash-antipatterns:git-chain"
+    }, blocks[:4]
+
+
+def test_build_stamp_reads_windows_separators():
+    """The wrapper path uses the host separator; a Windows install has '\\'."""
+    mod = _parser_module()
+    ev = (
+        "PreToolUse:Bash hook error: [bash C:\\Users\\x\\.claude\\plugins\\cache"
+        "\\laurigates-claude-plugins\\hooks-plugin\\2.15.5\\hooks\\bash-safety.sh]: x"
+    )
+    assert mod.build_stamp(ev) == ("hooks-plugin", "2.15.5"), mod.build_stamp(ev)
+    assert mod.build_stamp("[bash ${CLAUDE_PLUGIN_ROOT}/hooks/x.sh]") is None
+
+
 def test_sed_unresolved_and_awk_crash_have_own_signatures():
     """2026-W45: 34 `hook:bash-antipatterns:other` events were two shapes --
     24 `awk: towc: multibyte conversion failure` crashes of the hook itself
@@ -825,8 +869,17 @@ def test_dual_parser_stop_feedback_is_purely_additive():
         baseline = Path(tmp) / "friction_parse_base.py"
         baseline.write_text(show.stdout, encoding="utf-8")
         for d in dirs:
-            old = _run_parser_at(baseline, d)
-            new = run_parser(d)
+            # Build stamps (#3220) are additive keys on hook blocks; drop them
+            # from both sides so the comparison stays about kind/signature/
+            # evidence, whichever side of that merge the baseline is on.
+            old = [
+                {k: v for k, v in e.items() if k not in BUILD_STAMP_KEYS}
+                for e in _run_parser_at(baseline, d)
+            ]
+            new = [
+                {k: v for k, v in e.items() if k not in BUILD_STAMP_KEYS}
+                for e in run_parser(d)
+            ]
             remaining = [json.dumps(e, sort_keys=True) for e in new]
             for ev in old:
                 key = json.dumps(ev, sort_keys=True)

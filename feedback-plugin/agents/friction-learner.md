@@ -150,6 +150,11 @@ The parser emits one friction event per line:
 {"session": "…", "ts": "…", "kind": "hook_block|tool_error|user_reject|user_interrupt|plan_mode|push_to_pr_branch|stop_hook_feedback|hook_feedback", "signature": "…", "tool": "…", "evidence": "…"}
 ```
 
+A `hook_block` whose harness wrapper names the hook's install path
+(`[bash <home>/.claude/plugins/cache/<marketplace>/<plugin>/<version>/hooks/<name>.sh]`)
+also carries `"plugin"` and `"version"`: the build that actually ran. A wrapper
+that names no path (`[command hook 6]`) is unstamped and carries neither.
+
 Stop-hook output is not a tool result: the harness injects it as an `isMeta`
 user record beginning `Stop hook feedback:`. The parser keys each one on the
 hook that emitted it, because the reason text never names the script —
@@ -192,6 +197,16 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/friction_cluster.py" \
   --min-count 3 \
   --out /tmp/clusters.json
 ```
+
+`clusters.json` also carries `build_share`, and `--render-pr-body` renders it
+as the standing `## Build share` section: per plugin, the share of its
+build-stamped hook blocks that ran on each version, with the current release
+marked `(current)`. The current release is the user-scope version in
+`--installed-plugins` (default `~/.claude/plugins/installed_plugins.json`), or
+`--current-version PLUGIN=VERSION`. Read it before judging a hook fix
+ineffective: a block on a build older than the fix means the fix never reached
+that project, which `health-plugin`'s `check-plugin-scope-lag.sh` reports as a
+lagging project-scope install (#3220).
 
 Signature keys normalize tool + canonical substring so `git push origin foo` and
 `git push origin bar` collapse to `push:branch-has-open-pr` when the error body
