@@ -230,7 +230,7 @@ parallel PRs produces changes that have to be reconciled afterwards. So:
    group and the blocking sibling in the summary.
 2. **Ungrouped issues** (step 1.5). Do not implement an ungrouped issue, unless
    it is a **standalone fix**: AUTONOMOUS, and its likely diff touches a single
-   file (its own test and a `docs/regression-ledger.md` row do not count).
+   file (its own test and a `docs/regression-ledger/` entry do not count).
    Report every other ungrouped issue in the run summary under `UNGROUPED`, with
    the open epic it most plausibly belongs to if one fits. Do not attach it to
    an epic yourself; the owner decides grouping. A standalone fix is a work unit
