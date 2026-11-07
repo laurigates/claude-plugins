@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.3...health-plugin-v1.24.4) (2026-11-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** walk config-drift's content log on the first parent ([#3503](https://github.com/laurigates/claude-plugins/issues/3503)) ([6bd9eea](https://github.com/laurigates/claude-plugins/commit/6bd9eea3ae9d1407f0165d316e29ba8545dfbe26)), closes [#3491](https://github.com/laurigates/claude-plugins/issues/3491)
+
 ## [1.24.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.2...health-plugin-v1.24.3) (2026-11-07)
 
 

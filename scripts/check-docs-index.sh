@@ -32,7 +32,8 @@
 #      KNOWN LIMIT: it compares rendered label TEXT only, so it needs no d2
 #      binary and ignores layout/styling churn — but it therefore cannot tell a
 #      correctly re-rendered .svg from one hand-patched to agree with the .d2.
-#      Re-render with `d2 <src> <out>`; do not hand-edit the .svg.
+#      Re-render with `d2 <src> <out>`; do not hand-edit the .svg. Without d2
+#      (cloud sessions), the docs-refresh skill gives the install path.
 #   7. README SKILL ROWS — a `/<ns>:<name>` invocation path used as the LEADING
 #      table cell of a plugin README row resolves to a skill directory. Guards
 #      the phantom-row class (#2453: git-plugin advertised
@@ -371,6 +372,9 @@ done < <(find "$rules_dir" -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort)
 # the PR shape that produced #2453 (edit the .d2, skip the render) must not
 # merge green. Degrades silently when either file is absent (…SVG_NODES=0).
 diagram_svg_nodes=0
+# Cloud sessions have no d2 and no api.github.com (#3487); the skill holds the
+# github.com release-download path.
+d2_install_hint=" (no d2 installed: .claude/skills/docs-refresh/SKILL.md § Cloud sessions)"
 if [ -f "$diagram_d2" ] && [ -f "$diagram_svg" ]; then
   # One "<name>|<label>" row per rendered node, from the d2-emitted tspan pair.
   svg_pairs="$(grep -o '>[a-z0-9-]*</tspan><tspan[^>]*>[0-9]* skill[^<]*</tspan>' "$diagram_svg" 2>/dev/null \
@@ -382,10 +386,10 @@ if [ -f "$diagram_d2" ] && [ -f "$diagram_svg" ]; then
     svg_label="$(printf '%s\n' "$svg_pairs" | grep -m1 "^${dn_name}|" | cut -d'|' -f2-)"
     if [ -z "$svg_label" ]; then
       add_issue ERROR diagram_svg_node_missing \
-        "plugin-relationships.svg has no '$dn_name' node; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg"
+        "plugin-relationships.svg has no '$dn_name' node; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg$d2_install_hint"
     elif [ "$svg_label" != "$dn_label" ]; then
       add_issue ERROR diagram_svg_stale \
-        "plugin-relationships.svg renders $dn_name as '$svg_label' but the .d2 states '$dn_label'; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg"
+        "plugin-relationships.svg renders $dn_name as '$svg_label' but the .d2 states '$dn_label'; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg$d2_install_hint"
     fi
   done <<< "$(awk '
     match($0, /label: "[a-z0-9-]+\\n[0-9]+ skill/) {

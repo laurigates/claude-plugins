@@ -27,15 +27,17 @@ const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() =>
 
 async function run(argsIn, script) {
   const calls = []
-  const agent = async (_prompt, opts) => {
+  const sent = {}
+  const agent = async (prompt, opts) => {
     calls.push(opts.label)
+    sent[opts.label] = { prompt, opts }
     const kind = opts.label.split(':')[0]
     const unit = opts.label.split(':')[1]
     const r = script(kind, unit)
     return r === undefined ? null : r
   }
   const result = await body(agent, parallel, pipeline, () => {}, () => {}, argsIn)
-  return { result, calls }
+  return { result, calls, sent }
 }
 
 const fix = (unit, extra = {}) => ({
@@ -152,6 +154,49 @@ if (isImpl) {
   // 9. A single unit is below the floor.
   const one = await run(units(['a']), () => fix('a'))
   check('one unit aborts below floor', one.result.reason === 'below-floor' && one.calls.length === 0, one)
+  // 10. Units in two repositories: each unit's repo, root and gates reach its own
+  // prompts, a foreign unit's agents make worktrees under its root, and the
+  // landing plan names each unit's repository.
+  {
+    const two = {
+      repo: 'run/repo', root: '/clones/run', gates: ['bash run-gate.sh'],
+      units: [
+        { id: 'a', branch: 'fix/a' },
+        { id: 'b', branch: 'fix/a', repo: 'other/repo', root: '/clones/other/', gates: ['bash b-gate.sh'] },
+      ],
+    }
+    const r = await run(two, (k, u) =>
+      k === 'implement' ? fix(u) : k === 'verify' ? verdict(u, u === 'b' ? 'fix-needed' : 'pass')
+        : k === 'repair' ? fix(u, { head_sha: 'def5678' }) : k === 'reverify' ? verdict(u, 'pass') : { prs: [] })
+    const p = (label) => r.sent[label]?.prompt ?? ''
+    const iso = (label) => r.sent[label]?.opts.isolation
+    check('same branch name in two repos is allowed', statuses(r).a === 'PASS' && statuses(r).b === 'REPAIRED_PASS', statuses(r))
+    check('run-repo unit keeps harness isolation and run gates',
+      iso('implement:a') === 'worktree' && iso('verify:a') === 'worktree' && p('implement:a').includes('Repository: run/repo. Main checkout: /clones/run')
+        && p('implement:a').includes('bash run-gate.sh') && !p('implement:a').includes('worktree add'), r.sent['implement:a'])
+    check('foreign unit: own repo, root and gates in its implement prompt',
+      p('implement:b').includes('Repository: other/repo. Main checkout: /clones/other/') && p('implement:b').includes('bash b-gate.sh')
+        && !p('implement:b').includes('bash run-gate.sh'), p('implement:b'))
+    check('foreign unit: implementer worktree under its root',
+      p('implement:b').includes('git -C /clones/other/ worktree add -b fix/a /clones/other/.claude/worktrees/b origin/main'), p('implement:b'))
+    check('foreign unit: verifier, repairer and re-verifier worktrees under its root',
+      p('verify:b').includes('worktree add --detach /clones/other/.claude/worktrees/verify-b fix/a')
+        && p('repair:b').includes('worktree add /clones/other/.claude/worktrees/repair-b fix/a')
+        && p('reverify:b').includes('/clones/other/.claude/worktrees/verify-b'), [p('verify:b'), p('repair:b')])
+    check('foreign unit: no harness isolation on any of its agents',
+      ['implement:b', 'verify:b', 'repair:b', 'reverify:b'].every((l) => r.sent[l] && iso(l) === undefined), r.calls)
+    const plan = Object.fromEntries((r.result.finalisePlan ?? []).map((e) => [e.unit, e]))
+    check('landing plan names each unit\'s repository and clone',
+      plan.a?.repo === 'run/repo' && plan.a?.root === '/clones/run' && plan.b?.repo === 'other/repo' && plan.b?.root === '/clones/other/'
+        && plan.b?.head_sha === 'def5678', r.result.finalisePlan)
+    check('finalise runs git and gh per entry', p('finalise').includes('git -C <root> push') && p('finalise').includes('gh pr create -R <repo>')
+      && p('finalise').includes('"repo": "other/repo"'), p('finalise'))
+  }
+  // 11. A unit naming a repository needs both repo and an absolute root.
+  for (const bad of [{ repo: 'other/repo' }, { root: '/clones/other' }, { repo: 'other/repo', root: 'clones/other' }]) {
+    const r = await run({ units: [{ id: 'a' }, { id: 'b', ...bad }] }, () => fix('x'))
+    check(`incomplete repo ${JSON.stringify(bad)} aborts`, r.result.reason === 'incomplete-repo' && r.calls.length === 0, r.result)
+  }
 } else {
   // 8. A unit without findings aborts the run.
   const r = await run({ units: [{ id: 'a', branch: 'fix/a', findings: [] }] }, () => fix('a'))
