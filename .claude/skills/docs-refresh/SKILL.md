@@ -1,10 +1,10 @@
 ---
 name: docs-refresh
 description: Refresh plugin catalog docs (README, PLUGIN-MAP, d2 diagram) so per-plugin skill/agent counts match disk. Use when fixing count drift or after adding skills.
-allowed-tools: Bash(bash scripts/check-docs-index.sh *), Bash(d2 *), Bash(git log *), Bash(git rev-parse *), Read, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash scripts/check-docs-index.sh *), Bash(d2 *), Bash(tmp/d2/*), Bash(curl -fsSL *), Bash(tar -xzf *), Bash(mkdir -p tmp/d2), Bash(grep -o *), Bash(just render-diagrams), Bash(git log *), Bash(git rev-parse *), Read, Edit, Grep, Glob, TodoWrite
 argument-hint: (no args)
 created: 2026-06-13
-modified: 2026-11-02
+modified: 2026-11-07
 reviewed: 2026-06-13
 ---
 
@@ -70,13 +70,57 @@ arithmetic repairs them:
 
 ### Step 4: Re-render the diagram
 
-If the d2 changed: `d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg`.
+If the d2 changed: `d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg`,
+or `just render-diagrams`, which refuses a `d2` whose version differs from the
+one the `.svg` records and falls back to the cloud-session install under `tmp/d2/`.
 Commit the `.d2` and `.svg` together — **always in the same commit**. Check 6 is
 ERROR severity, so a `.d2` edit pushed without its re-rendered `.svg` fails the
 always-on `Check docs-index drift` gate; that is deliberate (#2453, where the
 `.svg` sat stale behind `STATUS=OK`).
 
-If `d2` is not installed, install it rather than hand-editing the `.svg`:
+If `d2` is not installed, install it rather than hand-editing the `.svg`. The
+`.svg` is only ever re-rendered by `d2`; Check 6 compares label text and cannot
+tell a hand-patch from a render, so a hand-edit passes the gate while leaving the
+file out of step with what `d2` would produce.
+
+Install the version the committed `.svg` was rendered with, read off its own
+`data-d2-version="..."` attribute (`v0.9.0` as of #3487), so the diff is the
+label change and not whole-file renderer churn:
+
+```bash
+grep -o 'data-d2-version="[^"]*"' docs/diagrams/plugin-relationships.svg
+```
+
+#### Cloud sessions
+
+Claude Code cloud sessions do not ship `d2`, and both `mise`/aqua and
+`https://d2lang.com/install.sh` resolve the release through `api.github.com`,
+which answers 403 there. Download the release asset from `github.com` instead
+and run the binary from the extracted tree (substitute the version from the
+`.svg`):
+
+```bash
+mkdir -p tmp/d2
+curl -fsSL -o tmp/d2/d2-v0.9.0-linux-amd64.tar.gz https://github.com/terrastruct/d2/releases/download/v0.9.0/d2-v0.9.0-linux-amd64.tar.gz
+curl -fsSL -o tmp/d2/SHA256SUMS https://github.com/terrastruct/d2/releases/download/v0.9.0/SHA256SUMS
+(cd tmp/d2 && sha256sum --ignore-missing -c SHA256SUMS)
+tar -xzf tmp/d2/d2-v0.9.0-linux-amd64.tar.gz -C tmp/d2
+tmp/d2/d2-v0.9.0/bin/d2 --version
+tmp/d2/d2-v0.9.0/bin/d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg
+```
+
+`tmp/` is git-ignored. `SHA256SUMS` comes from the same release page as the
+tarball, so the check catches a corrupt or truncated download, not a tampered
+release. The independent digest GitHub reports for each asset is served only by
+`api.github.com`, which may not be reachable from the session; when it is not,
+say in the PR that the digest was checked against `SHA256SUMS` only.
+
+On 2026-11-07 a cloud session rendered the then-current `.d2` with this binary
+and the output was byte-identical to the committed `.svg`.
+
+#### Local sessions
+
+Use the official installer, download-review-run:
 
 ```bash
 curl -fsSL https://d2lang.com/install.sh -o /tmp/d2-install.sh
@@ -84,13 +128,9 @@ curl -fsSL https://d2lang.com/install.sh -o /tmp/d2-install.sh
 sh /tmp/d2-install.sh
 ```
 
-Download-review-run, not `curl … | sh` — the piped form is blocked by this
-repo's own `hooks-plugin/hooks/bash-antipatterns.sh` safety rule, so a skill
-that prescribed it would dead-end the agent it was guiding.
-
-Pin the version the committed `.svg` was rendered with — read it off the file's
-own `data-d2-version="..."` attribute — so the diff is the label change and not a
-whole-file renderer churn.
+Not `curl … | sh`: the piped form is blocked by this repo's own
+`hooks-plugin/hooks/bash-antipatterns.sh` safety rule, so a skill that
+prescribed it would dead-end the agent it was guiding.
 
 ### Step 5: Verify and commit
 
