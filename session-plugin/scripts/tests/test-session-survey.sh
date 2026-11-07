@@ -108,6 +108,10 @@ trap 'rm -rf "$SANDBOX"' EXIT
 # real shared checkout (#1745).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR \
       GIT_NAMESPACE GIT_PREFIX 2>/dev/null || true
+# A cloud session exports CLAUDE_CODE_REMOTE=true, which reclassifies an auth
+# failure as cloud-restricted (#3488). Cleared so every case below sets it
+# explicitly and the suite reads the same in a local shell and a cloud session.
+unset CLAUDE_CODE_REMOTE
 
 mkrepo() {  # $1 = absolute path
   mkdir -p "$1"
@@ -3082,6 +3086,105 @@ check_line "MR cap: at most eight checkouts are surveyed" "$co" "CHECKOUT_COUNT=
 check_line "MR cap: the cut is flagged" "$co" "CHECKOUT_TRUNCATED=true"
 check_line "MR cap: with the number found" "$co" "CHECKOUT_FOUND=10"
 check_absent "MR cap: the ninth is not surveyed" "$co" "CHECKOUT_9_DIR="
+
+# ============================================================================
+# #3488 — a cloud session's GitHub proxy is not an auth failure
+# ============================================================================
+#
+# In a Claude Code cloud session the proxy refuses GraphQL (every `gh pr list` /
+# `gh issue list`) with an HTTP 403, while REST search and the GitHub MCP tools
+# work. `auth` sends the reader to a `gh auth login` that does not exist there.
+CR_REPO="$SANDBOX/cr-repo"
+mkrepo "$CR_REPO"
+git -C "$CR_REPO" remote add origin https://github.com/acme/demo.git
+cr_run() { bash "$COLLECTOR" --project-dir "$CR_REPO" --project demo "$@"; }
+
+# The proxy's message, verbatim from a cloud session (2026-11-07), on the list
+# calls; REST search answers from a fixture. GH_SEARCH_FAIL makes search fail
+# too. Every call is logged, so the cases can show this stub is what ran.
+cat > "$STUB/gh-cloud" <<'GHCLOUD'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$GH_ARGV_LOG"
+case "$1 $2 $3 $4" in
+  "api -X GET search/issues")
+    if [ -n "${GH_SEARCH_FAIL:-}" ]; then echo "HTTP 403: Forbidden" >&2; exit 1; fi
+    cat "$GH_SEARCH_FIXTURE"; exit 0 ;;
+esac
+echo "${GH_LIST_STDERR:-HTTP 403: GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...).}" >&2
+exit 1
+GHCLOUD
+chmod +x "$STUB/gh-cloud"
+cat > "$SANDBOX/search.json" <<'SEARCH'
+{"total_count":1,"incomplete_results":false,"items":[{"number":41,"title":"fix: cloud PR","html_url":"https://github.com/acme/demo/pull/41","state":"open","updated_at":"2026-11-07T10:00:00Z","pull_request":{}}]}
+SEARCH
+export GH_SEARCH_FIXTURE="$SANDBOX/search.json"
+export GH_ARGV_LOG="$SANDBOX/cr-argv.log"
+AUTH_STDERR="gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable."
+
+# Guard integrity: the stub is executable, and the argv log proves the
+# collector ran it rather than a real `gh` on PATH.
+check_eq "CR0: the cloud stub is executable" "$([ -x "$STUB/gh-cloud" ] && echo yes)" "yes"
+
+# --- CR1: remote session + auth-shaped failure → cloud-restricted ------------
+: > "$GH_ARGV_LOG"
+out=$(CLAUDE_CODE_REMOTE=true GH_SEARCH_FAIL=1 GH_LIST_STDERR="$AUTH_STDERR" \
+  SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --with-dedup)
+check "CR1: the cloud stub is what ran" "$(cat "$GH_ARGV_LOG")" "pr list"
+check_line "CR1: a remote auth failure is cloud-restricted" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=cloud-restricted"
+check_line "CR1: GITHUB_DRIFT carries it too" \
+  "$(drift_of "$out")" "GH_FAIL_REASON=cloud-restricted"
+check_absent "CR1: and never reads as auth" "$out" "GH_FAIL_REASON=auth"
+check_line "CR1: still unqueried, not a clean zero" "$(prs_of "$out")" "GH_READY=false"
+check_line "CR1: a failed search fabricates no PR" "$(prs_of "$out")" "PR_COUNT=0"
+check_absent "CR1: and claims no REST source" "$out" "PRS_SOURCE="
+out=$(CLAUDE_CODE_REMOTE=true GH_LIST_STDERR="$AUTH_STDERR" \
+  SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --summary)
+check_line "CR1: the hook summary carries it" "$out" "GH_FAIL_REASON=cloud-restricted"
+
+# --- CR2: local session + auth failure + failing REST probe → auth ----------
+# The control: off a cloud session, with nothing that proves the token works,
+# auth is the right answer and its `gh auth login` remedy stands.
+: > "$GH_ARGV_LOG"
+out=$(GH_SEARCH_FAIL=1 GH_LIST_STDERR="$AUTH_STDERR" \
+  SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --with-dedup)
+check_line "CR2: a local auth failure stays auth" "$(prs_of "$out")" "GH_FAIL_REASON=auth"
+check_absent "CR2: and is not called cloud-restricted" "$out" "cloud-restricted"
+check "CR2: the REST probe was asked" "$(cat "$GH_ARGV_LOG")" "q=repo:acme/demo is:pr is:open author:@me"
+
+# --- CR3: the proxy's own 403 message → cloud-restricted, without the env ----
+out=$(GH_SEARCH_FAIL=1 SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --with-dedup)
+check_line "CR3: the GraphQL-refused 403 is cloud-restricted" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=cloud-restricted"
+check_absent "CR3: never auth, though it says HTTP 403" "$out" "GH_FAIL_REASON=auth"
+
+# --- CR4: REST search succeeds → cloud-restricted, and it supplies the PRs ---
+# A local auth-shaped failure whose REST probe works is the proxy too: the
+# token answered.
+out=$(GH_LIST_STDERR="$AUTH_STDERR" SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --with-dedup)
+prs=$(prs_of "$out")
+check_line "CR4: a working REST probe means cloud-restricted" "$prs" "GH_FAIL_REASON=cloud-restricted"
+check_line "CR4: the PR rows say where they came from" "$prs" "PRS_SOURCE=rest-search"
+check_line "CR4: the fallback PR is counted" "$prs" "PR_COUNT=1"
+check_line "CR4: with its number" "$prs" "PR_1_NUMBER=41"
+check_line "CR4: its state in gh's casing" "$prs" "PR_1_STATE=OPEN"
+check_line "CR4: and its URL" "$prs" "PR_1_URL=https://github.com/acme/demo/pull/41"
+check_line "CR4: the rows are scoped to the checkout" "$prs" "PRS_SCOPE=repo"
+check_line "CR4: GH_READY stays false (issues were not queried)" "$prs" "GH_READY=false"
+check_line "CR4: so GITHUB_DRIFT stays unqueried" "$(drift_of "$out")" "GH_READY=false"
+
+# --- CR5: the summary makes no REST call (it prints no PR data) -------------
+: > "$GH_ARGV_LOG"
+out=$(CLAUDE_CODE_REMOTE=true SESSION_SURVEY_GH_BIN="$STUB/gh-cloud" cr_run --summary)
+check_absent "CR5: --summary spends no round-trip on REST search" \
+  "$(cat "$GH_ARGV_LOG")" "search/issues"
+unset GH_ARGV_LOG GH_SEARCH_FIXTURE
+
+# --- CR6: a healthy gh in a remote session claims nothing -------------------
+out=$(CLAUDE_CODE_REMOTE=true run --with-dedup)
+check_line "CR6: remote + healthy gh is ready" "$out" "GH_READY=true"
+check_absent "CR6: with no reason code" "$out" "GH_FAIL_REASON="
+check_absent "CR6: and no REST source" "$out" "PRS_SOURCE="
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"
