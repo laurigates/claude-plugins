@@ -94,6 +94,10 @@ Two constraints for any session that touches issues the Routine tracks
 
 ## Related
 
+- [`docs/issue-lifecycle.md`](../issue-lifecycle.md) — who processes each
+  machine-filed and feedback issue type, what completed means, and when it
+  closes. Every such issue repeats this under `## Processing`, so a run can
+  tell a report it should work from one it should leave alone.
 - `.claude/rules/issue-grouping.md` — why related issues are grouped, and how
   new issues join a group.
 

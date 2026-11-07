@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # Flag skills that grant `Bash` in `allowed-tools` but run no shell at all.
 #
-# Background: a bare unscoped `Bash` in a SKILL's `allowed-tools` is the ratified
-# house standard, not drift — skill frontmatter can only SUBTRACT from the
-# session's grants, never add, so enumerating narrow `Bash(<command> *)` patterns
-# there buys no safety the settings.json layer isn't already providing while
-# costing a prompt for every command the author failed to predict. See
-# `.claude/rules/agentic-permissions.md`, which owns that distinction.
+# Background: a skill's `allowed-tools` PRE-APPROVES the listed tools for the
+# turn that invokes it, so a bare `Bash` grant in a skill whose body runs no shell
+# pre-approves commands nothing in the skill needs and advertises a capability
+# it never exercises. That is the defect this script lints.
 #
-# The defect worth linting is therefore the OPPOSITE of over-breadth: a `Bash`
-# grant in a skill whose body runs no shell. That grant is pure surface — it can
-# only widen what the skill may reach for, and it advertises a capability the
-# skill never exercises.
+# The house standard for a skill that does run shell is narrow
+# `Bash(<command> *)` patterns, not a bare `Bash` (decided on #2839; see
+# `.claude/rules/agentic-permissions.md`, which owns the grant model). This
+# script does not flag a bare `Bash` in a skill that runs shell; migrating those
+# and linting them is #3464.
 #
 # Deliberately NOT `plugin-compliance-check.sh`'s `check_bash_patterns()`: CI runs
 # that whole script under `|| true` (plugin-pr-checks.yml), so it is advisory *by

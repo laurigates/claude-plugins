@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.0...agent-patterns-plugin-v2.57.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** warn when .claude/worktrees/ is not git-ignored ([#3457](https://github.com/laurigates/claude-plugins/issues/3457)) ([d6003c5](https://github.com/laurigates/claude-plugins/commit/d6003c5905389bc2026473a685b8fa7787b69323))
+
 ## [2.57.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.56.2...agent-patterns-plugin-v2.57.0) (2026-11-07)
 
 

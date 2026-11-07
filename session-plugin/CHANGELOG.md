@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.16.0...session-plugin-v1.17.0) (2026-11-07)
+
+
+### Features
+
+* **session-plugin:** survey each child checkout of a workspace root ([#3456](https://github.com/laurigates/claude-plugins/issues/3456)) ([59b731e](https://github.com/laurigates/claude-plugins/commit/59b731ef531670a2ef08cacceb50882e64db92f6))
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.15.0...session-plugin-v1.16.0) (2026-11-07)
 
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-11-05
-reviewed: 2026-09-16
+modified: 2026-11-06
+reviewed: 2026-11-06
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -20,7 +20,7 @@ Claude Code now ships several permission modes. The relevant ones for skill auth
 |------|--------------------------|------------------------|
 | `default` ("Manual" as of 2.1.200) | Reads only | Granular `allowed-tools` is the only way to avoid prompts. `--permission-mode manual` / `"defaultMode": "manual"` are accepted aliases. |
 | `acceptEdits` | Reads, file edits, common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, `sed`, etc.) | Bash skills still benefit from narrow `Bash(<command> *)` patterns. |
-| `auto` | Everything that survives a classifier review | The starting mode when none is configured for interactive terminal and VS Code sessions (2.1.284). `-p`/SDK sessions start in `default` again on third-party providers, with telemetry off, or on a fresh install (2.1.302 reversed the 2.1.285 auto default); pass `--permission-mode auto` (`auto-mode.md`). Broad rules like `Bash(*)` and `Bash(python*)` are **dropped on entering auto mode**. Narrow rules like `Bash(git status *)` carry over and skip the classifier round-trip. |
+| `auto` | Everything that survives a classifier review | The starting mode when none is configured for interactive terminal and VS Code sessions (2.1.284). `-p`/SDK sessions start in `default` again on third-party providers, with telemetry off, or on a fresh install (2.1.302 reversed the 2.1.285 auto default); pass `--permission-mode auto` (`auto-mode.md`). Broad allow rules are dropped on entering auto mode and narrow ones carry over (`auto-mode.md` § What Happens to Allow Rules on Entering Auto Mode). |
 | `dontAsk` | Pre-approved tools only | Without granular `allow` rules, the skill cannot run. |
 | `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety layer — granular permissions are unenforced but still document intent. |
 
@@ -62,30 +62,30 @@ See `.claude/rules/auto-mode.md` for the full auto-mode model (decision order, d
 
 > **Note (2.1.152)**: Skills and slash commands can set `disallowed-tools` in frontmatter to **remove** tools while the skill is active — the subtractive complement to `allowed-tools`. Use it to keep a focused skill from reaching for capabilities it shouldn't (see `.claude/rules/skill-development.md` § Optional Frontmatter Fields).
 
-## Where narrow `Bash(<command> *)` patterns belong: `settings.json`
+## Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns
 
-**Narrow patterns are for `settings.json`, not for a skill's `allowed-tools`.** They reduce prompts in `default`/`acceptEdits`, survive the transition into `auto`, and are required by `dontAsk` — but all of that is true of the *session's* grants, which is what `settings.json` configures.
+This section is the single record of the skill grant model. `auto-mode.md` and `skill-development.md` link here rather than restating it.
 
-### A bare `Bash` in a skill's `allowed-tools` is correct — not an anti-pattern
+**What the field does.** The Claude Code skills reference defines `allowed-tools` as "Tools Claude can use without asking permission during the turn that invokes this skill. The grant clears when you send your next message." ([skills § Pre-approve tools for a skill](https://code.claude.com/docs/en/skills#pre-approve-tools-for-a-skill)). It adds to the session's grants and restricts nothing: every tool stays callable, and the session's permission settings still govern the tools a skill does not list. Workspace trust does not gate it, so a project skill's grant applies even in a `-p` run in a folder never trusted. Managed `allowManagedPermissionRulesOnly` withholds it (`skill-development.md` § Permission Patterns lists which skill sources keep it). To take tools away while a skill is active, use `disallowed-tools`.
 
-This file is the single source of truth for the distinction; `skill-development.md` links here rather than restating it.
+**The house standard is narrow patterns** (decided 2026-11-01 on #2839). List the commands the skill runs as `Bash(<command> *)`. A bare `Bash` pre-approves every shell command for the invoking turn, whatever the skill body or a tool result steers the model toward, so it is a full shell grant. A command the author did not predict is not blocked by a narrow list; it goes through the normal permission flow (a prompt in `default`, the classifier in `auto`).
 
-Skill frontmatter can only **subtract** from the session's grants, never add. A skill listing `Bash(git status *)` does not *grant* that pattern — it narrows what the skill may reach for out of what the session already permits. So enumerating narrow patterns in a skill:
+| Grant in a skill | Pre-approved for the invoking turn |
+|---|---|
+| `Bash(git status *), Bash(gh pr view *)` | Those commands |
+| `Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check.sh *)` | The skill's own bundled script. Claude Code substitutes `${CLAUDE_SKILL_DIR}` in `allowed-tools` Bash rules; the docs' example is the direct form `Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)`. Invoke the script in the body exactly as the rule spells it |
+| `Bash(bash *)`, `Bash(sh *)` | Any `bash -c '<script>'` by prefix match, so nearly as much as a bare `Bash`. Avoid |
+| `Bash` | Every shell command. Non-conforming |
 
-- **buys no safety** the `settings.json` layer isn't already providing, and
-- **costs a permission prompt** for every command the author failed to predict.
+About 220 skills still carry a bare `Bash` (an awk pass over each tracked plugin `SKILL.md`'s one-line `allowed-tools`, 2026-11-06). They migrate under #3464, which also adds the lint; until then, do not add new ones. The skills reference does not say whether auto mode's broad-rule drop applies to a skill's turn grant, so do not rely on it either way.
 
-When a skill's payload *is* shell, `Bash` (bare, unscoped) is the right grant. 191 of 408 SKILL.md files in this marketplace carry it, and that is the ratified house standard, not drift.
+### The other defect: a `Bash` grant in a skill with no shell to run
 
-The two genuinely broad patterns named below — `Bash(*)` and `Bash(python*)` — are a different thing: they are `settings.json` rules that auto mode **drops at runtime**, so they silently buy nothing. A bare `Bash` in skill frontmatter is not one of them.
+A skill that grants `Bash` in any form while its body runs no shell advertises a capability it never exercises and pre-approves commands nothing in it needs.
 
-### The real anti-pattern: a `Bash` grant in a skill with no shell to run
+`scripts/check-unused-bash-grant.sh` is the lint; it checks bare `Bash` grants only, so a narrow `Bash(...)` grant in a skill with no shell is a review finding. A skill counts as running shell if it has a fenced command block (including an **unlabeled** fence, or one whose commands start `./` or `.venv/`), a known command in inline backticks, a sibling `scripts/` directory, a `` !`…` `` context command, or shell in a bundled sidecar (`REFERENCE.md`, `references/**`) — a progressive-disclosure skill is not inert just because its commands live one file over.
 
-The defect worth linting is the opposite of over-breadth — a skill that grants `Bash` while its body runs no shell at all. That grant is pure surface: it can only widen what the skill may reach for, and it advertises a capability the skill never exercises.
-
-`scripts/check-unused-bash-grant.sh` is the lint. A skill counts as running shell if it has a fenced command block (including an **unlabeled** fence, or one whose commands start `./` or `.venv/`), a known command in inline backticks, a sibling `scripts/` directory, a `` !`…` `` context command, or shell in a bundled sidecar (`REFERENCE.md`, `references/**`) — a progressive-disclosure skill is not inert just because its commands live one file over.
-
-Do **not** "fix" a flagged skill by inventing narrow patterns. Either the skill runs shell (leave the bare `Bash`) or it does not (drop the `Bash` entirely).
+A flagged skill drops `Bash` entirely. A skill that does run shell lists the commands it runs, as the house standard in this section says.
 
 ## Permission Syntax
 
@@ -266,7 +266,7 @@ allowed-tools: Bash(git status *), Bash(npm test *), Bash(bun run *)
 
 ### Scripts for Compound Operations
 
-When a skill needs compound operations (validation checks, multi-step diagnostics, data aggregation), use **standalone shell scripts** instead of inline commands. This consolidates many granular permission patterns into one `Bash(bash *)` pattern.
+When a skill needs compound operations (validation checks, multi-step diagnostics, data aggregation), use **standalone shell scripts** instead of inline commands. This consolidates many granular permission patterns into one rule per bundled script.
 
 **Anti-pattern** — many shell utility patterns that force inline bash:
 ```yaml
@@ -274,11 +274,12 @@ When a skill needs compound operations (validation checks, multi-step diagnostic
 allowed-tools: Bash(test *), Bash(jq *), Bash(head *), Bash(find *), Bash(cp *), Read
 ```
 
-**Correct pattern** — standalone scripts with a single permission:
+**Correct pattern** — a bundled script, pre-approved by a rule anchored to the skill's own directory:
 ```yaml
-# All script invocations auto-approved with one pattern
-allowed-tools: Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-settings.sh *), Read, TodoWrite
 ```
+
+Not `Bash(bash *)`: it prefix-matches any `bash -c '<script>'`, so it pre-approves nearly as much as a bare `Bash`.
 
 Scripts live in `skills/<skill-name>/scripts/` and are invoked via:
 ```bash
@@ -287,7 +288,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --projec
 
 #### When to Use Scripts vs Granular Patterns
 
-| Use granular `Bash(command *)` | Use `Bash(bash *)` with scripts |
+| Use granular `Bash(command *)` | Use a bundled script (one anchored rule) |
 |-------------------------------|--------------------------------|
 | Primary CLI tools (`git`, `gh`, `curl`, `npm`) | Shell utilities (`test`, `jq`, `find`, `cp`, `mkdir`) |
 | Single-purpose commands | Multi-step validation/diagnostics |
@@ -303,11 +304,9 @@ Scripts must follow these patterns (see `shell-scripting.md`):
 
 ## Design Principles
 
-### 1. Granular Over Broad — in `settings.json`
+### 1. Granular Over Broad
 
-Prefer specific command patterns over broad tool access **in the session's `settings.json` grants**. (In a skill's own `allowed-tools`, a bare `Bash` is correct when the skill runs shell — see "Where narrow `Bash(<command> *)` patterns belong" above.)
-
-Use specific command patterns:
+Prefer specific command patterns over broad tool access, in a skill's `allowed-tools` and in `settings.json` alike (see [Skill `allowed-tools` is a pre-approval](#skill-allowed-tools-is-a-pre-approval-so-the-standard-is-narrow-patterns)):
 
 ```yaml
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git add *), Read
@@ -436,7 +435,7 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
 }
 ```
 
-These narrow rules carry over into auto mode and skip the classifier. Avoid broad patterns like `Bash(*)` or `Bash(python*)` — auto mode drops them at runtime, and they reduce safety in `default`/`acceptEdits`.
+These narrow rules carry over into auto mode and skip the classifier. Avoid broad patterns like `Bash(*)`: auto mode drops them (`auto-mode.md` § What Happens to Allow Rules on Entering Auto Mode), and they reduce safety in `default`/`acceptEdits`.
 
 ### Writes to Protected Paths
 
@@ -576,8 +575,8 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 
 ## Checklist for New Skills
 
-- [ ] Grants a bare `Bash` **iff** the skill actually runs shell; omits `Bash` entirely otherwise (narrow `Bash(<command> *)` patterns belong in `settings.json` — see above)
-- [ ] Shell utility operations (`test`, `jq`, `find`, `cp`, `mkdir`) use scripts with `Bash(bash *)`
+- [ ] Lists narrow `Bash(<command> *)` patterns for the commands the skill runs, never a bare `Bash`; omits `Bash` entirely when the skill runs no shell
+- [ ] Shell utility operations (`test`, `jq`, `find`, `cp`, `mkdir`) live in bundled scripts, each pre-approved by a rule anchored to `${CLAUDE_SKILL_DIR}`
 - [ ] Context commands use JSON/porcelain output
 - [ ] Context commands contain no shell operators (`>`, `|`, `||`, `&&`, `;`)
 - [ ] Context commands use `find` for file/directory discovery

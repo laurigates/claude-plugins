@@ -73,9 +73,8 @@ on:
       # signature + issue-lookup step bodies of this workflow (#2744), and
       # test-auto-fix-llm-only.sh its failure-context step.
       - '.github/workflows/github-workflow-auto-fix.yml'
-      # scripts/tests/test-skill-review-gate.sh extracts and runs the Claude
-      # skill review gate step and asserts the review stays out of the
-      # required `compliance` job.
+      # scripts/tests/test-check-version-pin-coverage.sh extracts this
+      # workflow's `changed` step and the version-pin step's `if:`.
       - '.github/workflows/plugin-pr-checks.yml'
       - '.github/workflows/test-skill-scripts.yml'
       # Case 7 of comfyui-node-scaffold's test-registry-health.sh pins the
