@@ -97,6 +97,14 @@ This plugin provides expert knowledge for Rust development with a focus on:
 - Custom Homebrew publish jobs and the warnings they produce
 - Local verification: `dist plan`, `dist generate --check`, `dist build`
 
+**rust-installable-cli** - Patterns for a CLI that runs outside its repo
+- Default config embedded with `include_str!`, plus a drift test when the crate keeps its own copy
+- Layered config (built-in, user, beside-input, input, CLI) with whole-entry tool tables
+- Hermetic library loader; only the binary reads the user's config
+- Config and cache directories from an injected env lookup, no dependency
+- clap: a positional input beside subcommands without `args_conflicts_with_subcommands`
+- Copy-out from a cache (copy, temp name then rename, plain names only) and stable cache keys
+
 ## Quick Start
 
 ### Using the Agent
