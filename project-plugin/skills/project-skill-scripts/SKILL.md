@@ -5,7 +5,7 @@ args: "[--analyze] [--create <plugin/skill>] [--all]"
 allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
 argument-hint: "--analyze | --create git-plugin/git-commit-workflow | --all"
 created: 2026-01-24
-modified: 2026-05-09
+modified: 2026-11-06
 reviewed: 2026-02-14
 ---
 
@@ -25,7 +25,7 @@ Analyze plugin skills to identify opportunities where supporting scripts would i
 
 - Plugin root: !`git rev-parse --show-toplevel`
 - Total plugins: !`find . -maxdepth 2 -name 'plugin.json' -type f`
-- Skills with scripts: !`find . -name 'scripts/*.sh' -type f`
+- Skills with scripts: !`find . -path '*/skills/*/scripts/*.sh' -type f`
 
 ## Parameters
 

@@ -87,6 +87,10 @@ claude-plugins #1979→#1987):
   ```
 
   It runs `gh pr update-branch` (a no-op on a child just rebased onto `main`),
+  and when gh reports an update rather than "already up-to-date" it ignores
+  every read that still shows the pre-update head: reads can lag the update,
+  and the old head's rollup, a flaky failure included, is not the merging
+  head's (#3421). It then
   waits until every check on the head has completed and two consecutive reads
   agree, keeps only the latest run of each check, refuses any commit newer than
   `--review-ts` and a head that moved after CI settled, and merges with

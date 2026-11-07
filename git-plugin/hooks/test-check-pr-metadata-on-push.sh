@@ -469,6 +469,21 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     "To bypass: edit the PR title or body so it reflects the new commit, THEN push." \
     "$MSG_PUSH_JSON"
 
+# A PreToolUse hook runs before the command, so in `gh pr edit … && git push`
+# the edit has not happened when the check reads updatedAt: the chained form
+# blocks every time. The message must say to run the edit on its own
+# (issue #3446). The chained form itself still blocks; only the text changes.
+CHAINED_PUSH_JSON=$(make_json "gh pr edit 42 --title 'feat: y' && git push origin feature")
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "gh pr edit chained with the push still blocks (#3446)" 2 \
+    "$CHAINED_PUSH_JSON"
+for SEP_JSON in "$MSG_PUSH_JSON" "$CHAINED_PUSH_JSON"; do
+    PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+        assert_stderr_contains "block message says to run gh pr edit as a separate command (#3446)" \
+        "Run gh pr edit as a separate command, not chained with the push: this hook checks before the command runs." \
+        "$SEP_JSON"
+done
+
 # A delegated fixer with no authority over the PR's title/body cannot take the
 # bypass, so the message must tell it to hand back instead of retrying, naming
 # the PR number and the local commit it would have pushed (issue #3331).

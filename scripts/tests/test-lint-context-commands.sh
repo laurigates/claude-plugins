@@ -23,6 +23,13 @@
 #      #3207 part-1 fix so a revert is caught
 #   I. no SKILL.md anywhere in the tree carries the escaped-quote shape — pins
 #      the #3207 part-2 fix (blueprint, component-patterns, container, rust)
+#   J. a Context `find -name` whose pattern contains a slash is reported ERROR
+#      under rule `find-name-slash` and the script exits 1 (issue #3438 — -name
+#      matches the basename only, so a pattern with '/' never matches)
+#   K. the -path rewrite and slash-free -name patterns (including a start path
+#      or a later -path that contains '/') are NOT flagged
+#   L. no SKILL.md anywhere carries the slash-in--name shape — pins the
+#      health-plugins and project-skill-scripts fix so a revert is caught
 #
 # The linter greps relative to its cwd, so each fixture is exercised by running
 # it from a throwaway directory containing only that fixture.
@@ -55,7 +62,9 @@ mkdir -p "$workdir/which-ctx/skills/probe" \
          "$workdir/clean/skills/probe" \
          "$workdir/command-v/skills/probe" \
          "$workdir/escaped-quote/skills/probe" \
-         "$workdir/plain-quote/skills/probe"
+         "$workdir/plain-quote/skills/probe" \
+         "$workdir/name-slash/skills/probe" \
+         "$workdir/name-noslash/skills/probe"
 
 # A fixture: the #2145 shape, verbatim.
 cat > "$workdir/which-ctx/skills/probe/SKILL.md" <<'EOF'
@@ -133,6 +142,32 @@ name: probe
 - Workflows dir: !`find . -maxdepth 2 -type d -path './.github/workflows'`
 EOF
 
+# J fixture: the two #3438 shapes, verbatim from health-plugins and
+# project-skill-scripts.
+cat > "$workdir/name-slash/skills/probe/SKILL.md" <<'EOF'
+---
+name: probe
+---
+## Context
+
+- Project settings exists: !`find . -maxdepth 1 -name '.claude/settings.json'`
+- Skills with scripts: !`find . -name 'scripts/*.sh' -type f`
+EOF
+
+# K fixture: the fixed forms, plus slash-free -name patterns next to a start
+# path or a -path that does contain '/'.
+cat > "$workdir/name-noslash/skills/probe/SKILL.md" <<'EOF'
+---
+name: probe
+---
+## Context
+
+- Project settings exists: !`find . -maxdepth 2 -path './.claude/settings.json'`
+- Skills with scripts: !`find . -path '*/scripts/*.sh' -type f`
+- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Rules: !`find . -maxdepth 3 -name '*.md' -path './.claude/rules/*'`
+EOF
+
 run_lint() {
   # Run the linter with the fixture dir as cwd; capture output and exit code.
   ( cd "$workdir/$1" && bash "$linter" 2>&1 )
@@ -191,6 +226,23 @@ assert "H: no configure-plugin Context command carries escaped single quotes (fo
 i_hits="$(grep -c '\[escaped-single-quote\]' <<<"$e_out" || true)"
 [ "$i_hits" -eq 0 ] && i_ok=true || i_ok=false
 assert "I: no Context command in any SKILL.md carries escaped single quotes (found $i_hits)" "$i_ok"
+
+# J. -name with a slash -> ERROR [find-name-slash], exit 1, both lines reported
+j_out="$(run_lint name-slash)"
+j_rc="$(lint_rc name-slash)"
+j_hits="$(grep -c 'ERROR \[find-name-slash\]' <<<"$j_out" || true)"
+[ "$j_hits" -eq 2 ] && [ "$j_rc" -eq 1 ] && j_ok=true || j_ok=false
+assert "J: Context find -name with a slash is ERROR [find-name-slash] on both lines and exits 1 (#3438; found $j_hits)" "$j_ok"
+
+# K. -path rewrites and slash-free -name patterns -> not flagged
+k_out="$(run_lint name-noslash)"
+grep -q 'All context commands OK' <<<"$k_out" && k_ok=true || k_ok=false
+assert "K: -path rewrites and slash-free -name patterns are NOT flagged" "$k_ok"
+
+# L. no SKILL.md anywhere carries the slash-in--name shape (pins #3438)
+l_hits="$(grep -c '\[find-name-slash\]' <<<"$e_out" || true)"
+[ "$l_hits" -eq 0 ] && l_ok=true || l_ok=false
+assert "L: no Context find -name pattern in any SKILL.md contains a slash (found $l_hits)" "$l_ok"
 
 echo "----"
 echo "PASS=$pass_count FAIL=$fail_count"

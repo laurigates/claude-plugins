@@ -21,12 +21,20 @@
 #                                      title STARTS WITH P count. Others that
 #                                      carry the label are listed as ignored.
 #
+# Supersede mode (--current-title T, needs --title-prefix; #3346): a periodic
+# report is replaced by the next period's report rather than blocking it
+# (docs/issue-lifecycle.md). Only an open report titled exactly T (this
+# period's) counts as existing; every other prefix match is a PREVIOUS report,
+# which the caller closes once the new one is filed
+# (scripts/close-superseded-reports.sh).
+#
 # Usage:
-#   bash scripts/script-to-issue-guard.sh --label LABEL [--title-prefix PREFIX]
+#   bash scripts/script-to-issue-guard.sh --label LABEL [--title-prefix PREFIX [--current-title TITLE]]
 #
 # Outputs:
-#   stdout                 === SCRIPT-TO-ISSUE GUARD === block (EXISTS=, MATCHED=, IGNORED=)
-#   $GITHUB_OUTPUT         exists=true|false, matched=<comma-separated issue numbers>
+#   stdout                 === SCRIPT-TO-ISSUE GUARD === block (EXISTS=, MATCHED=, PREVIOUS=, IGNORED=)
+#   $GITHUB_OUTPUT         exists=true|false, matched=<comma-separated issue numbers>,
+#                          previous=<comma-separated issue numbers> (supersede mode only)
 #   $GITHUB_STEP_SUMMARY   one paragraph naming the matched (and ignored) issues,
 #                          so a skipped run says which issue caused the skip
 #
@@ -44,9 +52,10 @@ set -uo pipefail
 
 LABEL=""
 TITLE_PREFIX=""
+CURRENT_TITLE=""
 
 usage() {
-  echo "Usage: script-to-issue-guard.sh --label LABEL [--title-prefix PREFIX]" >&2
+  echo "Usage: script-to-issue-guard.sh --label LABEL [--title-prefix PREFIX [--current-title TITLE]]" >&2
 }
 
 # An unknown argument is REJECTED, never swallowed (#2057).
@@ -58,6 +67,9 @@ while [ $# -gt 0 ]; do
     --title-prefix)
       if [ $# -lt 2 ]; then usage; exit 2; fi
       TITLE_PREFIX="$2"; shift 2 ;;
+    --current-title)
+      if [ $# -lt 2 ]; then usage; exit 2; fi
+      CURRENT_TITLE="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *)
       echo "script-to-issue-guard.sh: unknown argument: $1" >&2
@@ -68,6 +80,14 @@ done
 
 if [ -z "$LABEL" ]; then
   echo "script-to-issue-guard.sh: --label is required" >&2
+  usage
+  exit 2
+fi
+
+# Supersede mode needs the prefix: without it every labelled issue (routing
+# tags included) would be read as a previous report and closed.
+if [ -n "$CURRENT_TITLE" ] && [ -z "$TITLE_PREFIX" ]; then
+  echo "script-to-issue-guard.sh: --current-title requires --title-prefix" >&2
   usage
   exit 2
 fi
@@ -97,8 +117,12 @@ fi
 
 # startswith("") is true for every title, so label-only mode is the same filter
 # with an empty prefix -- one code path, no divergence between the two modes.
-MATCHED="$(printf '%s' "${ISSUES_JSON:-[]}" | jq -r --arg p "$TITLE_PREFIX" \
-  '[.[] | select((.title // "") | startswith($p)) | .number] | sort | map(tostring) | join(",")')"
+# In supersede mode a report only blocks the run when it is THIS period's
+# (title == CURRENT_TITLE); older prefix matches are PREVIOUS reports instead.
+MATCHED="$(printf '%s' "${ISSUES_JSON:-[]}" | jq -r --arg p "$TITLE_PREFIX" --arg c "$CURRENT_TITLE" \
+  '[.[] | select((.title // "") | startswith($p)) | select($c == "" or .title == $c) | .number] | sort | map(tostring) | join(",")')"
+PREVIOUS="$(printf '%s' "${ISSUES_JSON:-[]}" | jq -r --arg p "$TITLE_PREFIX" --arg c "$CURRENT_TITLE" \
+  '[.[] | select($c != "") | select((.title // "") | startswith($p)) | select(.title != $c) | .number] | sort | map(tostring) | join(",")')"
 IGNORED="$(printf '%s' "${ISSUES_JSON:-[]}" | jq -r --arg p "$TITLE_PREFIX" \
   '[.[] | select((.title // "") | startswith($p) | not) | .number] | sort | map(tostring) | join(",")')"
 
@@ -111,6 +135,7 @@ echo "LABEL=$LABEL"
 echo "MODE=$MODE"
 echo "EXISTS=$EXISTS"
 echo "MATCHED=$MATCHED"
+echo "PREVIOUS=$PREVIOUS"
 echo "IGNORED=$IGNORED"
 echo "=== END SCRIPT-TO-ISSUE GUARD ==="
 
@@ -118,6 +143,7 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
   {
     echo "exists=$EXISTS"
     echo "matched=$MATCHED"
+    echo "previous=$PREVIOUS"
   } >> "$GITHUB_OUTPUT"
 fi
 
@@ -136,6 +162,10 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
       echo "Close them to let the next scheduled run file a new report."
     else
       echo "No open issue with $KEY; the audit runs."
+    fi
+    if [ -n "$PREVIOUS" ]; then
+      echo
+      echo "Superseded once the new report is filed (an earlier period's report): $(as_refs "$PREVIOUS")."
     fi
     if [ -n "$IGNORED" ]; then
       echo

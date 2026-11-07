@@ -133,7 +133,7 @@ assert_contains "$prompt" '${{ steps.existing.outputs.directive }}' "Claude prom
 assert_lacks "$prompt" 'gh issue create' "Claude prompt (issue creation belongs to the directive)"
 
 # Outside `create` mode the agent must be UNABLE to file an issue, not only
-# told not to: a deny rule beats the `Bash(gh issue *)` grant. `gh issue new`
+# told not to: a deny rule beats the `Bash(gh issue create *)` grant. `gh issue new`
 # is an alias of `gh issue create`.
 claude_args="$(step_field "$CLAUDE_STEP" with.claude_args)"
 assert_contains "$claude_args" \

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.3...rust-plugin-v1.9.0) (2026-11-07)
+
+
+### Features
+
+* **rust-plugin:** add rust-installable-cli skill ([#3461](https://github.com/laurigates/claude-plugins/issues/3461)) ([c3c7641](https://github.com/laurigates/claude-plugins/commit/c3c76419c7bf5459acd587ebadd9c716d53ea512)), closes [#3304](https://github.com/laurigates/claude-plugins/issues/3304)
+
 ## [1.8.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.8.2...rust-plugin-v1.8.3) (2026-11-06)
 
 
