@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-49 plugins, 466 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+49 plugins, 469 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -44,7 +44,7 @@
 
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
-| [code-quality-plugin](../code-quality-plugin/) | 17 | 0 | Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis |
+| [code-quality-plugin](../code-quality-plugin/) | 18 | 0 | Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis |
 | [codebase-attributes-plugin](../codebase-attributes-plugin/) | 3 | 0 | Structured codebase health attributes with severity-based agent routing and dashboard |
 | [evaluate-plugin](../evaluate-plugin/) | 7 | 3 | Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements |
 | [feedback-plugin](../feedback-plugin/) | 1 | 1 | Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions |
@@ -53,7 +53,7 @@
 
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
-| [testing-plugin](../testing-plugin/) | 19 | 1 | Test execution, TDD workflow, and testing strategies |
+| [testing-plugin](../testing-plugin/) | 20 | 1 | Test execution, TDD workflow, and testing strategies |
 
 ## CI/CD
 
@@ -79,7 +79,7 @@
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [blog-plugin](../blog-plugin/) | 2 | 0 | Blog post creation - project logs, technical write-ups, personal documentation |
-| [documentation-plugin](../documentation-plugin/) | 9 | 0 | Documentation generation - API docs, README, LaTeX PDF conversion |
+| [documentation-plugin](../documentation-plugin/) | 10 | 0 | Documentation generation - API docs, README, LaTeX PDF conversion |
 
 ## Communication
 

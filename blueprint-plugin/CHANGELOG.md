@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.2...blueprint-plugin-v3.51.3) (2026-11-07)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** give blueprint-upgrade an Execution spine with step headings ([#3462](https://github.com/laurigates/claude-plugins/issues/3462)) ([bfdc7ff](https://github.com/laurigates/claude-plugins/commit/bfdc7ff9c80c9c1b0555801ccbffa47bb6dd9ca8)), closes [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+
 ## [3.51.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.1...blueprint-plugin-v3.51.2) (2026-11-06)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.7...git-plugin-v2.69.8) (2026-11-07)
+
+
+### Code Refactoring
+
+* **git-plugin:** split git-issue-scoping incidents into REFERENCE.md ([#3458](https://github.com/laurigates/claude-plugins/issues/3458)) ([7b024c9](https://github.com/laurigates/claude-plugins/commit/7b024c96ae4a2250c0ba93f3b27425e06132f0ec)), closes [#3437](https://github.com/laurigates/claude-plugins/issues/3437)
+
 ## [2.69.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.6...git-plugin-v2.69.7) (2026-11-06)
 
 
