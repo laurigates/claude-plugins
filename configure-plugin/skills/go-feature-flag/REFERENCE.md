@@ -127,7 +127,7 @@ spec:
     spec:
       containers:
         - name: relay
-          image: gofeatureflag/go-feature-flag:v1.57.2
+          image: gofeatureflag/go-feature-flag:v1.58.0
           ports:
             - name: api
               containerPort: 1031

@@ -366,7 +366,7 @@ jobs:
 
       - name: Run Claude auto-fix analysis
         if: steps.dedup.outputs.skip != 'true'
-        uses: anthropics/claude-code-action@v1.0.264
+        uses: anthropics/claude-code-action@v1.0.268
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 

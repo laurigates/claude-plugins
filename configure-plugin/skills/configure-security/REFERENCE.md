@@ -206,16 +206,16 @@ jobs:
         uses: actions/checkout@v6.1.0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.39.1
+        uses: github/codeql-action/init@v4.39.2
         with:
           languages: ${{ matrix.language }}
           queries: +security-extended,security-and-quality
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4.39.1
+        uses: github/codeql-action/autobuild@v4.39.2
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4.39.1
+        uses: github/codeql-action/analyze@v4.39.2
         with:
           category: "/language:${{ matrix.language }}"
 ```
@@ -523,15 +523,15 @@ jobs:
       - uses: actions/checkout@v6.1.0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.39.1
+        uses: github/codeql-action/init@v4.39.2
         with:
           languages: javascript, python
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4.39.1
+        uses: github/codeql-action/autobuild@v4.39.2
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4.39.1
+        uses: github/codeql-action/analyze@v4.39.2
 ```
 
 ## Results Report Format
