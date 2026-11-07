@@ -1,13 +1,13 @@
 ---
 created: 2026-06-04
-modified: 2026-07-29
+modified: 2026-11-07
 reviewed: 2026-07-29
 model: opus
 name: comfy-node
 description: >-
-  Orchestrate a ComfyUI node pack from idea to registry: scaffold, create + seed
-  the repo, open the gitops adoption PR. Use when releasing or spinning up a new
-  comfyui node pack.
+  New ComfyUI node pack to a gitops-adopted repo: scaffold, create + seed the
+  GitHub repo, open the gitops adoption PR. Use when standing up a new comfyui
+  node pack end to end.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 ---
 
