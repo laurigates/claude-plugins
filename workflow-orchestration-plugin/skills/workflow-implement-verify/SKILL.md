@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-10-26
+modified: 2026-11-07
 reviewed: 2026-10-26
 ---
 
@@ -67,9 +67,18 @@ Shared `args` (both templates):
 | `repairRounds` | `1` or `0`. A second round is a separate `repair-round` run | `1` |
 | `land` | `implement-verify`: `pr` or `local`; `repair-round`: `push` or `local` | `pr` / `push` |
 
-`implement-verify` units: `{ id, issues: [n], branch, brief, owns: [globs], gates, tier: opus|sonnet|haiku, labels }`,
+`implement-verify` units: `{ id, issues: [n], branch, brief, owns: [globs], gates, tier: opus|sonnet|haiku, labels, repo?, root?, base?, setup? }`,
 or `issues: [n, …]` as shorthand for one unit per issue. `pr: { assignee, labels, footer }` sets PR metadata.
 A `sonnet` or `haiku` implementer is acceptable only because an opus verifier follows it.
+
+A unit may name its own repository with `repo` (`owner/name`) and `root` (absolute clone path),
+both or neither, so one run can span several repositories. That unit's agents create their own
+worktrees under `<root>/.claude/worktrees/` (a harness worktree would be of the session's
+repository), its `base` and `setup` default to the run's, and the run-level `gates` and `setup`
+apply only when `repo` equals the run's `repo`. Finalise pushes and opens each PR in its unit's
+repository, and every row carries `repo`, `root` and `base`. `repair-round` has no per-unit
+repository yet, so a cross-repository `FIX_NEEDED` row needs its own `repair-round` run with
+that unit's `repo` and `root` as the run-level values.
 
 `repair-round` units: `{ id, branch, base?, findings: [{ id?, severity, where?, text | problem, fix? }], brief?, gates? }`.
 
@@ -95,6 +104,22 @@ PR elsewhere that already carries the same fix. A gate on the status or on a
 defect count misses that. Observed 2026-11-04: a passing verdict named two
 duplicate PRs, and the orchestrator found them only after a CI failure.
 
+## Landing the PRs
+
+Neither template merges; land from the main session, one PR at a time:
+
+1. Update the branch from main (`gh pr update-branch <n>`, or a rebase in its worktree) and
+   confirm `git merge-base origin/main <head>` equals `git rev-parse origin/main`. Checks that
+   ran on an older base say nothing about the merged result.
+2. When main moved only by a release-please commit, confirm the update touched only release
+   files: `git diff --name-only <old head> <updated head>` lists none of the files in
+   `gh pr diff <n> --name-only`. Then merge on the required checks of the updated head.
+3. After each merge, update the next PR from the new main and repeat from step 1.
+
+For a cross-repository run, land each repository's PRs separately. Chains and
+`merge-chain.sh`: `git-plugin:git-merge-hazards`. Update-branch versus rebase, and when a
+stale base is safe to leave: `git-plugin:worktree-stale-base-merge`.
+
 ## Workflow harness (template)
 
 `workflows/implement-verify.workflow.js` and `workflows/repair-round.workflow.js` ship beside
@@ -102,7 +127,7 @@ this skill. **Each is a TEMPLATE to adapt, not a script to run verbatim.** Read 
 it for the work in front of you.
 
 **Adapt freely:** the agent prompts, the per-project gates and bootstrap, the implementer tier,
-`MAX_UNITS` and `FLOOR`, and the PR metadata.
+`MAX_UNITS` and `FLOOR`, the PR metadata, and which repositories the units target.
 
 **Agent budget:** 1 + 4 x units — the finalise agent is counted; per unit, an author, a verifier, and on `fix-needed` a repairer and a re-verifier. At the cap of 5 units the worst case is 21.
 
@@ -112,7 +137,9 @@ never a silent truncation; (b) the closed `pass | fix-needed | reject` verdict, 
 verdict mapped to `UNVERIFIED` and never landed, and `reject` never auto-repaired; (c) the
 verifier is a fresh agent working from refs, never the author; (d) the Verify/Repair region is
 byte-identical in both files (`scripts/tests/test-templates.sh`); (e) Finalise is the only
-barrier, because push order on one remote needs every unit's final verdict.
+barrier, because push order on one remote needs every unit's final verdict; (f) a unit in another
+repository gets its prompts, worktrees and landing from its own `repo` and `root`, never the
+run's (the two-repository scenario in `scripts/tests/run-template.mjs`).
 
 Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a resume re-runs
 agents that already succeeded and opens duplicate PRs (#1868). Re-dispatch the failed units fresh
