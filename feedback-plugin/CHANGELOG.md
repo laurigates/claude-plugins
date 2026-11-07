@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.15.1...feedback-plugin-v1.16.0) (2026-11-07)
+
+
+### Features
+
+* **feedback-plugin:** add a build-share row to the weekly friction report ([#3510](https://github.com/laurigates/claude-plugins/issues/3510)) ([ee0a1d2](https://github.com/laurigates/claude-plugins/commit/ee0a1d2147f83bc0bd5bcbe6dfec039122bb05a1))
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.15.0...feedback-plugin-v1.15.1) (2026-11-07)
 
 
