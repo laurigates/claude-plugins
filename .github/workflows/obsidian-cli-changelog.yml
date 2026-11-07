@@ -144,13 +144,20 @@ jobs:
           #   - Bash(gh label *) ADDED: Step 7 files issues under the
           #     `obsidian-cli-review` label, which may not exist yet.
           #
+          # The gh grants name verbs, not command groups (#2769): Step 6 runs
+          # `gh pr create`, Step 7 runs `gh issue create` and may need
+          # `gh label create` (with `gh label list` to see whether it must).
+          # `Bash(gh pr *)` also reached `gh pr merge`/`close`/`edit`, on a step
+          # whose input is a third-party doc. scripts/check-workflow-gh-wildcard-grants.sh
+          # fails on a group wildcard.
+          #
           # One flag per line: scripts/check-workflow-model.sh matches
           # `--model`/`--effort` anchored at line start in a folded scalar.
           claude_args: >-
             --model opus
             --effort medium
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Grep,Glob,TodoWrite,WebFetch,Bash(curl *),Bash(sha256sum *),Bash(jq *),Bash(cat *),Bash(date *),Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git switch *),Bash(git branch *),Bash(git config *),Bash(gh pr *),Bash(gh issue *),Bash(gh label *)"
+            --allowedTools "Read,Write,Edit,Grep,Glob,TodoWrite,WebFetch,Bash(curl *),Bash(sha256sum *),Bash(jq *),Bash(cat *),Bash(date *),Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git switch *),Bash(git branch *),Bash(git config *),Bash(gh pr create *),Bash(gh issue create *),Bash(gh label list *),Bash(gh label create *)"
           prompt: |
             You are reviewing changes to the Obsidian CLI documentation page.
 

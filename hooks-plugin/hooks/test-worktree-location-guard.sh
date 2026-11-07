@@ -187,6 +187,76 @@ else
     printf "  FAIL: could not extract suggested fix from deny message\n"; FAIL=$((FAIL + 1))
 fi
 
+echo "=== .claude/worktrees/ not git-ignored (issue #3436) ==="
+# A worktree under an un-ignored .claude/worktrees/ shows up as an untracked
+# directory in the main checkout, and an untracked-files Stop hook then asks to
+# commit it. The guard says so on the deny and as context on an allowed add.
+context_of() {
+    printf '%s' "$1" | bash "$HOOK" 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null
+}
+assert_context_contains() { # $1 desc, $2 needle, $3 json
+    case "$(context_of "$3")" in
+        *"$2"*) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
+        *) printf "  FAIL: %s (context lacks '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
+    esac
+}
+assert_reason_lacks() { # $1 desc, $2 needle, $3 json
+    case "$(reason_of "$3")" in
+        *"$2"*) printf "  FAIL: %s (reason has '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
+        *) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
+    esac
+}
+assert_silent() { # $1 desc, $2 json — no output at all
+    local out
+    out=$(printf '%s' "$2" | bash "$HOOK" 2>/dev/null)
+    if [ -z "$out" ]; then
+        printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (got output: %s)\n" "$1" "$out"; FAIL=$((FAIL + 1))
+    fi
+}
+
+IGN="$FIXBASE/ignored"; setup_repo "$IGN"
+printf '.claude/worktrees/\n' >"$IGN/.gitignore"
+EXC="$FIXBASE/excluded"; setup_repo "$EXC"
+printf '.claude/worktrees/\n' >>"$EXC/.git/info/exclude"
+FRESH="$FIXBASE/fresh"; setup_repo "$FRESH"
+
+J=$(make_json "git worktree add -b feat/x ../infra-wt-x origin/main" "$REPO")
+assert_reason_contains "deny in un-ignored repo says .claude/worktrees/ is not ignored" "not git-ignored" "$J"
+assert_reason_contains "deny names the repo's info/exclude" "$REPO/.git/info/exclude" "$J"
+assert_reason_contains "deny points at configure-gitignore" "configure-gitignore" "$J"
+assert_reason_lacks "deny in .gitignore'd repo omits the warning" "not git-ignored" \
+    "$(make_json "git worktree add -b feat/x ../x origin/main" "$IGN")"
+assert_reason_lacks "deny in info/exclude'd repo omits the warning" "not git-ignored" \
+    "$(make_json "git worktree add -b feat/x ../x origin/main" "$EXC")"
+
+J=$(make_json "git worktree add -b feat/x .claude/worktrees/x origin/main" "$REPO")
+assert_decision "allowed add in un-ignored repo is still allowed" none "$J"
+assert_context_contains "allowed add in un-ignored repo gets context" "not git-ignored" "$J"
+assert_context_contains "context names the repo's info/exclude" "$REPO/.git/info/exclude" "$J"
+assert_silent "allowed add in .gitignore'd repo is silent" \
+    "$(make_json "git worktree add -b feat/x .claude/worktrees/x origin/main" "$IGN")"
+assert_silent "allowed add in info/exclude'd repo is silent" \
+    "$(make_json "git worktree add -b feat/x .claude/worktrees/x origin/main" "$EXC")"
+assert_context_contains "from a linked worktree, context names the MAIN repo's info/exclude" \
+    "$REPO/.git/info/exclude" "$(make_json "git worktree add ../y -b feat/y" "$LINKED")"
+assert_silent "\$TMPDIR scratch worktree in un-ignored repo is silent" \
+    "$(make_json "git worktree add --detach $WORK/scratch2 HEAD" "$REPO")"
+
+# The exclude command the guard prints must actually silence it — extract it
+# from the message and run it, never retype it.
+J=$(make_json "git worktree add -b feat/x ../fresh-wt-x origin/main" "$FRESH")
+EXCL_CMD=$(reason_of "$J" | sed -n "s/^  \(echo '\.claude\/worktrees\/' >> .*\)$/\1/p" | head -1)
+if [ -n "$EXCL_CMD" ]; then
+    (cd "$FIXBASE" && bash -c "$EXCL_CMD") >/dev/null 2>&1
+    assert_reason_lacks "after running the printed exclude command, the warning is gone" "not git-ignored" "$J"
+    assert_silent "after running the printed exclude command, an allowed add is silent" \
+        "$(make_json "git worktree add -b feat/x .claude/worktrees/x origin/main" "$FRESH")"
+else
+    printf "  FAIL: could not extract the exclude command from the deny message\n"; FAIL=$((FAIL + 1))
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

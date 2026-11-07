@@ -14,6 +14,10 @@
 #       [--journal-todo-stop <h>] [--with-blueprint] [--recent-days <n>]
 #       [--summary] [--verbose]
 #
+# A cwd that is not a git repo (a workspace root of sibling checkouts) also gets
+# CHECKOUTS / CHECKOUT_PRS sections, one CHECKOUT_<n>_ row set per direct child
+# checkout, in full mode only (#3435).
+#
 # Every section is exit-0 on empty (parallel-safe-queries.md). Each task carries
 # its stable UUID so callers never operate on a volatile numeric ID (#1417).
 #
@@ -656,8 +660,17 @@ gh_job() {
   local job_name="$1"; shift
   [ -n "$gh_dir" ] || return 0
   gh_launched+=("$job_name")
+  gh_job_in "$git_state_dir" "$job_name" "$@"
+}
+
+# The launch itself, in an explicit directory. Jobs launched straight through
+# here (the per-checkout calls of a workspace root, #3435) stay out of
+# gh_launched, so they never feed the top-level GH_FAIL_REASON.
+gh_job_in() {
+  local run_dir="$1" job_name="$2"; shift 2
+  [ -n "$gh_dir" ] || return 0
   (
-    ( cd "$git_state_dir" && "$gh_bin" "$@" ) \
+    ( cd "$run_dir" && "$gh_bin" "$@" ) \
       >"$gh_dir/$job_name.json" 2>"$gh_dir/$job_name.err" &
     gh_inner=$!
     ( sleep "$gh_budget"; kill "$gh_inner" 2>/dev/null ) >/dev/null 2>&1 &
@@ -764,6 +777,97 @@ if [ -n "$gh_dir" ]; then
     gh_job discussions api graphql -F 'owner={owner}' -F 'name={repo}' \
       -f query="$discussions_query"
   fi
+fi
+
+# ---------------------------------------------------------------------------
+# Child checkouts of a workspace root (#3435).
+#
+# A cloud session's working directory is often a workspace root holding several
+# sibling checkouts (`add_repo` clones each one there), and is not itself a git
+# repo. GIT and PRS then say only IN_GIT=false / GH_FAIL_REASON=no-remote, while
+# these are the sessions with the most end-of-session state. So, when the cwd is
+# not in a repo, every DIRECT child directory that is the top of its own
+# checkout is surveyed too: git state into CHECKOUTS (no network, printed with
+# the local sections) and PRs into CHECKOUT_PRS (printed last, #2276).
+#
+# Every row is prefixed CHECKOUT_<n>_, because line-wise consumers take the
+# first `^KEY=` match and the top-level GIT / PRS keys must stay theirs. Dot
+# directories count (the reported workspace held `.github`). A child whose name
+# carries a control character is skipped, not sanitised: a sanitised path names
+# a directory that does not exist. At most checkout_cap checkouts are surveyed,
+# since each costs two gh calls; CHECKOUT_TRUNCATED / CHECKOUT_FOUND say so.
+# Full mode only: --summary prints no PR data and runs under a 15s hook budget.
+# ---------------------------------------------------------------------------
+checkout_scan=false
+checkout_cap=8
+checkout_found=0
+checkout_dirs=()
+checkout_slugs=()
+checkout_branches=()
+checkout_dirty=()
+checkout_unpushed=()
+checkout_behind=()
+if [ "$in_git" != true ] && [ "$summary_mode" = false ] && have "$git_bin" && [ -d "$project_dir" ]; then
+  checkout_scan=true
+  co_base="${project_dir%/}"
+  [ -n "$co_base" ] || co_base="/"
+  co_candidates=()
+  shopt -s nullglob
+  for co_path in "$co_base"/*/ "$co_base"/.[!.]*/ "$co_base"/..?*/; do
+    co_path="${co_path%/}"
+    co_name="${co_path##*/}"
+    case "$co_name" in *[[:cntrl:]]*) continue ;; esac
+    [ -d "$co_path" ] || continue
+    co_top=$("$git_bin" -C "$co_path" rev-parse --show-toplevel 2>/dev/null) || continue
+    co_real=$(cd "$co_path" 2>/dev/null && pwd -P) || continue
+    co_top=$(cd "$co_top" 2>/dev/null && pwd -P) || continue
+    # The child must BE a checkout's top, not a directory inside one (a
+    # symlink into another repo's subtree).
+    [ "$co_top" = "$co_real" ] || continue
+    co_candidates+=("$co_name")
+  done
+  shopt -u nullglob
+  checkout_found=${#co_candidates[@]}
+  if [ "$checkout_found" -gt 0 ]; then
+    # C collation, so the numbering does not depend on the caller's locale.
+    # Names hold no control characters (filtered above), so newline-separated
+    # sorting is safe.
+    while IFS= read -r co_name; do
+      [ "${#checkout_dirs[@]}" -lt "$checkout_cap" ] || break
+      co_path="$co_base/$co_name"
+      [ "$co_base" = "/" ] && co_path="/$co_name"
+      checkout_dirs+=("$co_path")
+    done < <(printf '%s\n' "${co_candidates[@]}" | LC_ALL=C sort)
+  fi
+  co_i=0
+  while [ "$co_i" -lt "${#checkout_dirs[@]}" ]; do
+    co_path="${checkout_dirs[$co_i]}"
+    co_n=$((co_i + 1))
+    co_branch=$("$git_bin" -C "$co_path" branch --show-current 2>/dev/null) || co_branch=""
+    co_dirty=false
+    [ -n "$("$git_bin" -C "$co_path" status --porcelain 2>/dev/null | head -1)" ] && co_dirty=true
+    # Same awk-not-`|| echo 0` posture as UNPUSHED / BEHIND above (#2286).
+    co_unpushed=$("$git_bin" -C "$co_path" log '@{u}..HEAD' --oneline 2>/dev/null | awk 'END{print NR+0}')
+    co_behind=$("$git_bin" -C "$co_path" rev-list --count 'HEAD..@{upstream}' 2>/dev/null \
+      | awk '{n=$1} END{print n+0}')
+    co_url=$("$git_bin" -C "$co_path" remote get-url origin 2>/dev/null) || co_url=""
+    co_slug=""
+    [ -n "$co_url" ] && co_slug=$(repo_slug_of "$co_url")
+    checkout_branches+=("$co_branch")
+    checkout_dirty+=("$co_dirty")
+    checkout_unpushed+=("${co_unpushed:-0}")
+    checkout_behind+=("${co_behind:-0}")
+    checkout_slugs+=("$co_slug")
+    if [ -n "$gh_dir" ]; then
+      gh_job_in "$co_path" "co${co_n}_author_prs" pr list --author @me --state open \
+        --json number,title,url,state,updatedAt
+      if [ -n "$co_branch" ]; then
+        gh_job_in "$co_path" "co${co_n}_head_prs" pr list --head "$co_branch" \
+          --json number,title,url,state,updatedAt
+      fi
+    fi
+    co_i=$co_n
+  done
 fi
 
 # ---------------------------------------------------------------------------
@@ -1438,6 +1542,35 @@ echo "REPO=${repo_slug}"
 echo "STATUS=OK"
 echo "=== END GIT ==="
 
+# Child checkouts of a non-repo cwd (#3435): local git state only, so it sits
+# with the no-network sections. Present only when the scan ran; a scan that
+# found nothing is CHECKOUT_COUNT=0, never a missing section.
+if [ "$checkout_scan" = true ]; then
+  echo "=== CHECKOUTS ==="
+  echo "CHECKOUT_COUNT=${#checkout_dirs[@]}"
+  if [ "$checkout_found" -gt "${#checkout_dirs[@]}" ]; then
+    echo "CHECKOUT_TRUNCATED=true"
+    echo "CHECKOUT_FOUND=${checkout_found}"
+  else
+    echo "CHECKOUT_TRUNCATED=false"
+  fi
+  co_i=0
+  while [ "$co_i" -lt "${#checkout_dirs[@]}" ]; do
+    co_n=$((co_i + 1))
+    echo "CHECKOUT_${co_n}_DIR=${checkout_dirs[$co_i]}"
+    # `<owner>/<repo>` from the origin URL, no gh call; empty when unresolvable
+    # (the same rule as REPO= in GIT).
+    echo "CHECKOUT_${co_n}_REPO=${checkout_slugs[$co_i]}"
+    echo "CHECKOUT_${co_n}_BRANCH=${checkout_branches[$co_i]}"
+    echo "CHECKOUT_${co_n}_DIRTY=${checkout_dirty[$co_i]}"
+    echo "CHECKOUT_${co_n}_UNPUSHED=${checkout_unpushed[$co_i]}"
+    echo "CHECKOUT_${co_n}_BEHIND=${checkout_behind[$co_i]}"
+    co_i=$co_n
+  done
+  echo "STATUS=OK"
+  echo "=== END CHECKOUTS ==="
+fi
+
 echo "=== TASKWARRIOR ==="
 echo "TASK_AVAILABLE=${task_available}"
 # Whether the store was actually READ (#2832). `false` makes every count in
@@ -1791,4 +1924,68 @@ if [ "$with_dedup" = true ]; then
   fi
   echo "STATUS=OK"
   echo "=== END GITHUB_DRIFT ==="
+fi
+
+# Per-checkout PRs of a non-repo cwd (#3435). Printed last: reap_github has
+# already waited on every gh job, these included. Each checkout carries its own
+# GH_READY / GH_FAIL_REASON, keyed like the top-level pair, because a
+# remote-less checkout beside a healthy one must read as unqueried, not as zero.
+if [ "$checkout_scan" = true ]; then
+  echo "=== CHECKOUT_PRS ==="
+  echo "JQ_AVAILABLE=${jq_available}"
+  co_i=0
+  while [ "$co_i" -lt "${#checkout_dirs[@]}" ]; do
+    co_n=$((co_i + 1))
+    co_i=$co_n
+    co_author=$(gh_read "co${co_n}_author_prs"); co_author_ok=$?
+    co_head=$(gh_read "co${co_n}_head_prs"); co_head_ok=$?
+    if [ "$co_author_ok" = 0 ] || [ "$co_head_ok" = 0 ]; then
+      echo "CHECKOUT_${co_n}_GH_READY=true"
+    else
+      echo "CHECKOUT_${co_n}_GH_READY=false"
+      co_reason="" co_detail="" co_best=99
+      if [ -z "$gh_dir" ]; then
+        co_reason="no-cli"
+      else
+        for co_job in "co${co_n}_author_prs" "co${co_n}_head_prs"; do
+          # A head lookup is launched only on a branch; an unlaunched job has
+          # no rc and must not be classified (#2425).
+          [ "$co_job" = "co${co_n}_head_prs" ] && [ -z "${checkout_branches[$((co_n - 1))]}" ] && continue
+          co_r="$(gh_classify "$co_job")"
+          co_rank="$(gh_reason_rank "$co_r")"
+          if [ "$co_rank" -lt "$co_best" ] 2>/dev/null; then
+            co_best="$co_rank"
+            co_reason="$co_r"
+            case "$co_r" in
+              api-error|unknown) co_detail="$(gh_err_head "$co_job")" ;;
+              *) co_detail="" ;;
+            esac
+          fi
+        done
+      fi
+      echo "CHECKOUT_${co_n}_GH_FAIL_REASON=${co_reason:-unknown}"
+      [ -n "$co_detail" ] && echo "CHECKOUT_${co_n}_GH_FAIL_DETAIL=${co_detail}"
+      continue
+    fi
+    have jq || continue
+    [ -n "$co_author" ] || co_author="[]"
+    [ -n "$co_head" ] || co_head="[]"
+    co_prs=$(printf '%s\n%s' "$co_author" "$co_head" \
+      | jq -s 'add | unique_by(.number)' 2>/dev/null) || co_prs="[]"
+    [ -n "$co_prs" ] || co_prs="[]"
+    co_count=$(printf '%s' "$co_prs" | jq 'length' 2>/dev/null) || co_count=0
+    echo "CHECKOUT_${co_n}_PR_COUNT=${co_count:-0}"
+    idx=0
+    while IFS=$'\t' read -r num title url pstate upd; do
+      idx=$((idx + 1))
+      sd=$(days_since "$upd" 2>/dev/null || echo "")
+      echo "CHECKOUT_${co_n}_PR_${idx}_NUMBER=${num}"
+      echo "CHECKOUT_${co_n}_PR_${idx}_STATE=${pstate}"
+      echo "CHECKOUT_${co_n}_PR_${idx}_TITLE=${title}"
+      echo "CHECKOUT_${co_n}_PR_${idx}_URL=${url}"
+      [ -n "$sd" ] && echo "CHECKOUT_${co_n}_PR_${idx}_STALE_DAYS=${sd}"
+    done < <(printf '%s' "$co_prs" | jq -r '.[] | [(.number|tostring), .title, .url, .state, .updatedAt] | @tsv' 2>/dev/null)
+  done
+  echo "STATUS=OK"
+  echo "=== END CHECKOUT_PRS ==="
 fi

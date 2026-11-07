@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.1...health-plugin-v1.24.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **skills:** match Context probes with -path and repair Claude workflow templates ([#3454](https://github.com/laurigates/claude-plugins/issues/3454)) ([6dad0a9](https://github.com/laurigates/claude-plugins/commit/6dad0a9a686de0f1386093a6d86d88b90fb74691))
+
 ## [1.24.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.0...health-plugin-v1.24.1) (2026-11-04)
 
 
