@@ -3,7 +3,7 @@ name: docs-fetch-fallbacks
 description: "WebFetch 404/403/timeout/empty-SPA fallback ladder: strip query, raw.githubusercontent, `gh api`, docs-source-at-a-pinned-tag, context7/WebSearch. Use when a doc or GitHub URL fetch fails or returns a page with no content."
 allowed-tools: WebFetch, WebSearch, Bash(gh api *), Read
 created: 2026-08-19
-modified: 2026-08-21
+modified: 2026-11-07
 reviewed: 2026-08-21
 ---
 
@@ -29,6 +29,7 @@ different things depending on where it lands:
 | `404` on a repo path with no host problem | The content is reachable through the API, not the web UI |
 | `403` with an empty body on a public docs page | Bot/UA gating, not authorization |
 | `403` on a `github.com` URL | The resource needs authentication |
+| `403` on `lore.kernel.org` search (`/<list>/?q=…`, `/all/?q=…`), a message page (`/all/<msgid>/`) or `/raw` | Bot gating on lore's web interface; a different User-Agent gets the same 403 |
 | A timeout with no status at all | Host slow or unreachable — needs a different source, not a retry |
 | **No status at all**, and the answer says the page had no content ("I don't have access to the content", "you've only provided the heading") | The fetch **succeeded**. The page is client-rendered and the served HTML is an empty shell — see Step 4 |
 
@@ -39,13 +40,33 @@ different things depending on where it lands:
 | 404 on a docs page with `?ref=…` | Strip query string |
 | 404 on a GitHub blob URL | Switch to `raw.githubusercontent.com` URL |
 | 404 on a repo path | `gh api repos/<owner>/<repo>/contents/<path>` |
-| 403 on a public docs page | Try once with a different UA or a search engine |
+| 403 on a public docs page (except lore.kernel.org) | Try once with a different UA or a search engine |
 | 403 on a GitHub URL | Use `gh api` (authenticated) |
+| 403 on lore.kernel.org search, message HTML or `/raw` | Fetch the thread mbox by message-id ([lore.kernel.org](#lorekernelorg-fetch-the-thread-mbox)); no UA retries |
 | Timeout | One retry, then fall back to context7 / WebSearch |
 | 200 with an empty shell (SPA) | Fetch the docs **source** from the project's repo at a pinned tag (Step 4) |
 
 If two attempts both fail, surface the failure in the response — do
 not loop.
+
+#### lore.kernel.org: fetch the thread mbox
+
+lore's search, message pages and `/raw` return 403 with or without a custom
+User-Agent, so do not retry them. The thread mbox for a known message-id is
+served:
+
+```bash
+curl -fsSL "https://lore.kernel.org/all/<msgid>/t.mbox.gz" | gunzip > thread.mbox
+```
+
+`https://lore.kernel.org/<list>/<msgid>/t.mbox.gz` works the same way. Parse the
+result with Python's `mailbox.mbox("thread.mbox")`. The message-id goes in
+without angle brackets.
+
+This works only by message-id. To find an unknown one, web-search the subject,
+or read the "Link to vN" lines in a b4-generated cover letter of a later
+revision. For searching a list's archive, use the git mirrors described in
+`kernel-plugin:kernel-lore-search`.
 
 ### Step 3: Worked example — a GitHub blob URL
 
