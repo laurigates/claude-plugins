@@ -37,7 +37,7 @@
 |--------|-------:|-------:|-------------|
 | [css-plugin](../css-plugin/) | 2 | 0 | CSS tooling - Lightning CSS transpilation/minification, UnoCSS atomic utility generation |
 | [python-plugin](../python-plugin/) | 17 | 0 | Python development ecosystem - uv, ruff, pytest, packaging |
-| [rust-plugin](../rust-plugin/) | 9 | 0 | Rust development - cargo, clippy, testing, memory safety |
+| [rust-plugin](../rust-plugin/) | 10 | 0 | Rust development - cargo, clippy, testing, memory safety |
 | [typescript-plugin](../typescript-plugin/) | 18 | 0 | TypeScript development - strict types, ESLint, Biome |
 
 ## Quality

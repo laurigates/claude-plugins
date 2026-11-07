@@ -113,21 +113,19 @@ out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
 assert_contains "a live call beside a comment is still caught" "$out" "settings/billing/packages"
 assert_contains "exactly one finding in that file" "$out" "ISSUE_COUNT=1"
 
-echo "TEST 5b: the regression ledger is the hazard log — pruned, but narrowly (#2667)"
-# docs/regression-ledger.md must name the dead endpoint to record that it was
-# fixed, exactly as the rule that used to hold the ledger did. The prune is by
-# exact path: the SAME line in any other docs/ file is still a finding, or this
-# case could pass against a guard that stopped scanning docs/ altogether.
-mkdir -p "$FIX/docs"
-cat > "$FIX/docs/regression-ledger.md" <<'MD'
-| Issue | Root Cause | Check Added | Fixed In |
-|-------|-----------|-------------|----------|
+echo "TEST 5b: the regression ledger is the hazard log — pruned, but narrowly (#2667, #2947)"
+# A docs/regression-ledger/ entry must name the dead endpoint to record that it
+# was fixed, exactly as the rule that used to hold the ledger did. The prune is
+# by exact path: the SAME line in any other docs/ file is still a finding, or
+# this case could pass against a guard that stopped scanning docs/ altogether.
+mkdir -p "$FIX/docs/regression-ledger"
+cat > "$FIX/docs/regression-ledger/2321-finops-billing-actions.md" <<'MD'
 | finops called `gh api /orgs/{org}/settings/billing/actions` | retired, HTTP 410 | a guard | issue #2321 |
 MD
 out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
-assert_lacks "the ledger row is not reported" "$out" "regression-ledger.md"
+assert_lacks "the ledger entry is not reported" "$out" "regression-ledger/"
 assert_contains "the pre-existing finding is still the only one" "$out" "ISSUE_COUNT=1"
-cp "$FIX/docs/regression-ledger.md" "$FIX/docs/other-notes.md"
+cp "$FIX/docs/regression-ledger/2321-finops-billing-actions.md" "$FIX/docs/other-notes.md"
 out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
 assert_contains "the same line elsewhere in docs/ IS reported" "$out" "other-notes.md"
 assert_contains "REASON= counts the other finding" "$out" " (+1 more)"
