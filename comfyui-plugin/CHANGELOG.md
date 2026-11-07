@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.0...comfyui-plugin-v1.15.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **skills:** separate the pack and module scaffolds from their orchestrators ([#3498](https://github.com/laurigates/claude-plugins/issues/3498)) ([95a9627](https://github.com/laurigates/claude-plugins/commit/95a96278968703d3b84624aea30e67f4aa13edd4)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.5...comfyui-plugin-v1.15.0) (2026-11-02)
 
 
