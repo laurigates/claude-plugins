@@ -338,6 +338,12 @@ jobs:
 
             (Group additional findings under their target plugin/rule. Omit areas with no match.)
 
+            ## Processing
+
+            - **Processed by:** the daily issue-resolving Routine, or Lauri.
+            - **Completed means:** every candidate has a verdict comment on this issue (adopt, or reject with a one-line reason), and every adopted candidate is merged, one PR per target file. Group candidates from different radars that hit the same file into one PR; never edit one target from two PRs at once.
+            - **Closes:** when the last adopted candidate merges. A later radar does not supersede this one. See `docs/issue-lifecycle.md`.
+
             ---
             Sources: HuggingFace daily papers, arXiv (cs.AI/CL/LG/SE/HC), lab blogs. Triaged from ${{ needs.gather.outputs.candidate_count }} candidates.
 

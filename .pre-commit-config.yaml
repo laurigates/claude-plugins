@@ -381,6 +381,18 @@ repos:
         # canonical per-workflow table, so an edit that drops a row must fire it.
         files: '^(\.github/workflows/.*\.ya?ml|\.claude/rules/workflow-model-effort\.md|scripts/(check-workflow-model\.sh|tests/test-check-workflow-model\.sh))$'
         pass_filenames: false
+      - id: check-issue-processing
+        name: every machine-filed issue body states who processes it and when it closes (#3346)
+        entry: ./scripts/check-issue-processing.sh
+        language: script
+        files: '^(\.github/(workflows/.*\.ya?ml|actions/script-to-issue/action\.yml)|docs/issue-lifecycle\.md|feedback-plugin/skills/feedback-session/references/issue-format\.md|scripts/(check-issue-processing\.sh|issue-grouping-exempt\.txt))$'
+        pass_filenames: false
+      - id: test-check-issue-processing
+        name: issue-processing guard regression
+        entry: ./scripts/tests/test-check-issue-processing.sh
+        language: script
+        files: '^scripts/(check-issue-processing\.sh|tests/test-check-issue-processing\.sh)$'
+        pass_filenames: false
       - id: check-workflow-script-triggers
         name: workflow-run scripts are reachable from its path triggers (#2219)
         entry: ./scripts/check-workflow-script-triggers.sh --strict
