@@ -1,9 +1,9 @@
 ---
 name: docs-claim-hygiene
-description: "Doc claims: commands not moving readings, scoped measurements, summaries. Use when writing a figure into docs or correcting a published finding."
+description: "Keep figures in docs true: cite the command, not a count that moves; scope measurements; fix a corrected claim in every summary. Use when writing a number into docs or correcting a finding."
 allowed-tools: Read, Grep, Glob, Edit, TodoWrite
 created: 2026-11-06
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-11-06
 ---
 

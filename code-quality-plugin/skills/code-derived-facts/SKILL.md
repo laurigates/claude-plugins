@@ -1,9 +1,9 @@
 ---
 name: code-derived-facts
-description: "Code facts from execution, not text: callers, derived tables, registry kinds, scripted edits. Use when auditing reachability or batch-editing source."
+description: "Verify code facts by running code, not grepping: is a function really called, is a derived table stale, did a scripted edit write. Use when auditing reachability or batch-editing source."
 allowed-tools: Read, Grep, Glob, Edit, Bash, TodoWrite
 created: 2026-11-06
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-11-06
 ---
 

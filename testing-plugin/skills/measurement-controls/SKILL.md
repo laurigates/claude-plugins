@@ -1,9 +1,9 @@
 ---
 name: measurement-controls
-description: "Trust a measurement before it gates work: A/B arms, oracle gates, pooled r and x/N. Use when setting up a control or a metric says improved."
+description: "Check a benchmark, A/B or eval metric measures what it claims: control arms, oracles that can fail, pooled correlations, small x/N. Use when setting up an experiment or a metric says improved."
 allowed-tools: Read, Grep, Glob, TodoWrite
 created: 2026-11-06
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-11-06
 ---
 
