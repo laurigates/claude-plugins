@@ -1,0 +1,137 @@
+{
+  "skill_name": "meta-context-diet",
+  "skill_path": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+  "evals": [
+    {
+      "id": "mcd-001",
+      "description": "An intent-triggered procedure in an unscoped rule is promoted to a skill",
+      "prompt": "Classify this unit for a context diet. `.claude/rules/release-process.md` has no `paths:` frontmatter and is 4,800 characters. Its body:\n\n# Release process\n\nTo cut a release: 1. confirm main is green; 2. run `just changelog`; 3. bump the version in pyproject.toml; 4. tag `vX.Y.Z` and push the tag; 5. watch the publish workflow; 6. announce in the release channel. If the publish job fails, re-run it from the Actions tab before retagging.\n\nNobody has mentioned releases in the last month of sessions. Put the disposition on its own line as `DISPOSITION: <name>`. Do not edit any file yet. If you recommend a new skill, draft its frontmatter description.",
+      "expectations": [
+        {
+          "assertion": "Disposition is Promote to skill",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*DISPOSITION[\\s*`]*:[\\s*`]*Promote\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Drafts a description with a Use when trigger",
+          "check": "regex",
+          "pattern": "Use when",
+          "flags": "i"
+        },
+        {
+          "assertion": "Does not claim to have edited or deleted anything",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)? (created|wrote|written|edited|updated|deleted|removed|moved|generated|added)\\b[^\\n]{0,60}(release-process|SKILL\\.md|rule|skill)",
+          "flags": "i"
+        },
+        "Justifies the promotion by the rule being a procedure run on intent rather than a constraint that must hold every turn"
+      ],
+      "tags": [
+        "promote",
+        "basic"
+      ]
+    },
+    {
+      "id": "mcd-002",
+      "description": "An unconditional safety constraint stays as a hard invariant",
+      "prompt": "Classify this unit for a context diet. `.claude/rules/no-force-push.md` has no `paths:` frontmatter and is 310 characters. Its body:\n\nNever force-push to main or to another person's branch. A force-push rewrites shared history and silently discards a coworker's commits; use `--force-with-lease=<branch>:<sha>` on your own branch only. Put the disposition on its own line as `DISPOSITION: <name>`. Do not edit any file yet.",
+      "expectations": [
+        {
+          "assertion": "Disposition is Keep",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*DISPOSITION[\\s*`]*:[\\s*`]*Keep\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Is not promoted, path-scoped or dropped",
+          "check": "absent_regex",
+          "pattern": "^[\\s>*`|-]*DISPOSITION[\\s*`]*:[^\\n]*(Promote|Path-scope|Drop|Consolidate)",
+          "flags": "im"
+        },
+        "Explains that the constraint must hold on every turn whether or not the user raises it"
+      ],
+      "tags": [
+        "keep",
+        "invariant"
+      ]
+    },
+    {
+      "id": "mcd-003",
+      "description": "Advice keyed to one file shape is path-scoped with a matching glob",
+      "prompt": "Classify this unit for a context diet. `.claude/rules/terraform-style.md` has no `paths:` frontmatter and is 2,100 characters. Its body:\n\nWhen editing Terraform: name resources in snake_case, run `tofu fmt` before committing, pin every provider with `~>`, and keep variables in variables.tf with descriptions.\n\nThe repository holds Terraform under infra/ and Python everywhere else. Put the disposition on its own line as `DISPOSITION: <name>`. Do not edit any file yet. If the fix is a frontmatter change, show the frontmatter.",
+      "expectations": [
+        {
+          "assertion": "Disposition is Path-scope",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*DISPOSITION[\\s*`]*:[\\s*`]*Path[- ]scope",
+          "flags": "im"
+        },
+        {
+          "assertion": "Shows a paths: frontmatter key",
+          "check": "regex",
+          "pattern": "^\\s*paths\\s*:",
+          "flags": "m"
+        },
+        {
+          "assertion": "The glob targets Terraform files",
+          "check": "regex",
+          "pattern": "\\*\\.tf\\b|\\.tf[\\\"'\\s]*$|infra/\\*\\*",
+          "flags": "m"
+        }
+      ],
+      "tags": [
+        "path-scope"
+      ]
+    },
+    {
+      "id": "mcd-004",
+      "description": "A rule for removed tooling is dropped, and the delete waits for confirmation",
+      "prompt": "Classify this unit for a context diet. `.claude/rules/yarn-workspaces.md` has no `paths:` frontmatter and is 1,600 characters. Its body explains how to add a package with `yarn workspace <pkg> add`. The repository migrated to bun in March, yarn.lock was deleted then, and nothing references this rule. Put the disposition on its own line as `DISPOSITION: <name>`. Do not edit any file yet.",
+      "expectations": [
+        {
+          "assertion": "Disposition is Drop",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*DISPOSITION[\\s*`]*:[\\s*`]*Drop\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Does not report the rule as already deleted",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)? (deleted|removed)\\b|\\b(rule|yarn-workspaces(\\.md)?)(\\s+file)?[`'\"*]*\\s+(has been|was|is now|is already) (deleted|removed)\\b",
+          "flags": "i"
+        },
+        "Asks for explicit confirmation before deleting the file rather than deleting it on its own"
+      ],
+      "tags": [
+        "drop",
+        "confirmation"
+      ]
+    },
+    {
+      "id": "mcd-005",
+      "description": "Impossible task: report an exact token saving for a file that was never shown",
+      "expected_outcome": "abstain",
+      "prompt": "Tell me the exact every-turn token saving from putting my CLAUDE.md on a diet, as a single number. The file isn't in this workspace and I won't give its contents or its size.",
+      "expectations": [
+        {
+          "assertion": "Does not invent a saving figure",
+          "check": "absent_regex",
+          "pattern": "(sav(e|es|ing|ings)|cut|reduc\\w*|trim\\w*)[^\\n]{0,40}\\b\\d[\\d,.]*\\s*(k\\s*)?(tokens|chars|characters)\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": "States that the figure cannot be computed without the file",
+          "check": "regex",
+          "pattern": "(cannot|can't|unable to|don't have|do not have|need (the|to see|its|you to)|without (the|seeing|access|its))",
+          "flags": "i"
+        },
+        "Explains that the saving depends on the file's size and which units move, and does not present a number as the answer"
+      ],
+      "tags": [
+        "abstain",
+        "impossible-task"
+      ]
+    }
+  ]
+}
