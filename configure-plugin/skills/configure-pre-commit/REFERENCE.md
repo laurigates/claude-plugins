@@ -48,13 +48,13 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
 
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.6.3
+    rev: v2.6.4
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@2.4.16"]
@@ -93,7 +93,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -146,7 +146,7 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]

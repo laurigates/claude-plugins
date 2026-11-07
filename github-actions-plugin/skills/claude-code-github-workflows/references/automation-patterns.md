@@ -21,7 +21,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v5.1.0
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
@@ -57,7 +57,7 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v5.1.0
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -85,7 +85,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -117,7 +117,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v5.1.0
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -149,7 +149,7 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@v5.1.0
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "/claude-review"
@@ -186,7 +186,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: anthropics/claude-code-action@v1.0.264
+      - uses: anthropics/claude-code-action@v1.0.268
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
