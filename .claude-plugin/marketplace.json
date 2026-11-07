@@ -173,7 +173,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.29.0",
+      "version": "1.30.0",
       "author": {
         "name": "Lauri Gates"
       },
