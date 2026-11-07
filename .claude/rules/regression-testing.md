@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-10-22
+modified: 2026-11-07
 reviewed: 2026-09-23
 paths:
   - "**/skills/**"
@@ -100,10 +100,15 @@ The audit script in this repo is the canonical example — it pairs a human repo
 
 ## Known Regressions (Documented Bugs)
 
-The ledger of fixed bugs and the checks that now guard them lives in
-[`docs/regression-ledger.md`](../../docs/regression-ledger.md). **Append one row
-at the end of its table** for every fix you guard; the file is `merge=union`, so
-parallel appends merge without conflicts.
+The ledger of fixed bugs and the checks that now guard them is one file per
+entry under `docs/regression-ledger/`, described in
+[`docs/regression-ledger.md`](../../docs/regression-ledger.md). **Add one new
+file** for every fix you guard, `docs/regression-ledger/<issue-or-pr-number>-<slug>.md`,
+holding one table row on one line. Separate files are what keep parallel PRs
+from conflicting: GitHub's server-side merge (`gh pr update-branch`, "Update
+branch") ignores the `merge=union` driver the old single table relied on
+(#2947). `scripts/check-regression-ledger.sh --strict` validates the entries,
+and `scripts/render-regression-ledger.sh` prints the whole table.
 
 It is kept out of this rule on purpose. This rule is path-scoped to
 `**/skills/**` and `scripts/**`, so it loads whole into every agent that touches
@@ -155,5 +160,5 @@ When fixing a skill-related bug:
 - [ ] The original bug is fixed in the SKILL.md file
 - [ ] A regression check is added to the appropriate script
 - [ ] The check includes a comment referencing the PR number
-- [ ] A row is appended at the end of the table in `docs/regression-ledger.md`
+- [ ] A new entry file holding one table row is added under `docs/regression-ledger/`
 - [ ] The fix commit follows conventional commit format: `fix(plugin): description`

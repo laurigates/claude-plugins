@@ -3,7 +3,7 @@ name: git-issue-scoping
 description: "Read an issue's full comment thread and re-verify its cited evidence at HEAD. Use when scoping a PR or plan from a GitHub issue, or before filing or reversing one in your own tracker."
 allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(git log *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-04
+modified: 2026-11-06
 reviewed: 2026-08-19
 ---
 
@@ -47,14 +47,8 @@ back and read the comments — that:
 - your "open questions" were **already answered** in the thread — so asking them
   reads as not having done the homework.
 
-> Canonical break (jnv #114 → PR #116, 2026-06): a WebFetch summary presented the
-> issue as "extend completion beyond JSON paths." The actual 33-comment thread was
-> a design discussion in which the maintainer and the jaq author had converged on
-> **token-based segmentation** (jaq's `load::lex` token trees) plus a new `yield`
-> filter (an *unmerged* jaq PR) for the in-paren case, with an explicit scope
-> ladder. We built a byte-scanner PoC and a PR body that re-litigated settled
-> questions — caught only when the user asked "did we check all the comments?"
-> The PR had to be reframed before it was safe to surface.
+Incident: jnv #114, where a WebFetch summary hid a 33-comment design thread
+([REFERENCE.md](REFERENCE.md#the-trap-jnv-114-a-summary-that-dropped-the-design)).
 
 ## The rule
 
@@ -81,7 +75,7 @@ acting — the discussion may have moved.
 
 ## A bot's recommendation is not a maintainer decision
 
-Point 1 above asks whether the maintainer chose an approach. The trap is that an
+Point 1 of [The rule](#the-rule) asks whether the maintainer chose an approach. The trap is that an
 automated triage comment **looks like** that choice. A `needs-decision` routine
 posts options A/B/C, adds its own **"I'd default to B"**, and closes with "reply
 here and the next run will implement the chosen option". Nothing has been
@@ -98,14 +92,8 @@ A single comment that is itself the request for a decision means the decision is
 **open**. Implement nothing that depends on it; ask the human, or say in the PR
 that you picked an option and which one.
 
-> Observed 2026-09-04 (`claude-plugins` #2441, #2568): two agents in one batch
-> independently read a `<!-- routine:needs-decision v1 -->` comment's own
-> "I'd default to A" as the maintainer's choice and wrote it into their PR
-> bodies as settled. Both issues carried **exactly one comment** — that request
-> — with no reply, no reactions, and no review. On #2441 the routine had
-> recommended B, the agent shipped A, and the human's actual answer was B, so
-> the PR was built on the wrong option *and* cited an authority that did not
-> exist. Caught by an independent verifier running `--jq '.comments | length'`.
+Incident: two PRs shipped a bot's default as the maintainer's choice
+([REFERENCE.md](REFERENCE.md#a-bots-recommendation-two-prs-citing-a-decision-nobody-made)).
 
 Two consequences worth separating:
 
@@ -128,11 +116,8 @@ No maintainer to defer to is exactly why this gets skipped. Two failures:
    deferred option because it is obviously better silently overrides a choice
    made with context you no longer have.
 
-> Observed 2026-08 (pal-mcp-server), ten minutes apart: filed a detailed issue
-> duplicating a month-old one that had already diagnosed the same broken publish
-> pipeline — then merged a PR doing the very migration that issue **explicitly
-> deferred**. Neither was caught by review; both surfaced only from listing open
-> issues afterwards.
+Incident: a duplicate filed and a deferred migration merged, ten minutes apart
+([REFERENCE.md](REFERENCE.md#your-own-tracker-a-duplicate-and-a-reversed-deferral-ten-minutes-apart)).
 
 The tell: calling something "the obvious fix" on a subsystem broken long enough
 for someone to have written about it — long-broken means *investigated*. When
@@ -141,21 +126,15 @@ the next reader sees a decision changed rather than forgotten.
 
 ## An issue's cited evidence expires — re-verify every line before acting on it
 
-Distinct from the sections above, which are about *discussion* you failed to
+Distinct from the other sections, which are about *discussion* you failed to
 read. Here you read everything, and the issue is simply **out of date**: it
 cites `file.ts:230` and asserts what is there, and between filing and today
 some unrelated PR fixed it. A well-written issue makes this worse — precise
 line numbers and quoted snippets read as verified fact, and the better the
 write-up, the less anyone re-checks it.
 
-> Observed 2026-08-13 (thelma #1055). A security issue's central claim was
-> "no `responseSchema` enforcement on the Gemini call — `gemini.ts:230` does
-> not pass it." True when filed on 05-13; false by the time it was worked.
-> #1060 had added it in between. The issue even listed *"`responseSchema`
-> enforcement is deliberately removed (currently absent)"* as a trigger to
-> re-evaluate — so writing the doc from the issue verbatim would have shipped
-> a threat model asserting the absence of the control that was by then its
-> primary defence, and inverted one of its own triggers.
+Incident: thelma #1055, whose central claim a later PR had already fixed
+([REFERENCE.md](REFERENCE.md#cited-evidence-expires-thelma-1055-a-control-added-after-filing)).
 
 - **Re-read every file:line the issue cites, at HEAD, before writing anything
   from it.** The issue is a *claim about the code*, and the code is the
@@ -179,6 +158,8 @@ write-up, the less anyone re-checks it.
 - Letting an early `WebFetch`/research step stand in for the primary source.
 
 ## Related
+
+- [REFERENCE.md](REFERENCE.md) — the incident behind each rule in this skill.
 
 - `~/.claude/rules/verify-upstream-before-patching.md` — same instinct (check
   the authoritative source before acting) for vendored code; this is the

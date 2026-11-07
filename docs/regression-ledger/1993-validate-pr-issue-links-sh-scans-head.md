@@ -1,0 +1,1 @@
+| validate-pr-issue-links.sh scans HEAD's range not the --head branch → false-positive block on gh pr create from another checkout | Hook hardcoded HEAD instead of resolving --head/-H; scanned an unrelated commit range | test-validate-pr-issue-links.sh (head-ref range cases) | issue #1993 |
