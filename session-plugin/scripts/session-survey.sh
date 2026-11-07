@@ -713,7 +713,13 @@ gh_classify() {
     137|143) printf '%s' "timeout"; return 0 ;;
   esac
   err="$(gh_err_head "$job")"
-  if grep -Eqi 'none of the git remotes|no git remotes|not a git repository|no remotes? (found|configured)' <<<"$err"; then
+  # A Claude Code cloud session's GitHub proxy refuses GraphQL, which every
+  # `gh pr list` / `gh issue list` uses, with an `HTTP 403`; REST and the GitHub
+  # MCP tools still work there (#3488). Tested before auth, which the 403 would
+  # otherwise match, and whose remedy (`gh auth login`) has no effect there.
+  if grep -Eqi 'GraphQL is not available' <<<"$err"; then
+    printf '%s' "cloud-restricted"
+  elif grep -Eqi 'none of the git remotes|no git remotes|not a git repository|no remotes? (found|configured)' <<<"$err"; then
     printf '%s' "no-remote"
   elif grep -Eqi 'not logged in|auth login|authentication token|missing required scopes|bad credentials|HTTP 40[13]|GH_TOKEN|GITHUB_TOKEN' <<<"$err"; then
     printf '%s' "auth"
@@ -725,9 +731,11 @@ gh_classify() {
 }
 
 # Precedence when several jobs failed differently: the reason whose remedy is
-# most specific wins. `auth` first because re-running is futile; `unknown` last.
+# most specific wins. `cloud-restricted` and `auth` first because re-running is
+# futile; `unknown` last.
 gh_reason_rank() {
   case "$1" in
+    cloud-restricted) printf '%s' 0 ;;
     auth) printf '%s' 1 ;;
     no-remote) printf '%s' 2 ;;
     no-cli) printf '%s' 3 ;;
@@ -735,6 +743,16 @@ gh_reason_rank() {
     api-error) printf '%s' 5 ;;
     *) printf '%s' 6 ;;
   esac
+}
+
+# An `auth` failure in a remote session is the cloud proxy, not a missing
+# login: no `gh auth login` exists there to run (#3488).
+gh_refine_reason() {
+  if [ "$1" = auth ] && [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
+    printf '%s' "cloud-restricted"
+  else
+    printf '%s' "$1"
+  fi
 }
 
 # Emits the job's JSON when it succeeded; empty otherwise. Return status is the
@@ -1342,6 +1360,41 @@ reap_github() {
       done
     fi
     [ -n "$gh_fail_reason" ] || gh_fail_reason="unknown"
+    gh_fail_reason="$(gh_refine_reason "$gh_fail_reason")"
+
+    # REST fallback for the open-PR list (#3488). The list calls go through
+    # GraphQL; REST search does not, and a cloud session's proxy permits it. It
+    # runs only after an auth-shaped failure, in full mode (the summary prints
+    # no PR data), and only with a GitHub slug to scope the query to. Its
+    # success also proves the token works, so an `auth` reason becomes
+    # `cloud-restricted`. GH_READY stays false: the assigned issues, and so
+    # GITHUB_DRIFT, were still not queried.
+    case "$gh_fail_reason" in
+      auth|cloud-restricted)
+        if [ "$summary_mode" = false ] && [ -n "$repo_slug" ]; then
+          gh_job_in "$git_state_dir" rest_prs api -X GET search/issues \
+            -f "q=repo:${repo_slug} is:pr is:open author:@me" -f per_page=100
+          wait "$!" 2>/dev/null
+          local rest_raw rest_prs_json
+          if rest_raw=$(gh_read rest_prs); then
+            gh_fail_reason="cloud-restricted"
+            if have jq; then
+              rest_prs_json=$(printf '%s' "$rest_raw" | jq -c '
+                .items
+                | if type != "array" then error("no items") else . end
+                | map({number, title, url: .html_url,
+                       state: (.state | ascii_upcase), updatedAt: .updated_at})' \
+                2>/dev/null) || rest_prs_json=""
+              if [ -n "$rest_prs_json" ]; then
+                prs_json="$rest_prs_json"
+                pr_count=$(printf '%s' "$prs_json" | jq 'length' 2>/dev/null || echo 0)
+                prs_source="rest-search"
+              fi
+            fi
+          fi
+        fi
+        ;;
+    esac
   fi
 
   # Open PRs to surface as loose threads. Base this on the repo's actual open
@@ -1428,12 +1481,15 @@ reap_github() {
 
 gh_ready=false
 gh_timeout=false
-# Why GitHub was not queried (#2425): timeout | auth | no-remote | api-error |
-# no-cli | unknown. Present only when GH_READY=false. GH_FAIL_DETAIL carries the
+# Why GitHub was not queried (#2425): timeout | auth | cloud-restricted |
+# no-remote | api-error | no-cli | unknown. Present only when GH_READY=false. GH_FAIL_DETAIL carries the
 # first stderr line for the two classifications the reason alone cannot act on.
 gh_fail_reason=""
 gh_fail_detail=""
 prs_json="[]"
+# rest-search when the PR rows came from the REST fallback (#3488); empty when
+# they came from the gh list calls or were not queried.
+prs_source=""
 drift_json="[]"
 # Discussions (#2569). DISCUSSIONS_FAIL_REASON uses GH_FAIL_REASON's vocabulary,
 # plus `no-jq` (the query answered but could not be filtered).
@@ -1850,7 +1906,10 @@ echo "JQ_AVAILABLE=${jq_available}"
 # describe the same repository GIT_SCOPE names (#2441). A call that never landed
 # is its own `none` rung, for the same reason TASK_SCOPE=none exists: an
 # unqueried zero is not a zero.
-if [ "$gh_ready" != true ]; then
+# The REST fallback (#3488) queried the same checkout's repo, so it scopes the
+# rows the same way.
+[ -n "$prs_source" ] && echo "PRS_SOURCE=${prs_source}"
+if [ "$gh_ready" != true ] && [ -z "$prs_source" ]; then
   prs_scope="none"
   prs_confidence="low"
 else
@@ -1963,7 +2022,8 @@ if [ "$checkout_scan" = true ]; then
           fi
         done
       fi
-      echo "CHECKOUT_${co_n}_GH_FAIL_REASON=${co_reason:-unknown}"
+      co_reason="$(gh_refine_reason "${co_reason:-unknown}")"
+      echo "CHECKOUT_${co_n}_GH_FAIL_REASON=${co_reason}"
       [ -n "$co_detail" ] && echo "CHECKOUT_${co_n}_GH_FAIL_DETAIL=${co_detail}"
       continue
     fi
