@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-06-10
 name: git-pr
 description: "From an already-pushed branch: open the pull request with body, labels, reviewers and issue refs. Use when the user says \"create PR\", \"open pull request\", or \"submit for review\"."
@@ -84,7 +84,7 @@ gh pr create \
 For a short body, `--body-file -` with a quoted heredoc also works: [REFERENCE.md](REFERENCE.md#short-bodies-over-stdin-step-4).
 
 Body content of `/tmp/pr-body.md` — the squash body follows the repo's
-`squash_merge_commit_message`: `COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo a
+`squash_merge_commit_message`: `COMMIT_MESSAGES` uses the branch commits' messages and `PR_BODY` the PR body; read it with `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message` rather than assuming. On a `PR_BODY` repo a
 squash-merged PR's body **is the commit body on `main`** and release-please
 parses it. Rebase is the default merge method, but
 single-commit and fixup-carrying PRs squash, so write every body as a commit
