@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.70.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.70.0...git-plugin-v2.70.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** disambiguate the commit, push and PR skill descriptions ([#3474](https://github.com/laurigates/claude-plugins/issues/3474)) ([726774e](https://github.com/laurigates/claude-plugins/commit/726774ed6b1f474c3797e927214cf3c2e94cabf9)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [2.70.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.69.10...git-plugin-v2.70.0) (2026-11-07)
 
 

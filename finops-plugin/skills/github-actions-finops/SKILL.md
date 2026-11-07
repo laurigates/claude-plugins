@@ -1,16 +1,16 @@
 ---
 name: github-actions-finops
-description: "GitHub Actions billing, workflow efficiency, and waste analysis at org or repo level. Use when investigating CI/CD costs, wasted runs, or optimizing triggers."
+description: "One-pass GitHub Actions cost report for an org or repo: billing, per-workflow runs and durations, waste counts. Use when investigating CI/CD costs; to fix one repo's waste use finops-waste."
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2026-09-25
+modified: 2026-11-06
 reviewed: 2026-06-10
 ---
 
 # GitHub Actions FinOps
 
-Analyze GitHub Actions usage, costs, and efficiency across organizations and repositories.
+Report GitHub Actions spend for an organization or repository in one pass: billing, per-workflow run volume and duration, and waste counts. It reads and reports; to change a repo's workflow config, use `/finops:waste`.
 
 ## When to Use This Skill
 
@@ -20,7 +20,8 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 | Identifying wasted workflow runs | Setting up new workflows -- use github-actions-workflows |
 | Investigating workflow trigger patterns | Managing cache keys -- use github-actions-cache-optimization |
 | Comparing efficiency across repos | Monitoring a single run -- use gh-workflow-monitoring |
-| Sweeping an org or repo for waste | Reading the billing-usage API by hand (bare repo-name filter, net vs gross, monthly trend) -- use `github-actions-plugin:actions-billing-usage` |
+| Sweeping an org or repo for waste | Fixing one repo's waste (concurrency, path filters, bot guards) -- use `/finops:waste` |
+| Reporting cost and waste counts in one pass | Reading the billing-usage API by hand (bare repo-name filter, net vs gross, monthly trend) -- use `github-actions-plugin:actions-billing-usage` |
 
 ## Context
 
