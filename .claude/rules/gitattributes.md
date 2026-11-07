@@ -65,6 +65,34 @@ exiting 0. After a revert or
 cherry-pick that touches a union-marked file, diff that file against the base
 and remove leftovers by hand in the same PR.
 
+## Splitting a union file leaves the mark on every older branch
+
+A branch reads `.gitattributes` from its own tree, so removing `merge=union`
+on main does not remove it from branches cut before the removal. When a union
+file is split into per-entry files, merging main into such a branch keeps the
+whole pre-split content and appends it to the page that replaced it, with no
+conflict and exit 0. `scripts/resolve-additive-conflicts.py` does the same for
+a branch without the mark, because each side only added lines.
+
+Observed 2026-11-07 (#3490): after the #3469 split, the conflict-resolution
+bot merged main into seven pre-split PR branches and appended about 466 old
+ledger rows to each one's `docs/regression-ledger.md` index.
+`check-regression-ledger.sh` (`row_in_index`) blocked every one, and each
+branch was repaired by hand.
+
+- A split ships with a post-merge repair, not only a removed mark. For the
+  ledger, `scripts/repair-split-ledger.py <base-ref>` runs in
+  `auto-resolve-conflicts.yml` after the additive pre-pass: it restores the
+  base's index and writes each row the branch itself added (rows its tree has
+  that the merge base lacks) as `docs/regression-ledger/<number>-<slug>.md`.
+  A row with no `#N` is left in place for `row_in_index` to block.
+- Repair a branch that predates a split before building on it: run the same
+  script mid-merge (`git merge --no-commit --no-ff origin/main`, then
+  `python3 scripts/repair-split-ledger.py origin/main`), or restore the index
+  from main and move the branch's rows by hand.
+- A check that fails on the old shape (`row_in_index`) is what kept the damage
+  off main. Add one with any split.
+
 ## GitHub does not honor `merge=union` server-side
 
 **Empirically confirmed (PR #1759, 2026-06):** GitHub's mergeability check and
