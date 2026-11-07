@@ -900,6 +900,18 @@ repos:
         language: system
         files: '^scripts/(check-ruff-version-sync\.sh|tests/test-check-ruff-version-sync\.sh)$'
         pass_filenames: false
+      - id: check-release-please-rule
+        name: release-please rule agrees with its config and workflow
+        entry: bash ./scripts/check-release-please-rule.sh --strict
+        language: system
+        files: '^(\.claude/rules/release-please\.md|release-please-config\.json|\.github/workflows/release-please\.yml|scripts/check-release-please-rule\.sh)$'
+        pass_filenames: false
+      - id: test-check-release-please-rule
+        name: release-please rule guard regression
+        entry: bash ./scripts/tests/test-check-release-please-rule.sh
+        language: system
+        files: '^scripts/(check-release-please-rule\.sh|tests/test-check-release-please-rule\.sh)$'
+        pass_filenames: false
       - id: check-actionlint-version-sync
         name: actionlint pins agree between pre-commit and CI
         entry: bash ./scripts/check-actionlint-version-sync.sh --strict
