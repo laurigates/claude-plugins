@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-11-05
+modified: 2026-11-07
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -367,7 +367,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 
 - [ ] Agent name is kebab-case
 - [ ] `description` matches real user intents (not just tool jargon)
-- [ ] `model: opus` (the default for all subagents — `effort` is the cost lever, not the model; see Model Selection for Agents). Haiku subagents are limited to the cold-read-gate reader and haiku workflow stages with an explicit effort; `fable` is sanctioned per the Model Selection table.
+- [ ] `model:` picked by task shape from the Model Selection for Agents table (`opus`, `fable`, `sonnet` with an explicit `effort:`, or `haiku` in its sanctioned shapes), never `inherit`
 - [ ] `tools` uses principle of least privilege
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
 - [ ] Frontmatter uses only documented subagent fields — no skill fields such as `context:` or `allowed-tools:` (`scripts/check-agent-frontmatter-keys.sh`)

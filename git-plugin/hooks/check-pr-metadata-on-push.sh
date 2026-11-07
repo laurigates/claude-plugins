@@ -280,5 +280,6 @@ To bypass: edit the PR title or body so it reflects the new commit, THEN push.
 Editing the PR bumps its updatedAt past your commit's author time, which the
 hook reads as 'metadata reconciled' and lets the push through on the next attempt.
 Re-running the push without editing the PR fires the same block again.
+Run gh pr edit as a separate command, not chained with the push: this hook checks before the command runs.
 
 If you are a delegated agent without authority to edit this PR's title/body, do not retry and do not edit the PR: report PR #${PR_NUMBER} and commit ${PUSH_SHA:-(unknown)} to your caller."

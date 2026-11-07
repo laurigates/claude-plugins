@@ -40,9 +40,9 @@ Three composable skills that can be invoked individually or combined based on us
 
 | Skill | Trigger Phrases | Description |
 |-------|-----------------|-------------|
-| `git-commit` | "commit", "save changes", "stage and commit" | Create commits with conventional messages and issue references |
-| `git-push` | "push", "push changes", "send to remote" | Push local commits to remote with branch tracking |
-| `git-pr` | "create PR", "open pull request", "submit for review" | Create pull requests with descriptions and issue linkage |
+| `git-commit` | "commit", "save my work", "stage and commit" | Local commits only: stage, write a conventional message, run pre-commit, commit |
+| `git-push` | "push", "send to remote", "update remote" | Existing commits only: push with upstream tracking and `--force-with-lease` |
+| `git-pr` | "create PR", "open pull request", "submit for review" | From an already-pushed branch: open the PR with body, labels, reviewers and issue refs |
 
 ### Composability
 
@@ -57,11 +57,11 @@ Three composable skills that can be invoked individually or combined based on us
 
 | Skill | Description |
 |-------|-------------|
-| `git-branch-naming` | Branch naming conventions (type prefixes, issue linking, kebab-case) |
-| `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
+| `git-branch-naming` | Branch names: type prefix (feat/, fix/, chore/), issue number, kebab-case |
+| `git-cli-agentic` | Machine-readable git output for scripts — `status --porcelain=v2`, `diff --numstat`, `log --format`, ahead/behind counts; not for making commits |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
-| `git-commit-workflow` | Conventional commit patterns and best practices |
+| `git-commit-workflow` | Commit-message and staging conventions (type/scope/subject, logical grouping, explicit-path staging); makes no commit |
 | `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
@@ -76,10 +76,10 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-issue-scoping` | Read an issue's full comment thread and re-verify its cited `file:line` evidence at HEAD before scoping a PR or plan |
 | `upstream-pr-contribution` | Read CONTRIBUTING.md and the PR template in full before an upstream PR — the issue-first and no-AI-walls-of-text gates live below the fold and are enforced by bots on a timer |
 | `worktree-stale-base-merge` | A parallel worktree-agent branch's green CI is about a `main` that no longer exists — merge-base equality as the gate, and the `update-branch` vs rebase choice |
-| `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
+| `github-issue-autodetect` | Fixes/Closes/Refs keywords for a change — match the staged diff against open issues by path, label and title |
 | `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
-| `github-pr-title` | Craft effective PR titles using conventional commit format |
+| `github-pr-title` | PR title only — the `type(scope): subject` line that squash-merge lands and release-please parses |
 | `git-derive-docs` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please **monorepo** strategy — component tags, per-package extra-files, tag migration (single-repo standards live in configure-plugin) |
 | `release-please-protection` | Prevent manual edits to release-please managed files, and keep generated artifacts from depending on them |
@@ -129,7 +129,7 @@ The rule this plugin applies:
 | `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push. Fires only for an **`OPEN`** PR — a branch whose PR is `MERGED` or `CLOSED` pushes through, since finished metadata is a historical record |
 | `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Evaluates the push **refspec destination** (`<sha>:refs/heads/<other>`), not HEAD — falling back to HEAD when the destination is ambiguous (multi-refspec) or still carries a shell metacharacter (`git push -u origin $(git branch --show-current)`), which would otherwise silence the hook; skips the behind-nudge for a force-push lease-pinned to the fetched origin tip (`--force-with-lease=<branch>:<sha>`) and drops the `git pull --rebase` advice on any other force-push (#2672). Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
 | `check-pr-merge-method.sh` | PreToolUse (Bash) | Block a `gh pr merge --squash/--rebase/--merge` whose method disagrees with `scripts/pr-merge-method.py` (rule table: [merge-strategies.md](skills/github-pr-title/merge-strategies.md)). The message carries the corrected command; a human-applied `merge:squash` / `merge:rebase` label overrides. Fails open when `gh` or the PR is unreadable |
-| `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
+| `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge (silent on the default branch and without `gh`). Also surfaces `worktrees_not_ignored` on any branch, the default one included, when `git check-ignore` says the main checkout's `.claude/worktrees/` (Claude Code's default worktree location) is not ignored, so its worktrees would show up as untracked files (#3436). The finding names `/configure:gitignore` and a local `echo '.claude/worktrees/' >> "$(git rev-parse --git-path info/exclude)"`; the probe writes neither. A `check-ignore` error or a bare repository says nothing. Opt out of that signal alone with `CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE=1` (`CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE=1` silences the whole drift nudge). Tests: `bash git-plugin/hooks/test-git-drift-probe.sh` |
 
 The four PreToolUse hooks decide whether the command *runs* `gh pr create`,
 `gh pr merge`, `git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via

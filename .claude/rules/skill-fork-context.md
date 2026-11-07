@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-10-10
+modified: 2026-11-06
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -67,7 +67,7 @@ Does the skill use AskUserQuestion?
   YES → Do NOT set agent: (runs inline)
   NO ↓
 
-Does the skill spawn Task subagents OR read many files OR do multiple web fetches?
+Does the skill spawn Agent subagents OR read many files OR do multiple web fetches?
   NO  → No agent needed (runs inline)
   YES ↓
 
@@ -90,10 +90,10 @@ script-decidable cap constant, or a set a shell script enumerates?
 ## Checklist for New Skills
 
 - [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` (runs inline).
-- [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
+- [ ] Does the skill use `Agent` (renamed from `Task` in 2.1.63), multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
 - [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803). Remember it now runs in the background by default (2.1.218) — add `background: false` if the caller needs the result synchronously.
 - [ ] Does the skill fan out **parallel** subagents at an **unbounded or caller-chosen** width (`--parallel N`, one agent per query hit, a count the design invents)? If yes, **omit** `context: fork` — the concurrent-subagent rate-limit cascade still applies on a 1M-context session (every Fable 5.1 session, or any `[1m]` session). A **statically bounded** fan-out keeps `fork`; name the bound where a reader can check it.
-- [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` or `haiku` for mechanical work — `haiku` within the limits in `skill-development.md`).
+- [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` with an explicit `effort:` for bounded work, `haiku` within its limits; `skill-development.md` § Model Selection owns the table).
 - [ ] Update `modified:` date when adding these fields.
 
 ## Upstream Issues to Track

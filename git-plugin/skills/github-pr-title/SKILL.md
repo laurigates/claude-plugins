@@ -1,9 +1,9 @@
 ---
 created: 2026-01-30
-modified: 2026-11-04
+modified: 2026-11-06
 reviewed: 2026-04-25
 name: github-pr-title
-description: Craft PR titles in conventional commits format, which drives release-please automation and squash-merge history. Use when creating PRs or ensuring consistent PR naming.
+description: "PR title only: the type(scope): subject line that squash-merge lands on main and release-please parses. Use when writing, fixing, or validating the title of a PR."
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Bash(gh pr *), Read, Grep, Glob, TodoWrite
 ---
