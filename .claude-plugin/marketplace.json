@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.57.0",
+      "version": "2.57.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.19.1",
+      "version": "2.19.2",
       "author": {
         "name": "Lauri Gates"
       },
