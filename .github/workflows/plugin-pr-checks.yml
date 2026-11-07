@@ -437,6 +437,14 @@ jobs:
         # step's comment and the header of scripts/run-skill-script-tests.sh.
         run: bash scripts/check-dead-api-endpoints.sh --strict
 
+      - name: Check regression ledger entries are one row per file
+        # docs/regression-ledger/ holds one file per entry so that parallel PRs
+        # never edit the same path; GitHub's server-side merge ignored the old
+        # single table's merge=union driver (#2947). Also catches a stale branch
+        # appending a row to docs/regression-ledger.md. Its self-test is
+        # auto-discovered by run-skill-script-tests.sh.
+        run: bash scripts/check-regression-ledger.sh --strict
+
       - name: Check the TaskCompleted agent prompt keeps its verification behaviours
         # The artefact is a prompt STRING inside hooks-plugin's plugin.json, so
         # plugin-compliance-check.sh cannot reach it. Self-test first: the guard

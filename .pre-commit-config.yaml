@@ -633,6 +633,20 @@ repos:
         language: script
         files: '^scripts/(check-dead-api-endpoints\.sh|tests/test-check-dead-api-endpoints\.sh)$'
         pass_filenames: false
+      # One file per ledger entry, so parallel PRs never edit the same path:
+      # GitHub's server-side merge ignored the old table's merge=union (#2947).
+      - id: check-regression-ledger
+        name: regression ledger entries are one row per file (#2947)
+        entry: ./scripts/check-regression-ledger.sh --strict
+        language: script
+        files: '^(docs/regression-ledger(\.md|/.*)|scripts/(check|render)-regression-ledger\.sh)$'
+        pass_filenames: false
+      - id: check-regression-ledger-selftest
+        name: regression ledger guard regression
+        entry: ./scripts/tests/test-check-regression-ledger.sh
+        language: script
+        files: '^scripts/((check|render)-regression-ledger\.sh|tests/test-check-regression-ledger\.sh)$'
+        pass_filenames: false
       - id: check-version-pin-coverage
         name: skill version pins are a Renovate-managed shape (version-pinning.md)
         entry: bash ./scripts/check-version-pin-coverage.sh --strict
