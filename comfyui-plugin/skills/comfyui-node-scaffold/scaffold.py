@@ -54,6 +54,10 @@ from pathlib import Path
 
 AUTHOR_DEFAULT = "Lauri Gates"
 PUBLISHER_DEFAULT = "laurigates"
+# Repository holding the published reusable-clear-autorelease-labels.yml that
+# the emitted clear-autorelease-labels.yml calls. Override with
+# --workflows-repo to call your own copy.
+WORKFLOWS_REPO_DEFAULT = "laurigates/.github"
 
 # The shared modal-kit consumed by the modal (frontend/backend) variants. The
 # gesture variant does NOT depend on it. Bump in lockstep with the kit's
@@ -2888,14 +2892,16 @@ jobs:
 """
 
 # Manual escape hatch for a clogged release-please pipeline: a thin caller for
-# laurigates/.github's reusable-clear-autorelease-labels.yml, which strips a
-# stale `autorelease: pending` label from closed PRs so release-please can move
-# on. Byte-identical to the fleet form (fleet-policy.toml, `shared`).
+# the published reusable-clear-autorelease-labels.yml in WORKFLOWS_REPO
+# (--workflows-repo, default WORKFLOWS_REPO_DEFAULT), which strips a stale
+# `autorelease: pending` label from closed PRs so release-please can move on.
+# With the default it is byte-identical to the fleet form (fleet-policy.toml,
+# `shared`).
 CLEAR_AUTORELEASE_YML = """\
 name: "Maintenance: clear autorelease labels"
 
 # Thin caller for the org reusable workflow. See
-# laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml
+# @@WORKFLOWS_REPO@@/.github/workflows/reusable-clear-autorelease-labels.yml
 # for what this does and when to run it (manual escape hatch for a clogged
 # release-please pipeline).
 
@@ -2913,7 +2919,7 @@ on:
 
 jobs:
   clear-labels:
-    uses: laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml@main
+    uses: @@WORKFLOWS_REPO@@/.github/workflows/reusable-clear-autorelease-labels.yml@main
     permissions:
       contents: read
       issues: write
@@ -3104,6 +3110,9 @@ def build_file_map(
     # `__init__`'s import of the backend module resolves under pytest.
     ctx["PY_MODULE_OR_INIT"] = "__init__"
     ctx["DISPLAY_NOSPACE"] = ctx["DISPLAY"].replace(" ", "")
+    # Callers that predate --workflows-repo (check-fleet-drift.py's render)
+    # build ctx without it; they get the published default.
+    ctx.setdefault("WORKFLOWS_REPO", WORKFLOWS_REPO_DEFAULT)
 
     # ADR conditional: the modal variants document the shared-kit decision.
     ctx["ADR_KIT_SECTION"] = subst(ADR_KIT_SECTION_MODAL, ctx) if modal else ""
@@ -3707,6 +3716,16 @@ def main() -> int:
     p.add_argument("--publisher", default=PUBLISHER_DEFAULT)
     p.add_argument("--author", default=AUTHOR_DEFAULT)
     p.add_argument(
+        "--workflows-repo",
+        default=WORKFLOWS_REPO_DEFAULT,
+        metavar="OWNER/REPO",
+        help=(
+            "repository whose reusable-clear-autorelease-labels.yml the emitted "
+            "clear-autorelease-labels.yml calls (default: %(default)s, a "
+            "published reusable workflow)"
+        ),
+    )
+    p.add_argument(
         "--dir",
         default=".",
         help="parent directory to create the pack in (default: cwd)",
@@ -3727,6 +3746,7 @@ def main() -> int:
         DESC=args.desc,
         PUBLISHER=args.publisher,
         AUTHOR=args.author,
+        WORKFLOWS_REPO=args.workflows_repo,
         YEAR=str(datetime.date.today().year),
         DATE=datetime.date.today().isoformat(),
     )

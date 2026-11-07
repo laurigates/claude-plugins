@@ -6,15 +6,6 @@ agent-patterns-plugin/skills/meta-context-diet/references/anti-patterns.md	lauri
 agent-patterns-plugin/skills/meta-promote/SKILL.md	~/repos/	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
 agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md	laurigates/loractl	1
-comfyui-plugin/skills/comfy-node/SKILL.md	gitops repo	3
-comfyui-plugin/skills/comfy-node/SKILL.md	laurigates/gitops	3
-comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml	laurigates/.github	1
-comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml	~/repos/	1
-comfyui-plugin/skills/comfyui-node-scaffold/references/template-upkeep.md	laurigates/gitops	2
-comfyui-plugin/skills/comfyui-node-scaffold/references/template-upkeep.md	~/repos/	1
-comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py	laurigates/.github	3
-comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py	~/repos/	3
-comfyui-plugin/skills/comfyui-node-scaffold/scripts/tests/test-finishing-pass.sh	laurigates/.github	1
 configure-plugin/skills/claude-security-settings/SKILL.md	laurigates/loractl	1
 configure-plugin/skills/configure-completions/REFERENCE.md	laurigates/shore-recon	1
 configure-plugin/skills/configure-reusable-workflows/REFERENCE.md	laurigates/.github	9

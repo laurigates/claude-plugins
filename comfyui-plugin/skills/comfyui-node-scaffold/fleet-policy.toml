@@ -1,6 +1,7 @@
 # Fleet sync policy for the ComfyUI pack fleet.
 #
-# `scaffold.py` generates 13 pack repos under ~/repos/laurigates/comfyui-nodes.
+# `scaffold.py` generates pack repos; the measurements below were taken against
+# a 13-pack fleet.
 # Files it emits drift from the template over time, in BOTH directions, and
 # until `scripts/check-fleet-drift.py` nothing detected it.
 #
@@ -134,7 +135,7 @@ reason = "Packs legitimately APPEND pack-specific entries (comfyui-sampler-info 
 
 [files.".github/workflows/clear-autorelease-labels.yml"]
 policy = "shared"
-reason = "Was `managed`, which reported 10 ERRORs for work the fleet had already done. Measured 2026-08-13: 9 of the 12 packs that carry the file have converted it to a thin caller for laurigates/.github's reusable-clear-autorelease-labels.yml; the 3 that still match the old template byte-for-byte are the LAGGARDS, and comfyui-image-browser has none. This is a fleet-leads/back-port case exactly like release-please.yml above — not a per-pack divergence to reconcile. The template now emits the thin caller (#2494); the 3 laggards plus the absent one surface as SHARED_MINORITY."
+reason = "Was `managed`, which reported 10 ERRORs for work the fleet had already done. Measured 2026-08-13: 9 of the 12 packs that carry the file have converted it to a thin caller for the published reusable-clear-autorelease-labels.yml (scaffold.py `--workflows-repo`); the 3 that still match the old template byte-for-byte are the LAGGARDS, and comfyui-image-browser has none. This is a fleet-leads/back-port case exactly like release-please.yml above — not a per-pack divergence to reconcile. The template now emits the thin caller (#2494); the 3 laggards plus the absent one surface as SHARED_MINORITY."
 
 [files.".gitattributes"]
 policy = "shared"
