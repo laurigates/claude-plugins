@@ -120,7 +120,9 @@ empty and the check silently passes against nothing. That section's
 `GH_READY=false` as license to add a task that duplicates an untracked
 PR/issue. The `GH_FAIL_REASON=` beside it says whether that is worth
 fixing before you file — per-reason handling is in
-[references/gh-fail-reason.md](references/gh-fail-reason.md). Then read the
+[references/gh-fail-reason.md](references/gh-fail-reason.md); for
+`cloud-restricted` (a cloud session), read PR and issue state from the GitHub
+MCP tools instead. Then read the
 conversation itself —
 what was kicked off but not finished, discussed but not done.
 
