@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.2...workflow-orchestration-plugin-v1.18.0) (2026-11-07)
+
+
+### Features
+
+* save the issue-sweep workflows as reusable templates ([#3508](https://github.com/laurigates/claude-plugins/issues/3508)) ([27376ec](https://github.com/laurigates/claude-plugins/commit/27376ec964fb8a8d7e79fc18c1c478a19fe32eac))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.1...workflow-orchestration-plugin-v1.17.2) (2026-11-06)
 
 
