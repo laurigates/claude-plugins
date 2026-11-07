@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-10-07
+modified: 2026-11-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -131,7 +131,7 @@ See also `.claude/rules/agent-coworker-detection.md`.
 
 ## Resuming Worktree-Isolated Agents
 
-`SendMessage`-resume of a completed worktree-isolated agent (`Agent` with `isolation: "worktree"`) **loses worktree isolation** — the resumed run executes in the orchestrator's main checkout, not the worktree. For parallel file-mutating work, re-dispatch a fresh `isolation: "worktree"` agent instead of resuming; reserve `SendMessage`-resume for read-only / single-checkout continuations. See `parallel-agent-dispatch` → "Resuming agents: SendMessage loses worktree isolation" (issue [#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
+`SendMessage`-resume of a completed worktree-isolated agent (`Agent` with `isolation: "worktree"`) re-enters its worktree only if the worktree was kept, which happens when the agent left changes in it. A worktree with no changes is removed when the agent completes, and the resumed run then executes in the orchestrator's main checkout and **loses worktree isolation**. Check `git worktree list` before resuming a file-mutating agent; re-dispatch a fresh `isolation: "worktree"` agent when its worktree is gone. See `parallel-agent-dispatch` → "Resuming agents: SendMessage re-enters only a kept worktree" (issues [#1546](https://github.com/laurigates/claude-plugins/issues/1546), #2330).
 
 ## Sandbox Considerations
 
