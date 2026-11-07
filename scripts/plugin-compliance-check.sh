@@ -446,6 +446,53 @@ for path, start, end, lang in sorted(fences):
         print(f"{path}:{start}")
 PY
 
+# Reads the same extract-md-elements.py `fence` + `fence_line` rows and parses
+# each YAML fence the way GitHub Actions does. For every job step that uses
+# anthropics/claude-code-action it prints `<file>:<fence-start>\t<kind>\t<job>`:
+#   id-token         the job's (or workflow's) permissions lack `id-token: write`,
+#                    which the action needs to fetch its token through OIDC
+#   plugins-comment  a line of the `plugins:` input starts with '#'; inside a
+#                    block scalar that is content, read as a plugin name
+# A fence that does not parse, or is not a workflow, is skipped (issue #3443).
+IFS= read -r -d '' CLAUDE_WORKFLOW_TEMPLATE_PY <<'PY' || true
+import sys
+import yaml
+
+fences = []
+lines = {}
+for raw in sys.stdin:
+    parts = raw.rstrip("\n").split("\t")
+    if parts[0] == "fence" and len(parts) >= 5:
+        fences.append((parts[1], int(parts[2]), int(parts[3]), parts[4].strip().lower()))
+    elif parts[0] == "fence_line" and len(parts) >= 4:
+        lines.setdefault(parts[1], []).append((int(parts[2]), "\t".join(parts[4:])))
+
+for path, start, end, lang in sorted(fences):
+    if lang not in ("yaml", "yml"):
+        continue
+    body = "\n".join(text for num, text in sorted(lines.get(path, [])) if start < num < end)
+    try:
+        doc = yaml.safe_load(body)
+    except yaml.YAMLError:
+        continue
+    if not isinstance(doc, dict) or not isinstance(doc.get("jobs"), dict):
+        continue
+    for job_name, job in doc["jobs"].items():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps") or []:
+            if not isinstance(step, dict):
+                continue
+            if not str(step.get("uses", "")).startswith("anthropics/claude-code-action"):
+                continue
+            perms = job.get("permissions", doc.get("permissions"))
+            if not (perms == "write-all" or (isinstance(perms, dict) and perms.get("id-token") == "write")):
+                print(f"{path}:{start}\tid-token\t{job_name}")
+            plugins = (step.get("with") or {}).get("plugins")
+            if isinstance(plugins, str) and any(e.strip().startswith("#") for e in plugins.splitlines()):
+                print(f"{path}:{start}\tplugins-comment\t{job_name}")
+PY
+
 check_skill_body() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -600,6 +647,28 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#3443): both workflow templates put a `# suffix matches…`
+      # line inside `plugins: |`, which claude-code-action read as a plugin
+      # name, and the review template lacked `id-token: write`, so its OIDC
+      # token fetch failed. Each workflow fence is parsed as YAML.
+      local ccp_hits ccp_hit ccp_where ccp_kind ccp_job
+      if ! command -v uv >/dev/null 2>&1; then
+        issues+=("❌ ${plugin}/${skill_name}: cannot verify the workflow templates — 'uv' is not on PATH (fence detection uses scripts/lib/extract-md-elements.py) (issue #3443)")
+        has_errors=true
+      elif ! ccp_hits=$(uv run --quiet scripts/lib/extract-md-elements.py --types fence,fence_line "${skill_corpus[@]}" 2>/dev/null \
+                        | python3 -c "$CLAUDE_WORKFLOW_TEMPLATE_PY"); then
+        issues+=("❌ ${plugin}/${skill_name}: workflow-template check failed to extract or parse YAML fences (issue #3443)")
+        has_errors=true
+      elif [ -n "$ccp_hits" ]; then
+        while IFS=$'\t' read -r ccp_where ccp_kind ccp_job; do
+          case "$ccp_kind" in
+            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action without id-token: write in its permissions (the action fetches its token through OIDC)" ;;
+            *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name)" ;;
+          esac
+          issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit} (issue #3443)")
+        done <<<"$ccp_hits"
+        has_errors=true
+      fi
     fi
 
     # Regression: configure-mcp's REFERENCE.md says a `pal` entry in a
