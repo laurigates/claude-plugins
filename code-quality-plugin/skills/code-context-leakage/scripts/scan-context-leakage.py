@@ -147,7 +147,14 @@ TIME_IN_NAME = re.compile(r"(?i)(?<![A-Za-z])" + TIME_WORDS + r"(?![A-Za-z])")
 RECIPE_FILES = re.compile(
     r"(?:^|/)(?:[Jj]ustfile|\.justfile|[^/]*\.just|[Mm]akefile|GNUmakefile|[^/]*\.mk)$"
 )
-RECIPE_DEF = re.compile(r"^@?([A-Za-z0-9_][\w-]*)[^:=\n]*:(?!=)")
+# A recipe line: a name, then either just parameters (`name a b="x:y" +rest:`,
+# where a default value may hold `=` and `:`) or Make-style target text with no
+# `=` (`nightly.tar build/x:`). An assignment (`X = a:b`, `x := y`) is neither.
+_PARAM_DEFAULT = r"(?:\"(?:[^\"\\\n]|\\.)*\"|'[^'\n]*'|`[^`\n]*`|\([^)\n]*\)|[^\s:='\"`()]+)"
+_PARAM = r"[+*]?\$?[A-Za-z_][\w-]*(?:\s*=\s*" + _PARAM_DEFAULT + r")?"
+RECIPE_DEF = re.compile(
+    r"^@?([A-Za-z0-9_][\w-]*)(?:(?:\s+" + _PARAM + r")*\s*|[^:=\n]*):(?!=)"
+)
 
 SELF_REF_KEYS = re.compile(
     r"org\.opencontainers\.image\.(?:source|url)|\"?repository\"?\s*[:=]|\"?homepage\"?\s*[:=]"
@@ -287,8 +294,12 @@ def main():
         patterns, allow = read_config(args.config)
     rules = dict(LINE_RULES)
     rules["identifier"] = patterns
+    if args.only and "old-name" in cats and not any(n.strip() for n in args.name):
+        # A rename gate with no names would pass with STATUS=OK whatever the
+        # tree holds, e.g. when `--name "$OLD"` expanded to nothing.
+        usage_error("--only old-name needs at least one non-empty --name")
     try:
-        rules["old-name"] = [re.compile(n) for n in args.name]
+        rules["old-name"] = [re.compile(n) for n in args.name if n.strip()]
     except re.error as exc:
         usage_error("invalid --name regex: %s" % exc)
 

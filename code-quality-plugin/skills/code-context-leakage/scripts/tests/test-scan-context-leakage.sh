@@ -19,11 +19,14 @@
 #   D. [identifiers] from a config are hits; [allow] passes them with a reason;
 #      an allow entry that matches nothing is ERROR (stale_allowlist)
 #   E. --name is the rename gate: hits before the rename, none after, and
-#      --strict turns a remaining hit into exit 1
+#      --strict turns a remaining hit into exit 1; `--only old-name` with no
+#      non-empty --name is a usage error, not a vacuous pass
 #   F. untracked and binary files are not scanned
 #   G. an empty scope is ERROR (nothing_scanned); a non-repo is a usage error
 #   H. --only limits the categories; an unknown category is a usage error
 #   I. the self-reference check reads the repository name from the git remote
+#   K. a recipe with parameters or defaults (`overnight dataset="x":`) is still
+#      a recipe; assignments and aliases are not
 #   J. parity: on the marketplace tree, the scanner with the marketplace's own
 #      identifier config finds the same hits as check-skill-portability.sh
 set -uo pipefail
@@ -169,6 +172,13 @@ assert "E: old name in the file path is a hit" "$(contains "$OUT" '^HIT=old-name
 git -C "$t" mv scripts/data-processing-cleanup.sh scripts/shore-scan-cleanup.sh
 run "$t" --name data-processing --only old-name --strict
 assert "E: clean after git mv" "$(rc_is 0)"
+# A gate whose names were lost (an empty `--name "$OLD"` expansion) must not
+# read as "old names are gone".
+track "$t" bundle/README.md 'The data-processing bundle.'
+run "$t" --only old-name --strict
+assert "E: --only old-name with no --name is a usage error" "$(rc_is 2)"
+run "$t" --only old-name --strict --name ''
+assert "E: --only old-name with only an empty --name is a usage error" "$(rc_is 2)"
 
 echo "=== TEST F: untracked and binary files are not scanned ==="
 t="$(new_tree f)"
@@ -203,6 +213,16 @@ track "$t" Dockerfile 'LABEL org.opencontainers.image.source=https://github.com/
 run "$t"
 assert "I: REPO_NAME empty" "$(contains "$OUT" '^REPO_NAME=$')"
 assert "I: no stale-repo-name hit" "$(lacks "$OUT" '^HIT=stale-repo-name')"
+
+echo "=== TEST K: recipe names with parameters and defaults ==="
+t="$(new_tree k)"
+track "$t" justfile "$(printf '%s\n' 'overnight dataset="site-a":' '    ./run.sh' 'evening +args:' '    ./run.sh' \
+  'morning url="http://h:80/x" n=3:' '    ./run.sh' 'NIGHTLY = a:b' 'alias weekend := build' 'midnight-x := "y"')"
+run "$t" --only time-of-day
+assert "K: recipe with a quoted default is a hit" "$(contains "$OUT" '^HIT=time-of-day|justfile:1|overnight|')"
+assert "K: recipe with a variadic parameter is a hit" "$(contains "$OUT" '^HIT=time-of-day|justfile:3|evening|')"
+assert "K: default holding ':' and '=' is a hit" "$(contains "$OUT" '^HIT=time-of-day|justfile:5|morning|')"
+assert "K: assignments and aliases are not recipes" "$(contains "$OUT" '^CATEGORY_TIME_OF_DAY=3$')"
 
 echo "=== TEST J: parity with the marketplace check ==="
 repo_root="$(cd "$script_dir/../../../../.." && pwd)"

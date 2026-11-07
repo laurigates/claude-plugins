@@ -113,7 +113,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/scan-context-leakage.py" --project-dir . --
 Exit 0 and `CATEGORY_OLD_NAME=0` mean the old names are gone from file
 contents and tracked file paths outside changelogs and ADRs. A file left under
 its old name is reported with line `0`. Exit 1 lists each survivor as a `HIT=` line: fix it, or
-allowlist it in the config with a reason, and run the gate again. Finish by
+allowlist it in the config with a reason, and run the gate again. Exit 2 with
+no names (`--only old-name` and no non-empty `--name`, as when `--name "$OLD"`
+expanded to nothing) is a usage error, never a pass. Finish by
 running the project's own tests, since a renamed recipe or file breaks any
 caller that used the old name.
 
