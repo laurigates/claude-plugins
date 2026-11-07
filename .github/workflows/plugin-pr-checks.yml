@@ -272,6 +272,7 @@ jobs:
             --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
             --only 'scripts/tests/test-check-positional-references.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
+            --only 'scripts/tests/test-check-release-please-rule.sh' \
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-routine-prompt.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
@@ -643,6 +644,12 @@ jobs:
         # the ruff version pinned here and the ruff-pre-commit rev must agree,
         # or CI rejects formatting the local hook just produced.
         run: bash scripts/check-ruff-version-sync.sh --strict
+
+      - name: Check the release-please rule against its config and workflow
+        # .claude/rules/release-please.md states separate-pull-requests, the
+        # auth secret names and the new-package shape; this compares each with
+        # release-please-config.json and release-please.yml (#2839).
+        run: bash scripts/check-release-please-rule.sh --strict
 
       - name: Lint Python with ruff
         # uv is already set up above. The ruff version is pinned so CI and the
