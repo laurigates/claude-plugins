@@ -40,6 +40,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from itertools import combinations
 from pathlib import Path
 
@@ -113,7 +114,12 @@ PROMOTION_KINDS = ("rule", "claude_md")
 # this too, and drafts no entry for these kinds.
 WAIVER_EXEMPT_KINDS = {
     "always_loaded_budget": "aggregate over every always-loaded document; no single file to hash",
-    "frontmatter_coverage": "aggregate over every rule; the fix is adding reviewed: dates",
+    "frontmatter_coverage": (
+        "aggregate over every rule; the fix is adding reviewed: dates -- each rule's "
+        "content date (git log --follow), never a bulk-move date -- and the stamping "
+        "commit becomes each rule's last change, so a date over STALE_DAYS old trips "
+        "review_staleness once it lands"
+    ),
     "corpus_unreadable": "the file could not be read, so there is no content hash to record",
     "agent_discovery_misfire": "the probe misfired; waiving it would hide a broken run",
     "coverage_metric_broken": "the metric failed its own control; waiving it would hide that",
@@ -397,38 +403,163 @@ def _shallow_boundaries(repo_dir: str) -> frozenset[str]:
         return frozenset()
 
 
-def git_last_change(path: Path) -> tuple[str | None, bool]:
-    """`(date, at_shallow_boundary)` for the commit that last touched `path`.
+GIT_LOG_TIMEOUT = 10  # seconds one file's history walk may take
+# The date cache is keyed `path:content-hash`, which says nothing about the
+# algorithm that produced a date. Rows written by `git log -1` (pre-#3442) carry
+# a bulk-move date for every moved document whose text has not changed since,
+# and `--fast` only reads the cache, so they would outlive the fix. Bump the
+# name whenever `git_last_change` starts answering differently for unchanged
+# content; the old file is left in place and simply no longer read.
+GITDATES_CACHE = "gitdates-v2.json"
 
-    In a shallow clone, `git log -1 -- <file>` answers the BOUNDARY commit for
-    every file whose real last change predates it: the boundary is a grafted
-    root, so it diffs against nothing and "changes" every file it contains. That
-    date is not the file's last change, it is the clone's depth (#3110). The
-    second element flags it so the caller can treat the date as unknown -- not
-    report staleness from it, and not cache it, since an unshallow keeps the
-    content hash the cache is keyed on. A full clone never sets the flag.
+
+def _content_run_start(lines, target: str | None = None) -> tuple[str, str] | None:
+    """The commit that introduced the file's current copy, as `(commit, date)`.
+
+    `lines` is `git log --follow --diff-merges=first-parent --format=%x01%H %cs
+    --raw --no-abbrev` output, newest first; `target` is the file's current blob
+    (`HEAD:<path>`). Each commit's `--raw` line carries the blob before and after
+    it (fields 3 and 4). A commit whose after-blob is `target` belongs to the
+    run; one whose before-blob also is `target` (a pure rename, `R100`, or a
+    mode-only change) did not introduce it, so the run goes on to an older
+    commit. The answer is the run's oldest member, and the run ends at the
+    first commit with another blob that follows an introducing member.
+
+    The current blob is compared, never assumed to be the first one read.
+    `--follow` turns off history simplification, so the walk also lists side
+    branches whose edits a merge threw away; a merge whose result equals its
+    first parent prints no raw line, and the discarded side commit is then the
+    first blob read although the file does not hold it. Commits with another
+    blob are therefore skipped until the run starts, and skipped inside it
+    while its newest member is a rename or mode change, since such a commit
+    cannot be the introducing one.
+
+    A merge whose result differs from both parents (both sides edited the file,
+    or a conflict was resolved by hand) creates the current blob itself.
+    `--diff-merges=first-parent` diffs it against its first parent, so it
+    carries the merged blob as an introducing member. A commit with no raw line
+    says nothing about the content and is skipped. With no `target`, the first
+    blob read stands in for it; a log in which `target` never appears falls
+    back to its newest commit, the pre-#3442 answer.
+
+    Returns None for an empty log. It reads `lines` lazily and returns at the
+    end of the run, so the caller can stop git there instead of walking all
+    history.
     """
+    newest: tuple[str, str] | None = None
+    run_start: tuple[str, str] | None = None
+    introduced = False
+    current: tuple[str, str] | None = None
+    seen_raw = False
+    for line in lines:
+        if line.startswith("\x01"):
+            parts = line[1:].split()
+            current = (parts[0], parts[1]) if len(parts) == 2 else None
+            seen_raw = False
+            if newest is None:
+                newest = current
+            continue
+        if not line.startswith(":") or current is None or seen_raw:
+            continue
+        seen_raw = True
+        fields = line.split("\t", 1)[0].split()
+        if len(fields) < 4:
+            continue
+        before, after = fields[2], fields[3]
+        if target is None:
+            target = after
+        if after != target:
+            if run_start is not None and introduced:
+                break
+            continue
+        run_start = current
+        introduced = before != target
+    return run_start or newest
+
+
+def _current_blob(path: Path) -> str | None:
+    """The blob `path` holds at HEAD, or None when git cannot name one."""
     try:
         out = subprocess.run(
+            ["git", "-C", str(path.parent), "rev-parse", f"HEAD:./{path.name}"],
+            capture_output=True,
+            text=True,
+            timeout=GIT_LOG_TIMEOUT,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    blob = out.stdout.strip()
+    return blob if out.returncode == 0 and blob else None
+
+
+def git_last_change(path: Path) -> tuple[str | None, bool]:
+    """`(date, at_shallow_boundary)` for the last commit that changed `path`'s CONTENT.
+
+    "Changed" means the file's text, not its path: the answer is the commit
+    that introduced the blob the file holds at HEAD, following renames
+    (#3442). The blob is read with `git rev-parse HEAD:<path>` and compared
+    against each commit's copy, because the first copy the `--follow` walk
+    reads can belong to a side branch whose edit a merge discarded. An
+    uncommitted edit is dated by the committed copy, as before. `git log -1 --
+    <file>` dated a file to whatever commit last touched its path, so a bulk
+    move re-dated every moved document (laurigates/dotfiles#558: 50 of 52
+    rules) and a rule stamped with its real content date then fired
+    review_staleness. A revert
+    to older text still dates to the revert, not to the older commit that
+    first had that text. `_content_run_start` does the walk; git is stopped
+    as soon as the run ends, so a typical file reads only a few commits.
+
+    In a shallow clone, the BOUNDARY commit is a grafted root: it diffs against
+    nothing and "adds" every file it contains, so a run that reaches it ends
+    there whatever the file's real history. That date is the clone's depth, not
+    the file's last change (#3110). The second element flags it so the caller
+    can treat the date as unknown -- not report staleness from it, and not
+    cache it, since an unshallow keeps the content hash the cache is keyed on.
+    A full clone never sets the flag.
+    """
+    target = _current_blob(path)
+    try:
+        proc = subprocess.Popen(
             [
                 "git",
                 "-C",
                 str(path.parent),
                 "log",
-                "-1",
-                "--format=%H %cs",
+                "--follow",
+                "--diff-merges=first-parent",
+                "--format=%x01%H %cs",
+                "--raw",
+                "--no-abbrev",
                 "--",
                 path.name,
             ],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
-            timeout=10,
-        ).stdout.split()
-    except (OSError, subprocess.SubprocessError):
+        )
+    except OSError:
         return None, False
-    if len(out) != 2:
+    timed_out = threading.Event()
+
+    def _kill_on_timeout() -> None:
+        timed_out.set()
+        proc.kill()
+
+    timer = threading.Timer(GIT_LOG_TIMEOUT, _kill_on_timeout)
+    timer.start()
+    try:
+        found = _content_run_start(proc.stdout, target)
+    finally:
+        timer.cancel()
+        proc.kill()
+        proc.stdout.close()
+        proc.wait()
+    # A killed walk ends at EOF mid-run, and its "oldest commit read so far" is
+    # a too-new date that would fire a false review_staleness and be cached.
+    # Unknown, as a git timeout was before #3442.
+    if found is None or timed_out.is_set():
         return None, False
-    commit, date = out
+    commit, date = found
     return date, commit in _shallow_boundaries(str(path.parent))
 
 
@@ -1178,7 +1309,9 @@ def check_frontmatter(rules) -> list[Finding]:
         Finding(
             "info",
             "frontmatter_coverage",
-            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
+            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them; "
+            "stamp each with the date its text last changed (git log --follow), not a bulk-move date, "
+            f"and expect the stamping commit to trip review_staleness for any date over {STALE_DAYS} days old",
         )
     ]
 
@@ -1967,7 +2100,7 @@ def main() -> int:
     findings += check_corpus_unreadable(unreadable)
     findings += check_agent_discovery_misfire(agents, agent_dirs)
 
-    datecache_path = Path(args.cache).expanduser().with_name("gitdates.json")
+    datecache_path = Path(args.cache).expanduser().with_name(GITDATES_CACHE)
     datecache: dict = {}
     if datecache_path.is_file():
         try:
