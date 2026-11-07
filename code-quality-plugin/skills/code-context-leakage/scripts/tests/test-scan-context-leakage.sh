@@ -162,6 +162,13 @@ track "$t" bundle/README.md 'The shore-scan bundle.'
 run "$t" --name data-processing --only old-name --strict
 assert "E: clean after the rename" "$(rc_is 0)"
 assert "E: CATEGORY_OLD_NAME=0" "$(contains "$OUT" '^CATEGORY_OLD_NAME=0$')"
+track "$t" scripts/data-processing-cleanup.sh 'echo cleanup'
+run "$t" --name data-processing --only old-name --strict
+assert "E: a file left under its old name exits 1" "$(rc_is 1)"
+assert "E: old name in the file path is a hit" "$(contains "$OUT" '^HIT=old-name|scripts/data-processing-cleanup.sh:0|data-processing|')"
+git -C "$t" mv scripts/data-processing-cleanup.sh scripts/shore-scan-cleanup.sh
+run "$t" --name data-processing --only old-name --strict
+assert "E: clean after git mv" "$(rc_is 0)"
 
 echo "=== TEST F: untracked and binary files are not scanned ==="
 t="$(new_tree f)"

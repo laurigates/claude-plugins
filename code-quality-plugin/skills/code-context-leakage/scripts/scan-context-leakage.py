@@ -24,7 +24,8 @@ CATEGORIES
   stale-repo-name    a self-reference (OCI source label, repository field)
                      naming a repository other than the git remote's
   identifier         each regex in the config's [identifiers] section
-  old-name           each --name regex: the rename gate (step 4 of the skill)
+  old-name           each --name regex, matched against file contents and
+                     tracked file paths: the rename gate (step 4 of the skill)
 
 CONFIG (--config FILE, optional)
   [identifiers]  one Python regex per line (host names, site names, a handle).
@@ -310,6 +311,15 @@ def main():
         full = os.path.join(proj_dir, rel)
         if not os.path.isfile(full):
             continue
+        if "old-name" in cats:
+            # A file left under its old name (a missed `git mv`) survives a
+            # content-only gate, so the rename gate matches the path too.
+            for rx in rules["old-name"]:
+                m = rx.search(rel)
+                if m:
+                    hits.setdefault((rel, m.group(0)), []).append(
+                        ("old-name", 0, "(file path)")
+                    )
         with open(full, "rb") as fh:
             data = fh.read()
         if b"\0" in data:

@@ -5,7 +5,7 @@ args: "[pathspec...] [--name <old-name>]... [--config <file>]"
 argument-hint: "[pathspec...] [--name <old-name>] [--config <file>]"
 allowed-tools: Bash, Read, Grep, Edit, AskUserQuestion
 created: 2026-11-06
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-11-06
 ---
 
@@ -110,8 +110,9 @@ depends on them. Then run the gate with every old name:
 python3 "${CLAUDE_SKILL_DIR}/scripts/scan-context-leakage.py" --project-dir . --only old-name --name '<old-1>' --name '<old-2>' --strict
 ```
 
-Exit 0 and `CATEGORY_OLD_NAME=0` mean the old names are gone outside
-changelogs and ADRs. Exit 1 lists each survivor as a `HIT=` line: fix it, or
+Exit 0 and `CATEGORY_OLD_NAME=0` mean the old names are gone from file
+contents and tracked file paths outside changelogs and ADRs. A file left under
+its old name is reported with line `0`. Exit 1 lists each survivor as a `HIT=` line: fix it, or
 allowlist it in the config with a reason, and run the gate again. Finish by
 running the project's own tests, since a renamed recipe or file breaks any
 caller that used the old name.
