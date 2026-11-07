@@ -407,6 +407,13 @@ SendMessage({ to: "a1b2d7b0c23950c17",
   message: "Resume PR #<n> in your worktree. Address these review comments: ..." })
 ```
 
+**Measured 2026-11-07 (#2330).** Two worktree agents, each resumed with `SendMessage`:
+
+| Worktree when the agent completed | The resumed run |
+|---|---|
+| Has commits or uncommitted files (kept) | Re-enters it: `pwd`, `git rev-parse --show-toplevel` and the branch are the worktree's |
+| No changes (removed by the harness) | Runs in the orchestrator's main checkout; `git worktree list` no longer shows the entry |
+
 **Reconcile with `../SKILL.md` § "Resuming agents: SendMessage re-enters only a
 kept worktree" (#1546, #2330).** An agent that opened a PR committed its
 work, so its worktree was kept, and the resumed run re-enters it: `pwd`,

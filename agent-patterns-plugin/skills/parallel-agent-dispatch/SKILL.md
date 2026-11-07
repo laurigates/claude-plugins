@@ -367,25 +367,16 @@ fan-out. When both apply, follow both — the out-of-scope protocol from
 
 ### Resuming agents: SendMessage re-enters only a kept worktree
 
-When a worktree-isolated agent completes, the harness keeps its worktree only
-if the agent left changes in it. A worktree with no changes is removed. A later
-`SendMessage`-resume then behaves in one of two ways (measured 2026-11-07, #2330):
+The harness keeps a completed agent's worktree only if the agent left changes
+in it. A `SendMessage`-resume re-enters a kept worktree; when the worktree was
+removed, the resume runs in the orchestrator's main checkout and
+**loses worktree isolation** ([#1546](https://github.com/laurigates/claude-plugins/issues/1546);
+measured in [references/worktree-hazards.md](references/worktree-hazards.md), #2330).
 
-| Worktree when the agent completed | What the resumed run gets |
+| Continuation | Do |
 |---|---|
-| Has commits or uncommitted files (kept) | Re-enters it: `pwd`, `git rev-parse --show-toplevel` and the branch are the worktree's |
-| No changes (removed) | Runs in the orchestrator's **main checkout**, so the resume **loses worktree isolation** ([#1546](https://github.com/laurigates/claude-plugins/issues/1546)) |
-
-So a file-mutating agent that committed its work can be resumed in place. One
-that finished with nothing to keep has no worktree to return to. Several such
-agents resumed together would run concurrently in the main checkout and tangle
-branch state.
-
-| Continuation | Safe to `SendMessage`-resume? | Do instead |
-|---|---|---|
-| Read-only / single-checkout follow-up | Yes | Resume freely |
-| Agent whose worktree is still listed (`git worktree list`) | Yes; it re-enters that worktree | Have it confirm `git branch --show-current` before its first write |
-| Agent whose worktree was removed, and the follow-up must write in isolation | No; it runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** |
+| Read-only, or the worktree is still in `git worktree list` | Resume |
+| Must write in isolation and the worktree is gone | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** |
 
 ### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents
 
