@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.1...configure-plugin-v1.43.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** config-drift dates content changes, not renames ([#3455](https://github.com/laurigates/claude-plugins/issues/3455)) ([da439c8](https://github.com/laurigates/claude-plugins/commit/da439c883bdc163ee2101f7b70a07603dce33897))
+
 ## [1.43.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.0...configure-plugin-v1.43.1) (2026-11-07)
 
 
