@@ -63,6 +63,8 @@ root = sys.argv[1]
 EXEMPT_SITES = {
     ".github/workflows/github-workflow-auto-fix.yml:auto-fix":
         "files one actionable CI-failure issue; closed by the fix",
+    ".github/workflows/obsidian-cli-changelog.yml:claude-review":
+        "files actionable follow-up issues for work its PR leaves out; closed by the PR that does it",
 }
 
 SCRIPT_TO_ISSUE = "./.github/actions/script-to-issue"
@@ -70,10 +72,12 @@ FEEDBACK_TEMPLATE = "feedback-plugin/skills/feedback-session/references/issue-fo
 LIFECYCLE_DOC = "docs/issue-lifecycle.md"
 EXEMPT_LIST = "scripts/issue-grouping-exempt.txt"
 HEADING = re.compile(r"^\s*(?:echo\s+[\"']?)?## Processing\b", re.M)
-# A line that RUNS `gh issue create` (optionally inside a quoted string a step
-# prints for Claude). Prose that merely names the command, and comments, are
-# not filing sites.
+# In a `run:` script, a line that RUNS `gh issue create` (optionally inside a
+# quoted string the step prints for Claude); a comment naming the command is
+# not a filing site. In a Claude prompt, any mention is: "open an issue via
+# `gh issue create`" in prose files issues as surely as a code block does.
 CREATE = re.compile(r"^\s*[\"']?\s*gh issue create\b", re.M)
+CREATE_IN_PROMPT = re.compile(r"\bgh issue create\b")
 
 issues = []  # (severity, type, msg)
 sites_checked = 0
@@ -114,7 +118,7 @@ for name in workflow_files:
             text = ""
             if str(step.get("uses", "")).strip() == SCRIPT_TO_ISSUE and str(with_.get("script", "")).strip():
                 kind, text = "processing input", str(with_.get("processing", ""))
-            elif CREATE.search(str(with_.get("prompt", ""))):
+            elif CREATE_IN_PROMPT.search(str(with_.get("prompt", ""))):
                 kind, text = "prompt", str(with_.get("prompt", ""))
             elif CREATE.search(str(step.get("run", ""))):
                 kind, text = "run script", str(step.get("run", ""))

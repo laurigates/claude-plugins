@@ -14,6 +14,8 @@
 #   F  the feedback-session template without `## Processing` fails
 #   G  a project with no generators at all is an error, not a pass
 #   H  the failing output satisfies the structured-output contract
+#   I  a prompt that names `gh issue create` only in prose is a filing site
+#   J  a job on the EXEMPT_SITES list is counted as exempt, not checked
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -180,6 +182,40 @@ rm "$tmp/g/.github/workflows/report.yml"
 run "$tmp/g"
 assert "G no generators is an error" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "G reports nothing_scanned" "$(contains "$OUT" 'TYPE=nothing_scanned')"
+
+# --- I: a prompt that files issues in prose -----------------------------------
+# "open an issue via `gh issue create`" files issues as surely as a code block.
+make_project "$tmp/i"
+cat >> "$tmp/i/.github/workflows/report.yml" <<'YAML'
+  prose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prose
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            Open a GitHub issue per follow-up via `gh issue create` with label `x`.
+YAML
+run "$tmp/i"
+assert "I prose prompt without section exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "I names the prose site" "$(contains "$OUT" 'TYPE=missing_processing.*report.yml:prose:Prose')"
+
+# --- J: an exempt job is counted, not checked ---------------------------------
+make_project "$tmp/j"
+cat > "$tmp/j/.github/workflows/github-workflow-auto-fix.yml" <<'YAML'
+name: "CI: Auto-fix"
+on: workflow_dispatch
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: File
+        run: |
+          gh issue create --title x --body y
+YAML
+run "$tmp/j"
+assert "J exempt job passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "J exempt job is counted" "$(contains "$OUT" '^SITES_EXEMPT=1$')"
 
 # --- H: structured-output contract --------------------------------------------
 if [ -f "$contract" ]; then
