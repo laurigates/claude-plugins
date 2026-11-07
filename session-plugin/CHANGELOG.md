@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.17.0...session-plugin-v1.17.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **session-plugin:** report cloud-restricted, not auth, behind the cloud proxy ([#3502](https://github.com/laurigates/claude-plugins/issues/3502)) ([8a3e5e3](https://github.com/laurigates/claude-plugins/commit/8a3e5e3ee9b41dc37565bb0d5a094b03d6205e17)), closes [#3488](https://github.com/laurigates/claude-plugins/issues/3488)
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.16.0...session-plugin-v1.17.0) (2026-11-07)
 
 
