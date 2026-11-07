@@ -29,7 +29,7 @@
 # `docs/**`, and the release-please-generated `CHANGELOG.md` files — because
 # those cite known-broken tool names on purpose (that is what a
 # regression-ledger row or a changelog entry IS). A walk that included them
-# would fire on `docs/regression-ledger.md` itself. Fix a stale
+# would fire on the `docs/regression-ledger/` entries themselves. Fix a stale
 # tool name in those files by hand.
 #
 # Lines starting with `>` (markdown blockquote) are skipped so the
