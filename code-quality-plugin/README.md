@@ -18,6 +18,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:scaffold-backport` | Back-port an instance fix into the generator that produced it — cookiecutter/copier template, justfile `new-*` recipe, scaffolding skill — so the next generation isn't born with the same bug |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `/code:hidden-failures` | Detect hidden failures — swallowed errors (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) and silent degradation (ops succeed with zero results); `--track errors\|degradation\|both` |
+| `code-derived-facts` | Code facts from execution, not text — a mention is not a caller, a derived fact belongs in its consumer, a registry gaining a second kind, scripted multi-anchor source edits |
 | `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
 | `code-license-position` | Check a vendor's licence FAQ, discussion threads, and commit authors before calling a `LICENSE` restriction a blocker |
