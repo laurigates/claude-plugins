@@ -1,6 +1,6 @@
 ---
 created: 2026-02-04
-modified: 2026-07-18
+modified: 2026-11-06
 compatibility: claude-code
 reviewed: 2026-06-03
 user-invocable: false
@@ -29,7 +29,7 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 
 - Current project: !`pwd`
 - Current project has plugins: !`find . -maxdepth 2 -path '*/.claude-plugin/plugin.json' -type f`
-- Project settings exists: !`find . -maxdepth 1 -name '.claude/settings.json'`
+- Project settings exists: !`find . -maxdepth 2 -path './.claude/settings.json' -type f`
 - Project plugins dir: !`find . -maxdepth 1 -type d -name '.claude-plugin'`
 
 ## Background: Issue #14202

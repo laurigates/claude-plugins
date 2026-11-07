@@ -36,6 +36,20 @@ signal `GH_READY=false` gives for GitHub: `TASK_SCOPE=unknown` and
 `TASK_FAIL_DETAIL` is the first non-blank line of `task`'s stderr, bounded to
 200 characters.
 
+## `CHECKOUTS` / `CHECKOUT_PRS` — a workspace root of several checkouts
+
+When the session's cwd is not a git repo (`IN_GIT=false`, `GIT_SCOPE=none`), the
+collector surveys each direct child checkout instead of reporting nothing
+(#3435). `CHECKOUTS` carries `CHECKOUT_COUNT` and, per checkout,
+`CHECKOUT_<n>_DIR` / `_REPO` / `_BRANCH` / `_DIRTY` / `_UNPUSHED` / `_BEHIND`;
+`CHECKOUT_PRS` carries `CHECKOUT_<n>_GH_READY` and either `_GH_FAIL_REASON` or
+`_PR_COUNT` with `_PR_<m>_*` rows. Run the Wrap, PR and drift passes per
+checkout from these rows, naming each by `CHECKOUT_<n>_REPO` (or `_DIR` when
+the slug is empty). `CHECKOUT_<n>_GH_READY=false` is **unqueried** for that
+checkout, like the top-level `GH_READY=false`. `CHECKOUT_TRUNCATED=true` means
+`CHECKOUT_FOUND` checkouts exist and only the first 8 were surveyed: name the
+rest as not surveyed.
+
 ## Availability and linkage keys
 
 A zero is "nothing there" only when the query behind it ran. The full digest
