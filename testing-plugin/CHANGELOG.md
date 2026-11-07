@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.27.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.26.0...testing-plugin-v3.27.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin,documentation-plugin,code-quality-plugin:** promote comfyui-nodes measurement rules to skills ([#3476](https://github.com/laurigates/claude-plugins/issues/3476)) ([03293ef](https://github.com/laurigates/claude-plugins/commit/03293efee8a22bfc2a530de315a171602196310a))
+
+## [3.26.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.25.0...testing-plugin-v3.26.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin:** flag VM lock scaling and hyperfine 2.0 exports in benchmark-controls ([#3459](https://github.com/laurigates/claude-plugins/issues/3459)) ([a33f121](https://github.com/laurigates/claude-plugins/commit/a33f121d78dd68945e0d46b9356bf131a2331234)), closes [#3444](https://github.com/laurigates/claude-plugins/issues/3444)
+
 ## [3.25.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.24.0...testing-plugin-v3.25.0) (2026-11-02)
 
 

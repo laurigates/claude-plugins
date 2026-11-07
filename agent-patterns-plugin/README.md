@@ -200,6 +200,7 @@ Tool results that mean something other than they look — an empty result, a gre
 - An `rg` / `git grep` result contradicts something read directly
 - Concluding a skill, command, recipe, or binary "does not exist"
 - A `-g` / `--glob` filter is narrowing the search and the name you want is a directory
+- A `pgrep -f` liveness check or watcher loop disagrees with the job's own log, or never exits
 
 **Features:**
 - The silent-rewrite and never-compiled-pattern cases: `rg -r` as `--replace`, `git grep -E` dropping `\b`
@@ -208,6 +209,7 @@ Tool results that mean something other than they look — an empty result, a gre
 - A rejected flag reading as "no results" — and its worse variants on a *write*, and on an accepted flag that takes a stdin marker literally
 - The persistent-cwd pair: the shell wedge `cd` cannot undo, and the vacuous path-scoped verification that shares its cause
 - `Workflow` `args` arriving JSON-encoded, so agents run against `undefined`
+- `pgrep -f` matching its own shell wrapper, so a watcher never exits and a finished job reads as running; match the executable, hold the PID, or watch the artifact
 - Control-testing every negative that gates an action — with a control that exercises the part of the pattern that can fail; parallel-batch rule for siblings that can exit non-zero
 
 #### `harness-tool-errors`

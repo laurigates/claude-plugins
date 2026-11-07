@@ -1,7 +1,7 @@
 ---
 created: 2026-04-29
-modified: 2026-11-05
-reviewed: 2026-09-16
+modified: 2026-11-06
+reviewed: 2026-11-06
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -121,7 +121,7 @@ Auto mode **drops broad allow rules** that would otherwise grant arbitrary code 
 | `Monitor` allow rules | Set aside (2.1.236) — Monitor commands get the same classifier review as Bash while auto mode is active |
 | **Narrow rules**: `Bash(npm test)`, `Bash(git status *)`, `Bash(gh pr *)` | **Carried over** — skip the classifier round-trip |
 
-**Implication for skill authors**: granular `Bash(<command> *)` patterns in skill `allowed-tools` and project `settings.json` are *more* valuable under auto mode, not less — they bypass the classifier and avoid latency. Broad `Bash(*)` is not a shortcut; it is dropped at runtime.
+**Implication for authors**: narrow `Bash(<command> *)` rules in `settings.json` are *more* valuable under auto mode, not less — they bypass the classifier and avoid latency. Broad `Bash(*)` is not a shortcut; it is dropped at runtime. This table is the single list of what auto mode drops; other rules link here. For a skill's own `allowed-tools`, see `.claude/rules/agentic-permissions.md` § Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns.
 
 ## Conversation-Stated Boundaries
 
@@ -137,22 +137,7 @@ Protected directories: `.git`, `.vscode`, `.idea`, `.husky`, `.claude` (except `
 
 Protected files: `.gitconfig`, `.gitmodules`, `.bashrc`, `.bash_profile`, `.zshrc`, `.zprofile`, `.profile`, `.ripgreprc`, `.mcp.json`, `.claude.json`.
 
-**`bypassPermissions` (`--dangerously-skip-permissions`) is the exception, and this changed underneath the mode's own history.** Through 2.1.78, protected
-directories were writable without a prompt in bypass mode — a gap that release
-closed, making the list above apply there too. 2.1.121 carved
-`.claude/skills/`, `.claude/agents/`, and `.claude/commands/` back out of the
-bypass-mode prompt, and 2.1.126 broadened that carve-out to essentially every
-path on the lists above: `.claude/`, `.git/`, `.vscode/`, shell config files,
-and other previously-protected paths are now bypassed without a prompt. The
-only surviving safety net is catastrophic removal commands (e.g. `rm -rf ~`),
-which still prompt in bypass mode — as of 2.1.208 that prompt also fires when
-the removal is wrapped in `$(…)`/backticks/`<(…)` instead of typed plainly, and
-in auto mode too. So: protected-path prompting holds under `default`,
-`acceptEdits`, and `auto`; it does **not** hold under `bypassPermissions` past
-2.1.126. Separately, 2.1.257 made a project-level `defaultMode:
-"bypassPermissions"` (in `.claude/settings.json` or
-`.claude/settings.local.json`) **ignored**, like `"auto"` already was — set it
-in user or managed settings, or pass `--permission-mode` instead.
+**`bypassPermissions` (`--dangerously-skip-permissions`) is the exception**: since 2.1.126 it writes to these paths without a prompt. `.claude/rules/agentic-permissions.md` § Permission Modes owns the version history of that carve-out and the catastrophic-removal prompt that still fires.
 
 ## Subagents Under Auto Mode
 
@@ -164,7 +149,7 @@ The classifier checks subagent work at three points:
 
 Messages sent to other agent sessions via `SendMessage` are classified before dispatch (2.1.222).
 
-Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode. Skill authors should not rely on per-subagent permission overrides under auto mode; rely on `allowed-tools` for the subagent's tool boundary instead.
+Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode. Skill authors should not rely on per-subagent permission overrides under auto mode; rely on the agent's `tools:` and `disallowedTools` lists for its tool boundary instead.
 
 ## Deny-and-Continue Behaviour
 
@@ -188,10 +173,10 @@ Each classifier check adds a round-trip. A local-classifier check also consumes 
 
 | Skill area | Guidance under auto mode |
 |------------|--------------------------|
-| `allowed-tools` in frontmatter | Keep narrow `Bash(<command> *)` patterns. They carry over, skip the classifier round-trip, and remain the subagent tool boundary. Broad `Bash(*)` is dropped at runtime — do not rely on it. |
+| `allowed-tools` in frontmatter | Narrow `Bash(<command> *)` patterns, never a bare `Bash`: the field pre-approves tools for the invoking turn. `.claude/rules/agentic-permissions.md` § Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns owns the standard. It is not a tool boundary; `disallowed-tools` removes tools. |
 | `:ask` suffix | Still useful for genuinely dangerous operations the user should always confirm regardless of mode. |
 | Hostile-content surface | Tool results are stripped from classifier input, but skill-emitted text the user reads is not. Continue to validate web fetches and untrusted file content as usual. |
-| Subagent skills | Do not rely on `permissionMode` in subagent frontmatter under auto mode — it is ignored. Lean on narrow `allowed-tools` and `allow`/`deny` rules. |
+| Subagent skills | Do not rely on `permissionMode` in subagent frontmatter under auto mode — it is ignored. Lean on the agent's `tools:` list and `allow`/`deny` rules. |
 | Stated boundaries | If a skill's prompts ask the user to set a boundary ("I won't push until you say so"), document that the boundary can be lost on context compaction; suggest a deny rule for hard guarantees. |
 | Project `settings.json` | Keep narrow `Bash(git *)`, `Bash(gh *)`, `Bash(fd *)`, etc. patterns. They are not redundant under auto mode. |
 
@@ -213,7 +198,7 @@ Under auto mode, narrow allow rules still earn their keep:
 }
 ```
 
-Avoid broad patterns such as `Bash(*)` — they are dropped on entering auto mode and provide no benefit while reducing safety in other modes.
+Avoid broad patterns such as `Bash(*)`: auto mode drops them ([What Happens to Allow Rules on Entering Auto Mode](#what-happens-to-allow-rules-on-entering-auto-mode)), and they reduce safety in other modes.
 
 ## PermissionRequest Hooks Under Auto Mode
 
@@ -239,6 +224,6 @@ The auto-mode classifier handles approve/deny logic for most cases that previous
 
 ## Related Rules
 
-- `.claude/rules/agentic-permissions.md` — granular permission syntax and standard sets
+- `.claude/rules/agentic-permissions.md` — the skill `allowed-tools` grant model, permission syntax, standard sets and the `bypassPermissions` history
 - `.claude/rules/skill-development.md` — skill creation patterns and `allowed-tools` usage
 - `.claude/rules/hooks-reference.md` — hook event reference, including `PermissionRequest`

@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-04
+modified: 2026-11-06
 reviewed: 2026-08-21
 ---
 
@@ -66,6 +66,7 @@ branch is gone **cannot be reopened**.
   4. merge the child.
 - **No-force alternative (skill-only, preferred when the child builds only on its base)**: merge `main` into the child with no force-push, after a classification that decides whether `-X ours` is lossless. Recipe: [references/no-force-push-stack.md](references/no-force-push-stack.md). The rebase path in the Fix steps is the fallback.
 - **Delta-apply (skill-only)** when the child forked from an older base head, or an independent PR shares its files: [references/delta-apply-stack.md](references/delta-apply-stack.md).
+- **Fork PR on an open upstream PR's head (skill-only)**: merging pushes into that PR too: [references/fork-upstream-base.md](references/fork-upstream-base.md).
 - **If already auto-closed**: the head branch survives — rebase as above,
   `gh pr create` fresh, comment "Superseded by #new" on the closed one.
 - **Nothing tells you this happened.** The auto-close is silent: no failed
@@ -145,5 +146,4 @@ fix is unreviewed: pass it through
 |---|---|
 | Did the branch land? (§1, authoritative) | `gh pr list --state all --head <branch> --json number,state,mergedAt` |
 | Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
-| Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
