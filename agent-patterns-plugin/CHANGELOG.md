@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.56.2...agent-patterns-plugin-v2.57.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin,documentation-plugin,code-quality-plugin:** promote comfyui-nodes measurement rules to skills ([#3476](https://github.com/laurigates/claude-plugins/issues/3476)) ([03293ef](https://github.com/laurigates/claude-plugins/commit/03293efee8a22bfc2a530de315a171602196310a))
+
 ## [2.56.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.56.1...agent-patterns-plugin-v2.56.2) (2026-11-06)
 
 
