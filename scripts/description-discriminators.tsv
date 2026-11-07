@@ -1,0 +1,26 @@
+# Discriminator pins for sibling skill descriptions (issue #2244).
+# Read by scripts/check-description-discriminators.py.
+#
+# Columns are TAB-separated: <SKILL.md path> <require|forbid> <regex> <reason>
+# Regexes are Python, case-insensitive, matched with re.search against the
+# full description; anchor with ^ to pin the head. A pin is changed on
+# purpose, in the same commit as the description it pins: if a rewrite needs
+# a different discriminator, edit the pin and say why in the commit body.
+#
+# Cluster 4: commit -> push -> PR (git-plugin). All nine are auto-only
+# (user-invocable: false), so they compete with each other on the router
+# surface. Each of git-commit / git-push / git-pr leads with its scope limit,
+# the convention references say they make nothing, and no sibling carries
+# another's trigger phrase.
+git-plugin/skills/git-commit/SKILL.md	require	^Local commits only	git-commit leads with its scope limit
+git-plugin/skills/git-push/SKILL.md	require	^Existing commits only	git-push leads with its scope limit
+git-plugin/skills/git-pr/SKILL.md	require	^From an already-pushed branch	git-pr leads with its scope limit
+git-plugin/skills/git-cli-agentic/SKILL.md	require	^Machine-readable git output	lead with the artifact, not "Git commands", which matched every git request
+git-plugin/skills/git-cli-agentic/SKILL.md	require	not to make a commit	routed "stage it and make a commit" away from git-commit (#2244, 2026-10-06)
+git-plugin/skills/git-commit-workflow/SKILL.md	require	makes no commit	convention reference; making the commit is git-commit
+git-plugin/skills/git-commit-workflow/SKILL.md	forbid	linked issues	issue linkage is github-issue-autodetect's trigger
+git-plugin/skills/git-commit-trailers/SKILL.md	require	^Commit trailer lines	lead with the artifact the skill owns
+git-plugin/skills/github-pr-title/SKILL.md	require	^PR title only	title, not PR creation
+git-plugin/skills/github-pr-title/SKILL.md	forbid	creating PRs	PR creation is git-pr's trigger
+git-plugin/skills/git-branch-naming/SKILL.md	forbid	creating branches	shared with git-branch-pr-workflow (check-description-collisions.py)
+git-plugin/skills/github-issue-autodetect/SKILL.md	forbid	use when committing	committing is git-commit's trigger
