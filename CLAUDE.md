@@ -76,6 +76,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/biome-markdown.md` | Keep biome's Markdown formatter/linter off (≥ 2.6 mangles frontmatter) |
 | `.claude/rules/offload-to-deterministic-substrate.md` | Plugin-authoring deltas of the global law: mechanical, repeatable, verifiable work goes in a script, hook, or structured-output contract the agent invokes — not prose it re-derives each run |
 
+**Rule clusters and the owner of each shared fact:** [`docs/rules-map.md`](docs/rules-map.md).
+
 **Auditing these docs:** [`docs/audits/README.md`](docs/audits/README.md) records the Layer 1 (automated, monthly) / Layer 2 (quarterly + milestone-triggered) cadence and holds past findings artifacts.
 
 ## Authoring Skills and Plugins

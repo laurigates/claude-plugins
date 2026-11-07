@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-11-05
+modified: 2026-11-06
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -117,7 +117,7 @@ reviewed: YYYY-MM-DD
 language: <python|typescript|go|rust|etc>  # Specify primary language (optional)
 agent: <agent-name>                         # Specify custom agent to execute skill (optional)
 disallowed-tools: <Comma-separated list>    # Remove tools while skill is active (optional, 2.1.152+)
-disable-model-invocation: true              # Skill content is the complete prompt (optional)
+disable-model-invocation: true              # User-only: Claude cannot invoke the skill (optional)
 effort: low                                  # Override session effort while skill is active (optional): low|medium|high|xhigh|max, default inherits
 when_to_use: <short trigger guidance>        # Optional: additional triggering guidance beyond description
 paths:                                       # Optional: glob-scoped auto-activation
@@ -135,7 +135,7 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`language`**: Specify the primary programming language for the skill. Helps Claude Code select appropriate models/tools.
 - **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
 - **`disallowed-tools`** (2.1.152+): Comma-separated list of tools to remove from the model while this skill is active. Complements `allowed-tools` (which grants tools) by subtracting tools — useful for keeping a focused skill from reaching for capabilities it shouldn't use. Also supported on slash commands.
-- **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions. The skill is reserved for the user: the model cannot invoke it through the Skill tool (`scripts/check-delegation-reachability.sh` guards prose that tells it to). A `/name` the **user** types mid-message is announced to Claude as a skill even when gated (2.1.287); before 2.1.292, a compaction summary repeating `/name` let Claude invoke a gated skill.
+- **`disable-model-invocation`**: When `true`, the skill is reserved for the user: its description leaves Claude's context, and the model cannot invoke it through the Skill tool. It also keeps the skill from being preloaded into subagents. Use it for workflows with side effects whose timing the user should control. It says nothing about how the body is processed once the user runs `/name` (`scripts/check-delegation-reachability.sh` guards prose that tells it to). A `/name` the **user** types mid-message is announced to Claude as a skill even when gated (2.1.287); before 2.1.292, a compaction summary repeating `/name` let Claude invoke a gated skill.
 - **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Before 2.1.295, a skill's `allowed-tools` and `effort` were dropped when the Skill tool finished before the response stream ended, which denied the skill's Bash commands in `-p` runs — intermittent CI denials on older clients can have this cause. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
 - **`when_to_use`**: Additional triggering guidance beyond `description`, for a skill whose activation conditions need more than one or two sentences to disambiguate from siblings.
 - **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`). Keep brace groups (`{a,b,c}`) modest — a `paths:` value with many brace groups could OOM-kill or stall the CLI at startup before 2.1.217 added a budget bound; the bound caps the blast radius today, but an enormous glob is still wasted startup cost.
@@ -225,22 +225,17 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 | Skill Type | Typical Tools |
 |------------|---------------|
-| CLI tool | `Bash, Read, Grep, Glob` |
-| Development | `Bash, Read, Write, Edit, Grep, Glob` |
+| CLI tool | `Bash(<tool> *), Read, Grep, Glob` |
+| Development | `Bash(<command> *), Read, Write, Edit, Grep, Glob` |
 | Research | `Read, WebFetch, WebSearch, Grep, Glob` |
 
 Task tools (`TodoWrite`, `TaskCreate`/`TaskUpdate`/`TaskList`): see `.claude/rules/agentic-permissions.md` § Standard Permission Sets for availability and grant guidance.
 
-The bare `Bash` above is deliberate and is the ratified standard for a skill whose payload is shell; `.claude/rules/agentic-permissions.md` owns that distinction (and names the one case that *is* a defect — a `Bash` grant in a skill that runs no shell).
+`Bash(<tool> *)` stands for one narrow pattern per command the skill runs, never a bare `Bash`; `.claude/rules/agentic-permissions.md` § Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns owns that standard.
 
 ### Permission Patterns
 
-When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permission rules in the project's `.claude/settings.json` over broad wildcards:
-
-- Narrow rules survive the transition into auto mode and skip the auto-classifier round-trip on each call.
-- Broad rules (`Bash(*)`, `Bash(python*)`) are dropped at runtime when auto mode is active.
-
-`Skill(<name> *)` permission rules also work as a **prefix match** (2.1.139+) — fixed to match `Bash(ls *)` behavior. `Skill(git-*)` matches `git-commit`, `git-rebase`, etc.; `Skill(*)` matches every skill. Before 2.1.139, wildcards in `Skill(...)` were treated as literals and silently failed to match.
+A skill's `allowed-tools` pre-approves the listed tools for the turn that invokes it, so list narrow `Bash(<command> *)` patterns, never a bare `Bash`. `.claude/rules/agentic-permissions.md` owns the grant model (§ Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns) and the `Skill(<name> *)` prefix syntax (§ Pattern Examples); `.claude/rules/auto-mode.md` owns which `settings.json` rules auto mode drops.
 
 As of 2.1.147, auto mode no longer suppresses `AskUserQuestion` when a user or skill explicitly relies on it — a skill built around an `AskUserQuestion` prompt keeps working under auto mode.
 
@@ -272,7 +267,7 @@ Follow this structure for consistency:
 - Real-world usage examples
 - Integration with other tools
 
-## Agentic Optimizations
+## Agentic Optimizations (optional; keep where the commands are the payload)
 | Context | Command |
 |---------|---------|
 - Table of optimized commands for AI workflows

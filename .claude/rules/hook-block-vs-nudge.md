@@ -1,6 +1,6 @@
 ---
 created: 2026-06-29
-modified: 2026-10-23
+modified: 2026-11-06
 reviewed: 2026-07-04
 paths:
   - "**/hooks/**"
@@ -57,6 +57,16 @@ hard block.
 > Write 70% of the time and was re-blocked on the next call under 1% of the time.
 > `echo`/`printf > file` has no such failure mode and drew more scratch-write
 > noise, so it was demoted to a non-blocking `additionalContext` nudge.
+
+**The one style block kept on purpose: a whole-command `cat`/`head`/`tail`
+read.** It fails the test above (it does no safety work) and keeps exit 2
+anyway, on three grounds that the demoted blocks lacked: since #2148 it fires
+only when the read is the entire command, so every rejected command has a
+one-to-one `Read` substitution; a pipeline or here-doc read still passes, so it
+cannot dead-end a subagent that lacks `Read`; and at that scope its
+same-session repeat-block rate held at 6.3–20.0% over six readings, against
+46.3% while #2114 had widened it. `.claude/rules/bash-tool-replacements.md`
+owns its scope and evidence.
 
 ## Quick test before adding (or keeping) a hard block
 
