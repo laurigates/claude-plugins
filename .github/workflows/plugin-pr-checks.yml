@@ -161,6 +161,7 @@ jobs:
             --only 'scripts/tests/test-check-hook-fail-closed.sh' \
             --only 'scripts/tests/test-check-hook-matchers.sh' \
             --only 'scripts/tests/test-check-hook-timeout-units.sh' \
+            --only 'scripts/tests/test-check-issue-processing.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-mktemp-canonical.sh' \
@@ -363,6 +364,13 @@ jobs:
         # sonnet + explicit effort). Runs unconditionally like the agent-model pair above — the
         # self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-workflow-model.sh
+
+      - name: Check every machine-filed issue body states its processing
+        # #3346: every generator writes a `## Processing` section (who processes
+        # the issue, what completed means, when it closes) into the issue it
+        # files, and docs/issue-lifecycle.md names every recurring type. Whole-repo
+        # invariant, so it runs unconditionally; the self-test step above proves it.
+        run: bash scripts/check-issue-processing.sh
 
       - name: Check auto-resolve-conflicts polls for mergeability
         # The #1786 race: auto-resolve-conflicts read `mergeable` once, seconds

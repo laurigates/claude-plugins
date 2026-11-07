@@ -150,5 +150,65 @@ assert "I workflow-model-audit passes its report prefix" \
 assert "I workflow-model-audit prompt still files that title" \
   "$(grep -q -- '--title "Workflow model/effort audit: ' "$wma" && echo true || echo false)"
 
+# --- J: --current-title (supersede mode, #3346) --------------------------------
+# A monthly report is superseded by the next one: last month's open report must
+# NOT suppress this month's run, and it is reported as `previous` so the caller
+# can close it once the new report is filed. This month's report still suppresses.
+PREV='{"number":2630,"title":"Workflow model/effort audit: 2026-09"}'
+CUR='{"number":2701,"title":"Workflow model/effort audit: 2026-10"}'
+run "[$NON_REPORT,$PREV]" --label workflow-model-audit --title-prefix "$PREFIX" \
+  --current-title 'Workflow model/effort audit: 2026-10'
+assert "J exits 0" "$(is_rc 0)"
+assert "J last month's report does not suppress" "$(contains "$GHOUT" '^exists=false$')"
+assert "J last month's report is previous" "$(contains "$GHOUT" '^previous=2630$')"
+assert "J stdout reports PREVIOUS=2630" "$(contains "$OUT" '^PREVIOUS=2630$')"
+assert "J summary names the report to supersede" "$(contains "$SUMMARY" 'Superseded.*#2630')"
+run "[$PREV,$CUR]" --label workflow-model-audit --title-prefix "$PREFIX" \
+  --current-title 'Workflow model/effort audit: 2026-10'
+assert "J this month's report suppresses" "$(contains "$GHOUT" '^exists=true$')"
+assert "J matched names this month's report only" "$(contains "$GHOUT" '^matched=2701$')"
+assert "J the older report is still previous" "$(contains "$GHOUT" '^previous=2630$')"
+run "[$PREV]" --label workflow-model-audit --title-prefix "$PREFIX"
+assert "J without --current-title any prefix match suppresses" "$(contains "$GHOUT" '^exists=true$')"
+assert "J without --current-title previous is empty" "$(contains "$GHOUT" '^previous=$')"
+run "[$PREV]" --label workflow-model-audit --current-title 'Workflow model/effort audit: 2026-10'
+assert "J --current-title without --title-prefix is a usage error" "$(is_rc 2)"
+
+# --- K: the composite's title/inputs step, extracted and run (#3346) ---------
+# The guard's supersede comparison and the created issue use the title this step
+# resolves, and a caller that files issues without a `## Processing` section
+# fails here, before its audit runs.
+assert "K composite passes --current-title in supersede mode" \
+  "$(grep -q -- '--current-title "\$CURRENT_TITLE"' "$action" && echo true || echo false)"
+assert "K composite closes superseded reports with the shared script" \
+  "$(grep -q 'scripts/close-superseded-reports.sh' "$action" && echo true || echo false)"
+if python3 -c 'import yaml' 2>/dev/null; then
+  python3 - "$action" "$tmp/title.sh" <<'PY'
+import sys, yaml
+steps = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))["runs"]["steps"]
+body = [s["run"] for s in steps if s.get("id") == "title"]
+if len(body) != 1:
+    sys.exit("expected one step with id: title")
+open(sys.argv[2], "w", encoding="utf-8").write(body[0])
+PY
+  title_step() { # <template> <supersede> <prefix> <script> <processing>
+    : > "$tmp/out"
+    TITLE_TEMPLATE="$1" SUPERSEDE="$2" TITLE_PREFIX="$3" SCRIPT="$4" PROCESSING="$5" \
+      GITHUB_OUTPUT="$tmp/out" bash -e "$tmp/title.sh" >/dev/null 2>&1
+    RC=$?
+    GHOUT="$(<"$tmp/out")"
+  }
+  month="$(date -u +%Y-%m)"
+  title_step 'Report: {month}' true 'Report:' 'bash x.sh' $'## Processing\n\n- x'
+  assert "K {month} is substituted" "$(contains "$GHOUT" "^title=Report: ${month}\$")"
+  assert "K a valid caller passes" "$(is_rc 0)"
+  title_step 'Report: {month}' false '' 'bash x.sh' 'no heading here'
+  assert "K a filing caller without '## Processing' fails" "$(is_rc 1)"
+  title_step '' false '' '' ''
+  assert "K a guard-only caller needs no processing" "$(is_rc 0)"
+  title_step '' true 'Report:' '' ''
+  assert "K supersede without a title fails" "$(is_rc 1)"
+fi
+
 echo "PASS=$pass_count FAIL=$fail_count"
 [ "$fail_count" -eq 0 ]
