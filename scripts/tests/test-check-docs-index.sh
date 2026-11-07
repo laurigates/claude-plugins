@@ -287,6 +287,10 @@ assert "alpha .svg label matching the .d2 should NOT be flagged" \
   "$([ "$(contains "$fx_out" "diagram_svg_stale.*renders alpha")" = "false" ] && echo true || echo false)"
 assert "DIAGRAM_SVG_NODES should count the .d2 nodes compared (3)" \
   "$([ "$(field "$fx_out" DIAGRAM_SVG_NODES)" = "3" ] && echo true || echo false)"
+assert "diagram_svg_stale names the docs-refresh install path for sessions without d2 (#3487)" \
+  "$(contains "$fx_out" "diagram_svg_stale.*no d2 installed: .claude/skills/docs-refresh/SKILL.md § Cloud sessions")"
+assert "diagram_svg_node_missing names the same install path (#3487)" \
+  "$(contains "$fx_out" "diagram_svg_node_missing.*no d2 installed: .claude/skills/docs-refresh/SKILL.md § Cloud sessions")"
 assert "diagram_svg_stale must be ERROR, not WARN, so --strict can gate it" \
   "$(contains "$fx_out" "SEVERITY=ERROR TYPE=diagram_svg_stale")"
 
