@@ -1,0 +1,1 @@
+| `model: haiku` for any skill — quality risk vs Sonnet not justified | Cost savings vs Sonnet are modest while quality risk applies to non-interactive skills too. Sonnet is the floor; Opus reserved for deep reasoning. | `plugin-compliance-check.sh` `check_skill_frontmatter()` (broadened beyond AskUserQuestion) | PR #TBD (model-parameter restoration) |
