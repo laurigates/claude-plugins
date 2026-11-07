@@ -148,7 +148,10 @@ a diagnostic) and never as a clean zero.
 
 A bare `GH_READY=false` is undiagnosable, though, so it always ships with
 `GH_FAIL_REASON=` — `timeout` (raise the budget), `auth` (`gh auth
-login`; re-running is futile), `no-cli` (no `gh` on PATH — fall back to
+login`; re-running is futile), `cloud-restricted` (a Claude Code cloud
+session's proxy refuses GraphQL; read GitHub state from the MCP tools, and
+the open-PR list falls back to REST search, marked `PRS_SOURCE=rest-search`),
+`no-cli` (no `gh` on PATH — fall back to
 the GitHub MCP tools), `no-remote` (nothing to query), `api-error` (a 5xx
 or network failure — re-run), or `unknown`. The last two also carry
 `GH_FAIL_DETAIL=`, the first line of `gh`'s stderr, sanitised to one

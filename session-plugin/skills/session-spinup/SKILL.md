@@ -117,7 +117,8 @@ Do not present them as a clean state. Instead:
 retrying can work: re-run the collector once for `timeout` (raising
 `SESSION_SURVEY_GH_TIMEOUT`), `api-error`, or `unknown`, quoting
 `GH_FAIL_DETAIL=` (gh's first stderr line) if it fails again; go straight
-to MCP for `auth` (`gh auth login` fixes the CLI path) and `no-cli`; and
+to MCP for `auth` (`gh auth login` fixes the CLI path), `cloud-restricted`
+(a cloud session's proxy; no login helps) and `no-cli`; and
 for `no-remote` there is nothing to query at all, so say that rather than
 reporting a gap. Full remediation table: `session-plugin:session-end`.
 
