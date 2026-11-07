@@ -2057,6 +2057,27 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must NOT set 'disable-model-invocation: true' — session-end invokes it via the Skill tool (issue #1843)")
         has_errors=true
       fi
+      # Regression: Step 1 ran `gh label create` before any finding existed, so
+      # `--dry-run` wrote labels and a `--confirmed` run whose findings all
+      # deduped away created them anyway (issue #2360, design C5 / AS6). The
+      # invariant: label creation lives in the Step 5 (issue creation) section
+      # and nowhere before it.
+      fb_step5_line=$(grep -n '^### Step 5' "$skill_file" | head -1 | cut -d: -f1)
+      if [ -n "$fb_step5_line" ]; then
+        fb_pre_step5=$(head -n "$((fb_step5_line - 1))" "$skill_file")
+        fb_step5=$(awk '/^### Step 5/{f=1; next} /^### /{f=0} f' "$skill_file")
+      else
+        fb_pre_step5=$(cat "$skill_file")
+        fb_step5=""
+      fi
+      if grep -qiE 'gh label create|create missing labels' <<<"$fb_pre_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: label creation must happen in Step 5 (apply time), not before it — a --dry-run or an all-deduped run must not write labels (issue #2360)")
+        has_errors=true
+      fi
+      if ! grep -qi 'create missing labels' <<<"$fb_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: Step 5 must create missing labels before 'gh issue create' (issue #2360)")
+        has_errors=true
+      fi
     fi
 
     # Regression: configure-web-session had no drift signal for already-onboarded
