@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.3...blueprint-plugin-v3.51.4) (2026-11-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** config-drift dates content changes, not renames ([#3455](https://github.com/laurigates/claude-plugins/issues/3455)) ([da439c8](https://github.com/laurigates/claude-plugins/commit/da439c883bdc163ee2101f7b70a07603dce33897))
+
 ## [3.51.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.2...blueprint-plugin-v3.51.3) (2026-11-07)
 
 
