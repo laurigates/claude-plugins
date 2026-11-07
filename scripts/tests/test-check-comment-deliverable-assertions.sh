@@ -10,7 +10,8 @@
 # transcript, so the next silent run both fails and names the denied call.
 #
 # Cases:
-#   A. the real repo is clean, and the sweep is non-vacuous (>= 2 steps in scope)
+#   A. the real repo is clean, and the sweep is non-vacuous (>= 1 step in scope:
+#      release-pr-doc-audit.yml since plugin-pr-checks' skill review went, #3199)
 #   B. a comment-granting automation step with neither → both findings, named
 #   C. the same step with both → clean
 #   D. an assertion placed BEFORE the Claude step does not count
@@ -108,7 +109,7 @@ run "$repo_root"
 assert "A: real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "A: STATUS=OK" "$(has_line "$OUT" 'STATUS=OK')"
 a_steps=$(sed -n 's/^COMMENT_DELIVERABLE_STEPS=//p' <<<"$OUT")
-assert "A: >= 2 comment-deliverable steps in scope (got '${a_steps:-none}')" "$([ "${a_steps:-0}" -ge 2 ] 2>/dev/null && echo true || echo false)"
+assert "A: >= 1 comment-deliverable step in scope (got '${a_steps:-none}')" "$([ "${a_steps:-0}" -ge 1 ] 2>/dev/null && echo true || echo false)"
 a_issue=$(sed -n 's/^ISSUE_DELIVERABLE_STEPS=//p' <<<"$OUT")
 assert "A: >= 3 issue-deliverable steps in scope (got '${a_issue:-none}')" "$([ "${a_issue:-0}" -ge 3 ] 2>/dev/null && echo true || echo false)"
 assert "A: tag-mode claude.yml counted as skipped, not scanned" "$([ "$(sed -n 's/^SKIPPED_TAG_MODE=//p' <<<"$OUT")" -ge 1 ] 2>/dev/null && echo true || echo false)"
