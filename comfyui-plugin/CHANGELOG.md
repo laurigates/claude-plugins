@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.1...comfyui-plugin-v1.15.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** take repo owner, IaC repo and fleet root from context ([#3513](https://github.com/laurigates/claude-plugins/issues/3513)) ([93b29d7](https://github.com/laurigates/claude-plugins/commit/93b29d75dacc964a0e716e9bd94b242f72289076)), closes [#3308](https://github.com/laurigates/claude-plugins/issues/3308)
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.0...comfyui-plugin-v1.15.1) (2026-11-07)
 
 
