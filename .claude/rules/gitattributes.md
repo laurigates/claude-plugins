@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-11-03
+modified: 2026-11-07
 reviewed: 2026-09-23
 paths:
   - "**/.gitattributes"
@@ -11,14 +11,13 @@ A repo's `.gitattributes` is a path→attribute map git consults for **merge**,
 **diff**, **checkout**, and **archive** behavior. This repo uses it for four
 things; the reusable cross-repo automation is
 [`configure-plugin:configure-gitattributes`](../../configure-plugin/skills/configure-gitattributes/SKILL.md),
-and the conflict-resolution side is `docs/regression-ledger.md` plus
-`scripts/resolve-additive-conflicts.py`.
+and the conflict-resolution side is `scripts/resolve-additive-conflicts.py`.
 
 ## The four uses (and what each is safe for)
 
 | Attribute | Effect | Safe for | Never for |
 |-----------|--------|----------|-----------|
-| `merge=union` | Built-in driver; concatenates both sides' additions, no markers | **Append-only files where every logical entry is exactly one line** (the regression ledger table) | Code, JSON, multi-line-entry files, anything that gets *edited* not just appended |
+| `merge=union` | Built-in driver; concatenates both sides' additions, no markers | **Append-only files where every logical entry is exactly one line**, merged only by local git | Code, JSON, multi-line-entry files, anything that gets *edited* not just appended |
 | `text=auto eol=lf` | Normalize line endings to LF on commit/checkout | Any repo with shell scripts/hooks (CRLF silently breaks a shebang) | — (safe globally; no-op on an all-LF tree) |
 | `linguist-generated` | Collapse in GitHub PR diffs + drop from language stats | Build output, tool-owned files (changelogs, lockfiles, rendered diagrams, compiled prompts) | — (display-only; changes **no** merge behavior, so safe even where `merge=union` is wrong) |
 | `merge=<custom>` | Runs a program that merges the file's structure; the command lives in per-clone git config | Tool-rewritten structured files whose conflicts are mechanical: `docs/blueprint/manifest.json` → `merge=blueprint-manifest` ([blueprint-plugin README](../../blueprint-plugin/README.md#manifest-merge-driver-sessionstart)) | Files with no registration path — an unregistered clone silently falls back to the line merge |
@@ -26,9 +25,16 @@ and the conflict-resolution side is `docs/regression-ledger.md` plus
 ## `merge=union` — the one-line-per-entry test
 
 Union merge is correct **only** when both sides add disjoint lines and every
-entry is self-contained on one line. Apply the test before marking a file:
+entry is self-contained on one line. It also runs only in local git (see
+[GitHub does not honor `merge=union` server-side](#github-does-not-honor-mergeunion-server-side)),
+so when parallel PRs routinely append to one file, give each entry its own
+file instead, as `docs/regression-ledger/` does since #2947. Apply the test
+before marking a file:
 
-- ✅ `docs/regression-ledger.md` — one table row per bug, append-only.
+- ❌ `docs/regression-ledger.md` — one table row per bug and append-only, so it
+  passed the line test and was union-marked until #2947. GitHub ignored the
+  mark, and every pair of ledger-appending PRs conflicted there. Now one file
+  per entry under `docs/regression-ledger/`, with no driver.
 - ❌ `.claude/rules/regression-testing.md` — carried the ledger until #2667; now
   an edited rule, so a stale branch appending there must conflict, not union.
 - ❌ `**/CHANGELOG.md` — entries are **multi-line**; union interleaves them
@@ -54,7 +60,8 @@ takes both sides:
 
 Observed 2026-11-04 (#3412): reverting three duplicate fixes and cherry-picking a
 verifier's follow-up left two stale rows and one duplicate in
-`docs/regression-ledger.md`, with every command exiting 0. After a revert or
+`docs/regression-ledger.md` (then still union-marked), with every command
+exiting 0. After a revert or
 cherry-pick that touches a union-marked file, diff that file against the base
 and remove leftovers by hand in the same PR.
 
@@ -81,6 +88,11 @@ git push                            # PR flips to MERGEABLE
 (`--no-ff` because a divergent merge can't fast-forward, and a global
 `merge.ff=only` would otherwise abort it.) This also doubles as a live proof the
 driver works — the marked file gains both sides' rows with no hand-editing.
+
+The fix is per PR, and a batch pays it again for every PR after the first: on
+2026-11-02 three of fourteen PRs merged in sequence each needed a local merge,
+a push and a fresh CI wait because of one union-marked ledger (#2947). For a
+file that most PRs append to, one file per entry removes the conflict instead.
 
 ## `linguist-generated` is the safe default for generated trees
 
@@ -109,6 +121,6 @@ concrete need appears — the three above cover the common cases.
 ## Related
 
 - `configure-plugin:configure-gitattributes` — the reusable skill that audits/writes a repo's `.gitattributes`
-- `docs/regression-ledger.md` — the additive-conflict resolver + `merge=union` ledger entry
+- `docs/regression-ledger.md` — why the ledger moved from a union-marked table to one file per entry (#2947)
 - `scripts/resolve-additive-conflicts.py` — the deterministic union pre-pass for the conflict workflow
 - `.claude/rules/conventional-commits.md` — `chore`/`build` scope for tooling-config commits

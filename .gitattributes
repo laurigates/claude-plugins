@@ -9,18 +9,14 @@
 * text=auto eol=lf
 *.sh text eol=lf
 
-# --- Append-only union merges ----------------------------------------------
-# These files are append-only logs/tables: every bug-fix PR adds a row, and
-# parallel PRs therefore conflict on the *same anchor* with disjoint additions.
-# The built-in `union` driver concatenates both sides' additions with no
-# conflict markers and no LLM. ONLY safe for genuinely append-only files —
-# never apply to code or JSON (union duplicates edited lines / breaks syntax).
-#
-# The regression ledger moved out of .claude/rules/regression-testing.md
-# (#2667). That rule is no longer append-only, so it drops the union driver: a
-# stale branch that still appends a row there now conflicts loudly instead of
-# union-merging the row into the rule, outside any table.
-docs/regression-ledger.md merge=union
+# --- No union merges ---------------------------------------------------------
+# docs/regression-ledger.md was marked `merge=union` so parallel PRs could each
+# append a row. Only local git runs merge drivers; GitHub's server-side merge
+# (`gh pr update-branch`, the mergeability check, "Update branch") ignores them,
+# so those PRs still conflicted on GitHub (#2947). The ledger is now one file
+# per entry under docs/regression-ledger/, so parallel PRs add different paths
+# and need no driver. A stale branch that still appends to the old page now
+# conflicts loudly, and scripts/check-regression-ledger.sh reports the row.
 
 # --- Custom structural merge drivers ----------------------------------------
 # The blueprint manifest is rewritten by sync-ids/autorun on every run, so two
