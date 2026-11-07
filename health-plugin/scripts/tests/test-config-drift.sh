@@ -2721,8 +2721,8 @@ assert_eq "CONTROL: a revert breaks the run, so it is the last change" \
 rm -rf "$RROOT"
 unset -f rg_ rg_commit_at run_r stale_names cached_date
 
-echo "TEST 28: merges, timeouts and pre-fix cache rows in the content-run walk (#3442)"
-# Three gaps in TEST 27's walk, each a wrong last-change date that then gets
+echo "TEST 28: merges, timeouts, pre-fix cache rows and discarded side edits in the content walk (#3442)"
+# Four gaps in TEST 27's walk, each a wrong last-change date that then gets
 # cached under path:hash:
 #   (a) plain `--raw` prints no diff for a merge, so a merge that CREATED the
 #       current blob (both sides edited the file) was skipped and the file was
@@ -2731,6 +2731,8 @@ echo "TEST 28: merges, timeouts and pre-fix cache rows in the content-run walk (
 #       oldest commit read so far, a too-new date;
 #   (c) rows written by the pre-#3442 `git log -1` survived in gitdates.json
 #       and `--fast` only reads the cache.
+#   (d) a merge that discarded a side branch's edit left that side commit's
+#       blob first in the --follow walk, and it was taken as the current text.
 MROOT=$(mktemp -d)
 if [ -z "$MROOT" ] || [ ! -d "$MROOT" ]; then
     echo "FAIL: could not create TEST 28 root"
@@ -2791,8 +2793,8 @@ print(d, b)' "$ANALYZER" "$1" 2>/dev/null || echo ERR
 # (a) THE REGRESSION: the merge created merged-doc's current text.
 assert_eq "a merge that produced the current text is the last change" \
     "$(last_change "$R/merged-doc.md")" "2026-05-01 False"
-# CONTROL: a merge that equals one side is hidden by history simplification,
-# so side-doc dates to the side commit, as `git log -1` does.
+# CONTROL: a merge that took the side copy unchanged did not create it, so
+# side-doc dates to the side commit, as `git log -1` does.
 assert_eq "CONTROL: a merge that took one side unchanged is not a change" \
     "$(last_change "$R/side-doc.md")" "2026-04-01 False"
 assert_eq "CONTROL: git log -1 agrees on side-doc" \
@@ -2846,6 +2848,56 @@ assert_eq "a row in the pre-#3442 cache file is ignored by --fast" \
 seed_date "$MROOT/home-new" "$R/renamed-doc-2.md" 2026-03-01
 assert_eq "CONTROL: the same row in the current cache file is served" \
     "$(m_stale "$(run_m_fast "$MROOT/home-new")")" "renamed-doc-2.md"
+
+# (d) A merge that DISCARDS a side branch's edit. History simplification would
+# drop the side branch, but `--follow` turns it off, so the side commit stays in
+# the date-ordered walk, and the merge, whose first-parent diff is empty, prints
+# no raw line. A walk that took the first blob it read as the current text dated
+# the file to that side commit, whose blob the file does not hold.
+#   discard-doc: main and side both rewrite line 5; the merge keeps main's.
+#   mode-doc:    main edits it, later chmods it; side edits it in between and
+#                the merge keeps main's copy. The mode change keeps the blob, so
+#                the content date is main's edit, not the chmod.
+MREPO="$MROOT/repo-discard"
+R="$MREPO/.claude/rules"
+mkdir -p "$R"
+mg_ init -q . >/dev/null 2>&1
+seq 1 40 > "$R/discard-doc.md"
+seq 1 40 > "$R/mode-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2020-01-01 commit -q -m "write both"
+mg_ switch -q -c side >/dev/null 2>&1
+mg_ switch -q main >/dev/null 2>&1
+sed -i.bak '5s/.*/main wording/' "$R/discard-doc.md" "$R/mode-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-03-01 commit -q -m "main edits both"
+mg_ switch -q side >/dev/null 2>&1
+sed -i.bak '5s/.*/side wording/' "$R/discard-doc.md" "$R/mode-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-05 commit -q -m "side edits both"
+mg_ switch -q main >/dev/null 2>&1
+chmod +x "$R/mode-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-10 commit -q -m "main chmods mode-doc"
+mg_at 2026-05-01 merge -q --no-ff --no-commit side
+mg_ checkout HEAD -- .claude/rules/discard-doc.md .claude/rules/mode-doc.md >/dev/null 2>&1
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-05-01 commit -q --no-edit
+# FIXTURE VALIDITY: a real merge that kept main's text, and the side commit
+# reaches the --follow walk with a blob other than the current one.
+assert_eq "FIXTURE: the discarding commit is a merge" \
+    "$(mg_ rev-list --parents -n 1 HEAD 2>/dev/null | wc -w | tr -d ' ')" "3"
+assert_eq "FIXTURE: discard-doc holds main's wording" \
+    "$(sed -n 5p "$R/discard-doc.md")" "main wording"
+assert_eq "FIXTURE: the side commit is in the --follow walk" \
+    "$(mg_ log --follow --format=%cs -- .claude/rules/discard-doc.md 2>/dev/null | tr '\n' ' ')" \
+    "2026-04-05 2026-03-01 2020-01-01 "
+assert_eq "a merge that discarded a side edit dates to the kept content" \
+    "$(last_change "$R/discard-doc.md")" "2026-03-01 False"
+assert_eq "CONTROL: git log -1 agrees on discard-doc" \
+    "$(mg_ log -1 --format=%cs -- .claude/rules/discard-doc.md 2>/dev/null)" "2026-03-01"
+assert_eq "a side edit between a content edit and a mode change is skipped" \
+    "$(last_change "$R/mode-doc.md")" "2026-03-01 False"
 rm -rf "$MROOT"
 unset -f mg_ mg_at last_change run_m_fast m_stale
 

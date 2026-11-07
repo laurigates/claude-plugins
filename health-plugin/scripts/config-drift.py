@@ -413,25 +413,34 @@ GIT_LOG_TIMEOUT = 10  # seconds one file's history walk may take
 GITDATES_CACHE = "gitdates-v2.json"
 
 
-def _content_run_start(lines) -> tuple[str, str] | None:
-    """The oldest `(commit, date)` whose copy of the file equals the newest copy.
+def _content_run_start(lines, target: str | None = None) -> tuple[str, str] | None:
+    """The commit that introduced the file's current copy, as `(commit, date)`.
 
     `lines` is `git log --follow --diff-merges=first-parent --format=%x01%H %cs
-    --raw --no-abbrev` output, newest first. Each commit's `--raw` line carries
-    the file's blob at that commit (field 4), so a pure rename (`R100`) or a
-    mode-only change keeps the blob and stays in the run, and the first commit
-    with a different blob ends it.
+    --raw --no-abbrev` output, newest first; `target` is the file's current blob
+    (`HEAD:<path>`). Each commit's `--raw` line carries the blob before and after
+    it (fields 3 and 4). A commit whose after-blob is `target` belongs to the
+    run; one whose before-blob also is `target` (a pure rename, `R100`, or a
+    mode-only change) did not introduce it, so the run goes on to an older
+    commit. The answer is the run's oldest member, and the run ends at the
+    first commit with another blob that follows an introducing member.
+
+    The current blob is compared, never assumed to be the first one read.
+    `--follow` turns off history simplification, so the walk also lists side
+    branches whose edits a merge threw away; a merge whose result equals its
+    first parent prints no raw line, and the discarded side commit is then the
+    first blob read although the file does not hold it. Commits with another
+    blob are therefore skipped until the run starts, and skipped inside it
+    while its newest member is a rename or mode change, since such a commit
+    cannot be the introducing one.
 
     A merge whose result differs from both parents (both sides edited the file,
-    or a conflict was resolved by hand) creates the current blob itself. Plain
-    `--raw` prints no diff for a merge, so the walk used to skip it and date the
-    file to the next commit's blob, which is not the current text.
-    `--diff-merges=first-parent` diffs the merge against its first parent, so it
-    carries the merged blob and is the run's newest member. A merge whose result
-    equals one parent is hidden by git's history simplification and never
-    reaches this function. A commit that still carries no raw line says nothing
-    about the content and is skipped; a log with no raw line at all falls back
-    to its newest commit, the pre-#3442 answer.
+    or a conflict was resolved by hand) creates the current blob itself.
+    `--diff-merges=first-parent` diffs it against its first parent, so it
+    carries the merged blob as an introducing member. A commit with no raw line
+    says nothing about the content and is skipped. With no `target`, the first
+    blob read stands in for it; a log in which `target` never appears falls
+    back to its newest commit, the pre-#3442 answer.
 
     Returns None for an empty log. It reads `lines` lazily and returns at the
     end of the run, so the caller can stop git there instead of walking all
@@ -439,8 +448,8 @@ def _content_run_start(lines) -> tuple[str, str] | None:
     """
     newest: tuple[str, str] | None = None
     run_start: tuple[str, str] | None = None
+    introduced = False
     current: tuple[str, str] | None = None
-    blob: str | None = None
     seen_raw = False
     for line in lines:
         if line.startswith("\x01"):
@@ -456,25 +465,48 @@ def _content_run_start(lines) -> tuple[str, str] | None:
         fields = line.split("\t", 1)[0].split()
         if len(fields) < 4:
             continue
-        if blob is None:
-            blob = fields[3]
-        elif fields[3] != blob:
-            break
+        before, after = fields[2], fields[3]
+        if target is None:
+            target = after
+        if after != target:
+            if run_start is not None and introduced:
+                break
+            continue
         run_start = current
+        introduced = before != target
     return run_start or newest
+
+
+def _current_blob(path: Path) -> str | None:
+    """The blob `path` holds at HEAD, or None when git cannot name one."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(path.parent), "rev-parse", f"HEAD:./{path.name}"],
+            capture_output=True,
+            text=True,
+            timeout=GIT_LOG_TIMEOUT,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    blob = out.stdout.strip()
+    return blob if out.returncode == 0 and blob else None
 
 
 def git_last_change(path: Path) -> tuple[str | None, bool]:
     """`(date, at_shallow_boundary)` for the last commit that changed `path`'s CONTENT.
 
-    "Changed" means the file's text, not its path: the answer is the oldest
-    commit in the unbroken run of commits whose copy of the file is identical
-    to the newest one, following renames (#3442). `git log -1 -- <file>` dated
-    a file to whatever commit last touched its path, so a bulk move re-dated
-    every moved document (laurigates/dotfiles#558: 50 of 52 rules) and a rule
-    stamped with its real content date then fired review_staleness. A revert
-    to older text still dates to the revert: the run is unbroken, not "any
-    commit with this blob". `_content_run_start` does the walk; git is stopped
+    "Changed" means the file's text, not its path: the answer is the commit
+    that introduced the blob the file holds at HEAD, following renames
+    (#3442). The blob is read with `git rev-parse HEAD:<path>` and compared
+    against each commit's copy, because the first copy the `--follow` walk
+    reads can belong to a side branch whose edit a merge discarded. An
+    uncommitted edit is dated by the committed copy, as before. `git log -1 --
+    <file>` dated a file to whatever commit last touched its path, so a bulk
+    move re-dated every moved document (laurigates/dotfiles#558: 50 of 52
+    rules) and a rule stamped with its real content date then fired
+    review_staleness. A revert
+    to older text still dates to the revert, not to the older commit that
+    first had that text. `_content_run_start` does the walk; git is stopped
     as soon as the run ends, so a typical file reads only a few commits.
 
     In a shallow clone, the BOUNDARY commit is a grafted root: it diffs against
@@ -485,6 +517,7 @@ def git_last_change(path: Path) -> tuple[str | None, bool]:
     cache it, since an unshallow keeps the content hash the cache is keyed on.
     A full clone never sets the flag.
     """
+    target = _current_blob(path)
     try:
         proc = subprocess.Popen(
             [
@@ -515,7 +548,7 @@ def git_last_change(path: Path) -> tuple[str | None, bool]:
     timer = threading.Timer(GIT_LOG_TIMEOUT, _kill_on_timeout)
     timer.start()
     try:
-        found = _content_run_start(proc.stdout)
+        found = _content_run_start(proc.stdout, target)
     finally:
         timer.cancel()
         proc.kill()
