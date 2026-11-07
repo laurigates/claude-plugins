@@ -17,6 +17,7 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `/docs:fetch-fallbacks` | Recover a failed or empty WebFetch: strip the query, `raw.githubusercontent`, `gh api`, docs source at a pinned tag, context7/WebSearch |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 | `docs-single-source` | Link docs to the single source of truth instead of restating it |
+| `docs-claim-hygiene` | Keep doc claims honest — write the command, not a moving reading; scope every measurement; a correction must reach the summaries, not only the argument |
 | `docs-verify-machine-facts` | Verify machine-read values (`scutil`, `route`, `ifconfig`, local config) against the authoritative IaC before publishing |
 | `public-export-sanitization` | Scan an internal-to-public export for leaked identifiers and repo-escaping links (`check-public-export.sh`), then genericize |
 
@@ -121,9 +122,10 @@ Reads the failure signature and applies the matching fallback — strip the quer
 
 ### Keep Published Docs Honest
 
-Two reference skills load automatically while you write:
+Three reference skills load automatically while you write:
 
 - `docs-single-source` — link to the single source of truth rather than restating it, so the copy cannot drift
+- `docs-claim-hygiene` — write the command that takes a moving reading instead of the reading, scope every recorded measurement, and grep for a corrected claim across its summaries
 - `docs-verify-machine-facts` — check values read off your own host (`ifconfig`, `scutil --dns`, `route get`, local config) against the authoritative IaC before they reach shared docs
 
 ## Workflow Integration

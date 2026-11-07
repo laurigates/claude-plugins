@@ -209,6 +209,12 @@ jobs:
           #     `communication-plugin:ticket-drafting-guidelines` by skill name.
           #   - Bash(cat *) kept: the `gh issue create` snippet builds its body
           #     from a `cat` heredoc.
+          #   - Bash(gh issue create *) only (#2769): it replaced
+          #     `Bash(gh issue *)` and `Bash(gh label *)`. The gather job's
+          #     "Ensure research-radar label exists" step creates the label and
+          #     the issue lookups run there too, so `create` is the one verb
+          #     this step runs. scripts/check-workflow-gh-wildcard-grants.sh
+          #     fails on a group wildcard.
           #
           # One flag per line: scripts/check-workflow-model.sh matches
           # `--model`/`--effort` anchored at line start in a folded scalar.
@@ -216,7 +222,7 @@ jobs:
             --model opus
             --effort medium
             --max-turns 20
-            --allowedTools "Read,Grep,Glob,TodoWrite,Skill,Bash(gh issue *),Bash(gh label *),Bash(cat *),Bash(jq *)"
+            --allowedTools "Read,Grep,Glob,TodoWrite,Skill,Bash(gh issue create *),Bash(cat *),Bash(jq *)"
           prompt: |
             You are the RESEARCH RADAR for the `laurigates/claude-plugins` repository — a
             collection of Claude Code plugins (skills, agents, rules) for development
@@ -337,6 +343,12 @@ jobs:
             - **[<paper title>](<url>)** (`<id>`) — <one-line takeaway>. Consider: <concrete suggestion>.
 
             (Group additional findings under their target plugin/rule. Omit areas with no match.)
+
+            ## Processing
+
+            - **Processed by:** the daily issue-resolving Routine, or Lauri.
+            - **Completed means:** every candidate has a verdict comment on this issue (adopt, or reject with a one-line reason), and every adopted candidate is merged, one PR per target file. Group candidates from different radars that hit the same file into one PR; never edit one target from two PRs at once.
+            - **Closes:** when the last adopted candidate merges. A later radar does not supersede this one. See `docs/issue-lifecycle.md`.
 
             ---
             Sources: HuggingFace daily papers, arXiv (cs.AI/CL/LG/SE/HC), lab blogs. Triaged from ${{ needs.gather.outputs.candidate_count }} candidates.

@@ -98,7 +98,10 @@ check_eq() {
 
 # Guarded sandbox (check-git-sandbox-guards.sh: every mktemp -d must be guarded).
 SANDBOX="$(mktemp -d)" || { echo "mktemp failed"; exit 1; }
-[ -n "$SANDBOX" ] || { echo "empty sandbox path"; exit 1; }
+[ -n "$SANDBOX" ] && [ -d "$SANDBOX" ] || { echo "empty sandbox path"; exit 1; }
+# Canonicalise once: macOS mktemp returns /var/..., a symlink to /private/var,
+# and the survey reports physical checkout paths (check-mktemp-canonical.sh).
+SANDBOX=$(cd -P -- "$SANDBOX" && pwd -P) || { echo "cannot resolve sandbox"; exit 1; }
 trap 'rm -rf "$SANDBOX"' EXIT
 
 # Neutralize inherited git context so the sandbox git ops can never reach the
@@ -2981,6 +2984,104 @@ out=$(TASK_ALL_FIXTURE="$SANDBOX/wt-tasks.json" run_at "$WT_MAIN/.claude/worktre
 check_line "WT: a nested .claude/worktrees worktree uses the main basename" "$out" "PROJECT=shore-recon"
 check_line "WT: nested, same derivation" "$out" "DETECTION=cwd-repo-basename"
 check_absent "WT: nested, the worktree name never becomes the slug" "$out" "PROJECT=foo"
+
+# --- TEST MR: a multi-repo workspace root surveys each child checkout (#3435)
+# A cloud session whose working directory holds several sibling checkouts
+# (`add_repo` clones each one under the workspace root) is not itself a git
+# repo, so the digest reported IN_GIT=false / GH_FAIL_REASON=no-remote and
+# nothing else: the session-end Wrap, PR and drift passes ran blind on the
+# sessions with the most state to collect. Each direct child checkout now gets
+# its own CHECKOUT_<n>_ rows — git state in CHECKOUTS (no network) and PRs in
+# CHECKOUT_PRS (network, after PRS).
+MR_WS="$SANDBOX/mr-ws"
+mkdir -p "$MR_WS/notes"
+: > "$MR_WS/file.txt"
+mkrepo "$MR_WS/.github"
+git -C "$MR_WS/.github" remote add origin https://github.com/laurigates/.github.git
+mkrepo "$MR_WS/fvh-github"
+git -C "$MR_WS/fvh-github" remote add origin git@github.com:ForumViriumHelsinki/.github.git
+: > "$MR_WS/fvh-github/untracked.txt"
+mkrepo "$MR_WS/local-only"
+# A child whose NAME carries a newline must not inject rows (the #2304 lesson:
+# a directory name is attacker-shaped once a clone can create it).
+mkrepo "$MR_WS/evil
+CHECKOUT_COUNT=99"
+MR_FIX="$SANDBOX/mr-fixtures"
+mkdir -p "$MR_FIX"
+echo '[{"number":101,"title":"laurigates PR","url":"http://x/101","state":"OPEN","updatedAt":"2026-06-22T10:00:00Z"}]' > "$MR_FIX/.github.json"
+echo '[{"number":202,"title":"fvh PR","url":"http://x/202","state":"OPEN","updatedAt":"2026-06-22T10:00:00Z"}]' > "$MR_FIX/fvh-github.json"
+# Serves `pr list` per checkout from the cwd's basename (each gh call runs in
+# the checkout it describes); a directory with no fixture answers the way gh
+# answers in a remote-less checkout.
+cat > "$STUB/gh-per-dir" <<'GHPERDIR'
+#!/usr/bin/env bash
+if [ -n "${GH_ARGV_LOG:-}" ]; then printf '%s\t%s\n' "$PWD" "$*" >> "$GH_ARGV_LOG"; fi
+f="$GH_DIR_FIXTURES/$(basename "$PWD").json"
+if [ "$1 $2" = "pr list" ] && [ -f "$f" ]; then cat "$f"; exit 0; fi
+echo "none of the git remotes configured for this repository point to a known GitHub host. To tell gh about a new GitHub host, please use \`gh auth login\`" >&2
+exit 1
+GHPERDIR
+chmod +x "$STUB/gh-per-dir"
+mr_run() { GH_DIR_FIXTURES="$MR_FIX" SESSION_SURVEY_GH_BIN="$STUB/gh-per-dir" run_at "$@"; }
+
+out=$(mr_run "$MR_WS" --home-dir "$SANDBOX/mr-home")
+co=$(c1_section "$out" CHECKOUTS)
+cp=$(c1_section "$out" CHECKOUT_PRS)
+check_line "MR: the workspace root itself is still not a repo" "$out" "IN_GIT=false"
+check_line "MR: and its own PRS still names why" "$(prs_of "$out")" "GH_FAIL_REASON=no-remote"
+check_line "MR: three child checkouts are found" "$co" "CHECKOUT_COUNT=3"
+check_line "MR: nothing was cut off" "$co" "CHECKOUT_TRUNCATED=false"
+check_line "MR: a dot-directory checkout is included, first in C order" "$co" "CHECKOUT_1_DIR=$MR_WS/.github"
+check_line "MR: its GitHub slug" "$co" "CHECKOUT_1_REPO=laurigates/.github"
+check_line "MR: second checkout" "$co" "CHECKOUT_2_DIR=$MR_WS/fvh-github"
+check_line "MR: scp-style origin resolves" "$co" "CHECKOUT_2_REPO=ForumViriumHelsinki/.github"
+check_line "MR: its untracked file reads as dirty" "$co" "CHECKOUT_2_DIRTY=true"
+check_line "MR: a clean checkout reads clean" "$co" "CHECKOUT_1_DIRTY=false"
+check_line "MR: a remote-less checkout has an empty slug" "$co" "CHECKOUT_3_REPO="
+check_line "MR: a branch is reported per checkout" "$co" \
+  "CHECKOUT_1_BRANCH=$(git -C "$MR_WS/.github" branch --show-current)"
+check_line "MR: unpushed per checkout" "$co" "CHECKOUT_1_UNPUSHED=0"
+check_line "MR: behind per checkout" "$co" "CHECKOUT_1_BEHIND=0"
+check_absent "MR: a plain directory is not a checkout" "$co" "$MR_WS/notes"
+check_count_line "MR: a newline in a directory name injects no row" "$out" '^CHECKOUT_COUNT=' 1
+check_absent "MR: and the newline-named checkout is skipped" "$co" "evil"
+check_line "MR: PRs of the first checkout" "$cp" "CHECKOUT_1_GH_READY=true"
+check_line "MR: its PR, author and head lists unioned" "$cp" "CHECKOUT_1_PR_COUNT=1"
+check_line "MR: its PR number" "$cp" "CHECKOUT_1_PR_1_NUMBER=101"
+check_line "MR: PRs of the second checkout come from ITS directory" "$cp" "CHECKOUT_2_PR_1_NUMBER=202"
+check_line "MR: a remote-less checkout is unqueried, not zero" "$cp" "CHECKOUT_3_GH_READY=false"
+check_line "MR: and says why" "$cp" "CHECKOUT_3_GH_FAIL_REASON=no-remote"
+check_absent "MR: a remote-less checkout prints no PR count" "$cp" "CHECKOUT_3_PR_COUNT="
+# Ordering contract (#2276): no-network rows before the GitHub wait.
+mr_lines=$(printf '%s\n' "$out" | grep -nE '^=== (CHECKOUTS|PRS|END PRS|CHECKOUT_PRS) ===$' | cut -d: -f2 | tr '\n' ',')
+check_eq "MR: CHECKOUTS precedes PRS, CHECKOUT_PRS follows it" "$mr_lines" \
+  "=== CHECKOUTS ===,=== PRS ===,=== END PRS ===,=== CHECKOUT_PRS ===,"
+# Line-wise consumers take the FIRST match (`grep -m1 "^KEY="`), so no per-
+# checkout row may reuse a top-level key.
+check_count_line "MR: the top-level PR_COUNT is the only unprefixed one" "$out" '^PR_COUNT=' 1
+check_count_line "MR: the top-level BRANCH is the only unprefixed one" "$out" '^BRANCH=' 1
+
+# Control: inside a repo the scan does not run.
+out=$(mr_run "$MR_WS/.github" --home-dir "$SANDBOX/mr-home")
+check_absent "MR control: a repo cwd emits no CHECKOUTS" "$out" "=== CHECKOUTS ==="
+check_absent "MR control: and no CHECKOUT_PRS" "$out" "=== CHECKOUT_PRS ==="
+# The summary feeds a 15s SessionStart hook and prints no PR data at all.
+out=$(mr_run "$MR_WS" --home-dir "$SANDBOX/mr-home" --summary)
+check_absent "MR: --summary does not scan" "$out" "CHECKOUT_"
+# An empty non-repo directory reports the scan with a zero, not a missing section.
+mkdir -p "$SANDBOX/mr-empty"
+out=$(mr_run "$SANDBOX/mr-empty" --home-dir "$SANDBOX/mr-home")
+check_line "MR: no child checkouts is an explicit zero" "$(c1_section "$out" CHECKOUTS)" "CHECKOUT_COUNT=0"
+
+# A cap bounds the gh fan-out from a directory full of checkouts.
+MR_BIG="$SANDBOX/mr-big"
+for i in 01 02 03 04 05 06 07 08 09 10; do mkrepo "$MR_BIG/r$i"; done
+out=$(mr_run "$MR_BIG" --home-dir "$SANDBOX/mr-home")
+co=$(c1_section "$out" CHECKOUTS)
+check_line "MR cap: at most eight checkouts are surveyed" "$co" "CHECKOUT_COUNT=8"
+check_line "MR cap: the cut is flagged" "$co" "CHECKOUT_TRUNCATED=true"
+check_line "MR cap: with the number found" "$co" "CHECKOUT_FOUND=10"
+check_absent "MR cap: the ninth is not surveyed" "$co" "CHECKOUT_9_DIR="
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

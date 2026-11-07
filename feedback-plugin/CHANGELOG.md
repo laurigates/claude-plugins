@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.14.1...feedback-plugin-v1.15.0) (2026-11-07)
+
+
+### Features
+
+* **ci:** state who processes every machine-filed issue and when it closes ([#3475](https://github.com/laurigates/claude-plugins/issues/3475)) ([3281513](https://github.com/laurigates/claude-plugins/commit/32815133df85f830525e57b0a69a78ef06b5e7d9))
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.14.0...feedback-plugin-v1.14.1) (2026-11-03)
 
 

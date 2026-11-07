@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-11-02
+modified: 2026-11-06
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -33,7 +33,7 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 
 > **Why not gate on tokens directly?** Tokens are the real cost, but counting them needs Claude's tokenizer (the `count_tokens` API = network + per-file calls), too heavy for a pre-commit/CI lint. Characters track tokens tightly at near-`wc` cost. Lines are kept only as a human reference (they map to scroll length and to `head -N` partial reads), not as the gate.
 
-## Required Sections
+## Recommended Sections
 
 > **Demoted 2026-07-26 by [`context-engineering.md`](context-engineering.md).**
 > The "When to Use" table is now **recommended where it disambiguates sibling
@@ -46,7 +46,7 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 > emits a ⚠️ recommendation and exits 0 (issue #2141) — it does not block.
 > The rest of this section stands.
 
-Every skill SHOULD have:
+Two body sections that earn their tokens in the cases named:
 
 ### 1. "When to Use" Decision Table
 
@@ -65,9 +65,9 @@ that disambiguation is what the judges credited it for. Drop it when the
 | Specific scenario B | Alternative scenario |
 ```
 
-### 2. Agentic Optimizations Table
+### 2. Agentic Optimizations Table (optional)
 
-Place near the end. Provides compact commands optimized for AI workflows.
+Keep it where the commands are the payload (CLI wrappers). Place near the end. Provides compact commands optimized for AI workflows.
 
 ```markdown
 ## Agentic Optimizations
@@ -170,20 +170,11 @@ A plugin with 35 skills × 220 chars consumes ~3,100 tokens on its own — alrea
 
 ### `disable-model-invocation` Field
 
-Set `disable-model-invocation: true` when the skill body is a complete, self-contained prompt that should be passed directly without additional model reasoning. Useful for skills that are fully deterministic templates.
+Set `disable-model-invocation: true` to make a skill user-only: Claude cannot invoke it, and its description leaves the model's context. Use it for workflows with side effects whose timing the user should control (a commit, a deploy, a message sent). A skill body must not tell the model to run a gated sibling; it recommends that the user run it (`.claude/rules/pr-branch-sync.md` § Gated siblings are recommended, never delegated to).
 
 ## Model Selection
 
-Skills inherit the user's active model by default. Set `model:` only at the **extremes** — see `.claude/rules/skill-development.md` for the full rationale.
-
-| Frontmatter | Use For |
-|-------|---------|
-| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review, long agentic orchestration |
-| `effort: low` (model unset) | Mechanical / high-volume tasks — CLI tool wrappers, formatters, status checks, single-file lookups. Inherits the user's model at low effort; Fable 5.1 at low effort often matches prior models' `xhigh` (SKILL.md `effort:` field) |
-| `sonnet` | Only when measured: Sonnet at low effort has been shown to suffice for this skill (`skill-evaluation.md` Tier 2) |
-| _(unset)_ | Everything in the middle — let the user's active model decide |
-
-`model: haiku` (Haiku 5.5) with `effort: low` fits a report, listing, or user-driven terminal skill whose output ends the turn. `plugin-compliance-check.sh` errors on haiku with `AskUserQuestion`, and on haiku on a `user-invocable: false` skill without `context: fork`. See `skill-development.md` for why.
+`.claude/rules/skill-development.md` § Model Selection owns the skill model table (`opus`, `sonnet` with an explicit `effort:`, `haiku` with `effort: low`, or unset) and its hard constraints. `plugin-compliance-check.sh` errors on `model: haiku` with `AskUserQuestion`, and on `model: haiku` on a `user-invocable: false` skill without `context: fork`.
 
 ## Supporting Files Pattern
 
@@ -283,7 +274,7 @@ When reviewing skill/command changes:
 - [ ] Has "Agentic Optimizations" table (optional; keep where the commands are the payload)
 - [ ] Description matches user intents (not just tool jargon)
 - [ ] Description ≤ 150 chars with trigger keywords in the first ~120 chars (see "Description Length and the Listing Budget")
-- [ ] Model/effort selection follows the extremes-only rule (`opus` for deep reasoning, `effort: low` for mechanical tasks, both unset otherwise; `haiku` only on a turn-ending report/listing skill)
+- [ ] Model/effort selection follows `skill-development.md` § Model Selection
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
 - [ ] No duplicate content with sibling skills

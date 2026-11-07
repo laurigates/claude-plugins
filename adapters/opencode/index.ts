@@ -24,7 +24,11 @@
  * Claude Code variables (#2662): a `tool.execute.before` hook rewrites `bash`
  * calls that reference `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_ROOT}` or
  * `${CLAUDE_SESSION_ID}`, using the resolver pi's binding shares
- * (core/claude-env.ts).
+ * (core/claude-env.ts). A `shell.env` hook sets OPENCODE_SESSION_ID (the raw
+ * `ses_…` id) on every bash call, the transcript hint session-distill's
+ * collector reads through `opencode export` (#2725). The `event` hook and a
+ * system.transform step run session-plugin's spinup and end nudges
+ * (session-nudges.ts, #2802).
  */
 
 import { basename, dirname, isAbsolute, resolve } from "node:path";
@@ -50,6 +54,7 @@ import {
   stripAvailableSkillsBlocks,
 } from "../core/index.ts";
 import { DEFAULT_REPO_ROOT, type OpencodeBindingConfig, resolveOptions } from "./config.ts";
+import { createSessionNudges, type NudgeClient, nodeExec } from "./session-nudges.ts";
 
 const LOG_PREFIX = "[skill-discovery]";
 
@@ -213,7 +218,21 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
     return state;
   };
 
+  const sessionNudges = createSessionNudges({
+    // The SDK client's methods are generic over request options; the nudges
+    // call three of them with plain path/body objects.
+    client: input.client as unknown as NudgeClient,
+    exec: nodeExec,
+    repoRoot: () => config.repoRoot,
+    enabled: () => config.sessionNudges,
+    directory: input.directory,
+    warn: (message) => console.warn(`${LOG_PREFIX} ${message}`),
+  });
+
   const hooks: Hooks = {
+    // OpenCode does not await this hook (plugin/index.ts fires it with `void`).
+    event: (eventInput) => sessionNudges.event(eventInput),
+
     tool: {
       search_skills: tool({
         description: SEARCH_SKILLS_TOOL_DESCRIPTION,
@@ -240,6 +259,16 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
         },
         input.directory,
       );
+    },
+
+    // Transcript hint for session-distill (#2725): distill-survey.sh reads the
+    // session through `opencode export "$OPENCODE_SESSION_ID"`, so the RAW
+    // `ses_…` id goes in, unlike the derived CLAUDE_SESSION_ID. The bash tool
+    // (tool/shell.ts, verified at v1.18.3 and v1.19.5) merges output.env over
+    // process.env for every call, so no command rewrite is needed. Mutated in
+    // place: Plugin.trigger hands every plugin the same output object.
+    "shell.env": async (shellInput, output) => {
+      if (shellInput.sessionID) output.env.OPENCODE_SESSION_ID = shellInput.sessionID;
     },
 
     "experimental.chat.messages.transform": async (_input, output) => {
@@ -269,7 +298,7 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
     // Declared unconditionally (§4.4): Plugin.trigger only calls hook names
     // it knows, so on older OpenCode versions this is silently never
     // invoked and the binding degrades to pull-only.
-    "experimental.chat.system.transform": async (_input, output) => {
+    "experimental.chat.system.transform": async (transformInput, output) => {
       // In-place mutation is the upstream contract: request.ts (verified at
       // v1.18.3 and dev) reads the SAME local `system` array after the
       // trigger — Plugin.trigger does no copy-back, so reassigning
@@ -296,6 +325,9 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
       }
       output.system.length = 0;
       output.system.push(...kept);
+
+      // session-plugin's spinup context, until the session settles (#2802).
+      sessionNudges.injectSpinup(transformInput.sessionID, output.system);
 
       try {
         const { index, pins } = await getState();

@@ -10,7 +10,8 @@
 # transcript, so the next silent run both fails and names the denied call.
 #
 # Cases:
-#   A. the real repo is clean, and the sweep is non-vacuous (>= 2 steps in scope)
+#   A. the real repo is clean, and the sweep is non-vacuous (>= 1 step in scope:
+#      release-pr-doc-audit.yml since plugin-pr-checks' skill review went, #3199)
 #   B. a comment-granting automation step with neither → both findings, named
 #   C. the same step with both → clean
 #   D. an assertion placed BEFORE the Claude step does not count
@@ -21,6 +22,11 @@
 #   I. an unknown argument exits 2 and scans nothing
 #   J. an issue-filer with assert-issue-filed.sh + transcript upload → clean
 #   K. the PR-comment assertion does not satisfy an issue-filer
+#   L. an OPTIONAL_DELIVERABLE workflow (research-radar.yml) has its listed
+#      findings exempted and counted (#2769)
+#   M. an exemption covers only its listed types: obsidian-cli-changelog.yml is
+#      exempt from missing_issue_assertion, never from a missing upload
+#   N. an exemption whose finding no longer fires is a stale_exemption
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -108,7 +114,7 @@ run "$repo_root"
 assert "A: real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "A: STATUS=OK" "$(has_line "$OUT" 'STATUS=OK')"
 a_steps=$(sed -n 's/^COMMENT_DELIVERABLE_STEPS=//p' <<<"$OUT")
-assert "A: >= 2 comment-deliverable steps in scope (got '${a_steps:-none}')" "$([ "${a_steps:-0}" -ge 2 ] 2>/dev/null && echo true || echo false)"
+assert "A: >= 1 comment-deliverable step in scope (got '${a_steps:-none}')" "$([ "${a_steps:-0}" -ge 1 ] 2>/dev/null && echo true || echo false)"
 a_issue=$(sed -n 's/^ISSUE_DELIVERABLE_STEPS=//p' <<<"$OUT")
 assert "A: >= 3 issue-deliverable steps in scope (got '${a_issue:-none}')" "$([ "${a_issue:-0}" -ge 3 ] 2>/dev/null && echo true || echo false)"
 assert "A: tag-mode claude.yml counted as skipped, not scanned" "$([ "$(sed -n 's/^SKIPPED_TAG_MODE=//p' <<<"$OUT")" -ge 1 ] 2>/dev/null && echo true || echo false)"
@@ -221,6 +227,47 @@ $UPLOAD_STEP"
 run "$work/k"
 assert "K: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "K: missing_issue_assertion reported" "$(has "$OUT" 'TYPE=missing_issue_assertion')"
+
+# fixture_as <dir> <basename> <workflow-body> — like fixture, under a chosen name.
+fixture_as() {
+  rm -rf "$1"
+  mkdir -p "$1/.github/workflows"
+  printf '%s\n' "$3" > "$1/.github/workflows/$2"
+}
+
+echo "=== TEST L: research-radar.yml's optional issue is exempted, and counted ==="
+fixture_as "$work/l" research-radar.yml "$HEAD
+$(sed '/^        id: audit$/d' <<<"$ISSUE_STEP")"
+run "$work/l"
+assert "L: exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "L: STATUS=OK" "$(has_line "$OUT" 'STATUS=OK')"
+assert "L: still in scope" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=1')"
+assert "L: three findings exempted" "$(has_line "$OUT" 'EXEMPT_OPTIONAL_DELIVERABLE=3')"
+# The same body under another name is NOT exempt: the exemption is per workflow.
+fixture_as "$work/l2" other.yml "$HEAD
+$(sed '/^        id: audit$/d' <<<"$ISSUE_STEP")"
+run "$work/l2"
+assert "L: same step in another workflow exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "L: same step in another workflow is not exempted" "$(has_line "$OUT" 'EXEMPT_OPTIONAL_DELIVERABLE=0')"
+
+echo "=== TEST M: an exemption covers only its listed finding types ==="
+fixture_as "$work/m" obsidian-cli-changelog.yml "$HEAD
+$ISSUE_STEP"
+run "$work/m"
+assert "M: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "M: missing upload still reported" "$(has "$OUT" 'TYPE=missing_transcript_upload')"
+assert "M: missing issue assertion exempted" "$(lacks "$OUT" 'TYPE=missing_issue_assertion')"
+
+echo "=== TEST N: an exemption that no longer fires is stale ==="
+fixture_as "$work/n" obsidian-cli-changelog.yml "$HEAD
+$ISSUE_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/n"
+assert "N: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "N: stale_exemption reported" "$(has "$OUT" 'TYPE=stale_exemption FILE=.github/workflows/obsidian-cli-changelog.yml EXEMPT=missing_issue_assertion')"
+assert "N: REASON names it" "$(has "$OUT" 'REASON=stale_exemption: ')"
 
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"

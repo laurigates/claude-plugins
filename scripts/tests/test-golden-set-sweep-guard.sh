@@ -13,6 +13,10 @@
 # `gh` that applies the step's own `--jq` program to an issue-list fixture. It
 # also pins the prefix to the title the sweep prompt files its report under.
 #
+# Supersede (#3346, docs/issue-lifecycle.md): only THIS month's report skips the
+# sweep. Last month's open report no longer blocks it; the guard reports it as
+# `previous` so the sweep job can carry it forward and close it.
+#
 # Usage: bash scripts/tests/test-golden-set-sweep-guard.sh [workflow-file]
 set -euo pipefail
 
@@ -76,24 +80,31 @@ STUB
 chmod +x "$work/bin/gh"
 
 chores='[{"number":2766,"title":"[Chore] golden-set-evaluation: decide the monthly sweep scope"},{"number":2748,"title":"[Chore] evaluate-plugin: carry #2667 golden-set recs"}]'
-with_report='[{"number":2766,"title":"[Chore] golden-set-evaluation: decide the monthly sweep scope"},{"number":2667,"title":"Golden-set cross-model sweep: 2026-09"}]'
+with_report='[{"number":2766,"title":"[Chore] golden-set-evaluation: decide the monthly sweep scope"},{"number":2901,"title":"Golden-set cross-model sweep: 2026-10"}]'
+last_month='[{"number":2766,"title":"[Chore] golden-set-evaluation: decide the monthly sweep scope"},{"number":2667,"title":"Golden-set cross-model sweep: 2026-09"}]'
 printf '%s\n' "$chores" > "$work/chores.json"
 printf '%s\n' "$with_report" > "$work/with_report.json"
+printf '%s\n' "$last_month" > "$work/last_month.json"
 printf '[]\n' > "$work/none.json"
 
-check() { # <label> <fixture> <force> <expected should_skip>
-  local got
+check() { # <label> <fixture> <force> <expected should_skip> [expected previous]
+  local got prev
   : > "$work/out"
-  (PATH="$work/bin:$PATH" ISSUES_FIXTURE="$work/$2.json" FORCE="$3" GH_TOKEN=x \
+  (PATH="$work/bin:$PATH" ISSUES_FIXTURE="$work/$2.json" FORCE="$3" MONTH=2026-10 GH_TOKEN=x \
     GITHUB_OUTPUT="$work/out" bash -e "$work/guard.sh" >/dev/null 2>&1) || true
   got="$(sed -n 's/^should_skip=//p' "$work/out")"
   if [ "$got" = "$4" ]; then pass "$1"; else fail "$1 (expected should_skip=$4, got '$got')"; fi
+  if [ $# -ge 5 ]; then
+    prev="$(sed -n 's/^previous=//p' "$work/out")"
+    if [ "$prev" = "$5" ]; then pass "$1: previous=$5"; else fail "$1 (expected previous=$5, got '$prev')"; fi
+  fi
 }
 
-check "open chores carrying the label do not skip the sweep"   chores      false false
-check "an open sweep report skips the sweep"                    with_report false true
+check "open chores carrying the label do not skip the sweep"   chores      false false ""
+check "this month's open sweep report skips the sweep"          with_report false true  ""
+check "last month's open report does not skip the sweep"        last_month  false false 2667
 check "force runs the sweep despite an open report"             with_report true  false
-check "no open issue runs the sweep"                            none        false false
+check "no open issue runs the sweep"                            none        false false ""
 
 echo "=== END GOLDEN-SET SWEEP GUARD ==="
 echo "PASSED=$pass_count"

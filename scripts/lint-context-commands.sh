@@ -30,6 +30,8 @@
 #     is absent, aborting the skill before its body runs (issue #2145)
 # 18. escaped single quotes (\'file\') reach the command literally, so a find
 #     -name probe never matches (issue #3207)
+# 19. find -name with a '/' in its pattern never matches; -name sees only the
+#     basename (use -path) (issue #3438)
 #
 # Exit codes:
 #   0 - no issues
@@ -301,6 +303,18 @@ check_pattern ERROR \
   "escaped-single-quote" \
   "^- .*!\`[^\`]*\\\\'" \
   "drop the backslashes: -name '.file'; if the value contains '/', use -path './dir/file' with a -maxdepth deep enough to reach it (-name never matches a slash)"
+
+# find -name matches the basename only, so a pattern containing '/' can never
+# match: the probe exits 0 with empty output and reads as "absent" in every
+# project. Match the path with -path instead (and give -maxdepth enough depth
+# to reach it). Only the -name/-iname operand is checked, so a start path or a
+# -path operand that contains '/' is not flagged.
+# Regression: health-plugins used `find . -maxdepth 1 -name '.claude/settings.json'`
+# and project-skill-scripts used `find . -name 'scripts/*.sh'` (issue #3438)
+check_pattern ERROR \
+  "find-name-slash" \
+  "^- .*!\`[^\`]*find [^\`]* -i\\?name ['\"]\\?[^'\" \`]*/" \
+  "-name never matches a slash; use -path with a leading './' or '*/' (e.g. find . -maxdepth 2 -path './.claude/settings.json')"
 
 ##############################
 # WARNINGS - likely to break
