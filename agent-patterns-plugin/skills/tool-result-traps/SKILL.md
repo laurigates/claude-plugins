@@ -4,7 +4,7 @@ description: Tool results that mean something other than they look — a pattern
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-10-22
+modified: 2026-11-06
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -46,6 +46,7 @@ non-finding.
 | Concluding a skill, command, recipe, or binary "does not exist" | You enumerated every tier it could be defined in |
 | A `-g`/`--glob` filter is doing the narrowing, and the name you want is a directory | The glob is `**/<name>/**`, or the search is on content not names |
 | The command that produced the empty result had its stderr redirected away | You read the command's stderr, or have seen it fail before |
+| A `pgrep -f` liveness check or watcher loop disagrees with the job's own log, or never exits | You hold the job's PID, or watch the file it writes on completion |
 
 ## The traps
 
@@ -76,6 +77,10 @@ See [references/search-traps.md](references/search-traps.md) when a pre-2.1.301 
 ## One search tier is not the search universe
 
 See [references/search-traps.md](references/search-traps.md) before concluding a skill, command, recipe, or binary does not exist.
+
+## `pgrep -f` matches its own shell wrapper
+
+See [references/process-match-traps.md](references/process-match-traps.md) when a `pgrep -f` check reports a finished job as running, or a `until ! pgrep -f …` watcher never exits.
 
 ## A rejected flag looks exactly like "no results"
 

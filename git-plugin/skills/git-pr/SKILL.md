@@ -1,9 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-10-26
+modified: 2026-11-06
 reviewed: 2026-06-10
 name: git-pr
-description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". From pushed branches.
+description: "From an already-pushed branch: open the pull request with body, labels, reviewers and issue refs. Use when the user says \"create PR\", \"open pull request\", or \"submit for review\"."
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git push *), Bash(git fetch *), Bash(git rev-list *), Bash(gh pr *), Bash(gh issue *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---

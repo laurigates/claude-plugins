@@ -46,7 +46,25 @@ close it by hand.
 ## Suggested Action
 
 <What should change in the skill, or what should be preserved>
+
+## Processing
+
+<Keep the block for this issue's category and delete the other.>
+
+<Bug or Enhancement:>
+- **Processed by:** the weekly `friction-learner` run reads it as corroboration; the fix lands as an ordinary PR.
+- **Completed means:** a PR that fixes it has merged, or it was closed with a stated reason.
+- **Closes:** when that PR merges (`Fixes #N`).
+
+<Positive feedback:>
+- **Processed by:** the weekly `friction-learner` run, which cites it under `## Fast-loop signal` in its PR.
+- **Completed means:** that PR cites it.
+- **Closes:** `friction-learner` closes it after citing it, and keeps reading it as a stability marker for 6 months while closed.
 ```
+
+The `## Processing` section puts the issue's lifecycle in the issue itself, so
+whoever opens it can tell who acts on it and when it closes without knowing the
+feedback loop.
 
 ## Step 4 finding format
 

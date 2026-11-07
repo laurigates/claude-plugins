@@ -398,13 +398,12 @@ done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | 
 # flagging every skill whose `allowed-tools` grants a bare unscoped `Bash`. It was
 # REMOVED deliberately — do not reinstate it.
 #
-# A bare `Bash` in a *skill's* `allowed-tools` is the ratified house standard, not a
-# finding (see `.claude/rules/agentic-permissions.md`). Skill frontmatter can only
-# SUBTRACT from the session's grants, never add, so enumerating narrow
-# `Bash(<command> *)` patterns there buys no safety the settings.json layer isn't
-# already providing — while costing a permission prompt for every command the author
-# failed to predict. Narrow patterns belong in `settings.json`, which is where they
-# actually gate anything.
+# The house standard has since changed: a skill's `allowed-tools` pre-approves its
+# tools for the invoking turn, so narrow `Bash(<command> *)` patterns are the
+# standard and a bare `Bash` is non-conforming (#2839,
+# `.claude/rules/agentic-permissions.md`). The lint for that belongs with the
+# migration in #3464, as a baselined ratchet, not here: this audit's scoring and
+# its unbounded walk were broken in their own right, as below.
 #
 # Left in place, this check scored the repo down for following its own standard: it
 # fired on 191 of 408 SKILL.md files and inflated `security_total` once per offender

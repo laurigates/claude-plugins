@@ -1,9 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-11-04
+modified: 2026-11-06
 reviewed: 2026-04-25
 name: git-push
-description: Push local commits to remote with branch tracking, upstream setup, and safe push patterns. Use when user says "push", "send to remote", or "update remote". Pushes existing commits only.
+description: "Existing commits only: push them to the remote with upstream tracking and --force-with-lease. Use when the user says \"push\", \"send to remote\", or \"update remote\". Commits nothing."
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(git rev-list *), Bash(git fetch *), Read, Grep, Glob, TodoWrite
 ---

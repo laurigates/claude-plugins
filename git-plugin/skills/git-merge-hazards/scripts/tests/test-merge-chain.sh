@@ -30,6 +30,12 @@
 #   - a --review-ts more than 60 s in the future is a usage error (#3400).
 #   - a PR GitHub auto-merges during the CI wait is MERGED, not SKIPPED/WARN;
 #     one merged during the wait without auto-merge stays SKIPPED (#3401).
+#   - after update-branch reports an update, reads that still show the
+#     pre-update head are not judged: that head's failed run does not stop the
+#     PR, and a head that never moves is ERROR head_not_updated (#3421).
+#   - in a fork, a PR whose base branch is the head of an open PR against the
+#     parent is SKIPPED (merging it would push into that PR), and a failed
+#     lookup is ERROR; a same-repo stacked base is not checked (#3445).
 #
 # Needs bash and jq.
 
@@ -77,12 +83,29 @@ case "$1 $2" in
   "api user")
     [ -n "${STUB_SELF_FAIL:-}" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
     echo "${STUB_SELF:-me}"; exit 0 ;;
+  "api repos/"*/pulls\?*)
+    # Open PRs in another repo (the fork parent), filtered by ?head=<owner:branch,
+    # URI-encoded> against $STUB_STATE/upstream-pulls.json ([{number, head: {label}}]).
+    [ -n "${STUB_UPSTREAM_FAIL:-}" ] && { echo "HTTP 502: Bad Gateway" >&2; exit 1; }
+    head=$(sed -n 's/.*[?&]head=\([^&]*\).*/\1/p' <<<"$2")
+    jq --arg h "$head" '[.[] | select((.head.label | @uri) == $h)]' "$STUB_STATE/upstream-pulls.json" 2>/dev/null || echo '[]'
+    exit 0 ;;
+  "api repos/"*)
+    # The repo itself: default branch and fork parent ($STUB_STATE/repo.json).
+    [ -n "${STUB_REPO_FAIL:-}" ] && { echo "HTTP 502: Bad Gateway" >&2; exit 1; }
+    cat "$STUB_STATE/repo.json" 2>/dev/null || echo '{"default_branch": "main", "fork": false}'
+    exit 0 ;;
   "pr view")
     n="$3"; [ -f "$(f "$n")" ] || { echo "no pull requests found" >&2; exit 1; }
     # _rollup_seq: the check rollup each successive checks read returns; the
     # last one sticks. Only reads that ask for statusCheckRollup consume it.
     fields=""; prev=""
     for a in "$@"; do [ "$prev" = "--json" ] && fields="$a"; prev="$a"; done
+    # _head_lag: update-branch reported "updated", but the next N checks reads
+    # still return the pre-update head and its rollup; then ._pending applies.
+    if [[ "$fields" == *statusCheckRollup* ]]; then
+      save "$n" 'if (._head_lag // 0) > 0 then ._head_lag -= 1 elif ._pending then ._pending else . end'
+    fi
     if [[ "$fields" == *statusCheckRollup* ]] && [ "$(jq '(._rollup_seq // []) | length' "$(f "$n")")" -gt 0 ]; then
       save "$n" '.statusCheckRollup = ._rollup_seq[0] | ._rollup_seq = ._rollup_seq[1:]'
     fi
@@ -116,9 +139,14 @@ case "$1 $2" in
     case "$beh" in
       conflict) echo "X Cannot update PR branch due to conflicts" >&2; exit 1 ;;
       denied) echo "HTTP 403: Resource not accessible by integration" >&2; exit 1 ;;
-      noop) echo "✓ PR branch already up to date"; exit 0 ;;
+      # gh's own wording (cli/cli pkg/cmd/pr/update-branch: BehindBy == 0).
+      noop) echo "✓ PR branch already up-to-date"; exit 0 ;;
     esac
+    cp "$(f "$n")" "$STUB_STATE/.pre-update-$n.json"
+    # Each real update makes a new merge commit, so a repeat update (BEHIND
+    # again) must not reuse the head it replaces: alternate a… and 9….
     new=$(printf 'a%039d' "$n")
+    [ "$new" = "$(jq -r .headRefOid "$(f "$n")")" ] && new=$(printf '9%039d' "$n")
     # _ms_seq: mergeStateStatus after each successive update, then _ms_after.
     save "$n" ".headRefOid = \"$new\"
       | .mergeStateStatus = (if (._ms_seq // []) | length > 0 then ._ms_seq[0] else (._ms_after // \"CLEAN\") end)
@@ -128,6 +156,14 @@ case "$1 $2" in
       late=$(printf 'c%039d' "$n")
       save "$n" ".headRefOid = \"$late\"
         | .commits += [{oid: \"$late\", committedDate: \"2026-10-27T09:05:00Z\", messageHeadline: \"style: bot auto-fix\"}]"
+    fi
+    # _head_lag: keep serving the pre-update state (with _stale_rollup as its
+    # checks) and park the updated state in ._pending until the lag runs out.
+    if [ "$(jq -r '._head_lag // 0' "$(f "$n")")" -gt 0 ]; then
+      tmp=$(mktemp)
+      jq --slurpfile new "$(f "$n")" '._pending = ($new[0] | del(._head_lag, ._stale_rollup, ._pending))
+        | .statusCheckRollup = (._stale_rollup // .statusCheckRollup)' "$STUB_STATE/.pre-update-$n.json" >"$tmp" &&
+        mv "$tmp" "$(f "$n")"
     fi
     echo "✓ PR branch updated"; exit 0 ;;
   "pr merge")
@@ -176,7 +212,7 @@ mkpr() {
   jq -n --argjson n "$1" --arg oid "$(printf 'f%039d' "$1")" '{
       number: $n, state: "OPEN", isDraft: false,
       author: {login: "me", is_bot: false},
-      headRefName: "feat/x-\($n)", headRefOid: $oid,
+      headRefName: "feat/x-\($n)", headRefOid: $oid, baseRefName: "main",
       mergeStateStatus: "BEHIND",
       statusCheckRollup: [{__typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS"}],
       commits: [{oid: "f0", committedDate: "2026-10-27T06:00:00Z", messageHeadline: "feat: work"}],
@@ -290,6 +326,41 @@ run_chain 119
 expect_line "merged during the wait without auto-merge -> SKIPPED" "$(section 119)" "STATUS=SKIPPED"
 expect_has "REASON=already_merged" "$(section 119)" "^REASON=already_merged: merged while waiting for CI"
 expect_line "a third-party merge still rolls up to WARN" "$(summary)" "STATUS=WARN"
+
+# A fork PR whose base branch is also the head of an open PR against the fork's
+# parent: merging it pushes its commits into that upstream PR (#3445,
+# laurigates/dust#2 into bootandy/dust#645). Skipped, never merged unattended.
+echo '{"default_branch": "main", "fork": true, "parent": {"full_name": "up/stream"}}' >"$STUB_STATE/repo.json"
+echo '[{"number": 645, "head": {"label": "o:feat/shared"}}]' >"$STUB_STATE/upstream-pulls.json"
+mkpr 120 '.baseRefName = "feat/shared"'
+mkpr 121 '.baseRefName = "feat/other"'
+mkpr 122
+run_chain 120,121,122
+expect_line "base is an open upstream PR's head -> SKIPPED" "$(section 120)" "STATUS=SKIPPED"
+expect_has "REASON names the upstream PR the merge would update" "$(section 120)" "^REASON=base_is_upstream_pr_head: .*feat/shared.*up/stream#645"
+expect_no "the PR feeding an upstream PR is never updated or merged" "$LOG" "pr (update-branch|merge) 120"
+expect_has "the upstream lookup asks for owner:base, URI-encoded" "$LOG" "api repos/up/stream/pulls\\?.*head=o%3Afeat%2Fshared"
+expect_line "a non-default base no upstream PR uses merges" "$(section 121)" "STATUS=MERGED"
+expect_line "a default-branch base merges" "$(section 122)" "STATUS=MERGED"
+expect_no "no upstream lookup for a default-branch base" "$LOG" "head=o%3Amain"
+expect_line "repository metadata is read once per run" "$(grep -c 'api repos/o/r$' <<<"$LOG")" "1"
+expect_line "the skip rolls up to WARN" "$(summary)" "STATUS=WARN"
+mkpr 123 '.baseRefName = "feat/shared"'
+export STUB_UPSTREAM_FAIL=1; run_chain 123; unset STUB_UPSTREAM_FAIL
+expect_line "unreadable upstream PR list -> ERROR, not clean" "$(section 123)" "STATUS=ERROR"
+expect_has "REASON=read_failed for the upstream lookup" "$(section 123)" "^REASON=read_failed: .*up/stream"
+expect_no "no merge after a failed upstream lookup" "$LOG" "pr merge"
+# Not a fork: a non-default base is an ordinary same-repo stack.
+echo '{"default_branch": "main", "fork": false}' >"$STUB_STATE/repo.json"
+mkpr 124 '.baseRefName = "feat/shared"'
+run_chain 124
+expect_line "same-repo stacked base merges" "$(section 124)" "STATUS=MERGED"
+expect_no "no upstream lookup outside a fork" "$LOG" "/pulls\\?"
+mkpr 125
+export STUB_REPO_FAIL=1; run_chain 125; unset STUB_REPO_FAIL
+expect_line "unreadable repository metadata -> ERROR" "$(section 125)" "STATUS=ERROR"
+expect_no "no merge without the repository's default branch" "$LOG" "pr merge"
+rm -f "$STUB_STATE/repo.json" "$STUB_STATE/upstream-pulls.json"
 
 # ---- 3. CONFLICT ------------------------------------------------------------
 echo "CONFLICT"
@@ -419,6 +490,28 @@ mkpr 316 '.statusCheckRollup = [
      status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:24Z"}]'
 run_chain 316
 expect_line "startedAt tie decided by completedAt -> MERGED" "$(section 316)" "STATUS=MERGED"
+
+# update-branch said "updated", but the first checks read still returns the
+# pre-update head and that head's failed run (#3421: gitleaks failed on
+# 7b8eb86c for a DNS error, passed on the post-update 71093960, and the chain
+# stopped CI_RED anyway). Failures count only once the head has moved.
+mkpr 317 '._head_lag = 1 | ._stale_rollup = [{__typename: "CheckRun", name: "scan-secrets / gitleaks", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 317
+expect_line "the pre-update head's failed run does not stop the PR -> MERGED" "$(section 317)" "STATUS=MERGED"
+expect_has "merged on the post-update head" "$LOG" "^STUB_GH pr merge 317 -R o/r --squash --delete-branch --match-head-commit a000000000000000000000000000000000000317$"
+# A head that never moves after a reported update is not judged on the old
+# head's checks either: it fails closed with its own reason.
+mkpr 318 '._head_lag = 1000 | ._stale_rollup = [{__typename: "CheckRun", name: "scan-secrets / gitleaks", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 318 --timeout 0
+expect_line "head never moves after update-branch -> ERROR" "$(section 318)" "STATUS=ERROR"
+expect_has "REASON=head_not_updated names the stale head" "$(section 318)" "^REASON=head_not_updated: .*f0000000"
+expect_no "no merge while the head is still the pre-update one" "$LOG" "pr merge"
+# Control: a no-op update leaves the head where it was, so its failed check
+# is judged at once.
+mkpr 319 '._update = "noop" | .mergeStateStatus = "CLEAN" | .statusCheckRollup = [{__typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 319 --timeout 0
+expect_line "no-op update: the unchanged head's failed check -> CI_RED" "$(section 319)" "STATUS=CI_RED"
+expect_has "REASON names it" "$(section 319)" "^REASON=check_failed: lint$"
 
 # BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
 mkpr 306 '._ms_seq = ["BEHIND"]'
@@ -554,6 +647,10 @@ expect_line "--review-ts 30 s ahead still merges" "$(section 701)" "STATUS=MERGE
 # ---- 9. the skill points at the script --------------------------------------
 echo "skill"
 if grep -q 'scripts/merge-chain.sh' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md names scripts/merge-chain.sh"; else bad "SKILL.md does not name scripts/merge-chain.sh"; fi
+# #3445: the fork/upstream-head hazard stays reachable from SKILL.md, and its
+# reference keeps the check a reader runs by hand.
+if grep -qF '(references/fork-upstream-base.md)' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md links references/fork-upstream-base.md"; else bad "SKILL.md does not link references/fork-upstream-base.md"; fi
+if grep -qF -- '--head "OWNER:BASE_BRANCH" --state open' "$SKILL_DIR/references/fork-upstream-base.md" 2>/dev/null; then ok "fork-upstream-base.md carries the upstream-PR lookup"; else bad "fork-upstream-base.md lacks the upstream-PR lookup"; fi
 # external-pr-trust forbids helpers that hide a PR number from the merge guard;
 # it must say why this script is not one, or the two skills contradict.
 TRUST="$SKILL_DIR/../external-pr-trust/SKILL.md"

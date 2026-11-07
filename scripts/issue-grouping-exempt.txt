@@ -6,7 +6,9 @@
 #
 # These are recurring machine-filed or feedback issues. Each one stands alone
 # (a dated report, a rolling dashboard, a feedback record), so grouping them
-# under an epic adds nothing. Their lifecycle is tracked in #3346.
+# under an epic adds nothing. Who processes each type and when it closes is
+# docs/issue-lifecycle.md; scripts/check-issue-processing.sh requires every
+# label here (except epic) to appear there.
 #
 # Format, one entry per line:
 #   label <name>     exempt any issue carrying this label

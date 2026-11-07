@@ -1092,6 +1092,54 @@ write_marketplace "$CLEAN_META"
 printf '{\n  "packages": {\n    "%s": {\n      "component": "%s",\n      "release-type": "simple"\n    }\n  }\n}\n' \
   "$PLUGIN" "$PLUGIN" > "$root/release-please-config.json"
 printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
+
+# Issue #3443: the configure-claude-plugins workflow templates put a `#` line
+# inside the `plugins: |` block scalar (content, not a comment, so
+# claude-code-action rejects it as a plugin name) and the review template's
+# permissions lacked `id-token: write` (claude-code-action fetches its token
+# via OIDC, so the job fails before it starts).
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the check parses each workflow fence as
+# YAML, the way the action reads it, rather than grepping for a comment. The
+# shipped skill directory is copied in: it exits 0, and each defect put back
+# into a copy of the shipped reference (a `#` line inside the first
+# `plugins: |`, or the review job's `id-token: write` removed) exits 1 naming
+# that defect.
+cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
+ccp_ref="$root/$PLUGIN/skills/configure-claude-plugins/references/workflow-templates.md"
+cp "$ccp_ref" "$tmp/ccp-ref.orig"
+
+run_check; out_ccp="$OUT"; rc_ccp="$RC"
+assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
+assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
+
+for ccp_mutation in plugins-comment id-token; do
+  python3 - "$tmp/ccp-ref.orig" "$ccp_ref" "$ccp_mutation" <<'PY'
+import sys
+src, dst, mutation = sys.argv[1:4]
+text = open(src, encoding="utf-8").read()
+if mutation == "plugins-comment":
+    anchor = "          plugins: |\n"
+    assert anchor in text, "fixture precondition: no `plugins: |` line in the shipped reference"
+    text = text.replace(anchor, anchor + "            # a comment line inside the block scalar\n", 1)
+else:
+    review = text.index("name: Claude Code Review")
+    head, tail = text[:review], text[review:]
+    assert "  id-token: write\n" in tail, "fixture precondition: review template has no id-token: write"
+    text = head + tail.replace("  id-token: write\n", "", 1)
+open(dst, "w", encoding="utf-8").write(text)
+PY
+  run_check; out_ccp_red="$OUT"; rc_ccp_red="$RC"
+  assert_eq "configure-claude-plugins: reintroducing ${ccp_mutation} exits 1" "$rc_ccp_red" "1"
+  case "$ccp_mutation" in
+    plugins-comment) ccp_needle="inside its plugins: block scalar" ;;
+    id-token) ccp_needle="without id-token: write" ;;
+  esac
+  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named (#3443)" \
+    "$out_ccp_red" "$ccp_needle"
+done
+rm -rf "${root:?}/$PLUGIN/skills/configure-claude-plugins"
+
 # --- model: haiku limits (Haiku 5.5 re-evaluation, 2026-10) ------------------
 # Haiku is allowed except where one of two measured hazards applies, and each
 # hazard is paired with the allowed case beside it so the suite fails both a

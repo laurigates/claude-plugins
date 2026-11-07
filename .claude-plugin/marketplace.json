@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.56.2",
+      "version": "2.57.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -128,7 +128,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.51.2",
+      "version": "3.51.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -173,7 +173,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.28.2",
+      "version": "1.29.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -276,7 +276,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.43.0",
+      "version": "1.43.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -332,7 +332,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.14.0",
+      "version": "1.15.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -370,7 +370,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.14.1",
+      "version": "1.15.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.69.7",
+      "version": "2.70.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -485,7 +485,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.24.1",
+      "version": "1.24.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.19.1",
+      "version": "2.20.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -738,7 +738,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.12",
+      "version": "1.21.13",
       "author": {
         "name": "Lauri Gates"
       },
@@ -828,7 +828,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.8.3",
+      "version": "1.9.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -846,7 +846,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.15.0",
+      "version": "1.17.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -929,7 +929,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.25.0",
+      "version": "3.27.0",
       "author": {
         "name": "Lauri Gates"
       },

@@ -241,6 +241,87 @@ if [ -z "$session_file" ] && [ -n "${PI_SESSION_FILE:-}" ] && [ -f "$PI_SESSION_
 fi
 
 # ---------------------------------------------------------------------------
+# OpenCode fallback (#2725): engages only when neither the Claude lookup nor pi
+# found a transcript and the OpenCode adapter exported OPENCODE_SESSION_ID (its
+# shell.env hook sets the raw ses_… id on every bash call). OpenCode keeps
+# sessions in its own database, so transcripts come from its CLI:
+#   opencode export <id>                         {"info": Session, "messages": [{"info", "parts"}]}
+#   opencode session list --format json [-n N]   the project's ROOT sessions
+# Both run in the project dir, because the CLI scopes the listing to the
+# project of its cwd. Each CLI call starts an OpenCode instance, so a full
+# window costs one start per session. Translation into the Claude-shaped lines
+# the extraction below reads:
+#   tool part, tool "bash"                       -> assistant tool_use Bash .input.command
+#   tool part, tool "edit"/"write", status "completed"
+#                                                -> toolUseResult {filePath, type}
+# A failed edit is a tool part with status "error", hence the status check. An
+# export whose info.parentID is set is a subagent session and stays out of the
+# window, like a pi parentSession sibling. Nothing maps to toolDenialKind.
+# ---------------------------------------------------------------------------
+oc_bin="${DISTILL_SURVEY_OPENCODE_BIN:-opencode}"
+OC_TRANSLATE_JQ='
+  .messages[]? | select(type == "object")
+  | .parts[]? | select(type == "object" and .type == "tool")
+  | if .tool == "bash" then
+      {type: "assistant", message: {content: [{type: "tool_use", name: "Bash",
+        input: {command: (.state.input.command | if type == "string" then . else "" end)}}]}}
+    elif (.tool == "edit" or .tool == "write")
+         and .state.status == "completed"
+         and ((.state.input.filePath | type) == "string") then
+      {toolUseResult: {filePath: .state.input.filePath,
+        type: (if .tool == "edit" then "update" else "create" end)}}
+    else empty end
+'
+oc_export() {  # $1 = session id, $2 = out file; true when a valid export of that id was written
+  (cd "$project_dir" 2>/dev/null && "$oc_bin" export "$1" 2>/dev/null) > "$2" || return 1
+  jq -e --arg id "$1" '.info.id == $id and (.messages | type == "array")' "$2" >/dev/null 2>&1
+}
+oc_tmp=""
+if [ -z "$session_file" ] && [ "$transcript_format" = claude-code ] \
+   && [ -n "${OPENCODE_SESSION_ID:-}" ] && have jq && have "$oc_bin"; then
+  oc_tmp=$(mktemp -d 2>/dev/null || echo "")
+  [ -n "$oc_tmp" ] && [ -d "$oc_tmp" ] && trap 'rm -rf "$oc_tmp"' EXIT
+  if [ -n "$oc_tmp" ] && [ -d "$oc_tmp" ] && oc_export "$OPENCODE_SESSION_ID" "$oc_tmp/current.json"; then
+    transcript_format="opencode"
+    [ -n "$session_id" ] || session_id="$OPENCODE_SESSION_ID"
+    declare -a oc_args=(session list --format json)
+    [ -n "$window_days" ] || oc_args+=(-n "$window_sessions")
+    cutoff_ms=0
+    [ -n "$window_days" ] && cutoff_ms=$(( ($(date +%s) - window_days * 86400) * 1000 ))
+    # Other root sessions, newest first, inside the window.
+    declare -a oc_ids=()
+    while IFS= read -r sid; do
+      [ -n "$sid" ] && [ "$sid" != "$OPENCODE_SESSION_ID" ] && oc_ids+=("$sid")
+    done < <(
+      (cd "$project_dir" 2>/dev/null && "$oc_bin" "${oc_args[@]}" 2>/dev/null) \
+        | jq -r --argjson cut "$cutoff_ms" '
+            if type == "array" then . else [] end
+            | map(select(type == "object" and (.id | type) == "string"))
+            | sort_by(-(.updated // 0)) | .[]
+            | select((.updated // 0) >= $cut) | .id' 2>/dev/null
+    )
+    WINDOW_FILES=()
+    out="$oc_tmp/current.jsonl"
+    jq -c "$OC_TRANSLATE_JQ" "$oc_tmp/current.json" > "$out" 2>/dev/null || : > "$out"
+    WINDOW_FILES+=("$out")
+    session_file="$out"
+    sessions_scanned=1
+    i=0
+    for sid in "${oc_ids[@]:-}"; do
+      [ -n "$sid" ] || continue
+      i=$((i + 1))
+      raw="$oc_tmp/$i.json"
+      oc_export "$sid" "$raw" || continue
+      jq -e '.info.parentID == null' "$raw" >/dev/null 2>&1 || continue
+      out="$oc_tmp/$i.jsonl"
+      jq -c "$OC_TRANSLATE_JQ" "$raw" > "$out" 2>/dev/null || : > "$out"
+      WINDOW_FILES+=("$out")
+      sessions_scanned=$((sessions_scanned + 1))
+    done
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Availability gate.
 # ---------------------------------------------------------------------------
 available=true
@@ -252,7 +333,11 @@ if [ -z "$session_file" ]; then available=false; skip_reason="this session's tra
 if [ "$available" = true ] && [ "$sessions_scanned" -lt "$min_sessions" ]; then
   available=false; skip_reason="fewer than ${min_sessions} transcripts in the project dir"
 fi
-# pi: the Claude-specific gates above (projects dir, --session-id) do not apply.
+# pi / OpenCode: the Claude-specific gates above (projects dir, --session-id) do not apply.
+if [ "$transcript_format" = opencode ]; then
+  available=true; skip_reason=""
+  [ "$sessions_scanned" -lt "$min_sessions" ] && { available=false; skip_reason="fewer than ${min_sessions} OpenCode sessions in the project"; }
+fi
 if [ "$transcript_format" = pi ]; then
   available=true; skip_reason=""
   if [ -z "$session_file" ]; then
@@ -779,8 +864,9 @@ if [ "$max_denial" -ge 2 ]; then
 else
   echo "RULES_SIGNAL=none_mechanical"
 fi
-# pi records no permission denials, so a zero here means "not recorded", not "none".
-[ "$transcript_format" = pi ] && echo "RULE_HINTS_RECORDED=false"
+# pi and OpenCode record no permission denials in a form the collector reads, so
+# a zero here means "not recorded", not "none".
+case "$transcript_format" in pi|opencode) echo "RULE_HINTS_RECORDED=false" ;; esac
 echo "DENIAL_TOTAL=${total_denials}"
 for kind in "${denial_order[@]:-}"; do
   [ -n "$kind" ] || continue

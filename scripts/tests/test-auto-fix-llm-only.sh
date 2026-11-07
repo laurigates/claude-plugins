@@ -10,8 +10,9 @@
 # run 37933197451).
 #
 # "Gather failure context" now sets `llm_only=true` when every failed step of
-# the failed run is a `Claude …` step or a step of plugin-pr-checks'
-# `skill-review` job, and the Claude step is skipped on it. This test EXTRACTS
+# the failed run is a `Claude …` step, and the Claude step is skipped on it.
+# (A non-Claude step of plugin-pr-checks' `skill-review` job counted too until
+# that job was removed, #3199.) This test EXTRACTS
 # that step's shipped `run:` body with PyYAML and runs it against a stub `gh`
 # that applies the step's own `--jq` program to jobs fixtures shaped like
 # `gh run view <id> --json jobs`.
@@ -90,7 +91,6 @@ fixture() { # <name> <json>
   printf '%s\n' "$2" > "$work/$1.json"
 }
 fixture claude_in_compliance '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Run plugin compliance checks","conclusion":"success"},{"name":"Claude Skill Quality Review","conclusion":"failure"}]}]}'
-fixture skill_review_assert '{"jobs":[{"name":"compliance","conclusion":"success","steps":[{"name":"Lint workflows with actionlint","conclusion":"success"}]},{"name":"skill-review","conclusion":"failure","steps":[{"name":"Claude Skill Quality Review","conclusion":"success"},{"name":"Assert the skill review left a comment","conclusion":"failure"}]}]}'
 fixture mixed '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Check shell scripts follow shell-scripting.md","conclusion":"failure"}]},{"name":"skill-review","conclusion":"failure","steps":[{"name":"Claude Skill Quality Review","conclusion":"failure"}]}]}'
 fixture deterministic '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Self-test every guard this job gates on","conclusion":"failure"}]}]}'
 fixture no_failed_step '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Set up job","conclusion":"success"}]}]}'
@@ -115,7 +115,6 @@ check() { # <label> <fixture> <expected>
 }
 
 check "a run whose only failed step is the Claude review is LLM-only" "$work/claude_in_compliance.json" true
-check "a failed skill-review delivery assertion is LLM-only"         "$work/skill_review_assert.json"  true
 check "a deterministic failure beside a Claude failure is not"       "$work/mixed.json"                false
 check "a deterministic failure alone is not"                         "$work/deterministic.json"        false
 check "a failed job with no failed step is not"                      "$work/no_failed_step.json"       false

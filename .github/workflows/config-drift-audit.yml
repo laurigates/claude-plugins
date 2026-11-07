@@ -171,6 +171,12 @@ jobs:
               echo "Rolling report from \`.github/workflows/config-drift-audit.yml\`: each comment lists only what is new since the previous run. See \`health-plugin/README.md\` for how to read and waive findings."
               echo
               cat "$COMMENT_FILE"
+              echo
+              echo "## Processing"
+              echo
+              echo "- **Processed by:** Lauri, who reads each run's comment."
+              echo "- **Completed means:** each finding is fixed or waived (\`health-plugin/README.md\`)."
+              echo "- **Closes:** never; this is a rolling issue. If it is closed, the next run with findings opens a new one. See \`docs/issue-lifecycle.md\`."
             } > "$RUNNER_TEMP/issue-body.md"
             gh issue create --repo "$GITHUB_REPOSITORY" \
               --title "Config drift audit: new findings (rolling)" \

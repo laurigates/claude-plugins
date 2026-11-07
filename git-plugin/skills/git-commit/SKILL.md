@@ -1,9 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-09-23
+modified: 2026-11-06
 reviewed: 2026-09-02
 name: git-commit
-description: Create commits with conventional messages and issue references. Use when user says "commit", "save changes", or "stage and commit". Local commits only — see git-push for remote.
+description: "Local commits only: stage the changes, write a conventional message, run pre-commit, create the commit. Use when the user says \"commit\", \"save my work\", or \"stage and commit\". Pushing is git-push."
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git restore *), Bash(pre-commit *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 ---

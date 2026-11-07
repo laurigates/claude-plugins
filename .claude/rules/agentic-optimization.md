@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-11-06
 reviewed: 2025-12-20
 paths:
   - "**/skills/**"
@@ -98,7 +98,7 @@ npm ls --json
 
 ## Skill Documentation Pattern
 
-Always include an "Agentic Optimizations" table:
+Where the commands are the payload (CLI wrappers), include an "Agentic Optimizations" table. Elsewhere it is optional (`context-engineering.md` § Supersedes):
 
 ```markdown
 ## Agentic Optimizations
