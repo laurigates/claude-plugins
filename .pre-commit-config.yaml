@@ -1059,6 +1059,12 @@ repos:
         language: system
         files: '^scripts/(resolve-additive-conflicts\.py|tests/test-resolve-additive-conflicts\.sh)$'
         pass_filenames: false
+      - id: test-repair-split-ledger
+        name: pre-split branch merge does not re-append the old ledger table (#3490)
+        entry: bash ./scripts/tests/test-repair-split-ledger.sh
+        language: system
+        files: '^scripts/(repair-split-ledger\.py|tests/test-repair-split-ledger\.sh)$'
+        pass_filenames: false
       - id: check-loop-integrity
         name: looping skills keep an independent stop condition + state packet (loop-integrity.md)
         entry: bash ./scripts/check-loop-integrity.sh --strict
