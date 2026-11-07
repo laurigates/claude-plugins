@@ -153,7 +153,8 @@ The parser emits one friction event per line:
 A `hook_block` whose harness wrapper names the hook's install path
 (`[bash <home>/.claude/plugins/cache/<marketplace>/<plugin>/<version>/hooks/<name>.sh]`)
 also carries `"plugin"` and `"version"`: the build that actually ran. A wrapper
-that names no path (`[command hook 6]`) is unstamped and carries neither.
+that names no path (`[command hook 6]`) is unstamped and carries neither, even
+when the hook's message after the bracket quotes a cache path.
 
 Stop-hook output is not a tool result: the harness injects it as an `isMeta`
 user record beginning `Stop hook feedback:`. The parser keys each one on the

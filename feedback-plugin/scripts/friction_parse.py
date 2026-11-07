@@ -111,6 +111,12 @@ STASH_ENTRY_RE = re.compile(r"^\s+stash@\{\d+\}", re.M)
 # build-share row is computed from these two fields. A wrapper that names no
 # cache path ("[command hook 6]", an unexpanded ${CLAUDE_PLUGIN_ROOT}) is
 # unstamped, and the event carries neither field.
+#
+# The path is read from the wrapper bracket only, never from the message after
+# it: a hook message can quote a cache path (a blocked `cat .../hooks/a.sh`),
+# and that version did not run the hook. HOOK_WRAPPER_RE captures the first
+# "[...]" after "hook error:" / "hook blocking error ...:" on the same line.
+HOOK_WRAPPER_RE = re.compile(r"\bhook (?:blocking )?error\b[^\n\[]*?:\s*\[([^\]\n]*)\]")
 BUILD_STAMP_RE = re.compile(
     r"plugins[/\\]cache[/\\][^/\\\s\]]+[/\\]([^/\\\s\]]+)[/\\]([^/\\\s\]]+)"
     r"[/\\]hooks[/\\]"
@@ -360,8 +366,15 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
 
 
 def build_stamp(evidence: str) -> tuple[str, str] | None:
-    """(plugin, version) of the hook that produced a block, else None (#3220)."""
-    m = BUILD_STAMP_RE.search(evidence or "")
+    """(plugin, version) of the hook that produced a block, else None (#3220).
+
+    Only the harness wrapper bracket is searched; a path quoted in the hook's
+    own message is not a stamp.
+    """
+    wrapper = HOOK_WRAPPER_RE.search(evidence or "")
+    if not wrapper:
+        return None
+    m = BUILD_STAMP_RE.search(wrapper.group(1))
     return (m.group(1), m.group(2)) if m else None
 
 

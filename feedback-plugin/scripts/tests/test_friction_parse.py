@@ -656,6 +656,48 @@ def test_build_stamp_reads_windows_separators():
     assert mod.build_stamp("[bash ${CLAUDE_PLUGIN_ROOT}/hooks/x.sh]") is None
 
 
+def test_build_stamp_ignores_cache_path_quoted_in_hook_message():
+    """The stamp comes from the wrapper bracket only. A "[command hook N]"
+    wrapper names no path, so a hook message that quotes a plugin-cache hooks
+    path (e.g. echoing a blocked command) must stay unstamped: that version
+    never ran the hook.
+    """
+    mod = _parser_module()
+    quoted = (
+        "PreToolUse:Bash hook error: [command hook 6]: Blocked: cat "
+        "/Users/x/.claude/plugins/cache/mk/hooks-plugin/2.15.2/hooks/a.sh"
+    )
+    assert mod.build_stamp(quoted) is None, mod.build_stamp(quoted)
+    # A stamped wrapper still wins over a different path quoted after it.
+    both = (
+        "PreToolUse:Bash hook error: [bash /h/.claude/plugins/cache/mk/"
+        "hooks-plugin/2.15.5/hooks/bash-safety.sh]: Blocked: cat /h/.claude/"
+        "plugins/cache/mk/hooks-plugin/2.15.2/hooks/a.sh"
+    )
+    assert mod.build_stamp(both) == ("hooks-plugin", "2.15.5"), mod.build_stamp(both)
+    # A bare "blocked by a hook" body has no wrapper at all.
+    bare = (
+        "blocked by a hook: see ~/.claude/plugins/cache/mk/git-plugin/1.40.0/hooks/x.sh"
+    )
+    assert mod.build_stamp(bare) is None, mod.build_stamp(bare)
+
+    # End to end: the same block through the parser is a hook_block without
+    # the plugin/version keys.
+    record = json.loads((BUILD_STAMP_FIXTURE / "t.jsonl").read_text().splitlines()[11])
+    assert "[command hook 6]" in record["message"]["content"][0]["content"]
+    record["message"]["content"][0]["content"] = quoted
+    record["toolUseResult"] = "Error: " + quoted
+    use = json.loads((BUILD_STAMP_FIXTURE / "t.jsonl").read_text().splitlines()[10])
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "t.jsonl").write_text(
+            json.dumps(use) + "\n" + json.dumps(record) + "\n"
+        )
+        events = run_parser(Path(tmp))
+    blocks = [e for e in events if e["kind"] == "hook_block"]
+    assert len(blocks) == 1, events
+    assert "plugin" not in blocks[0] and "version" not in blocks[0], blocks[0]
+
+
 def test_sed_unresolved_and_awk_crash_have_own_signatures():
     """2026-W45: 34 `hook:bash-antipatterns:other` events were two shapes --
     24 `awk: towc: multibyte conversion failure` crashes of the hook itself
