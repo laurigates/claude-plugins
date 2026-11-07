@@ -13,14 +13,6 @@ configure-plugin/skills/configure-reusable-workflows/SKILL.md	laurigates/.github
 foundryvtt-plugin/skills/foundryvtt-module-scaffold/references/fleet-drift.md	~/repos/	1
 foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/check-fleet-drift.py	~/repos/	2
 foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	gitops repo	1
-git-plugin/skills/git-commit-push-pr/SKILL.md	laurigates/gitops	2
-git-plugin/skills/git-merge-hazards/references/serial-merge-chain.md	laurigates/dotfiles	1
-git-plugin/skills/git-merge-hazards/references/sync-notes.md	laurigates/dotfiles	1
-git-plugin/skills/git-pr/REFERENCE.md	laurigates/gitops	2
-git-plugin/skills/git-pr/SKILL.md	laurigates/gitops	2
-git-plugin/skills/github-pr-title/SKILL.md	laurigates/gitops	2
-git-plugin/skills/github-pr-title/merge-strategies.md	laurigates/.github	2
-git-plugin/skills/github-pr-title/merge-strategies.md	laurigates/gitops	3
 github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
 github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
 hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1

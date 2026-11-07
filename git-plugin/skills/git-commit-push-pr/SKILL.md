@@ -1,7 +1,7 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-10-26
+modified: 2026-11-07
 reviewed: 2026-04-29
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(python3 *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
@@ -122,7 +122,7 @@ If falling back to `gh pr create` instead of the MCP tool, write the body to a t
 
 PR body structure when follow-up issues exist:
 
-The squash body follows the repo's `squash_merge_commit_message`: `COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo a squash-merged PR's body becomes the commit body (see `github-pr-title` →
+The squash body follows the repo's `squash_merge_commit_message`: `COMMIT_MESSAGES` uses the branch commits' messages and `PR_BODY` the PR body; read it with `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message` rather than assuming. On a `PR_BODY` repo a squash-merged PR's body becomes the commit body (see `github-pr-title` →
 [merge-strategies.md](../github-pr-title/merge-strategies.md)) — prose, then footers:
 
 ```markdown

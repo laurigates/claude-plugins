@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-11-06
+modified: 2026-11-07
 reviewed: 2026-04-25
 name: github-pr-title
 description: "PR title only: the type(scope): subject line that squash-merge lands on main and release-please parses. Use when writing, fixing, or validating the title of a PR."
@@ -121,7 +121,7 @@ each branch commit lands as-is and the PR title/body are discarded. The house
 default is rebase unless there is a reason to squash; single-commit PRs,
 release PRs and PRs with fixups squash, so the title still decides most
 releases. The squash body follows the repo's `squash_merge_commit_message`:
-`COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo the **PR body becomes the commit body** and
+`COMMIT_MESSAGES` uses the branch commits' messages and `PR_BODY` the PR body; read it with `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message` rather than assuming. On a `PR_BODY` repo the **PR body becomes the commit body** and
 release-please parses it: a `BREAKING CHANGE:` footer
 forces a major bump, a footer line shaped like `fix(x): …` adds an extra
 changelog entry, and `Release-As:` pins the version. Write the body as a commit

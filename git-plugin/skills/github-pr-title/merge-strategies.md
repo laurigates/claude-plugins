@@ -51,8 +51,8 @@ Three surfaces use the same script:
 | Surface | What it does |
 |---------|--------------|
 | git-plugin's `check-pr-merge-method.sh` hook (PreToolUse on `gh pr merge`) | Blocks a `--squash`/`--rebase` that disagrees with `METHOD` when no override label is set, and prints the correct command |
-| `laurigates/.github` `reusable-merge-method.yml` (caller: `.github/workflows/merge-method.yml`) | Posts a non-required `merge-method` check run whose title names the method, and sets a bot-applied `merge:rebase` or `merge:squash` label |
-| `ghm` in the dotfiles zsh config | Merges with the recommended method |
+| A CI workflow that runs the script on each PR. The published `laurigates/.github` `reusable-merge-method.yml` is one default; any workflow that runs the script and posts its result works | Posts a non-required `merge-method` check run whose title names the method, and sets a bot-applied `merge:rebase` or `merge:squash` label |
+| A shell alias or function of your own that runs the script, then `gh pr merge --<METHOD>` | Merges with the recommended method |
 
 The GitHub merge button defaults to the last method each user used in that
 repo (`viewerDefaultMergeMethod`, read-only). The check run title and the label
@@ -87,8 +87,10 @@ is a `LINT_*` line:
 
 ## Repo settings
 
-Merge settings for laurigates repos are OpenTofu-managed in `laurigates/gitops`
-(`main.tf`). Never PATCH them by hand; change them there.
+[The decision rule](#the-decision-rule) assumes these merge settings. If the repo's settings are
+managed as code (Terraform/OpenTofu, a settings app, an org-wide policy),
+change them there rather than with a PATCH that the next apply reverts; ask the
+user how they manage them when the repo does not say.
 
 | Setting | Value |
 |---------|-------|
@@ -96,16 +98,15 @@ Merge settings for laurigates repos are OpenTofu-managed in `laurigates/gitops`
 | `allow_squash_merge` | `true` |
 | `allow_merge_commit` | `false` (the ruleset also requires linear history) |
 | `squash_merge_commit_title` | `PR_TITLE` |
-| `squash_merge_commit_message` | `COMMIT_MESSAGES` on `release_please` repos (claude-plugins among them), `PR_BODY` elsewhere |
+| `squash_merge_commit_message` | `COMMIT_MESSAGES` on release-please repos, `PR_BODY` elsewhere |
 
-The squash body follows `squash_merge_commit_message`. Release-please repos use
-`COMMIT_MESSAGES` because of laurigates/.github#40: release-please's parser
-threw on parentheses inside a fenced block in a `PR_BODY` squash body and
-silently dropped every commit in the range. The upstream fix,
+The squash body follows `squash_merge_commit_message`. `COMMIT_MESSAGES` is the
+safer value on release-please repos: release-please's parser threw on
+parentheses inside a fenced block in a `PR_BODY` squash body and silently
+dropped every commit in the range (found in laurigates/.github#40). The upstream fix,
 googleapis/release-please#2936 (merged 2026-10-16), is not in a release yet,
-and the pinned release-please-action v4.4.1 bundles `^17.3.0`. The split moves
-to `PR_BODY` everywhere once an action release bundles release-please
-≥ 17.11.3 (laurigates/gitops#318).
+and release-please-action v4.4.1 bundles `^17.3.0`. `PR_BODY` is safe on
+release-please repos once the action in use bundles release-please ≥ 17.11.3.
 
 Check a repo rather than assuming:
 
@@ -158,7 +159,7 @@ default branch**, and the merge method decides which text becomes those commits.
 ### Merge commit
 
 As rebase, plus a `Merge pull request` commit release-please ignores. Disabled
-in gitops (`allow_merge_commit = false`).
+in [§ Repo settings](#repo-settings) (`allow_merge_commit = false`).
 
 ## Fixing after merge
 
@@ -181,7 +182,7 @@ not work with plain merges.
 ## PR body as commit body
 
 On a `PR_BODY` repo a squash-merged PR's body is permanent `git log` content;
-on a `COMMIT_MESSAGES` repo (laurigates/gitops#318) the commit messages are.
+on a `COMMIT_MESSAGES` repo the commit messages are.
 Write every PR body as a commit body anyway, not a review form, so it lands
 cleanly wherever the setting is `PR_BODY`:
 

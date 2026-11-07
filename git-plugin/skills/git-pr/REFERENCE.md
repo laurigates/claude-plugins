@@ -7,10 +7,9 @@ Full PR description templates, main-branch push patterns, stacked-PR merge rules
 ### Standard Template
 
 The squash body follows the repo's `squash_merge_commit_message`:
-`COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY`
-elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`;
-laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY`
-repo a squash-merged PR's body becomes the commit body on `main` — see
+`COMMIT_MESSAGES` uses the branch commits' messages and `PR_BODY` the PR body;
+read it with `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message`
+rather than assuming. On a `PR_BODY` repo a squash-merged PR's body becomes the commit body on `main` — see
 [merge-strategies.md](../github-pr-title/merge-strategies.md). So the template
 is a commit body: plain prose, then footers. No headings, checklists or HTML
 comments; on `PR_BODY` repos the merge-method body lint flags all three.
