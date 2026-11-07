@@ -1146,6 +1146,74 @@ assert_eq "haiku: haiku with an explicit non-low effort exits 0" "$rc_hkm" "0"
 assert_absent "haiku: an explicit effort raises no haiku issue" "$out_hkm" "model: haiku"
 rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
 
+# ---------------------------------------------------------------------------
+# #2360 C5: feedback-session creates labels at apply time, not in Step 1.
+#
+# Step 1 used to run `gh label create` before any finding was collected, so a
+# `--dry-run` wrote labels and a `--confirmed` run whose findings all deduped
+# away still created them. THE SEMANTIC INVARIANT UNDER TEST: label creation
+# appears only in the Step 5 (issue creation) section; any mention of it before
+# Step 5 is ❌ (exit 1), and a Step 5 that never creates the labels is ❌ too.
+# ---------------------------------------------------------------------------
+make_feedback_skill() {
+  # make_feedback_skill <step1-label-line> <step5-label-line>
+  local dir="$root/$PLUGIN/skills/feedback-session"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: feedback-session\n'
+    printf 'description: Fixture feedback-session. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-11-07\n'
+    printf 'modified: 2026-11-07\n'
+    printf 'reviewed: 2026-11-07\n'
+    printf -- '---\n\n'
+    printf '# feedback-session\n\n'
+    printf 'Seed prose becomes SEED_FINDINGS. `--confirmed` skips Step 4.\n\n'
+    printf '### Step 1: Resolve target repo and check label policy\n\n'
+    printf 'When the dominant source differs from the cwd remote, ask: Mismatch detected.\n\n'
+    printf '%s\n\n' "$1"
+    printf '### Step 4: Present findings for review\n\nIf `--dry-run`, stop here.\n\n'
+    printf '### Step 5: Create approved issues\n\n%s\n\n' "$2"
+    printf 'gh issue create --title "feedback(<plugin>): <desc>"\n\n'
+    printf '### Step 6: Report summary\n\nPrint the table.\n'
+  } > "$dir/SKILL.md"
+}
+FB_CHECK_IAC='**1b. Check whether labels are IaC-managed** (read-only).'
+FB_CREATE='**5a. Create missing labels** — only when at least one finding is approved.'
+
+# --- Creation in Step 1 (the pre-fix shape) must FAIL -----------------------
+make_feedback_skill "**1b–1c. Check IaC-managed labels, then create missing labels**" "Create each issue."
+run_check; out_fbl1="$OUT"; rc_fbl1="$RC"
+assert_eq "feedback-session: label creation in Step 1 exits 1" "$rc_fbl1" "1"
+assert_contains "feedback-session: label creation in Step 1 is named" \
+  "$out_fbl1" "feedback-session: label creation must happen in Step 5"
+
+# --- A raw gh label create before Step 5 must FAIL even if Step 5 creates too
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC Then run \`gh label create session-feedback\`." "$FB_CREATE"
+run_check; out_fbl2="$OUT"; rc_fbl2="$RC"
+assert_eq "feedback-session: gh label create before Step 5 exits 1" "$rc_fbl2" "1"
+assert_contains "feedback-session: gh label create before Step 5 is named" \
+  "$out_fbl2" "feedback-session: label creation must happen in Step 5"
+
+# --- Dropping label creation entirely must FAIL ------------------------------
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC" "Create each issue."
+run_check; out_fbl3="$OUT"; rc_fbl3="$RC"
+assert_eq "feedback-session: no label creation at all exits 1" "$rc_fbl3" "1"
+assert_contains "feedback-session: missing Step 5 label creation is named" \
+  "$out_fbl3" "feedback-session: Step 5 must create missing labels"
+
+# --- Guard integrity: check in Step 1, create in Step 5 PASSES ---------------
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC" "$FB_CREATE"
+run_check; out_fbl4="$OUT"; rc_fbl4="$RC"
+assert_eq "feedback-session: create-at-apply-time shape exits 0" "$rc_fbl4" "0"
+assert_absent "feedback-session: compliant shape raises no label issue" \
+  "$out_fbl4" "label creation must happen in Step 5"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
 echo "---"
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]

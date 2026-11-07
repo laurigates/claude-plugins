@@ -1,4 +1,4 @@
-# feedback-session: label checks (Steps 1b and 1c)
+# feedback-session: label checks (Steps 1b and 5a)
 
 **1b. Check whether labels are IaC-managed**
 
@@ -27,9 +27,9 @@ If IaC indicators are found **or** `labels.tf` / `labels.yaml` exist in the work
   If user chooses option 3, exit.
   If user chooses option 1, set `$SKIP_SESSION_LABELS=true` and continue.
 
-**1c. Create missing labels (only when not IaC-managed)**
+**5a. Create missing labels (only when not IaC-managed)**
 
-Skip this step if `$SKIP_SESSION_LABELS=true`.
+Runs in Step 5, immediately before the first `gh issue create`, and only when at least one finding is approved. Skip this step if `$SKIP_SESSION_LABELS=true`. It never runs under `--dry-run` (Step 4 stops first), and Step 3 dedup does not need the labels to exist: `gh issue list --label <missing>` matches no issue, which is correct, since no issue can carry a label that does not exist.
 
 1. Check if `session-feedback` exists: `gh label list --json name --jq '.[].name' | grep -q session-feedback`
 2. If missing: `gh label create session-feedback --description "Feedback from session analysis" --color "d876e3"`

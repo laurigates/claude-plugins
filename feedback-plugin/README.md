@@ -215,7 +215,7 @@ This integrates with the project's conventional commit workflow.
 2. At end of session, run `/feedback:session`
 3. Review categorized findings
 4. Select which to file as issues
-5. Issues are created with appropriate labels and body
+5. Issues are created with appropriate labels and body. Missing `session-feedback` / `positive-feedback` labels are created at this point, so `--dry-run` and a run whose findings all match open issues create none
 6. Use `session-plugin:session-distill` to actually update the skills based on filed issues
 
 ## Known Limitations
