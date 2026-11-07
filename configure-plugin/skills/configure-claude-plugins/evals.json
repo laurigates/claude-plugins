@@ -89,9 +89,9 @@
           "value": "git-plugin@laurigates-claude-plugins"
         },
         {
-          "assertion": "Lists Bash(git:*) only once",
+          "assertion": "Lists Bash(git:*) only once in an allow array",
           "check": "absent_regex",
-          "pattern": "Bash\\(git:\\*\\)[\\s\\S]*Bash\\(git:\\*\\)"
+          "pattern": "\"allow\"\\s*:\\s*\\[[^\\]]*Bash\\(git:\\*\\)[^\\]]*Bash\\(git:\\*\\)"
         }
       ],
       "tags": [
