@@ -6,7 +6,7 @@ GitHub half of the survey digest, and the Blueprint auto-drain gate.
 ## Remediating `GH_READY=false`
 
 `GH_READY=false` always ships with `GH_FAIL_REASON=`, which says *why* GitHub
-went unqueried — the six causes in this section's table want different responses, so act on the
+went unqueried — the seven causes in this section's table want different responses, so act on the
 reason rather than treating every `false` alike:
 
 | `GH_FAIL_REASON` | What happened | Do this |
@@ -15,11 +15,12 @@ reason rather than treating every `false` alike:
 | `api-error` | GitHub answered with a 5xx / network failure — see `GH_FAIL_DETAIL` | Re-run once; it usually clears. If it persists, proceed and say GitHub was unreachable |
 | `unknown` | `gh` failed with nothing quotable — `GH_FAIL_DETAIL` carries the first stderr line when there is one | Re-run once, then treat as `api-error` |
 | `auth` | The token is missing, expired, or lacks a scope | Tell the user to run `gh auth login`; re-running is futile. Fall back to the GitHub MCP tools if available |
+| `cloud-restricted` | A Claude Code cloud session: its GitHub proxy refuses the GraphQL the `gh` list calls use, while REST works. `PRS_SOURCE=rest-search` means the PR rows came from REST search and are real | Read PR and issue state from the GitHub MCP tools (`mcp__github__list_pull_requests`, `mcp__github__list_issues`). Never re-run or suggest `gh auth login` |
 | `no-cli` | No `gh` on PATH (Claude Code on the web) | Fall back to the GitHub MCP tools, or state GitHub was not queried. Re-running is futile |
 | `no-remote` | The repo has no GitHub remote | Nothing to do — there is genuinely nothing to query. Skip the GitHub half silently |
 
-Never re-run for `auth`, `no-cli`, or `no-remote`: the first two need a
-human action and the third has nothing to fetch. In every case the
+Never re-run for `auth`, `cloud-restricted`, `no-cli`, or `no-remote`: re-running
+cannot change any of them. In every case the
 GitHub-derived counts stay **unqueried**, not zero — so the taskwarrior-sync
 redundancy test in Step 4 must not use them as evidence a follow-up is
 untracked.

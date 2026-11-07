@@ -65,7 +65,9 @@ learned, what plugin/skill friction or wins occurred.
 
 **Remediating `GH_READY=false`.** Act on its `GH_FAIL_REASON=` — the
 per-reason table, and which reasons must never be re-run, are in
-[REFERENCE.md](REFERENCE.md).
+[REFERENCE.md](REFERENCE.md). For `cloud-restricted` (a cloud session) the
+GitHub MCP tools are the source of PR and issue state for Step 3's redundancy
+test.
 
 For the **Distill** qualify gate (Step 2), also run the distill collector's
 coarse summary — the mechanical half of the Distill signal (recipe candidates,

@@ -200,7 +200,7 @@ gracefully rather than omitting:
   unavailable)` — never present the zeros as a clean state. The
   accompanying `GH_FAIL_REASON=` picks the response: re-run for
   `timeout` / `api-error` / `unknown` (quoting `GH_FAIL_DETAIL=` if it
-  persists), go straight to MCP for `auth` / `no-cli`, and report nothing
+  persists), go straight to MCP for `auth` / `cloud-restricted` / `no-cli`, and report nothing
   at all for `no-remote` — there is genuinely nothing to query there.
 - **No tasks for the project** — `OPEN_TASKS=0` **with
   `PROJECT_CONFIDENCE=high`**; say `nothing pending under
