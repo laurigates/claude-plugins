@@ -215,7 +215,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.15.0",
+      "version": "1.15.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -411,7 +411,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -846,7 +846,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "author": {
         "name": "Lauri Gates"
       },

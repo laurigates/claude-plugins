@@ -1,12 +1,12 @@
 ---
 created: 2026-06-26
-modified: 2026-07-30
+modified: 2026-11-07
 reviewed: 2026-07-30
 name: foundryvtt-module
 description: >-
-  FoundryVTT module idea to gitops-adopted repo: scaffold, create + seed the
-  repo, open the gitops adoption PR. Use when releasing or spinning up a new
-  foundry module.
+  New FoundryVTT module to a gitops-adopted repo: scaffold, create + seed the
+  GitHub repo, open the gitops adoption PR. Use when standing up a new foundry
+  module end to end.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 ---
 
