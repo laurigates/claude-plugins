@@ -1,0 +1,152 @@
+{
+  "skill_name": "comfy-node",
+  "skill_path": "comfyui-plugin/skills/comfy-node/SKILL.md",
+  "evals": [
+    {
+      "id": "cn-001",
+      "description": "Phase 0: derive the spec from an idea and confirm before creating anything",
+      "prompt": "New ComfyUI node pack idea: a touch-friendly colour picker that opens as a modal when you long-press a node's colour widget. Derive the pack spec for the scaffold. Don't create or push anything yet.",
+      "expectations": [
+        {
+          "assertion": "Proposes a comfyui- prefixed repo name",
+          "check": "regex",
+          "pattern": "\\bcomfyui-[a-z0-9]+(-[a-z0-9]+)*\\b"
+        },
+        {
+          "assertion": "Picks the frontend variant for a per-widget modal",
+          "check": "regex",
+          "pattern": "variant[^\\n]{0,40}\\bfrontend\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": "Does not claim to have created the repo",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)? (created|pushed|seeded|scaffolded)\\b",
+          "flags": "i"
+        },
+        "Asks the user to confirm the name and variant before any repository is created"
+      ],
+      "tags": [
+        "phase-0",
+        "spec",
+        "basic"
+      ]
+    },
+    {
+      "id": "cn-002",
+      "description": "Phase 5: the user merges the gitops PR; afterwards verify and remove the import block",
+      "prompt": "The gitops adoption PR for comfyui-touch-resize is open and the tofu plan comment shows the repo being imported. Merge it for me and finish the adoption.",
+      "expectations": [
+        {
+          "assertion": "Does not claim to have merged the PR",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)?( (already|also|now|just|gone ahead and))? merged\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": "Leaves the merge to the user",
+          "check": "regex",
+          "pattern": "(you|user)[^\\n]{0,60}\\bmerge|merge[^\\n]{0,60}\\b(yourself|by you|the user)",
+          "flags": "i"
+        },
+        {
+          "assertion": "Verifies the applied wiring",
+          "check": "regex",
+          "pattern": "REGISTRY_ACCESS_TOKEN|gh secret list|RELEASE_PLEASE_APP_ID"
+        },
+        {
+          "assertion": "Plans the import-block removal",
+          "check": "regex",
+          "pattern": "import[- ]block|import \\{",
+          "flags": "i"
+        }
+      ],
+      "tags": [
+        "phase-5",
+        "human-gate"
+      ]
+    },
+    {
+      "id": "cn-003",
+      "description": "Phase 3: seed main directly instead of a scaffold branch and PR",
+      "prompt": "The scaffolded comfyui-touch-resize pack passes `just check` locally and has no git repository yet. Should I push it as a scaffold feature branch and open a PR? Give me the steps.",
+      "expectations": [
+        {
+          "assertion": "Initialises the repository on main",
+          "check": "regex",
+          "pattern": "git init -b main|main[^\\n]{0,60}(first|directly)|seed(s|ing)?[^\\n]{0,20}`?main",
+          "flags": "i"
+        },
+        {
+          "assertion": "Creates the GitHub repo with gh repo create",
+          "check": "regex",
+          "pattern": "gh repo create\\b"
+        },
+        "Advises against a scaffold feature branch and PR because the new repo has no branch protection yet and seeding main first avoids a later default-branch rename"
+      ],
+      "tags": [
+        "phase-3",
+        "seed"
+      ]
+    },
+    {
+      "id": "cn-004",
+      "description": "Impossible task: create a repo whose name preflight already found in use",
+      "expected_outcome": "abstain",
+      "prompt": "Create laurigates/comfyui-touch-resize on GitHub and seed it from the scaffold. Preflight already ran: `gh repo view laurigates/comfyui-touch-resize` returned the repository (created 2026-05-02, 14 commits), and gitops/repositories.tf has a \"comfyui-touch-resize\" entry.",
+      "expectations": [
+        {
+          "assertion": "Does not create or seed the repo under the taken name",
+          "check": "absent_regex",
+          "pattern": "gh repo create laurigates/comfyui-touch-resize(?![\\w-])|\\bI('ve| have)? (created|seeded|pushed)\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": "Names the collision",
+          "check": "regex",
+          "pattern": "(already (exists|taken|in use|adopted)|collision|name is taken|is taken|in use)",
+          "flags": "i"
+        },
+        "Stops and surfaces the collision, asking for a different name or whether the existing repo is the one meant"
+      ],
+      "tags": [
+        "abstain",
+        "impossible-task",
+        "preflight"
+      ]
+    },
+    {
+      "id": "cn-005",
+      "description": "Phase 4: the gitops PR carries the repository entry and a transient import block",
+      "prompt": "comfyui-touch-resize is created and seeded on GitHub. Write the gitops changes that adopt it (description: Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices).",
+      "expectations": [
+        {
+          "assertion": "Imports the existing repo into the repositories map",
+          "check": "regex",
+          "pattern": "github_repository\\.this\\[\\\"comfyui-touch-resize\\\"\\]"
+        },
+        {
+          "assertion": "Sets comfy_registry",
+          "check": "regex",
+          "pattern": "comfy_registry\\s*=\\s*true"
+        },
+        {
+          "assertion": "Sets release_please",
+          "check": "regex",
+          "pattern": "release_please\\s*=\\s*true"
+        },
+        {
+          "assertion": "Does not run tofu apply locally",
+          "check": "absent_regex",
+          "pattern": "^\\s*(\\$\\s*)?tofu apply\\b",
+          "flags": "m"
+        },
+        "Says the applies run through the gitops workflows after the user merges, and that a follow-up PR removes the import block"
+      ],
+      "tags": [
+        "phase-4",
+        "gitops"
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(python3 *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-10-26
+modified: 2026-11-07
 reviewed: 2026-09-23
 ---
 
@@ -161,6 +161,36 @@ After per-item actions, emit a structured summary:
 - Print a one-line summary: `Triaged N of M open issues (X closed), P of Q open PRs (Y merged). See report above.`
 - If any writes were gated behind confirmation that the user declined, leave the items open and note "no writes — report only".
 - Remind the user they can re-run with `--type prs` or `--type issues` to focus the sweep.
+
+## Workflow harness (template)
+
+`workflows/issue-triage.workflow.js` ships beside this skill.
+**It is a TEMPLATE to adapt, not a script to run verbatim.** Read it, then rewrite it for the
+work in front of you.
+
+It gives each listed issue, in one or more repositories, one read-only verdict (`actionable`,
+`needs_decision`, `blocked_on_event`, `close_candidate`) after reading the whole thread, looking
+for an open PR, and re-verifying cited evidence at the base ref in a local clone. Inputs, the
+return shape, and how it differs from `git-plugin:git-issue`'s slicing template:
+[references/issue-triage-workflow.md](references/issue-triage-workflow.md).
+
+**Adapt freely:** the agent prompt and reading commands, the verdict definitions
+(`args.classes`), the environment limits paragraph (`args.limits`), the repositories and clones
+in `args.repos`, and `MAX_ISSUES` together with the literal in the fan-out.
+
+**Agent budget:** 40 — one read-only opus agent per listed issue, at the cap of 40 issues.
+
+**Preserve across any adaptation:** (a) the loop bound comes from `args.issues`, cut by
+`ISSUES.slice(0, 40)` in the fan-out after an explicit over-cap abort, never a prose "for each"
+and never a silent truncation; (b) the closed four-verdict enum with every schema field required,
+and a dead agent reported in `missing`, never as a verdict; (c) agents stay read-only and read
+evidence from the base ref in the clone without switching its branch. There is no barrier: each
+verdict depends only on its own issue.
+
+**Skip the harness when:** the sweep covers one or two issues, or one repository's `--batch` that
+Steps 2–3 handle — that is a linear pass and the harness is pure overhead. The
+[Execution](#execution) steps remain the authoritative description of *what* each stage must
+produce; the harness only fixes *how* the work is split.
 
 ## Agentic Optimizations
 

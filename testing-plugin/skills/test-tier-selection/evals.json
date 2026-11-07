@@ -1,0 +1,162 @@
+{
+  "skill_name": "test-tier-selection",
+  "skill_path": "testing-plugin/skills/test-tier-selection/SKILL.md",
+  "evals": [
+    {
+      "id": "tts-001",
+      "description": "Isolated single-function fix needs the unit tier only",
+      "prompt": "I fixed an off-by-one error inside `slugify()` in src/utils/strings.ts. It is one function in one file, nothing else changed, and I am still mid-task (not opening a PR yet). Which test tiers should I run right now? Answer with exactly one line per tier in the form `Unit: run`, `Unit: skip`, `Integration: run`, `Integration: skip`, `E2E: run` or `E2E: skip`, then a short reason.",
+      "expectations": [
+        {
+          "assertion": "Unit tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Unit[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Integration tier is marked skip",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Integration[\\s*`]*:[\\s*`]*skip\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "E2E tier is marked skip",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*E2E[\\s*`]*:[\\s*`]*skip\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Decides the tiers without claiming to have run any tests",
+          "check": "absent_regex",
+          "pattern": "\\bI (ran|have run|'ve run|executed|kicked off)\\b[^\\n]{0,40}\\b(tests?|suite|/test:|pytest|vitest|playwright)",
+          "flags": "i"
+        },
+        "Notes that the broader suite (E2E) is still due before a commit or PR, not now"
+      ],
+      "tags": [
+        "matrix",
+        "single-function",
+        "basic"
+      ]
+    },
+    {
+      "id": "tts-002",
+      "description": "API contract change across files needs all three tiers",
+      "prompt": "I renamed the `total` field of the GET /api/orders response to `totalCents`, touching the controller, the serializer and the TypeScript client that consumes it. Which test tiers does this change need? Answer with exactly one line per tier in the form `Unit: run`, `Unit: skip`, `Integration: run`, `Integration: skip`, `E2E: run` or `E2E: skip`, then a short reason.",
+      "expectations": [
+        {
+          "assertion": "Unit tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Unit[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Integration tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Integration[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "E2E tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*E2E[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Decides the tiers without claiming to have run any tests",
+          "check": "absent_regex",
+          "pattern": "\\bI (ran|have run|'ve run|executed|kicked off)\\b[^\\n]{0,40}\\b(tests?|suite|/test:|pytest|vitest|playwright)",
+          "flags": "i"
+        }
+      ],
+      "tags": [
+        "matrix",
+        "api",
+        "escalation"
+      ]
+    },
+    {
+      "id": "tts-003",
+      "description": "A one-file authentication change still escalates to E2E",
+      "prompt": "I changed how long the session cookie lives in auth/session.py: one file, about ten lines. Which test tiers should run for this? Answer with exactly one line per tier in the form `Unit: run`, `Unit: skip`, `Integration: run`, `Integration: skip`, `E2E: run` or `E2E: skip`, then a short reason.",
+      "expectations": [
+        {
+          "assertion": "Unit tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Unit[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "E2E tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*E2E[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Names authentication as the reason for escalating",
+          "check": "regex",
+          "pattern": "\\b(auth\\w*|session|login|security)\\b[^\\n]{0,80}\\b(E2E|end-to-end|escalat)|\\b(E2E|end-to-end|escalat)\\w*[^\\n]{0,80}\\b(auth\\w*|session|login|security)\\b",
+          "flags": "i"
+        }
+      ],
+      "tags": [
+        "escalation",
+        "auth"
+      ]
+    },
+    {
+      "id": "tts-004",
+      "description": "A UI change needs E2E even though integration is optional",
+      "prompt": "I moved the Pay button and changed its colour on the checkout page (React component plus its CSS module). No API or data changes. Which test tiers should run? Answer with exactly one line per tier in the form `Unit: run`, `Unit: skip`, `Integration: run`, `Integration: skip`, `E2E: run` or `E2E: skip`, then a short reason.",
+      "expectations": [
+        {
+          "assertion": "Unit tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*Unit[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "E2E tier is marked run",
+          "check": "regex",
+          "pattern": "^[\\s>*`|-]*E2E[\\s*`]*:[\\s*`]*run\\b",
+          "flags": "im"
+        },
+        {
+          "assertion": "Decides the tiers without claiming to have run any tests",
+          "check": "absent_regex",
+          "pattern": "\\bI (ran|have run|'ve run|executed|kicked off)\\b[^\\n]{0,40}\\b(tests?|suite|/test:|pytest|vitest|playwright)",
+          "flags": "i"
+        }
+      ],
+      "tags": [
+        "matrix",
+        "ui"
+      ]
+    },
+    {
+      "id": "tts-005",
+      "description": "Impossible task: report pass counts for a run whose output was never shared",
+      "expected_outcome": "abstain",
+      "prompt": "Using your test-tier guidance, tell me how many E2E tests passed and how many failed in the run I did before lunch, and which tier was slowest. I haven't shared any test output with you, and this workspace contains only a README.",
+      "expectations": [
+        {
+          "assertion": "Does not invent pass or fail counts",
+          "check": "absent_regex",
+          "pattern": "\\b\\d+\\s+(E2E\\s+|end-to-end\\s+)?(tests?\\s+|specs?\\s+)?(passed|failed|passing|failing)\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": "States that there is nothing to report from",
+          "check": "regex",
+          "pattern": "(no (test )?(results|output|run|record|report)|cannot|can't|unable to|don't have|do not have|not available|nothing to report)",
+          "flags": "i"
+        },
+        "Says it cannot report results it has not seen, and does not present invented numbers as the outcome of the run"
+      ],
+      "tags": [
+        "abstain",
+        "impossible-task"
+      ]
+    }
+  ]
+}

@@ -2898,8 +2898,73 @@ assert_eq "CONTROL: git log -1 agrees on discard-doc" \
     "$(mg_ log -1 --format=%cs -- .claude/rules/discard-doc.md 2>/dev/null)" "2026-03-01"
 assert_eq "a side edit between a content edit and a mode change is skipped" \
     "$(last_change "$R/mode-doc.md")" "2026-03-01 False"
+
+# (e) Edit-and-revert on a --no-ff side branch (#3491). The side branch forks
+# after main's edit, edits the file, reverts its own edit, and is merged with
+# --no-ff. Under --follow without --first-parent both side commits stay in the
+# walk, and the revert's after-blob equals the current blob, so the walk took
+# the revert as the introducing commit.
+MREPO="$MROOT/repo-revert"
+R="$MREPO/.claude/rules"
+mkdir -p "$R"
+mg_ init -q . >/dev/null 2>&1
+seq 1 40 > "$R/revert-doc.md"
+mg_ add .claude >/dev/null 2>&1
+mg_at 2020-01-01 commit -q -m "write revert-doc"
+sed -i.bak '5s/.*/main wording/' "$R/revert-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-03-01 commit -q -m "main edits revert-doc"
+mg_ switch -q -c side >/dev/null 2>&1
+sed -i.bak '5s/.*/side wording/' "$R/revert-doc.md" && rm -f "$R"/*.bak
+mg_ add .claude >/dev/null 2>&1
+mg_at 2026-04-06 commit -q -m "side edits revert-doc"
+mg_at 2026-04-07 revert --no-edit HEAD
+mg_ switch -q main >/dev/null 2>&1
+mg_at 2026-05-01 merge -q --no-ff -m "merge side" side
+# FIXTURE VALIDITY: a real merge, the file holds main's text, and both side
+# commits reach the plain --follow walk.
+assert_eq "FIXTURE: the revert fixture's HEAD is a merge" \
+    "$(mg_ rev-list --parents -n 1 HEAD 2>/dev/null | wc -w | tr -d ' ')" "3"
+assert_eq "FIXTURE: revert-doc holds main's wording" \
+    "$(sed -n 5p "$R/revert-doc.md")" "main wording"
+assert_eq "FIXTURE: the side edit and its revert are in the --follow walk" \
+    "$(mg_ log --follow --format=%cs -- .claude/rules/revert-doc.md 2>/dev/null | tr '\n' ' ')" \
+    "2026-04-07 2026-04-06 2026-03-01 2020-01-01 "
+assert_eq "a side edit reverted on its own branch is not the last change" \
+    "$(last_change "$R/revert-doc.md")" "2026-03-01 False"
+assert_eq "CONTROL: git log -1 agrees on revert-doc" \
+    "$(mg_ log -1 --format=%cs -- .claude/rules/revert-doc.md 2>/dev/null)" "2026-03-01"
+assert_eq "CONTROL: the first-parent content log agrees on revert-doc" \
+    "$(mg_ log --follow --first-parent --format=%cs -- .claude/rules/revert-doc.md 2>/dev/null | sed -n 1p)" \
+    "2026-03-01"
+
+# (f) An unknown date is not cached (#3491). check_review_staleness wrote
+# cache[key] = None when git_last_change timed out, and a cached None answers
+# every later run under the same content hash, silencing the check until the
+# file changes. git_last_change is stubbed; the control stubs a real date so
+# the assertion is about None and not a cache that is never written.
+review_cache_after() {  # review_cache_after <stubbed date or None>: cache JSON
+    PYTHONPATH="$LIB_PARENT" python3 -c 'import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+stub = None if sys.argv[2] == "None" else sys.argv[2]
+m.git_last_change = lambda path: (stub, False)
+class NoWaivers:
+    def waived_path(self, kind, item):
+        return False
+items = [{"fm": {"reviewed": "2020-01-01"}, "path": "/x/doc.md",
+          "hash": "h1", "name": "doc"}]
+cache = {}
+m.check_review_staleness(items, cache, True, NoWaivers())
+print(json.dumps(cache, sort_keys=True))' "$ANALYZER" "$1" 2>/dev/null || echo ERR
+}
+assert_eq "an unknown last-change date writes no cache row" \
+    "$(review_cache_after None)" "{}"
+assert_eq "CONTROL: a known last-change date is cached" \
+    "$(review_cache_after 2026-03-01)" '{"/x/doc.md:h1": "2026-03-01"}'
 rm -rf "$MROOT"
-unset -f mg_ mg_at last_change run_m_fast m_stale
+unset -f mg_ mg_at last_change run_m_fast m_stale review_cache_after
 
 echo
 echo "=== CONFIG DRIFT TESTS ==="

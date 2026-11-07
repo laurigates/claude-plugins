@@ -238,6 +238,15 @@ jobs:
             python3 scripts/resolve-additive-conflicts.py || true
           fi
 
+          # A branch cut before the regression-ledger split (#3469) still marks
+          # docs/regression-ledger.md merge=union, so the merge above appends
+          # the whole pre-split table to the base's index page. Restore the
+          # index and move the branch's own rows into entry files (#3490).
+          # Reads only blobs and writes only ledger paths; runs no PR code.
+          if [ -f scripts/repair-split-ledger.py ]; then
+            python3 scripts/repair-split-ledger.py "origin/$BASE_BRANCH" || true
+          fi
+
           # Would the merge change a workflow file on the PR branch? GitHub
           # refuses that push unless the token can write workflows, so check the
           # App's permission first instead of failing the push (and, for a

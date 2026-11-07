@@ -32,6 +32,9 @@ def run_cluster(
         str(min_count),
         "--out",
         "-",
+        # Hermetic: never read the runner's own plugin registry.
+        "--installed-plugins",
+        "",
     ]
     pr_body = ""
     if write_pr_body:
@@ -212,6 +215,113 @@ def test_pr_body_proposed_changes_skips_classify_required(tmp_path):
     assert "_No auto-prescribed changes this run._" in proposed_section, (
         proposed_section
     )
+
+
+PARSER = HERE.parent / "friction_parse.py"
+BUILD_STAMP_FIXTURE = HERE / "fixtures" / "build_stamp"
+
+
+def _cluster_fixture(tmp_path: Path, extra: list[str]) -> tuple[dict, str]:
+    """Parse the build_stamp fixture and cluster it with the given flags."""
+    parsed = subprocess.run(
+        [
+            sys.executable,
+            str(PARSER),
+            "--root",
+            str(BUILD_STAMP_FIXTURE),
+            "--since",
+            "3650d",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    pr_path = tmp_path / "pr-body.md"
+    proc = subprocess.run(
+        [sys.executable, str(CLUSTER), "--in", "-", "--out", "-"]
+        + ["--render-pr-body", str(pr_path)]
+        + extra,
+        input=parsed,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(proc.stdout), pr_path.read_text(encoding="utf-8")
+
+
+def test_build_share_per_plugin_version_with_current_marked(tmp_path):
+    """#3220: the share of each plugin's build-stamped hook blocks per version,
+    current release marked, in clusters.json and in the PR-body table.
+
+    Fixture: hooks-plugin 3 blocks on 2.15.2 and 1 on 2.15.5, git-plugin 1 on
+    1.40.0, one unstamped hook block, one tool error printing a cache path.
+    """
+    clusters, body = _cluster_fixture(
+        tmp_path,
+        ["--installed-plugins", "", "--current-version", "hooks-plugin=2.15.5"],
+    )
+    share = clusters["build_share"]
+    assert share["hook_blocks"] == 6, share
+    assert share["stamped_blocks"] == 5, share
+    by_plugin = {p["plugin"]: p for p in share["plugins"]}
+    hooks = by_plugin["hooks-plugin"]
+    assert hooks["stamped_blocks"] == 4, hooks
+    assert hooks["current_version"] == "2.15.5", hooks
+    assert hooks["current_share_pct"] == 25.0, hooks
+    assert hooks["versions"] == [
+        {"version": "2.15.5", "count": 1, "share_pct": 25.0, "current": True},
+        {"version": "2.15.2", "count": 3, "share_pct": 75.0, "current": False},
+    ], hooks
+    # Its own denominator: not diluted by hooks-plugin's blocks.
+    git = by_plugin["git-plugin"]
+    assert git["versions"] == [
+        {"version": "1.40.0", "count": 1, "share_pct": 100.0, "current": False}
+    ], git
+    assert git["current_version"] is None and git["current_share_pct"] is None, git
+
+    assert "## Build share" in body, body
+    assert "Build-stamped hook blocks: 5 of 6." in body, body
+    assert "| `hooks-plugin` | 2.15.5 (current) | 1 | 25.0% |" in body, body
+    assert "| `hooks-plugin` | 2.15.2 | 3 | 75.0% |" in body, body
+    assert "| `git-plugin` | 1.40.0 | 1 | 100.0% |" in body, body
+
+
+def test_build_share_current_release_from_installed_plugins(tmp_path):
+    """The user-scope entry marks the current release; a project-scope pin at
+    the old version does not. A current release no block ran on is a 0.0% row,
+    which is the W44 shape the row exists to expose."""
+    registry = tmp_path / "installed_plugins.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "plugins": {
+                    "hooks-plugin@laurigates-claude-plugins": [
+                        {"scope": "project", "projectPath": "/p", "version": "2.15.2"},
+                        {"scope": "user", "version": "2.15.5"},
+                    ],
+                    "git-plugin@laurigates-claude-plugins": [
+                        {"scope": "user", "version": "1.41.0"}
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    clusters, body = _cluster_fixture(tmp_path, ["--installed-plugins", str(registry)])
+    by_plugin = {p["plugin"]: p for p in clusters["build_share"]["plugins"]}
+    assert by_plugin["hooks-plugin"]["current_version"] == "2.15.5", by_plugin
+    assert by_plugin["hooks-plugin"]["current_share_pct"] == 25.0, by_plugin
+    assert by_plugin["git-plugin"]["current_share_pct"] == 0.0, by_plugin
+    assert "| `git-plugin` | 1.41.0 (current) | 0 | 0.0% |" in body, body
+
+
+def test_build_share_row_renders_when_nothing_is_stamped(tmp_path):
+    """Standing row: present even in a window with no stamped hook blocks."""
+    events = [make_event("hook:unclassified", kind="hook_block", tool="Bash")] * 3
+    _, body = run_cluster(events, write_pr_body=True, tmp_dir=tmp_path)
+    assert "## Build share" in body, body
+    assert "_No build-stamped hook blocks in the window._" in body, body
 
 
 def main() -> int:
