@@ -1,6 +1,26 @@
 # blueprint-status — Next-Action Prompt (Step 8)
 
 The AskUserQuestion option list for Step 8. Skipped under `--report-only`.
+The selection-to-command map stays in `SKILL.md` Step 8.
+
+## Which options to include
+
+Build options dynamically from the state found in Steps 2-6:
+
+- If upgrade available → Include "Upgrade to v{latest}"
+- If modified content → Include "Sync generated content"
+- If stale content → Include "Regenerate skills"
+- If PRDs exist but no generated skills → Include "Generate skills from PRDs"
+- If skills exist but no commands → Include "Generate workflow commands"
+- If CLAUDE.md stale → Include "Update CLAUDE.md"
+- If feature tracker exists but stale → Include "Sync feature tracker"
+- If ADRs have potential issues → Include "Validate ADRs"
+- If documents without IDs → Include "Sync document IDs"
+- If orphan documents/issues → Include "Link documents to GitHub"
+- If overdue tasks exist → Include "Run overdue maintenance tasks"
+- Always include "Continue development" and "I'm done"
+
+## Option list
 
    ```
    question: "What would you like to do?"

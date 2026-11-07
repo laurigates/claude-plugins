@@ -14,7 +14,6 @@ bevy-plugin/skills/bevy-game-engine/SKILL.md	1
 blueprint-plugin/skills/blueprint-claude-md/SKILL.md	1
 blueprint-plugin/skills/blueprint-derive-plans/SKILL.md	1
 blueprint-plugin/skills/blueprint-feature-tracker-sync/SKILL.md	1
-blueprint-plugin/skills/blueprint-status/SKILL.md	1
 blueprint-plugin/skills/blueprint-story-audit/SKILL.md	2
 blueprint-plugin/skills/blueprint-sync-ids/SKILL.md	1
 blueprint-plugin/skills/blueprint-work-order/SKILL.md	1
