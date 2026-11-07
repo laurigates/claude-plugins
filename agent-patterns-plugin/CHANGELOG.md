@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.1...agent-patterns-plugin-v2.57.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** state when SendMessage-resume re-enters a worktree ([#3506](https://github.com/laurigates/claude-plugins/issues/3506)) ([5060735](https://github.com/laurigates/claude-plugins/commit/506073594f7e39b7620c172d6731b360647efb61))
+
 ## [2.57.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.0...agent-patterns-plugin-v2.57.1) (2026-11-07)
 
 

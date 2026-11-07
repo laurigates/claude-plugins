@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.71.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.70.1...git-plugin-v2.71.0) (2026-11-07)
+
+
+### Features
+
+* save the issue-sweep workflows as reusable templates ([#3508](https://github.com/laurigates/claude-plugins/issues/3508)) ([27376ec](https://github.com/laurigates/claude-plugins/commit/27376ec964fb8a8d7e79fc18c1c478a19fe32eac))
+
 ## [2.70.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.70.0...git-plugin-v2.70.1) (2026-11-07)
 
 

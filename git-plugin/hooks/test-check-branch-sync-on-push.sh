@@ -68,9 +68,24 @@ exit 0
 MOCK_EOF
 chmod +x "$MOCK_BIN/gh"
 
+# Session ids must be unique per call: the hook caches per session+branch for
+# 300 s, so two calls sharing an id make the second one silent. "$RANDOM" in a
+# command substitution is reseeded per subshell and repeats (bash 5.2: 0-5
+# duplicates per 2000 ids), which failed one random spelling probe about once
+# in 20 runs (#3433). A file-backed counter survives the subshells, and $$
+# keeps concurrent runs sharing a cache directory apart.
+SID_SEQ_FILE="$MOCK_BIN/.sid-seq"
+printf '0' >"$SID_SEQ_FILE"
+next_sid() {
+    local n
+    n=$(( $(cat "$SID_SEQ_FILE") + 1 ))
+    printf '%s' "$n" >"$SID_SEQ_FILE"
+    printf '%s-%s-%s' "$1" "$$" "$n"
+}
+
 make_json() {
     local cmd="$1" cwd="${2:-$TMPDIR}"
-    jq -n --arg cmd "$cmd" --arg cwd "$cwd" --arg sid "test-$RANDOM-$RANDOM" \
+    jq -n --arg cmd "$cmd" --arg cwd "$cwd" --arg sid "$(next_sid test)" \
         '{"tool_name":"Bash","tool_input":{"command":$cmd},"cwd":$cwd,"session_id":$sid}'
 }
 
@@ -262,13 +277,24 @@ echo "git -C worktree routing (#1389):"
 # Orchestrator cwd is /tmp (not a repo), but command targets the repo via -C.
 MOCK_PR_JSON=$(jq -n '{number:7,state:"MERGED",mergedAt:"2026-01-01T00:00:00Z",url:"https://x/7"}')
 assert_decision "git -C <repo> commit reads the worktree branch, not cwd" ask \
-    "$(jq -n --arg cmd "git -C $TMPDIR commit -m more" --arg sid "wt-$RANDOM" \
+    "$(jq -n --arg cmd "git -C $TMPDIR commit -m more" --arg sid "$(next_sid wt)" \
         '{"tool_name":"Bash","tool_input":{"command":$cmd},"cwd":"/tmp","session_id":$sid}')"
+
+# ── Session ids stay unique across subshells (#3433) ─────────────────────────
+echo ""
+echo "session ids (unique across command substitutions):"
+SID_SAMPLE=$(for _ in $(seq 3000); do printf '%s\n' "$(next_sid probe)"; done)
+SID_DUPES=$(sort <<<"$SID_SAMPLE" | uniq -d | wc -l | tr -d ' ')
+if [ "$SID_DUPES" = "0" ] && [ "$(wc -l <<<"$SID_SAMPLE" | tr -d ' ')" = "3000" ]; then
+    printf "  PASS: 3000 session ids from subshells are distinct\n"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s duplicate session id(s) in 3000 subshell calls\n" "$SID_DUPES"; FAIL=$((FAIL + 1))
+fi
 
 # ── Cache: second call within TTL is silent even with a nudge-worthy state ────
 echo ""
 echo "cache (second call within TTL is silent):"
-SID="cache-$RANDOM-$RANDOM"
+SID="$(next_sid cache)"
 CACHE_JSON=$(jq -n --arg cmd "git commit -m x" --arg cwd "$TMPDIR" --arg sid "$SID" \
     '{"tool_name":"Bash","tool_input":{"command":$cmd},"cwd":$cwd,"session_id":$sid}')
 MOCK_PR_JSON=$(jq -n '{number:7,state:"MERGED",mergedAt:"2026-01-01T00:00:00Z",url:"https://x/7"}')

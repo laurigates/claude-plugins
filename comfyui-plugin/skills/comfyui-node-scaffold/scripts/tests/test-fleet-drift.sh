@@ -30,6 +30,7 @@
 #       empty corpus gets disabled)
 #   6b. an existing but empty fleet root -> STATUS=OK, exit 0
 #   7.  --pack scopes the run to the named pack(s)
+#   7b. no --fleet-root -> $COMFYUI_FLEET_ROOT, else the current directory
 #   8.  a template with no fleet-policy.toml entry -> ERROR (the manifest cannot
 #       silently fall behind the scaffold)
 #   9.  the justfile `Assets` block mutated -> BLOCK_DRIFT (the original bug)
@@ -310,6 +311,27 @@ check "7: scoped run exits 0" "0" "$rc"
 check "7: scoped run sees one pack" "1" "$(field "$OUT" PACK_COUNT)"
 check "7: scoped run names only that pack" "comfyui-fixture-two" \
     "$(field "$OUT" PACKS)"
+
+# --------------------------------------------------------------------------- #
+# 7b. Without --fleet-root the root comes from context (#3308): the
+#     COMFYUI_FLEET_ROOT env var, else the current directory. It used to be a
+#     hardcoded maintainer checkout path, which on anyone else's machine is a
+#     missing root and therefore a silent STATUS=OK over zero packs (case 6).
+# --------------------------------------------------------------------------- #
+FLEET_REAL="$(cd "$FLEET" && pwd -P)"
+OUT="${WORK}/default-root-env.txt"
+COMFYUI_FLEET_ROOT="$FLEET" python3 "$CHECKER" --policy "$POLICY_FIXTURE" \
+    >"$OUT" 2>"${OUT}.err"
+check "7b: COMFYUI_FLEET_ROOT supplies the default root" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: env-var root sees both packs" "2" "$(field "$OUT" PACK_COUNT)"
+
+OUT="${WORK}/default-root-cwd.txt"
+(cd "$FLEET" && env -u COMFYUI_FLEET_ROOT python3 "$CHECKER" \
+    --policy "$POLICY_FIXTURE" >"$OUT" 2>"${OUT}.err")
+check "7b: with no env var the current directory is the root" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: cwd root sees both packs" "2" "$(field "$OUT" PACK_COUNT)"
 
 # --------------------------------------------------------------------------- #
 # 8. A template with no policy entry is itself an ERROR

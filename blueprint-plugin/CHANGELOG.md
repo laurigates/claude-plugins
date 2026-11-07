@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.4...blueprint-plugin-v3.51.5) (2026-11-07)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** give blueprint-status an Execution spine with step headings ([#3511](https://github.com/laurigates/claude-plugins/issues/3511)) ([05862f3](https://github.com/laurigates/claude-plugins/commit/05862f30a384bfa95a3fecf6d2ce371a61e7e5d3)), closes [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+
 ## [3.51.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.3...blueprint-plugin-v3.51.4) (2026-11-07)
 
 

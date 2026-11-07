@@ -1,0 +1,164 @@
+{
+  "skill_name": "configure-claude-plugins",
+  "skill_path": "configure-plugin/skills/configure-claude-plugins/SKILL.md",
+  "evals": [
+    {
+      "id": "ccp-001",
+      "description": "A Python repo gets the always-on plugins plus the stack plugin, all under one suffix",
+      "prompt": "/configure:claude-plugins --fix --no-workflows\n\nThe repo root holds pyproject.toml and a justfile; there is no .claude/settings.json yet and `git remote -v` shows github.com/acme/api. Print the .claude/settings.json you would write.",
+      "expectations": [
+        {
+          "assertion": "Enables the three always-included plugins with the marketplace suffix",
+          "check": "substring_all",
+          "values": [
+            "configure-plugin@laurigates-claude-plugins",
+            "health-plugin@laurigates-claude-plugins",
+            "hooks-plugin@laurigates-claude-plugins"
+          ]
+        },
+        {
+          "assertion": "Enables the Python stack plugin",
+          "check": "substring",
+          "value": "python-plugin@laurigates-claude-plugins"
+        },
+        {
+          "assertion": "Registers the marketplace under the laurigates-claude-plugins key",
+          "check": "regex",
+          "pattern": "\\\"laurigates-claude-plugins\\\"\\s*:\\s*\\{"
+        },
+        {
+          "assertion": "Uses no legacy marketplace suffix",
+          "check": "absent_regex",
+          "pattern": "@(claude-plugins|lgates-claude-plugins|laurigates-plugins)\\\""
+        },
+        {
+          "assertion": "Does not register a legacy marketplace key",
+          "check": "absent_regex",
+          "pattern": "\\\"(claude-plugins|lgates-claude-plugins|laurigates-plugins)\\\"\\s*:\\s*\\{"
+        }
+      ],
+      "tags": [
+        "settings",
+        "stack-detection",
+        "basic"
+      ]
+    },
+    {
+      "id": "ccp-002",
+      "description": "No git remote: the workflow steps are reported as skipped, not scaffolded",
+      "prompt": "/configure:claude-plugins --check-only\n\nThe repo holds package.json and a .claude/settings.json that already enables git-plugin. `git remote -v` printed nothing. Give me the status report.",
+      "expectations": [
+        {
+          "assertion": "Reports the workflows as skipped for lack of a remote",
+          "check": "regex",
+          "pattern": "SKIPPED\\W{0,4}no (git )?remote",
+          "flags": "i"
+        },
+        {
+          "assertion": "Does not claim to have written a workflow",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)? (created|wrote|written|edited|updated|deleted|removed|moved|generated|added)\\b[^\\n]{0,40}claude(-code-review)?\\.yml",
+          "flags": "i"
+        },
+        "Explains that the workflows cannot run until the repository has a GitHub remote"
+      ],
+      "tags": [
+        "check-only",
+        "no-remote",
+        "workflows"
+      ]
+    },
+    {
+      "id": "ccp-003",
+      "description": "Merging into existing settings keeps hooks and env and adds no duplicate permission",
+      "prompt": "/configure:claude-plugins --fix --no-workflows --plugins git-plugin\n\nThe existing .claude/settings.json is:\n\n{\n  \"permissions\": { \"allow\": [\"Bash(git:*)\"] },\n  \"env\": { \"FOO\": \"bar\" },\n  \"hooks\": { \"PreToolUse\": [ { \"matcher\": \"Bash\", \"hooks\": [ { \"type\": \"command\", \"command\": \"./scripts/guard.sh\" } ] } ] }\n}\n\nPrint the complete resulting file.",
+      "expectations": [
+        {
+          "assertion": "Keeps the existing PreToolUse hook",
+          "check": "substring",
+          "value": "./scripts/guard.sh"
+        },
+        {
+          "assertion": "Keeps the existing env entry",
+          "check": "regex",
+          "pattern": "\\\"FOO\\\"\\s*:\\s*\\\"bar\\\""
+        },
+        {
+          "assertion": "Enables git-plugin with the marketplace suffix",
+          "check": "substring",
+          "value": "git-plugin@laurigates-claude-plugins"
+        },
+        {
+          "assertion": "Lists Bash(git:*) only once in an allow array",
+          "check": "absent_regex",
+          "pattern": "\"allow\"\\s*:\\s*\\[[^\\]]*Bash\\(git:\\*\\)[^\\]]*Bash\\(git:\\*\\)"
+        }
+      ],
+      "tags": [
+        "settings",
+        "merge"
+      ]
+    },
+    {
+      "id": "ccp-004",
+      "description": "A scaffolded claude.yml pins model and effort and uses the marketplace suffix",
+      "prompt": "/configure:claude-plugins --fix --plugins git-plugin,testing-plugin\n\nThe repo has a GitHub remote and no .github/workflows yet. Show the .github/workflows/claude.yml you would create.",
+      "expectations": [
+        {
+          "assertion": "Pins the model",
+          "check": "regex",
+          "pattern": "--model[ =]\\S+"
+        },
+        {
+          "assertion": "Pins the effort",
+          "check": "regex",
+          "pattern": "--effort[ =](low|medium|high|xhigh|max)\\b"
+        },
+        {
+          "assertion": "Lists plugins with the marketplace suffix",
+          "check": "substring",
+          "value": "git-plugin@laurigates-claude-plugins"
+        },
+        {
+          "assertion": "Uses no legacy marketplace suffix",
+          "check": "absent_regex",
+          "pattern": "@(claude-plugins|lgates-claude-plugins|laurigates-plugins)\\s*$",
+          "flags": "m"
+        },
+        {
+          "assertion": "References the OAuth token secret",
+          "check": "substring",
+          "value": "CLAUDE_CODE_OAUTH_TOKEN"
+        }
+      ],
+      "tags": [
+        "workflows",
+        "claude-yml"
+      ]
+    },
+    {
+      "id": "ccp-005",
+      "description": "Impossible task: enable a plugin the marketplace does not publish",
+      "expected_outcome": "abstain",
+      "prompt": "Enable quantum-plugin from the laurigates marketplace in this repo's .claude/settings.json. Here is the full plugin list from the marketplace.json I fetched a minute ago: git-plugin, testing-plugin, tools-plugin, python-plugin, configure-plugin, health-plugin, hooks-plugin.",
+      "expectations": [
+        {
+          "assertion": "Does not enable the unpublished plugin",
+          "check": "absent_regex",
+          "pattern": "\\\"quantum-plugin@[^\\\"]*\\\"\\s*:\\s*true"
+        },
+        {
+          "assertion": "States that the plugin is not published",
+          "check": "regex",
+          "pattern": "(not (listed|in the|part of|found|available|published|present)|doesn't exist|does not exist|no such plugin|isn't (listed|in the|available|published|present)|unknown plugin)",
+          "flags": "i"
+        },
+        "Declines to add an enabledPlugins entry that would name no plugin, and suggests checking the plugin name or the marketplace"
+      ],
+      "tags": [
+        "abstain",
+        "impossible-task"
+      ]
+    }
+  ]
+}
