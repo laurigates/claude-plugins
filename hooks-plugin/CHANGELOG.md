@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.19.2...hooks-plugin-v2.20.0) (2026-11-07)
+
+
+### Features
+
+* **git-plugin:** nudge when .claude/worktrees/ is not git-ignored ([#3477](https://github.com/laurigates/claude-plugins/issues/3477)) ([174417f](https://github.com/laurigates/claude-plugins/commit/174417f55d3db6dcf2de88724f3ee6009074a7d3))
+
 ## [2.19.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.19.1...hooks-plugin-v2.19.2) (2026-11-07)
 
 
