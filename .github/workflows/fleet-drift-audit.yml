@@ -151,3 +151,10 @@ jobs:
           title: 'Fleet drift: ComfyUI packs vs the scaffold template ({date})'
           extra-labels: comfyui-plugin,maintenance
           assignee: laurigates
+          # The report's lifecycle (#3346, docs/issue-lifecycle.md).
+          processing: |
+            ## Processing
+
+            - **Processed by:** Lauri.
+            - **Completed means:** every listed divergence has been fixed in the pack or the scaffold, or accepted as intended.
+            - **Closes:** by hand once processed. The weekly audit files no new report while this one is open. See `docs/issue-lifecycle.md`.
