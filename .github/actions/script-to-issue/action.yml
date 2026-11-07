@@ -22,6 +22,11 @@ description: >-
 # A caller may invoke the action twice (guard-only, then full) when it needs its
 # own steps in between. The second call re-runs the duplicate guard, which is
 # harmless and narrows the check-then-create window rather than widening it.
+#
+# Lifecycle (#3346, docs/issue-lifecycle.md): every filed report carries a
+# `## Processing` section (the `processing` input), and a periodic report with
+# `supersede: 'true'` replaces the previous period's open report instead of
+# being blocked by it.
 # ---------------------------------------------------------------------------
 
 inputs:
@@ -75,9 +80,30 @@ inputs:
   title:
     description: >-
       Issue title. Two placeholders are substituted: `{date}` -> UTC %Y-%m-%d,
-      `{month}` -> UTC %Y-%m. Required whenever `script` is set.
+      `{month}` -> UTC %Y-%m. Required whenever `script` or `supersede` is set.
     required: false
     default: ''
+  processing:
+    description: >-
+      Markdown appended to the issue body: the report's `## Processing`
+      section, saying who processes it, what completed means and when it
+      closes (docs/issue-lifecycle.md). Required whenever `script` is set, and
+      it must contain the literal heading `## Processing`;
+      scripts/check-issue-processing.sh enforces the same in CI.
+    required: false
+    default: ''
+  supersede:
+    description: >-
+      'true': the report is periodic and the next period's report replaces it.
+      Only an open report titled exactly `title` (this period's) blocks the
+      run; earlier open reports are listed in the `previous` output, and in
+      full mode they are closed once the new report is filed, or once a clean
+      sweep shows nothing is left (scripts/close-superseded-reports.sh).
+      Needs `title` and `title-prefix`. Guard-only callers close the previous
+      reports themselves after filing. 'false' (default): any open report
+      blocks the run.
+    required: false
+    default: 'false'
   extra-labels:
     description: >-
       Comma-separated labels appended after `label` on the created issue.
@@ -102,6 +128,14 @@ outputs:
       none). The same list is written to the job summary, so a skipped run
       names the issue that caused the skip.
     value: ${{ steps.guard.outputs.matched }}
+  previous:
+    description: >-
+      Supersede mode only: comma-separated numbers of the earlier open reports
+      this run supersedes (empty otherwise).
+    value: ${{ steps.guard.outputs.previous }}
+  title:
+    description: "`title` with its placeholders substituted (empty when `title` is empty)."
+    value: ${{ steps.title.outputs.title }}
 
 runs:
   using: composite
@@ -131,6 +165,33 @@ runs:
         if [ -n "$DESCRIPTION" ]; then ARGS+=(--description "$DESCRIPTION"); fi
         gh label create "$LABEL" --repo "$GITHUB_REPOSITORY" "${ARGS[@]}" --force
 
+    # Resolved once, so the guard's supersede comparison and the created issue
+    # use the same string.
+    - name: Resolve the report title and check the inputs
+      id: title
+      shell: bash
+      env:
+        TITLE_TEMPLATE: ${{ inputs.title }}
+        SUPERSEDE: ${{ inputs.supersede }}
+        TITLE_PREFIX: ${{ inputs.title-prefix }}
+        SCRIPT: ${{ inputs.script }}
+        PROCESSING: ${{ inputs.processing }}
+      run: |
+        TITLE="${TITLE_TEMPLATE//\{date\}/$(date -u +%Y-%m-%d)}"
+        TITLE="${TITLE//\{month\}/$(date -u +%Y-%m)}"
+        if [ "$SUPERSEDE" = "true" ] && { [ -z "$TITLE" ] || [ -z "$TITLE_PREFIX" ]; }; then
+          echo '::error::script-to-issue: supersede needs both title and title-prefix'
+          exit 1
+        fi
+        # Every filed report says who processes it and when it closes (#3346).
+        # Checked before the audit runs, so a misconfigured caller fails on
+        # every run rather than only on the run that has findings.
+        if [ -n "$SCRIPT" ] && ! grep -q '^## Processing' <<<"$PROCESSING"; then
+          echo '::error::script-to-issue: script was set but processing has no "## Processing" section'
+          exit 1
+        fi
+        echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
     # The guard logic lives in scripts/script-to-issue-guard.sh so its self-test
     # (scripts/tests/test-script-to-issue-guard.sh) runs in `Test: Skill
     # scripts` on every change. It writes `exists`/`matched` to GITHUB_OUTPUT
@@ -143,9 +204,12 @@ runs:
         GH_TOKEN: ${{ github.token }}
         LABEL: ${{ inputs.label }}
         TITLE_PREFIX: ${{ inputs.title-prefix }}
+        SUPERSEDE: ${{ inputs.supersede }}
+        CURRENT_TITLE: ${{ steps.title.outputs.title }}
       run: |
-        bash "${GITHUB_WORKSPACE}/scripts/script-to-issue-guard.sh" \
-          --label "$LABEL" --title-prefix "$TITLE_PREFIX"
+        ARGS=(--label "$LABEL" --title-prefix "$TITLE_PREFIX")
+        if [ "$SUPERSEDE" = "true" ]; then ARGS+=(--current-title "$CURRENT_TITLE"); fi
+        bash "${GITHUB_WORKSPACE}/scripts/script-to-issue-guard.sh" "${ARGS[@]}"
 
     # The body is transported as a FILE under $RUNNER_TEMP, not through
     # GITHUB_OUTPUT. A heredoc-delimited GITHUB_OUTPUT value breaks whenever the
@@ -179,14 +243,14 @@ runs:
         LABEL: ${{ inputs.label }}
         EXTRA_LABELS: ${{ inputs.extra-labels }}
         ASSIGNEE: ${{ inputs.assignee }}
-        TITLE_TEMPLATE: ${{ inputs.title }}
+        TITLE: ${{ steps.title.outputs.title }}
+        PROCESSING: ${{ inputs.processing }}
       run: |
-        if [ -z "$TITLE_TEMPLATE" ]; then
+        if [ -z "$TITLE" ]; then
           echo '::error::script-to-issue: script was set but title was empty'
           exit 1
         fi
-        TITLE="${TITLE_TEMPLATE//\{date\}/$(date -u +%Y-%m-%d)}"
-        TITLE="${TITLE//\{month\}/$(date -u +%Y-%m)}"
+        printf '\n\n%s\n' "$PROCESSING" >> "${RUNNER_TEMP}/script-to-issue-body.md"
 
         LABELS="$LABEL"
         if [ -n "$EXTRA_LABELS" ]; then LABELS="${LABEL},${EXTRA_LABELS}"; fi
@@ -204,3 +268,22 @@ runs:
           --label "$LABELS" \
           --body-file "${RUNNER_TEMP}/script-to-issue-body.md" \
           "${ARGS[@]}"
+
+    # Supersede mode: the new report (or a clean sweep) replaces the earlier
+    # open reports, so they close here (#3346). A clean sweep closes them too:
+    # nothing they listed is still detected.
+    - name: Close the superseded reports
+      if: >-
+        inputs.script != '' && inputs.supersede == 'true'
+        && steps.guard.outputs.exists == 'false' && steps.guard.outputs.previous != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        LABEL: ${{ inputs.label }}
+        TITLE_PREFIX: ${{ inputs.title-prefix }}
+        CURRENT_TITLE: ${{ steps.title.outputs.title }}
+        HAS_BODY: ${{ steps.run.outputs.has_body }}
+      run: |
+        ARGS=(--label "$LABEL" --title-prefix "$TITLE_PREFIX" --current-title "$CURRENT_TITLE")
+        if [ "$HAS_BODY" != "true" ]; then ARGS+=(--clean); fi
+        bash "${GITHUB_WORKSPACE}/scripts/close-superseded-reports.sh" "${ARGS[@]}"

@@ -25,3 +25,7 @@ Under pi, the collector falls back to the transcript named by `PI_SESSION_FILE`
 and reports `TRANSCRIPT_FORMAT=pi`. pi records no permission denials, so its
 `RULE_HINTS_FROM_TOOLING` carries `RULE_HINTS_RECORDED=false`: a zero there
 means "not recorded", not "none".
+
+Under OpenCode, the adapter sets `OPENCODE_SESSION_ID` and the collector reads
+the session through `opencode export`, reporting `TRANSCRIPT_FORMAT=opencode`
+and `RULE_HINTS_RECORDED=false` for the same reason.

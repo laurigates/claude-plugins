@@ -267,7 +267,30 @@ nested_in_linked() {
     return 1
 }
 
+# An un-ignored .claude/worktrees/ makes every worktree under it an untracked
+# directory in the main checkout, which an untracked-files Stop hook then asks
+# to commit (issue #3436). Sets IGNORE_NOTE when check-ignore says "not ignored"
+# (exit 1); an error (128) or an unreadable exclude path says nothing, so the
+# hook never warns on uncertainty. The exclude file comes from --git-path, so a
+# linked worktree or a non-`.git` layout still names the shared one.
+IGNORE_NOTE=""
+ignore_note() {
+    local rc=0 exclude
+    git -C "$ROOT" check-ignore -q -- ".claude/worktrees/x" >/dev/null 2>&1 || rc=$?
+    [ "$rc" -eq 1 ] || return 0
+    exclude=$(git -C "$ROOT" rev-parse --path-format=absolute --git-path info/exclude 2>/dev/null || echo "")
+    [ -n "$exclude" ] || return 0
+    IGNORE_NOTE="$ALLOWED/ is not git-ignored in $ROOT, so a worktree there shows up as an untracked directory in that checkout, and an untracked-files check (git status, a Stop hook) reports it as work to commit. Exclude it locally:
+  echo '.claude/worktrees/' >> '$exclude'
+or add .claude/worktrees/ to the repo's .gitignore (configure-plugin:configure-gitignore manages that block)."
+}
+
 if under "$TARGET" "$ALLOWED" && [ "$TARGET" != "$ALLOWED" ] && ! nested_in_linked; then
+    ignore_note
+    if [ -n "$IGNORE_NOTE" ]; then
+        jq -nc --arg m "WORKTREE LOCATION: $IGNORE_NOTE" \
+            '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $m}}'
+    fi
     exit 0
 fi
 
@@ -301,11 +324,16 @@ for tok in "${toks[@]}"; do
     fi
 done
 
+ignore_note
+[ -n "$IGNORE_NOTE" ] && IGNORE_NOTE="
+$IGNORE_NOTE
+"
+
 deny "WORKTREE LOCATION: '$WT_PATH' resolves to $TARGET, outside $ALLOWED.
 
-Worktrees for $ROOT belong under its .claude/worktrees/, where Claude Code's own worktrees live and where 'just -g worktree-audit' finds them; a sibling directory has no cleanup and accumulates after its PR merges. This applies when working on a repo other than the session's own: create the worktree in the TARGET repo's .claude/worktrees/.
+Worktrees for $ROOT belong under its .claude/worktrees/, where Claude Code's own worktrees live and where 'just -g worktree-audit' finds them; a sibling directory has no cleanup and accumulates after its PR merges. This applies when working on a repo other than the session's own: create the worktree in the TARGET repo's .claude/worktrees/. An orchestrator briefing agents should name this location in the brief, since an agent that is redirected here reports a different path than the one it was given.
 
 Retry with:
   $SUGGEST$SUGGEST_ARGS
-
+$IGNORE_NOTE
 Scratch worktrees under \$TMPDIR or /tmp are allowed. Silence this guard by exporting CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1 from your shell."

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.30.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.29.0...code-quality-plugin-v1.30.0) (2026-11-07)
+
+
+### Features
+
+* **code-quality-plugin:** add code-context-leakage audit skill ([#3460](https://github.com/laurigates/claude-plugins/issues/3460)) ([2c97534](https://github.com/laurigates/claude-plugins/commit/2c97534ef8e7bc03ffb173b7fdbb64f9803d4bc8))
+
+## [1.29.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.2...code-quality-plugin-v1.29.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin,documentation-plugin,code-quality-plugin:** promote comfyui-nodes measurement rules to skills ([#3476](https://github.com/laurigates/claude-plugins/issues/3476)) ([03293ef](https://github.com/laurigates/claude-plugins/commit/03293efee8a22bfc2a530de315a171602196310a))
+
 ## [1.28.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.1...code-quality-plugin-v1.28.2) (2026-11-03)
 
 

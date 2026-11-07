@@ -9,9 +9,22 @@
 #                        agent, or a CI auto-fix pushed since last sync).
 #   3. changes_requested — the PR has CHANGES_REQUESTED reviews to address first.
 #
-# No-ops silently on the default branch, outside a git repo, or when gh is
-# unavailable. Read-only: it does not fetch or mutate state (SessionStart must be
-# fast and side-effect free) — it reads existing remote-tracking refs + PR state.
+# Signals 1-3 no-op on the default branch, on a detached HEAD, or when gh is
+# unavailable.
+#
+# It also surfaces, on ANY branch (the default one included) and without gh:
+#   4. worktrees_not_ignored — <main-checkout>/.claude/worktrees/, where Claude
+#                        Code creates its worktrees by default, is not
+#                        git-ignored, so every worktree there shows up as an
+#                        untracked directory in the main checkout (issue #3436).
+#                        The finding names /configure:gitignore and a local
+#                        info/exclude one-liner; the probe never writes either.
+#                        Opt out of this signal alone with
+#                        CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE=1.
+#
+# Outside a git repo it writes an empty signal. Read-only: it does not fetch or
+# mutate state (SessionStart must be fast and side-effect free) — it reads
+# existing remote-tracking refs, PR state and git's ignore rules.
 
 set -uo pipefail
 
@@ -66,8 +79,35 @@ fi
 
 drift_init "git-plugin"
 
-# Need a git repo and gh; otherwise emit an empty (checked, no-drift) signal.
+# Need a git repo; otherwise emit an empty (checked, no-drift) signal.
 if ! git -C "$DRIFT_CWD" rev-parse --git-dir >/dev/null 2>&1; then drift_emit; exit 0; fi
+
+# worktrees_not_ignored — runs before the gh and branch gates below, so it also
+# fires on the default branch and without gh. It checks the MAIN checkout (the
+# first `git worktree list` entry), because that is where Claude Code puts
+# .claude/worktrees/ and where the untracked directories appear, even when the
+# session itself runs in a linked worktree. A bare main repository has no
+# checkout to pollute and is skipped. check-ignore exit 1 means "not ignored";
+# exit 0 (ignored) and any error (128) say nothing, so the probe never warns on
+# uncertainty.
+check_worktrees_ignored() {
+    [ "${CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE:-0}" = "1" ] && return 0
+    local wt_list main_root first_stanza rc=0
+    wt_list=$(git -C "$DRIFT_CWD" worktree list --porcelain 2>/dev/null) || return 0
+    first_stanza=$(printf '%s\n' "$wt_list" | awk 'NF == 0 { exit } { print }')
+    grep -qx 'bare' <<<"$first_stanza" && return 0
+    main_root=$(sed -n '1s/^worktree //p' <<<"$first_stanza")
+    [ -n "$main_root" ] && [ -d "$main_root" ] || return 0
+    git -C "$main_root" check-ignore -q -- .claude/worktrees/probe >/dev/null 2>&1 || rc=$?
+    [ "$rc" -eq 1 ] || return 0
+    # The one-liner resolves the exclude file through --git-path, so it lands in
+    # the shared info/exclude when run from a linked worktree too.
+    drift_add_finding warn worktrees_not_ignored \
+        ".claude/worktrees/ is not git-ignored in ${main_root}, so Claude Code worktrees there show up as untracked files; commit the entry with /configure:gitignore, or exclude it locally: echo '.claude/worktrees/' >> \"\$(git rev-parse --git-path info/exclude)\"" \
+        "/configure:gitignore"
+}
+check_worktrees_ignored
+
 drift_no_op_if_command_missing gh
 
 BRANCH=$(git -C "$DRIFT_CWD" symbolic-ref --short HEAD 2>/dev/null || true)

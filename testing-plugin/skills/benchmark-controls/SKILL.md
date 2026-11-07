@@ -1,18 +1,19 @@
 ---
 name: benchmark-controls
-description: "Benchmark control hazards: fixtures that mutate the control, timing harnesses that disagree. Use when benchmarking, comparing timings, A/B performance runs, hyperfine."
+description: "Benchmark control hazards: mutated controls, disagreeing harnesses, VM lock scaling, hyperfine 2.0 exports. Use when benchmarking, comparing timings, A/B runs, hyperfine."
 allowed-tools: Read, Grep, Glob, Bash(hyperfine *)
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-06
 reviewed: 2026-10-29
 ---
 
 # Benchmark Controls
 
 A benchmark comparison discriminates only while its control stays the
-condition it was chosen to represent. Two routes take that away without any
-error: the fixture step edits the control, or the timing harness is itself a
-variable.
+condition it was chosen to represent. Four routes take that away without any
+error: the fixture step edits the control, the timing harness is itself a
+variable, the machine magnifies the effect being measured, or the parser reads
+the wrong column.
 
 ## When to Use This Skill
 
@@ -58,6 +59,56 @@ Before trusting either number:
 > On the non-blocking baseline the methods were within ~6%, and on macOS within
 > ~2% for every case. Cause not established; scheduling sensitivity of a lock
 > convoy is an unproven hypothesis.
+
+## A Desktop-Hypervisor VM Can Turn a Lock Ceiling Into a Slowdown
+
+Lock contention and thread-scaling results from a desktop-hypervisor VM
+(OrbStack on the Apple Virtualization framework) are provisional.
+There a contended spinlock can make throughput fall as threads are added, where
+bare metal shows only a plateau, so the gain from removing the lock is
+overstated.
+
+- Confirm a lock or scaling result on bare metal, or on a cloud KVM guest,
+  before reporting its size.
+- Report the gain per machine, naming the hypervisor; never quote the VM figure
+  alone.
+
+> Observed 2026-11 (dust, `open` + `close` across threads). On an OrbStack VM
+> with 13 vCPUs, throughput fell past 4 threads. The process-wide fd-table
+> spinlock (`files->file_lock`) took the paravirtual qspinlock slow path on
+> 99.9% of acquisitions at 13 threads, with 4–8 µs handoff peaks. On bare metal
+> (Ryzen 9 3900X, 24 threads) and on a GCP `n2-standard-8` KVM guest, which
+> also enables PV spinlocks, the same lock only capped throughput. Removing it
+> measured 2.1–2.5× on OrbStack, 10–11% on bare metal and about 3.5% on GCP.
+> The lock cost 45 of 75 ms on OrbStack, 10 of 73 ms on bare metal and 4 of
+> 99 ms on GCP. PV spinlocks alone do not explain the difference, since the GCP
+> guest has them too.
+
+## hyperfine 2.0 Renamed Its Export Fields
+
+A parser written against hyperfine 1.x reads 2.x output without an error and
+gets wrong numbers. Both export formats changed in 2.0.0:
+
+| Export | 1.x | 2.0 |
+|---|---|---|
+| `--export-csv` header | `command,mean,stddev,median,user,system,min,max` | `command,time_wall_clock_unit,time_wall_clock_mean,…_stddev,…_median,…_min,…_max`, then the same six columns for each further metric (`memory_peak_resident_*` by default) |
+| User/system time in CSV | `user`, `system` columns | Absent unless selected: `--metrics time` adds `time_cpu_*`, `time_user_*`, `time_system_*` |
+| `--export-json` mean | `results[i].mean` | `results[i].summary.time_wall_clock.mean` (`schema_version: 2`) |
+| Per-run times in JSON | `results[i].times` | `results[i].measurements[j].time_wall_clock.value` |
+
+- Read CSV by header name, never by column position: in 2.0 column 2 is the
+  unit (`s`), so a positional parser reports `mean=0.0`.
+- Check the version before parsing: `hyperfine --version`, or
+  `schema_version` in the JSON. Switching to `--export-json` alone does not
+  avoid the change.
+- 2.0 also runs commands without a shell by default (`--shell=none`); pass
+  `-S` where 1.x shell behaviour is needed, and use the same setting on every
+  machine compared.
+
+> Observed 2026-11 (dust benchmarks). A script parsing hyperfine CSV by the
+> 1.x positions printed `mean=0.0` under 2.0.0 and raised no error. The header
+> change is confirmed in hyperfine's `src/export/csv.rs` at v1.18.0, v1.21.0
+> and v2.0.0, and the JSON change in the v2.0.0 changelog.
 
 ## Related
 

@@ -29,7 +29,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs 219,22
 | `--fetch-dir` | A clone to `git fetch origin` after each merge, so a conflict agent starts from current `main`. |
 
 Per PR the script reads state and author, runs `gh pr update-branch`, waits
-until every check on the head has completed and two reads agree, reads
+for the head to move off the pre-update head (unless gh reported the branch
+already up-to-date), waits until every check on the head has completed and two reads agree, reads
 `mergeStateStatus` (§4), applies the §6 guard (no late commit other than
 GitHub's own update-branch merges, and the head unchanged since CI settled), resolves the merge method, and merges
 with `--match-head-commit` and the **full 40-character** head SHA. GitHub rejects a
@@ -49,12 +50,12 @@ carries `REMAINING=`, the PRs still to merge, with the stopped PR first.
 | `STATUS=` | Chain | What to do |
 |---|---|---|
 | `MERGED` | continues | Nothing. `REASON=auto-merge: …` means the PR had auto-merge enabled and GitHub merged it during the CI wait, so the §6 guard never ran on it; read its commits if a branch-writing bot could have pushed after your review. A PR merged during the wait **without** auto-merge is `SKIPPED` (`already_merged`). |
-| `SKIPPED` | continues | Already merged or closed, a draft, release-please, Renovate, or a non-self non-bot author. A stranger's PR is a review, not a merge: `git-plugin:external-pr-trust`. |
+| `SKIPPED` | continues | Already merged or closed, a draft, release-please, Renovate, or a non-self non-bot author. A stranger's PR is a review, not a merge: `git-plugin:external-pr-trust`. `REASON=base_is_upstream_pr_head` means `--repo` is a fork and the PR's base is the head of the open upstream PR it names, so merging would push into that PR: [fork-upstream-base.md](fork-upstream-base.md). |
 | `CONFLICT` | stops | Dispatch one agent for this PR: [Dispatch only on CONFLICT or CI_RED](#dispatch-only-on-conflict-or-ci_red). |
 | `CI_RED` | stops | Dispatch one agent for this PR: [Dispatch only on CONFLICT or CI_RED](#dispatch-only-on-conflict-or-ci_red). `REASON=check_failed: <names>`, `ci_timeout`, `unstable` (§4: merging over red needs both checks), or `still_behind`. |
 | `GUARD_LATE_COMMIT` | stops | A commit landed after your review, or the head moved after CI settled. Read the commits it names, and verify or revert them, before resuming. Recovery if any already merged: [serial-merge-chain.md](serial-merge-chain.md). |
 | `DENIED` | stops | A 403 or branch protection refused the update or merge. Report it and stop: [Denials](#denials). |
-| `ERROR` | stops | Fail-closed: a read failed, a state was unexpected, or a merge error was unclassified. Fix the cause named in `REASON=`. Never treat it as clean. |
+| `ERROR` | stops | Fail-closed: a read failed, a state was unexpected, or a merge error was unclassified. Fix the cause named in `REASON=`. Never treat it as clean. `head_not_updated` means `update-branch` reported an update but the head never moved within `--timeout`; check the PR's head on GitHub before re-running. |
 
 ## Dispatch only on CONFLICT or CI_RED
 

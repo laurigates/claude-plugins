@@ -6,7 +6,6 @@ agent-patterns-plugin/skills/meta-context-diet/references/anti-patterns.md	lauri
 agent-patterns-plugin/skills/meta-promote/SKILL.md	~/repos/	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
 agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md	laurigates/loractl	1
-code-quality-plugin/skills/bulk-sweep-classify/SKILL.md	laurigates/dotfiles	1
 comfyui-plugin/skills/comfy-node/SKILL.md	gitops repo	3
 comfyui-plugin/skills/comfy-node/SKILL.md	laurigates/gitops	3
 comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml	laurigates/.github	1

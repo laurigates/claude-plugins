@@ -335,6 +335,7 @@ A PreToolUse hook that denies a hand-rolled `git worktree add` whose path lands 
 | Allowed | `<main-repo>/.claude/worktrees/<name>` (resolved from `--git-common-dir`, so a session inside a linked worktree targets the main repo), and scratch worktrees under `$TMPDIR`, `/tmp`, `/private/tmp`, `/var/folders` |
 | Denied | Any other path, including a path nested inside another linked worktree |
 | Silent | Unresolvable paths (`$VAR`, `$(…)`, globs), quoted mentions, other `worktree` subcommands, non-repo cwd, remote-exec |
+| Not git-ignored | When `<main-repo>/.claude/worktrees/` is not ignored, the deny message adds an `echo '.claude/worktrees/' >> <info/exclude>` command, and an allowed add gets the same note as non-blocking `additionalContext`, so the worktree does not surface as untracked files to commit |
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1` in your shell environment. An inline prefix is intentionally ignored.
 

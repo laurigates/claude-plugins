@@ -119,13 +119,46 @@ Three OpenCode specifics:
   begin with a time-ordered segment, so the raw id's first eight characters,
   which `task-claim` and `git-coworker-check` use as an agent identity, would
   collide between sessions started close together.
-- **No transcript hint.** Nothing like pi's `PI_SESSION_FILE` is exported, so
-  `session-distill` still re-reads the conversation under OpenCode.
+- **The transcript hint is the raw session id.** OpenCode keeps sessions in
+  its database rather than in files, so there is no `PI_SESSION_FILE`
+  equivalent. A `shell.env` hook sets `OPENCODE_SESSION_ID` (the raw `ses_…`
+  id) on every `bash` call, and `session-distill`'s collector reads the
+  session through `opencode export` (#2725, see
+  [`session-plugin/README.md`](../session-plugin/README.md#transcript-sources)).
 
 Verified against the OpenCode v1.18.3 source (`session/tools.ts`,
 `tool/shell.ts`, `plugin/index.ts`) and the stubbed hook tests in
 `adapters/tests/opencode-binding.test.ts`; not yet exercised in a live
 OpenCode session.
+
+### Session nudges
+
+session-plugin's two nudges are Claude Code `SessionStart` and `Stop` hooks.
+The hook export below skips both events, so without the adapter they never
+fire. The binding runs them itself (`adapters/opencode/session-nudges.ts`,
+#2802), sharing the gates and offer text with the pi port
+([`docs/pi-export.md`](pi-export.md#session-nudges)) through
+`adapters/core/session-nudges.ts`:
+
+| Nudge | OpenCode event | Behaviour |
+|---|---|---|
+| Spinup | `session.created` | Runs `session-plugin/hooks/session-spinup-nudge.sh` unchanged with Claude Code's SessionStart stdin, `session_id` set to the derived `CLAUDE_SESSION_ID`. Subagent sessions (`parentID` set) are skipped. OpenCode reports no start reason, so the first root session the instance sees is `startup` and a later one is `/new`, passed as Claude Code's `clear`, which the hook ignores. The hook's `additionalContext` is pushed onto the session's system prompt in `experimental.chat.system.transform` on every request until the session next goes idle |
+| End | `session.status` idle, or the deprecated `session.idle` | The Stop hook's gates over `client.session.messages`: six user turns not counting synthetic or ignored text, a wind-down phrase in the latest one, the assistant's last text not ending in a question or proposing a next step, no `session-wrap`/`session-end`/`session-distill` already loaded (by a `read` of its `SKILL.md` or OpenCode's `skill` tool), not a subagent session, and taskwarrior on `PATH` or a `.claude/rules/` or justfile to capture into. The offer goes out with `client.session.promptAsync` as a synthetic text part, with the agent, model and variant of the latest user message, and starts one more turn |
+
+The spinup context is not sent as a stored message, because a `noReply` prompt
+adds a user message and the next step then runs on that message's model, the
+default one rather than the one the user picked. Each nudge fires at most once
+per session: the spinup hook keeps its own state file, and the end offer is
+persisted with a `metadata.sessionPluginNudge` marker, so a restarted instance
+does not offer twice. `"sessionNudges": false` in the plugin options turns both
+off. `adapters/tests/opencode-session-nudges.test.ts` reads
+`session-end-nudge.sh` and fails when the phrase lists, thresholds or offer
+text diverge.
+
+Verified against the OpenCode v1.18.3 and v1.19.5 source (`plugin/index.ts`,
+`session/status.ts`, `session/prompt.ts`) and the server docs'
+`/session/:id/prompt_async` route; not yet exercised in a live OpenCode
+session.
 
 ### Why the adapter rather than a copy — the measurement
 
@@ -224,7 +257,7 @@ counted in `PARSE_ERRORS=` and `POINTER_SKIPS=`.
 | `PreToolUse` command hook | `tool.execute.before` | exit 2 or JSON `permissionDecision: "deny"` → **throw** (blocks the call); `"ask"` → `console.warn` + allow (OpenCode has no prompt-from-hook) |
 | `PostToolUse` command hook | `tool.execute.after` | exit-2 stderr / JSON `decision: "block"` reason / `additionalContext` appended to the model-visible tool output |
 | `prompt` / `agent` hooks | — | skipped: OpenCode has no model-evaluation hook (by design) |
-| `SessionStart` / `PreCompact` | — | skipped: no context-injection equivalent |
+| `SessionStart` / `PreCompact` | — | skipped: no context-injection equivalent. session-plugin's SessionStart and Stop nudges run from the adapter instead (§ [Session nudges](#session-nudges)) |
 
 Matchers translate too: bare tool names (`Bash` → `bash`), path-scoped forms
 (`Write(docs/prds/**)` → `write` + glob on `filePath`), and `Skill(name)`

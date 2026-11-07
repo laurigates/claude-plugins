@@ -1092,6 +1092,54 @@ write_marketplace "$CLEAN_META"
 printf '{\n  "packages": {\n    "%s": {\n      "component": "%s",\n      "release-type": "simple"\n    }\n  }\n}\n' \
   "$PLUGIN" "$PLUGIN" > "$root/release-please-config.json"
 printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
+
+# Issue #3443: the configure-claude-plugins workflow templates put a `#` line
+# inside the `plugins: |` block scalar (content, not a comment, so
+# claude-code-action rejects it as a plugin name) and the review template's
+# permissions lacked `id-token: write` (claude-code-action fetches its token
+# via OIDC, so the job fails before it starts).
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the check parses each workflow fence as
+# YAML, the way the action reads it, rather than grepping for a comment. The
+# shipped skill directory is copied in: it exits 0, and each defect put back
+# into a copy of the shipped reference (a `#` line inside the first
+# `plugins: |`, or the review job's `id-token: write` removed) exits 1 naming
+# that defect.
+cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
+ccp_ref="$root/$PLUGIN/skills/configure-claude-plugins/references/workflow-templates.md"
+cp "$ccp_ref" "$tmp/ccp-ref.orig"
+
+run_check; out_ccp="$OUT"; rc_ccp="$RC"
+assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
+assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
+
+for ccp_mutation in plugins-comment id-token; do
+  python3 - "$tmp/ccp-ref.orig" "$ccp_ref" "$ccp_mutation" <<'PY'
+import sys
+src, dst, mutation = sys.argv[1:4]
+text = open(src, encoding="utf-8").read()
+if mutation == "plugins-comment":
+    anchor = "          plugins: |\n"
+    assert anchor in text, "fixture precondition: no `plugins: |` line in the shipped reference"
+    text = text.replace(anchor, anchor + "            # a comment line inside the block scalar\n", 1)
+else:
+    review = text.index("name: Claude Code Review")
+    head, tail = text[:review], text[review:]
+    assert "  id-token: write\n" in tail, "fixture precondition: review template has no id-token: write"
+    text = head + tail.replace("  id-token: write\n", "", 1)
+open(dst, "w", encoding="utf-8").write(text)
+PY
+  run_check; out_ccp_red="$OUT"; rc_ccp_red="$RC"
+  assert_eq "configure-claude-plugins: reintroducing ${ccp_mutation} exits 1" "$rc_ccp_red" "1"
+  case "$ccp_mutation" in
+    plugins-comment) ccp_needle="inside its plugins: block scalar" ;;
+    id-token) ccp_needle="without id-token: write" ;;
+  esac
+  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named (#3443)" \
+    "$out_ccp_red" "$ccp_needle"
+done
+rm -rf "${root:?}/$PLUGIN/skills/configure-claude-plugins"
+
 # --- model: haiku limits (Haiku 5.5 re-evaluation, 2026-10) ------------------
 # Haiku is allowed except where one of two measured hazards applies, and each
 # hazard is paired with the allowed case beside it so the suite fails both a
@@ -1145,6 +1193,74 @@ run_check; out_hkm="$OUT"; rc_hkm="$RC"
 assert_eq "haiku: haiku with an explicit non-low effort exits 0" "$rc_hkm" "0"
 assert_absent "haiku: an explicit effort raises no haiku issue" "$out_hkm" "model: haiku"
 rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
+
+# ---------------------------------------------------------------------------
+# #2360 C5: feedback-session creates labels at apply time, not in Step 1.
+#
+# Step 1 used to run `gh label create` before any finding was collected, so a
+# `--dry-run` wrote labels and a `--confirmed` run whose findings all deduped
+# away still created them. THE SEMANTIC INVARIANT UNDER TEST: label creation
+# appears only in the Step 5 (issue creation) section; any mention of it before
+# Step 5 is ❌ (exit 1), and a Step 5 that never creates the labels is ❌ too.
+# ---------------------------------------------------------------------------
+make_feedback_skill() {
+  # make_feedback_skill <step1-label-line> <step5-label-line>
+  local dir="$root/$PLUGIN/skills/feedback-session"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: feedback-session\n'
+    printf 'description: Fixture feedback-session. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-11-07\n'
+    printf 'modified: 2026-11-07\n'
+    printf 'reviewed: 2026-11-07\n'
+    printf -- '---\n\n'
+    printf '# feedback-session\n\n'
+    printf 'Seed prose becomes SEED_FINDINGS. `--confirmed` skips Step 4.\n\n'
+    printf '### Step 1: Resolve target repo and check label policy\n\n'
+    printf 'When the dominant source differs from the cwd remote, ask: Mismatch detected.\n\n'
+    printf '%s\n\n' "$1"
+    printf '### Step 4: Present findings for review\n\nIf `--dry-run`, stop here.\n\n'
+    printf '### Step 5: Create approved issues\n\n%s\n\n' "$2"
+    printf 'gh issue create --title "feedback(<plugin>): <desc>"\n\n'
+    printf '### Step 6: Report summary\n\nPrint the table.\n'
+  } > "$dir/SKILL.md"
+}
+FB_CHECK_IAC='**1b. Check whether labels are IaC-managed** (read-only).'
+FB_CREATE='**5a. Create missing labels** — only when at least one finding is approved.'
+
+# --- Creation in Step 1 (the pre-fix shape) must FAIL -----------------------
+make_feedback_skill "**1b–1c. Check IaC-managed labels, then create missing labels**" "Create each issue."
+run_check; out_fbl1="$OUT"; rc_fbl1="$RC"
+assert_eq "feedback-session: label creation in Step 1 exits 1" "$rc_fbl1" "1"
+assert_contains "feedback-session: label creation in Step 1 is named" \
+  "$out_fbl1" "feedback-session: label creation must happen in Step 5"
+
+# --- A raw gh label create before Step 5 must FAIL even if Step 5 creates too
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC Then run \`gh label create session-feedback\`." "$FB_CREATE"
+run_check; out_fbl2="$OUT"; rc_fbl2="$RC"
+assert_eq "feedback-session: gh label create before Step 5 exits 1" "$rc_fbl2" "1"
+assert_contains "feedback-session: gh label create before Step 5 is named" \
+  "$out_fbl2" "feedback-session: label creation must happen in Step 5"
+
+# --- Dropping label creation entirely must FAIL ------------------------------
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC" "Create each issue."
+run_check; out_fbl3="$OUT"; rc_fbl3="$RC"
+assert_eq "feedback-session: no label creation at all exits 1" "$rc_fbl3" "1"
+assert_contains "feedback-session: missing Step 5 label creation is named" \
+  "$out_fbl3" "feedback-session: Step 5 must create missing labels"
+
+# --- Guard integrity: check in Step 1, create in Step 5 PASSES ---------------
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+make_feedback_skill "$FB_CHECK_IAC" "$FB_CREATE"
+run_check; out_fbl4="$OUT"; rc_fbl4="$RC"
+assert_eq "feedback-session: create-at-apply-time shape exits 0" "$rc_fbl4" "0"
+assert_absent "feedback-session: compliant shape raises no label issue" \
+  "$out_fbl4" "label creation must happen in Step 5"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
 
 echo "---"
 echo "passed: $pass, failed: $fail"

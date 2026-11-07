@@ -1,9 +1,9 @@
 ---
 created: 2026-03-05
-modified: 2026-05-09
+modified: 2026-11-06
 reviewed: 2026-04-25
 name: git-commit-trailers
-description: "Git commit trailer conventions — BREAKING CHANGE, Co-authored-by, Signed-off-by. Use when composing messages with trailers or parsing via git interpret-trailers."
+description: "Commit trailer lines: BREAKING CHANGE, Release-As, Co-authored-by, Signed-off-by, parsed with git interpret-trailers. Use when adding, auditing, or parsing trailers in a commit message."
 user-invocable: false
 allowed-tools: Bash(git interpret-trailers *), Bash(git log *), Bash(git config *), Read, Grep, Glob
 ---

@@ -3,7 +3,7 @@ name: bulk-sweep-classify
 description: "Classify every regex match before a bulk find-replace/syntax-modernization sweep — four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
 allowed-tools: Bash, Read, Grep, Edit
 created: 2026-07-05
-modified: 2026-08-22
+modified: 2026-11-06
 reviewed: 2026-07-06
 ---
 
@@ -37,7 +37,7 @@ different handling.
 | Category | Handling | Canonical example (command-syntax sweep) |
 |---|---|---|
 | **1. Genuine stale target** | **Transform** | `/configure:mcp` → `/configure-mcp` in live docs |
-| **2. False positive** — merely matches the pattern | **Leave** | `laurigates/dotfiles:latest` (docker tag); `redis://host:6379` (digit after `:`, not a command) |
+| **2. False positive** — merely matches the pattern | **Leave** | `acme/dotfiles:latest` (docker tag); `redis://host:6379` (digit after `:`, not a command) |
 | **3. Out-of-scope design** legitimately using the old form — esp. **delimiter embedded in designed filenames/paths** | **Leave** — transforming corrupts the design | `/sync:daily` PRD whose colon also appears in `sync:daily-state.json`, `.claude/commands/sync:daily.md` |
 | **4. Immutable / historical record** matching the pattern | **Supersede-note; do NOT rewrite the body** | Accepted ADRs documenting the old `/namespace:command` convention |
 

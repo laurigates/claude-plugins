@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.14.0...documentation-plugin-v1.15.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin,documentation-plugin,code-quality-plugin:** promote comfyui-nodes measurement rules to skills ([#3476](https://github.com/laurigates/claude-plugins/issues/3476)) ([03293ef](https://github.com/laurigates/claude-plugins/commit/03293efee8a22bfc2a530de315a171602196310a))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.4...documentation-plugin-v1.14.0) (2026-10-29)
 
 

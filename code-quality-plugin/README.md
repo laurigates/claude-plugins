@@ -18,11 +18,13 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:scaffold-backport` | Back-port an instance fix into the generator that produced it — cookiecutter/copier template, justfile `new-*` recipe, scaffolding skill — so the next generation isn't born with the same bug |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `/code:hidden-failures` | Detect hidden failures — swallowed errors (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) and silent degradation (ops succeed with zero results); `--track errors\|degradation\|both` |
+| `code-derived-facts` | Code facts from execution, not text — a mention is not a caller, a derived fact belongs in its consumer, a registry gaining a second kind, scripted multi-anchor source edits |
 | `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
 | `code-license-position` | Check a vendor's licence FAQ, discussion threads, and commit authors before calling a `LICENSE` restriction a blocker |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
 | `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
+| `/code-quality:code-context-leakage` | Audit a repo for names and defaults tied to one person's setup — home paths, personal channels, dated run tags, time-of-day recipe names, OS-only commands, stale self-references — classify each, then rename the approved ones behind a `--name … --strict` gate |
 | `/code-quality:bulk-sweep-classify` | Route a bulk sweep by target: code renames go through `ast-grep-search` structurally; prose/docs sweeps use the four-category classify-then-transform discipline with allowlist-aware verification; parallel sweeps resolve a central rename map before dispatch and brief auditors with the artifact's purpose |
 | `ast-grep-search` | AST-based code search for structural pattern matching, and the LSP → `ast-grep` → `rg` ladder for finding references before a change |
 | `code-review-checklist` | Checklist for security, correctness, and performance review — secrets/injection, error handling, N+1 queries |
