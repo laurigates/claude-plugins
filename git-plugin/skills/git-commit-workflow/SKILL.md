@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-10-29
+modified: 2026-11-06
 reviewed: 2026-05-14
 name: git-commit-workflow
-description: "Conventional commit format, staging, and message conventions. Use when writing commit messages, staging files, grouping changes, or auto-detecting linked issues."
+description: "Commit-message and staging conventions: type(scope): subject, logical grouping, explicit-path staging. Reference only, makes no commit. Use when deciding how to word a message or split changes."
 user-invocable: false
 allowed-tools: Bash, Read
 ---

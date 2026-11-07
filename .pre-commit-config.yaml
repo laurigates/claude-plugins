@@ -132,6 +132,12 @@ repos:
         language: system
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: check-description-discriminators
+        name: sibling-skill descriptions keep their pinned discriminators (#2244)
+        entry: python3 ./scripts/check-description-discriminators.py
+        language: system
+        files: '((SKILL|skill)\.md|^scripts/(check-description-discriminators\.py|description-discriminators\.tsv))$'
+        pass_filenames: false
       - id: check-context-engineering
         name: always-loaded context surface stays within budget (C5 ratchet)
         entry: python3 ./scripts/check-context-engineering.py --strict
@@ -793,6 +799,12 @@ repos:
         entry: bash ./scripts/tests/test-check-description-collisions.sh
         language: system
         files: '^scripts/(check-description-collisions\.py|audit-skill-descriptions\.py|tests/test-check-description-collisions\.sh)$'
+        pass_filenames: false
+      - id: test-check-description-discriminators
+        name: description-discriminator pins fail on a missing or sibling phrase (#2244)
+        entry: bash ./scripts/tests/test-check-description-discriminators.sh
+        language: system
+        files: '^scripts/(check-description-discriminators\.py|description-discriminators\.tsv|audit-skill-descriptions\.py|tests/test-check-description-discriminators\.sh)$'
         pass_filenames: false
       # experiments/ matches no discovery glob in run-skill-script-tests.sh, so
       # this hook is the scorer test's only automatic trigger.
