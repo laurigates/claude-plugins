@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.5](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.4...finops-plugin-v1.4.5) (2026-11-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** config-drift dates content changes, not renames ([#3455](https://github.com/laurigates/claude-plugins/issues/3455)) ([da439c8](https://github.com/laurigates/claude-plugins/commit/da439c883bdc163ee2101f7b70a07603dce33897))
+
 ## [1.4.4](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.3...finops-plugin-v1.4.4) (2026-10-10)
 
 
