@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.6",
-  "agent-patterns-plugin": "2.57.0",
+  "agent-patterns-plugin": "2.57.1",
   "agents-plugin": "1.16.3",
   "api-plugin": "2.0.1",
   "bevy-plugin": "1.4.2",
@@ -24,7 +24,7 @@
   "github-actions-plugin": "1.13.5",
   "health-plugin": "1.24.2",
   "home-assistant-plugin": "1.4.1",
-  "hooks-plugin": "2.19.1",
+  "hooks-plugin": "2.19.2",
   "kernel-plugin": "1.1.0",
   "kubernetes-plugin": "1.10.2",
   "langchain-plugin": "1.5.10",
