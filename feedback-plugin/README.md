@@ -121,6 +121,8 @@ Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open
 
 Stop-hook output arrives as an `isMeta` user record (`Stop hook feedback:`), not a tool result, so it is parsed separately as `kind: stop_hook_feedback` and keyed on the emitting hook: `stop:git-stash-reminder:<auto-checkpoint|mixed|other>`, `stop:task-completeness`, `stop:no-calendar-estimates`, `stop:session-end-nudge`, `stop:subagent-output-check`, or `stop:unclassified`. Any other `<Event> hook feedback|error:` record surfaces as `hook-feedback:<event>` / `hook-error:<event>`. These clusters are reported for prevalence only; the fix for a noisy Stop hook lives in the hook. `friction_parse.py --list-prefixes` lists every hook-output prefix in the window and whether a dedicated branch handles it.
 
+Hook blocks whose harness wrapper names the plugin cache path carry the `plugin` and `version` that ran. `friction_cluster.py` reports them as `build_share` in `clusters.json` and as a standing `## Build share` table in the PR body: per plugin, the share of build-stamped hook blocks per version, with the current release (the user-scope version in `--installed-plugins`, or `--current-version PLUGIN=VERSION`) marked. A fix looks ineffective when most blocks still run on a build that predates it (#3220).
+
 Before opening a PR, the agent reproduces each actionable failure and runs the
 proposed fix's prescribed substitution where it is safe and read-only (hook
 blocks are safe by construction — the blocked command never executes). Clusters
