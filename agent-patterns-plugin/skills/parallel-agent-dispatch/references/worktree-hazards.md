@@ -208,8 +208,8 @@ asymmetry the WIP-checkpoint instruction in
 [`../SKILL.md`](../SKILL.md) § Handling a Missing Return already trades on:
 committed work survives, uncommitted work does not.
 
-Related but distinct: `../SKILL.md` § "Resuming agents: SendMessage loses
-worktree isolation" (#1546) and the `resumeFromRunId` re-run hazard (#1868) both
+Related but distinct: `../SKILL.md` § "Resuming agents: SendMessage re-enters only a
+kept worktree" (#1546, #2330) and the `resumeFromRunId` re-run hazard (#1868) both
 concern *resume* semantics. This is the worktree disappearing under a live agent.
 
 ## Target-branch preflight (#1969)
@@ -292,8 +292,8 @@ not during recovery, when the wrong assumption has already been acted on.
 
 Related but distinct — all three concern `worktree`, none concerns `remote`:
 [nested-repo isolation (#1838)](#nested-repo-worktree-isolation-1838) (the
-harness worktreed the *outer* repo), `../SKILL.md` § "Resuming agents:
-SendMessage loses worktree isolation" (#1546), and
+harness worktreed the *outer* repo), `../SKILL.md` § "Resuming agents: SendMessage re-enters only a
+kept worktree" (#1546, #2330), and
 [deleted worktree (#2372)](#deleted-worktree-kills-the-shell-not-the-agent-2372).
 
 ## Workflow agents are unreachable and their worktrees pin branches (#2614)
@@ -307,13 +307,13 @@ standing invariant — re-check before relying on either.
 **1. A `Workflow`-spawned agent is not `SendMessage`-addressable**, even after
 the run completes. At the moment both runs finished, `ListAgents` listed 14 peer
 *sessions* and **no** `wf_*` agent. So any remedy phrased as "resume the original
-agent" — including `../SKILL.md` § "Resuming agents: SendMessage loses worktree
-isolation" (#1546) and the upstream `agent-worktree-resume-for-pr-feedback` rule
+agent" — including `../SKILL.md` § "Resuming agents: SendMessage re-enters only a
+kept worktree" (#1546, #2330) and the upstream `agent-worktree-resume-for-pr-feedback` rule
 — **has no route on the `Workflow` substrate**. The contrast is the whole point:
 
 | Spawned by | `SendMessage`-resumable? | What resume costs |
 |---|---|---|
-| `Agent` | Yes | Loses worktree isolation — runs in the main checkout (#1546) |
+| `Agent` | Yes | Re-enters its worktree if the worktree was kept; runs in the main checkout if it was removed (#1546, #2330) |
 | `Workflow` | **No** — no addressable target exists | n/a; re-dispatch a fresh agent instead |
 
 **2. A run that completes with zero errors still leaves one worktree per
@@ -407,15 +407,21 @@ SendMessage({ to: "a1b2d7b0c23950c17",
   message: "Resume PR #<n> in your worktree. Address these review comments: ..." })
 ```
 
-**Reconcile with `../SKILL.md` § "Resuming agents: SendMessage loses worktree
-isolation" (#1546).** The resumed run may execute with its cwd in the
-orchestrator's **main checkout**, not in the worktree. The worktree and its
-branch still exist, so the resume is still the right route — but the brief must
-make the agent operate on the worktree by absolute path (`git -C
-<worktreePath> …`, edits under `<worktreePath>/`) and confirm
-`git -C <worktreePath> branch --show-current` before its first write. Resume
-file-mutating agents one at a time, never several concurrently, or they tangle
-in the main checkout exactly as #1546 describes. On the `Workflow` substrate
+**Measured 2026-11-07 (#2330).** Two worktree agents, each resumed with `SendMessage`:
+
+| Worktree when the agent completed | The resumed run |
+|---|---|
+| Has commits or uncommitted files (kept) | Re-enters it: `pwd`, `git rev-parse --show-toplevel` and the branch are the worktree's |
+| No changes (removed by the harness) | Runs in the orchestrator's main checkout; `git worktree list` no longer shows the entry |
+
+**Reconcile with `../SKILL.md` § "Resuming agents: SendMessage re-enters only a
+kept worktree" (#1546, #2330).** An agent that opened a PR committed its
+work, so its worktree was kept, and the resumed run re-enters it: `pwd`,
+toplevel and branch are the worktree's (measured 2026-11-07, #2330). The brief
+should still have the agent confirm `git branch --show-current` before its first
+write. If `git worktree list` no longer shows the worktree, the resume would run
+in the main checkout (#1546): re-dispatch a fresh worktree agent onto the branch
+instead, and never resume several such agents concurrently. On the `Workflow` substrate
 there is no agent to resume at all (see [§ Workflow agents are unreachable](#workflow-agents-are-unreachable-and-their-worktrees-pin-branches-2614)) — remove that run's worktree (non-force) and dispatch a fresh agent onto
 the freed branch.
 
