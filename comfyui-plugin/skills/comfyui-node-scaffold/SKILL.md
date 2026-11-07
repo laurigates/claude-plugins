@@ -1,12 +1,12 @@
 ---
 created: 2026-06-04
-modified: 2026-08-13
+modified: 2026-11-07
 reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
-  Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI,
-  release-please, vitest+pytest) consuming @laurigates/comfy-modal-kit. Use when
-  bootstrapping or init-ing a comfyui node pack.
+  Local files only: a new ComfyUI node pack tree (TypeScript + bun build,
+  CI, release-please, vitest+pytest) on @laurigates/comfy-modal-kit; no GitHub
+  repo. Use when generating a new pack's files.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 ---
 
