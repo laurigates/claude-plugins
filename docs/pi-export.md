@@ -125,7 +125,9 @@ the variable in its command, so its claims carry an agent; the hook still stamps
 ## Session nudges
 
 session-plugin's two nudges are Claude Code hook-manifest entries, which pi never
-reads. The adapter runs both itself (`adapters/pi/session-nudges.ts`, #2661):
+reads. The adapter runs both itself (`adapters/pi/session-nudges.ts`, #2661),
+with the gates, offer text and spinup hook run in `adapters/core/session-nudges.ts`,
+which the OpenCode binding shares (#2802):
 
 | Nudge | pi event | Behaviour |
 |---|---|---|

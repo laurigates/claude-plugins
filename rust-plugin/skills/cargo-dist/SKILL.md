@@ -1,6 +1,6 @@
 ---
 created: 2026-11-02
-modified: 2026-11-02
+modified: 2026-11-06
 reviewed: 2026-11-02
 name: cargo-dist
 description: "cargo-dist (dist) release binaries for a Rust CLI. Use when setting up dist-workspace.toml, pairing dist with release-please, or publishing a Homebrew formula."
@@ -26,6 +26,7 @@ when it differs.
 | Pairing dist with release-please tags | Tap layout, formula review, homebrew-core eligibility: the proposed `homebrew-plugin` |
 | Adding a Homebrew formula or shell/PowerShell installer | Container images: `configure-plugin:configure-container` |
 | Pinning the actions in dist's generated `release.yml` | Starting the crate itself: `rust-plugin:cargo-generate` |
+| Producing the release once the binary is ready to ship | The binary still reads files from its checkout (embedded config, user dirs, clap shape): `rust-plugin:rust-installable-cli` |
 
 ## Take project facts from the project, or ask
 

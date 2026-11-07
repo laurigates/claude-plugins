@@ -91,20 +91,19 @@ jobs:
             > "${CI_CONTEXT_DIR}/failed-jobs.txt" 2>/dev/null || echo "Could not retrieve job details" > "${CI_CONTEXT_DIR}/failed-jobs.txt"
 
           # A run whose every failed step is an LLM step (a step named
-          # `Claude …`, or any step of plugin-pr-checks' `skill-review` job)
-          # failed on the model side: quota, a bot-actor refusal, an
-          # undelivered review. A code change cannot fix that, and on quota the
+          # `Claude …`) failed on the model side: quota or a bot-actor
+          # refusal. A code change cannot fix that, and on quota the
           # Claude step below fails the same way (2026-10-09: eight auto-fix
           # runs, each 1 turn, $0, is_error:true, e.g. run 37933730522 for
           # failed run 37933197451). A failed job with no failed step, or a
           # job list that cannot be read, counts as not LLM-only, so the
           # analysis still runs.
-          # shellcheck disable=SC2016 # $job/$failed are jq variables
+          # shellcheck disable=SC2016 # $failed is a jq variable
           LLM_ONLY=$(gh run view "$RUN_ID" --json jobs --jq '
-            [.jobs[] | select(.conclusion == "failure") | . as $job
+            [.jobs[] | select(.conclusion == "failure")
              | ([.steps[]? | select(.conclusion == "failure")]) as $failed
              | if ($failed | length) == 0 then false
-               else ($failed[] | ($job.name == "skill-review" or (.name | startswith("Claude "))))
+               else ($failed[] | (.name | startswith("Claude ")))
                end]
             | length > 0 and all' 2>/dev/null || echo false)
           [ "$LLM_ONLY" = "true" ] || LLM_ONLY=false
@@ -366,13 +365,21 @@ jobs:
           # When the lookup matched an open issue (mode != create),
           # `--disallowedTools` denies issue creation outright instead of
           # relying on the directive alone: deny rules are evaluated before
-          # allow rules, so this beats `Bash(gh issue *)`. `gh issue new` is an
-          # alias of `gh issue create`.
+          # allow rules, so this beats `Bash(gh issue create *)`. `gh issue new`
+          # is an alias of `gh issue create`; it has no grant, and the deny
+          # keeps it closed if one is added.
+          #
+          # The gh grants name verbs, not command groups (#2769): the prompt and
+          # the lookup's directive run `gh pr comment`, `gh issue view|list|
+          # comment|create` and `gh run view`; `gh pr view` stays as a read.
+          # `Bash(gh pr *)`/`Bash(gh issue *)`/`Bash(gh run *)` also reached
+          # merge, edit, close and rerun on a step whose input is CI logs.
+          # scripts/check-workflow-gh-wildcard-grants.sh fails on a group wildcard.
           claude_args: >-
             --model opus
             --effort medium
             --max-turns 30
-            --allowedTools "Read,Write,Edit,Grep,Glob,Task,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git branch *),Bash(git config *),Bash(gh pr *),Bash(gh issue *),Bash(gh run *),Bash(python3 *),Bash(bash *)"
+            --allowedTools "Read,Write,Edit,Grep,Glob,Task,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git branch *),Bash(git config *),Bash(gh pr comment *),Bash(gh pr view *),Bash(gh issue view *),Bash(gh issue list *),Bash(gh issue comment *),Bash(gh issue create *),Bash(gh run view *),Bash(python3 *),Bash(bash *)"
             ${{ steps.existing.outputs.mode != 'create' && '--disallowedTools "Bash(gh issue create *),Bash(gh issue new *)"' || '' }}
           prompt: |
             A GitHub Actions workflow has failed on branch `${{ steps.context.outputs.branch }}`.

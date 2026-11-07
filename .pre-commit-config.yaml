@@ -939,6 +939,18 @@ repos:
         language: system
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
         pass_filenames: false
+      - id: check-workflow-gh-wildcard-grants
+        name: --allowedTools grants gh verbs, not whole gh command groups (#2769)
+        entry: bash ./scripts/check-workflow-gh-wildcard-grants.sh
+        language: system
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/check-workflow-gh-wildcard-grants\.sh)$'
+        pass_filenames: false
+      - id: test-check-workflow-gh-wildcard-grants
+        name: workflow gh wildcard-grant guard regression
+        entry: bash ./scripts/tests/test-check-workflow-gh-wildcard-grants.sh
+        language: system
+        files: '^scripts/(check-workflow-gh-wildcard-grants\.sh|tests/test-check-workflow-gh-wildcard-grants\.sh)$'
+        pass_filenames: false
       - id: check-comment-deliverable-assertions
         name: comment-posting and issue-filing Claude steps assert delivery + upload their transcript (#2630, #2719, #2731)
         entry: bash ./scripts/check-comment-deliverable-assertions.sh

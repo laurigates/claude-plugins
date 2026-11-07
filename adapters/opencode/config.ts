@@ -21,6 +21,8 @@ export interface OpencodeBindingConfig {
   model: string;
   /** Skill ids ("plugin:skill") always injected first; unknown ids warn and skip. */
   pins: string[];
+  /** Run session-plugin's spinup and end nudges (#2802). Default true. */
+  sessionNudges: boolean;
 }
 
 /**
@@ -30,7 +32,7 @@ export interface OpencodeBindingConfig {
  */
 export const DEFAULT_REPO_ROOT = resolve(import.meta.dir, "..", "..");
 
-const KNOWN_KEYS = new Set(["repoRoot", "k", "endpoint", "model", "pins"]);
+const KNOWN_KEYS = new Set(["repoRoot", "k", "endpoint", "model", "pins", "sessionNudges"]);
 
 function stringOption(
   options: Record<string, unknown>,
@@ -83,6 +85,12 @@ export function resolveOptions(options?: Record<string, unknown>): {
     }
   }
 
+  let sessionNudges = true;
+  if (raw.sessionNudges !== undefined) {
+    if (typeof raw.sessionNudges === "boolean") sessionNudges = raw.sessionNudges;
+    else warnings.push('option "sessionNudges" must be a boolean; using default true');
+  }
+
   return {
     config: {
       repoRoot: stringOption(raw, "repoRoot", DEFAULT_REPO_ROOT, warnings),
@@ -90,6 +98,7 @@ export function resolveOptions(options?: Record<string, unknown>): {
       endpoint: stringOption(raw, "endpoint", DEFAULT_ENDPOINT, warnings),
       model: stringOption(raw, "model", DEFAULT_MODEL, warnings),
       pins,
+      sessionNudges,
     },
     warnings,
   };
