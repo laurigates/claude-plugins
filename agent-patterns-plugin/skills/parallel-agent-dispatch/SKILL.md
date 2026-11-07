@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-11-05
+modified: 2026-11-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -303,7 +303,7 @@ An implementer can **finish its work** (clean commit + tree) then go idle
 emitting only an `idle_notification` — the work isn't lost, the *communication*
 is (intermittent; siblings can deliver fine). Not a failure signal: run the
 empty-vs-dirty check above, then `SendMessage` the named agent to resend the
-Return Contract (read-only, so the #1546 caveat below does not apply). Never
+Return Contract (read-only, so the #1546 caveat in the resume section does not apply). Never
 respawn — a fresh agent lacks context and can't take the branch. Prevention:
 implementers `SendMessage` the report to the lead as their final act. See
 [references/failure-recovery.md → Idle without report](references/failure-recovery.md#idle-without-report-2039).
@@ -365,19 +365,27 @@ skill adds the dispatch-time contract that applies to both team and non-team
 fan-out. When both apply, follow both — the out-of-scope protocol from
 `agent-teams` slots into the `Issues encountered` / `Deferred` sections here.
 
-### Resuming agents: SendMessage loses worktree isolation
+### Resuming agents: SendMessage re-enters only a kept worktree
 
-`SendMessage`-resume of a **completed** worktree-isolated agent does **not**
-re-enter that agent's worktree — the resumed run executes in the
-**orchestrator's main checkout**, so the resume **loses worktree isolation**;
-resuming several file-mutating agents this way runs them concurrently in the
-main checkout and tangles branch state (issue
-[#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
+When a worktree-isolated agent completes, the harness keeps its worktree only
+if the agent left changes in it. A worktree with no changes is removed. A later
+`SendMessage`-resume then behaves in one of two ways (measured 2026-11-07, #2330):
+
+| Worktree when the agent completed | What the resumed run gets |
+|---|---|
+| Has commits or uncommitted files (kept) | Re-enters it: `pwd`, `git rev-parse --show-toplevel` and the branch are the worktree's |
+| No changes (removed) | Runs in the orchestrator's **main checkout**, so the resume **loses worktree isolation** ([#1546](https://github.com/laurigates/claude-plugins/issues/1546)) |
+
+So a file-mutating agent that committed its work can be resumed in place. One
+that finished with nothing to keep has no worktree to return to. Several such
+agents resumed together would run concurrently in the main checkout and tangle
+branch state.
 
 | Continuation | Safe to `SendMessage`-resume? | Do instead |
 |---|---|---|
-| Read-only / single-checkout follow-up | Yes — no worktree to re-enter | Resume freely |
-| Parallel **file-mutating** agent that must stay in its worktree | No — resume runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** |
+| Read-only / single-checkout follow-up | Yes | Resume freely |
+| Agent whose worktree is still listed (`git worktree list`) | Yes; it re-enters that worktree | Have it confirm `git branch --show-current` before its first write |
+| Agent whose worktree was removed, and the follow-up must write in isolation | No; it runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** |
 
 ### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents
 
