@@ -370,7 +370,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.14.1",
+      "version": "1.15.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
