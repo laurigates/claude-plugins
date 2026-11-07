@@ -45,7 +45,7 @@
 #       [--plant-control] [--run-url URL]
 #
 #   --out-dir        where findings, delta, and comment.md are written
-#   --state-dir      the cached state: baseline.json, embeddings.json, gitdates.json
+#   --state-dir      the cached state: baseline.json, embeddings.json, gitdates-v2.json
 #   --prior-success  whether a previous run of the audit completed (see above)
 #   --root           corpus root (default: this script's repo)
 #   --waivers        waiver file (default: <root>/health-plugin/config-drift-waivers.json)

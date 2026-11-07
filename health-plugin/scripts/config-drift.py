@@ -404,21 +404,38 @@ def _shallow_boundaries(repo_dir: str) -> frozenset[str]:
 
 
 GIT_LOG_TIMEOUT = 10  # seconds one file's history walk may take
+# The date cache is keyed `path:content-hash`, which says nothing about the
+# algorithm that produced a date. Rows written by `git log -1` (pre-#3442) carry
+# a bulk-move date for every moved document whose text has not changed since,
+# and `--fast` only reads the cache, so they would outlive the fix. Bump the
+# name whenever `git_last_change` starts answering differently for unchanged
+# content; the old file is left in place and simply no longer read.
+GITDATES_CACHE = "gitdates-v2.json"
 
 
 def _content_run_start(lines) -> tuple[str, str] | None:
     """The oldest `(commit, date)` whose copy of the file equals the newest copy.
 
-    `lines` is `git log --follow --format=%x01%H %cs --raw --no-abbrev` output,
-    newest first. Each commit's `--raw` line carries the file's blob at that
-    commit (field 4), so a pure rename (`R100`) or a mode-only change keeps the
-    blob and stays in the run, and the first commit with a different blob ends
-    it. A commit with no raw line (a merge, which `--raw` does not diff) says
-    nothing about the content and is skipped. A file whose log carries no raw
-    line at all falls back to its newest commit, the pre-#3442 answer.
+    `lines` is `git log --follow --diff-merges=first-parent --format=%x01%H %cs
+    --raw --no-abbrev` output, newest first. Each commit's `--raw` line carries
+    the file's blob at that commit (field 4), so a pure rename (`R100`) or a
+    mode-only change keeps the blob and stays in the run, and the first commit
+    with a different blob ends it.
 
-    Returns None for an empty log. A generator, so the caller can stop reading
-    -- and stop git -- at the end of the run instead of walking all history.
+    A merge whose result differs from both parents (both sides edited the file,
+    or a conflict was resolved by hand) creates the current blob itself. Plain
+    `--raw` prints no diff for a merge, so the walk used to skip it and date the
+    file to the next commit's blob, which is not the current text.
+    `--diff-merges=first-parent` diffs the merge against its first parent, so it
+    carries the merged blob and is the run's newest member. A merge whose result
+    equals one parent is hidden by git's history simplification and never
+    reaches this function. A commit that still carries no raw line says nothing
+    about the content and is skipped; a log with no raw line at all falls back
+    to its newest commit, the pre-#3442 answer.
+
+    Returns None for an empty log. It reads `lines` lazily and returns at the
+    end of the run, so the caller can stop git there instead of walking all
+    history.
     """
     newest: tuple[str, str] | None = None
     run_start: tuple[str, str] | None = None
@@ -476,6 +493,7 @@ def git_last_change(path: Path) -> tuple[str | None, bool]:
                 str(path.parent),
                 "log",
                 "--follow",
+                "--diff-merges=first-parent",
                 "--format=%x01%H %cs",
                 "--raw",
                 "--no-abbrev",
@@ -488,7 +506,13 @@ def git_last_change(path: Path) -> tuple[str | None, bool]:
         )
     except OSError:
         return None, False
-    timer = threading.Timer(GIT_LOG_TIMEOUT, proc.kill)
+    timed_out = threading.Event()
+
+    def _kill_on_timeout() -> None:
+        timed_out.set()
+        proc.kill()
+
+    timer = threading.Timer(GIT_LOG_TIMEOUT, _kill_on_timeout)
     timer.start()
     try:
         found = _content_run_start(proc.stdout)
@@ -497,7 +521,10 @@ def git_last_change(path: Path) -> tuple[str | None, bool]:
         proc.kill()
         proc.stdout.close()
         proc.wait()
-    if found is None:
+    # A killed walk ends at EOF mid-run, and its "oldest commit read so far" is
+    # a too-new date that would fire a false review_staleness and be cached.
+    # Unknown, as a git timeout was before #3442.
+    if found is None or timed_out.is_set():
         return None, False
     commit, date = found
     return date, commit in _shallow_boundaries(str(path.parent))
@@ -2040,7 +2067,7 @@ def main() -> int:
     findings += check_corpus_unreadable(unreadable)
     findings += check_agent_discovery_misfire(agents, agent_dirs)
 
-    datecache_path = Path(args.cache).expanduser().with_name("gitdates.json")
+    datecache_path = Path(args.cache).expanduser().with_name(GITDATES_CACHE)
     datecache: dict = {}
     if datecache_path.is_file():
         try:
