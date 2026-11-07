@@ -485,7 +485,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.24.3",
+      "version": "1.24.4",
       "author": {
         "name": "Lauri Gates"
       },
