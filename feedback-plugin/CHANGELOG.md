@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.15.0...feedback-plugin-v1.15.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** create feedback labels at issue-creation time, not in Step 1 ([#3481](https://github.com/laurigates/claude-plugins/issues/3481)) ([fd3fcec](https://github.com/laurigates/claude-plugins/commit/fd3fcec3096a40e0190de06a2b170028602b29a1)), closes [#2360](https://github.com/laurigates/claude-plugins/issues/2360)
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.14.1...feedback-plugin-v1.15.0) (2026-11-07)
 
 
