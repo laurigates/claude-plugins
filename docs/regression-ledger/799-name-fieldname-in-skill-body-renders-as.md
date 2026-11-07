@@ -1,0 +1,1 @@
+| `name: fieldname` + `---` in skill body renders as accidental H2 heading | YAML frontmatter key leaked into markdown body; `key\n---` is a setext heading | `plugin-compliance-check.sh` `check_skill_body()` | PR #799 |
