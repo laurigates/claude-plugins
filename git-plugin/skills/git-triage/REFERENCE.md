@@ -3,6 +3,14 @@
 Supplementary patterns for `/git:triage`, loaded on demand. The workflow itself
 is in [SKILL.md](SKILL.md).
 
+| Reference | Read it when |
+|-----------|--------------|
+| [references/issue-triage-workflow.md](references/issue-triage-workflow.md) | Adapting the multi-repository issue-triage workflow template |
+| [references/pr-categories.md](references/pr-categories.md) | Reading `PR_<n>_CATEGORY` and systematic-failure groups |
+| [references/report-template.md](references/report-template.md) | Writing the queue and backlog report |
+| [references/guarded-writes.md](references/guarded-writes.md) | Closing issues or merging PRs with `--auto-close` / `--auto-merge` |
+| [references/commands.md](references/commands.md) | Compact `gh` commands per category |
+
 ## Per-issue progress keys
 
 `git-triage.sh` emits four progress keys for every fetched issue (issue #2904).
