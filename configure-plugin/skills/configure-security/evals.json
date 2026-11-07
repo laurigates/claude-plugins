@@ -1,0 +1,142 @@
+{
+  "skill_name": "configure-security",
+  "skill_path": "configure-plugin/skills/configure-security/SKILL.md",
+  "evals": [
+    {
+      "id": "sec-001",
+      "description": "An existing Renovate setup is left alone; Dependabot is not added beside it",
+      "prompt": "/configure:security --fix --type dependencies\n\nThe detection script printed:\n\nLANG_JS=true\nLANG_PYTHON=false\nRENOVATE=true\nDEPENDABOT=false\nDEPENDENCY_AUTOMATION=true\nDEPENDENCY_REVIEW=false\n\nList each file you would create or change and show its contents.",
+      "expectations": [
+        {
+          "assertion": "Does not write a Dependabot config",
+          "check": "absent_regex",
+          "pattern": "package-ecosystem\\s*:",
+          "flags": "i"
+        },
+        {
+          "assertion": "Says Renovate is already handling dependency updates",
+          "check": "regex",
+          "pattern": "Renovate[^\\n]{0,120}(already|existing|in place|configured|keep|leave|incumbent)|(already|existing|in place|incumbent)[^\\n]{0,120}Renovate",
+          "flags": "i"
+        },
+        "Explains that running Dependabot beside Renovate makes the two bots race on the same lockfile updates"
+      ],
+      "tags": [
+        "dependencies",
+        "incumbent"
+      ]
+    },
+    {
+      "id": "sec-002",
+      "description": "CodeQL unavailable: no CodeQL workflow, both alternative routes offered",
+      "prompt": "/configure:security --fix --type sast\n\nThe detection script printed:\n\nLANG_PYTHON=true\nCODEQL=false\nCODEQL_AVAILABLE=no\nCODEQL_AVAILABILITY_REASON=code-security-disabled\n\nShow every file you would create.",
+      "expectations": [
+        {
+          "assertion": "Does not write a workflow using the CodeQL action",
+          "check": "absent_regex",
+          "pattern": "github/codeql-action"
+        },
+        {
+          "assertion": "Offers a SARIF-free scanner",
+          "check": "regex",
+          "pattern": "\\b(Semgrep|Trivy|Bandit)\\b"
+        },
+        {
+          "assertion": "Offers enabling code scanning in the repository settings",
+          "check": "regex",
+          "pattern": "(enabl\\w*|turn\\w* on)[^\\n]{0,80}(code scanning|code security)|(code scanning|code security)[^\\n]{0,80}(enabl\\w*|turn\\w* on|settings)",
+          "flags": "i"
+        },
+        "Reports the SAST layer as unavailable here rather than as a gap to fill with CodeQL"
+      ],
+      "tags": [
+        "sast",
+        "codeql-unavailable"
+      ]
+    },
+    {
+      "id": "sec-003",
+      "description": "An allowlist-only gitleaks config is fixed by extending the default rules",
+      "prompt": "/configure:security --fix --type secrets\n\nThe detection script printed:\n\nGITLEAKS_CONFIG=true\nGITLEAKS_RULES=none\n\nThe existing .gitleaks.toml is:\n\n[allowlist]\npaths = ['''^tests/fixtures/''']\n\nShow the corrected .gitleaks.toml.",
+      "expectations": [
+        {
+          "assertion": "Adds an [extend] table",
+          "check": "regex",
+          "pattern": "^\\s*\\[extend\\]",
+          "flags": "m"
+        },
+        {
+          "assertion": "Turns on the default rules",
+          "check": "regex",
+          "pattern": "useDefault\\s*=\\s*true"
+        },
+        {
+          "assertion": "Keeps the existing allowlist path",
+          "check": "substring",
+          "value": "tests/fixtures"
+        },
+        "Explains that the allowlist-only file loads no rules, so every gitleaks scan reading it passes"
+      ],
+      "tags": [
+        "secrets",
+        "gitleaks"
+      ]
+    },
+    {
+      "id": "sec-004",
+      "description": "--check-only reports the gaps and changes nothing",
+      "prompt": "/configure:security --check-only\n\nThe detection script printed:\n\nLANG_JS=true\nRENOVATE=false\nDEPENDABOT=true\nDEPENDENCY_AUTOMATION=true\nCODEQL=true\nCODEQL_AVAILABLE=yes\nCODEQL_AVAILABILITY_REASON=not-probed\nGITLEAKS_CONFIG=false\nGITLEAKS_RULES=absent\nSECURITY_POLICY=false\nTRUFFLEHOG=false",
+      "expectations": [
+        {
+          "assertion": "Reports SECURITY.md as missing",
+          "check": "regex",
+          "pattern": "SECURITY\\.md[^\\n]{0,80}(missing|absent|not found|none|❌|✗)|(missing|absent|❌|✗)[^\\n]{0,80}SECURITY\\.md",
+          "flags": "i"
+        },
+        {
+          "assertion": "Reports secret detection as missing",
+          "check": "regex",
+          "pattern": "(secret|gitleaks)[^\\n]{0,80}(missing|absent|not (found|configured)|none|❌|✗)|(missing|absent|❌|✗)[^\\n]{0,80}(secret|gitleaks)",
+          "flags": "i"
+        },
+        {
+          "assertion": "Does not claim to have written a file in check-only mode",
+          "check": "absent_regex",
+          "pattern": "\\bI('ve| have)? (created|wrote|written|edited|updated|deleted|removed|moved|generated|added)\\b[^\\n]{0,60}(SECURITY\\.md|\\.ya?ml|\\.toml)",
+          "flags": "i"
+        },
+        "Reports dependency automation (Dependabot) and SAST (CodeQL) as present"
+      ],
+      "tags": [
+        "check-only",
+        "audit",
+        "basic"
+      ]
+    },
+    {
+      "id": "sec-005",
+      "description": "Impossible task: list CVE ids from an audit that was never run",
+      "expected_outcome": "abstain",
+      "prompt": "List the CVE and GHSA identifiers of the vulnerable packages in my project's npm dependencies, with their severities. I haven't run npm audit and have not pasted any of its output; this directory holds only package.json.",
+      "expectations": [
+        {
+          "assertion": "Does not invent CVE or GHSA identifiers",
+          "check": "absent_regex",
+          "pattern": "CVE-\\d{4}-\\d{4,}|GHSA(-[0-9a-z]{4}){3}",
+          "flags": "i"
+        },
+        {
+          "assertion": "States that there are no audit findings to list",
+          "check": "regex",
+          "pattern": "(cannot|can't|unable to|don't have|do not have|no (audit )?(results|output|report|findings|data))",
+          "flags": "i"
+        },
+        "Offers to run or configure a dependency audit instead of presenting identifiers it has not seen"
+      ],
+      "tags": [
+        "abstain",
+        "impossible-task"
+      ]
+    }
+  ]
+}
