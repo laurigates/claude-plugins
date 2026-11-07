@@ -31,9 +31,19 @@
 #   missing_issue_assertion      a LATER step in the same job that runs
 #                                scripts/assert-issue-filed.sh
 #
-# The match is on the literal grant: a `Bash(gh issue *)` wildcard step is not
-# one (research-radar.yml's liveness is scripts/check-audit-liveness.sh's
-# concern).
+# The match is on the literal grant. Until #2769 three steps reached
+# `gh issue create` only through a `Bash(gh issue *)` wildcard and so fell
+# outside this sweep; narrowing them to verbs brought them in. Their issue (and,
+# for auto-fix, comment) is OPTIONAL: research-radar files nothing in a week
+# with no relevant paper, obsidian-cli-changelog files a follow-up only when the
+# doc needs one, and github-workflow-auto-fix files or comments only on the
+# not-fixable path. An unconditional assertion would fail their legitimate
+# runs. OPTIONAL_DELIVERABLE below exempts exactly the finding types each step
+# carried while it was out of scope, so the narrowing changes no verdict.
+# Each entry must keep firing: an exempted type that no longer fires for its
+# workflow is a `stale_exemption`, so the list shrinks as the #2769 per-workflow
+# PRs (write a file, publish from bash) land. research-radar's liveness is also
+# scripts/check-audit-liveness.sh's concern.
 #
 # Out of scope, and counted rather than silently dropped: TAG mode (no
 # `prompt:`), where the action creates its own tracking comment; and steps with
@@ -114,6 +124,19 @@ COMMENT_GRANTS = (
     "mcp__github_comment",
     "mcp__github_inline_comment",
 )
+
+# Workflow basename -> finding types exempted, because the step's deliverable is
+# optional (see the header). Shrink-only: a stale entry is an error.
+OPTIONAL_DELIVERABLE = {
+    "github-workflow-auto-fix.yml": {
+        "missing_step_id", "missing_issue_assertion",
+        "missing_delivery_assertion", "missing_transcript_upload",
+    },
+    "obsidian-cli-changelog.yml": {"missing_issue_assertion"},
+    "research-radar.yml": {
+        "missing_step_id", "missing_issue_assertion", "missing_transcript_upload",
+    },
+}
 
 
 def workflow_files():
@@ -228,6 +251,27 @@ for path in workflow_files():
                     "MSG=no later step uploads this step's execution_file, so a denied tool call cannot be named"
                 )
 
+scanned_names = {os.path.basename(p) for p in workflow_files() if os.path.isfile(p)}
+kept = []
+exempted = set()
+for row in issues:
+    m = re.search(r"TYPE=(\S+) FILE=(\S+)", row)
+    if m:
+        base = os.path.basename(m.group(2))
+        if m.group(1) in OPTIONAL_DELIVERABLE.get(base, set()):
+            exempted.add((base, m.group(1)))
+            continue
+    kept.append(row)
+for base in sorted(OPTIONAL_DELIVERABLE):
+    if base not in scanned_names:
+        continue
+    for etype in sorted(OPTIONAL_DELIVERABLE[base] - {t for b, t in exempted if b == base}):
+        kept.append(
+            f"SEVERITY=ERROR TYPE=stale_exemption FILE=.github/workflows/{base} EXEMPT={etype} "
+            "MSG=OPTIONAL_DELIVERABLE exempts a finding this workflow no longer produces - remove the entry"
+        )
+issues = kept
+
 status = "ERROR" if issues else "OK"
 print("=== COMMENT DELIVERABLE ASSERTIONS ===")
 print(f"WORKFLOWS_SCANNED={scanned}")
@@ -236,6 +280,7 @@ print(f"COMMENT_DELIVERABLE_STEPS={in_scope}")
 print(f"ISSUE_DELIVERABLE_STEPS={issue_scope}")
 print(f"SKIPPED_TAG_MODE={skipped_tag}")
 print(f"SKIPPED_NO_ALLOWLIST={skipped_no_allowlist}")
+print(f"EXEMPT_OPTIONAL_DELIVERABLE={len(exempted)}")
 print(f"SCANNED_EMPTY={'true' if scanned == 0 else 'false'}")
 print(f"STATUS={status}")
 if issues:
