@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.15.0...documentation-plugin-v1.15.1) (2026-11-07)
+
+
+### Documentation
+
+* **documentation-plugin:** add lore.kernel.org thread-mbox fallback to docs-fetch-fallbacks ([#3472](https://github.com/laurigates/claude-plugins/issues/3472)) ([805d1c4](https://github.com/laurigates/claude-plugins/commit/805d1c44db73a0c108b03ffd4100e9d52195d26c)), closes [#3465](https://github.com/laurigates/claude-plugins/issues/3465)
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.14.0...documentation-plugin-v1.15.0) (2026-11-07)
 
 
