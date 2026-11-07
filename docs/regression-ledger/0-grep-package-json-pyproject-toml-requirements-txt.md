@@ -1,0 +1,1 @@
+| `grep ... package.json pyproject.toml requirements.txt` fails when files missing | grep writes to stderr when hardcoded filenames don't exist; non-JS/Python projects lack these files | `lint-context-commands.sh` rule `grep-hardcoded-multi-file` | PR #TBD |
