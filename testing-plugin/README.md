@@ -23,6 +23,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 | `test-strategy-review` | Audit whether a green suite actually tests what you aim for (adversarial + tests-hidden cold read, verified) |
 | `test-tripwire` | A test that fails when an unenforced code assumption breaks — replaces an issue that defers a fix until a list, limit or version changes |
 | `benchmark-controls` | Benchmark control hazards — a fixture step that mutates the control, two timing harnesses that disagree |
+| `measurement-controls` | Trust a measurement before it gates work — A/B arms that differ only in the variable, an oracle gated on a known-good case, pooled correlations and x/N rates, locating an event by scanning, per-axis metric authority, per-layer stems, per-stream guarantees |
 | `property-based-testing` | Property-based testing with fast-check (TS/JS) and Hypothesis (Python) |
 | `mutation-testing` | Mutation testing for quality validation |
 | `vitest-testing` | Vitest testing framework patterns; jsdom's limits and the DOM assertions that silently pass against the bug |
