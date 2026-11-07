@@ -24,19 +24,3 @@ git-plugin/skills/github-pr-title/SKILL.md	require	^PR title only	title, not PR 
 git-plugin/skills/github-pr-title/SKILL.md	forbid	creating PRs	PR creation is git-pr's trigger
 git-plugin/skills/git-branch-naming/SKILL.md	forbid	creating branches	shared with git-branch-pr-workflow (check-description-collisions.py)
 git-plugin/skills/github-issue-autodetect/SKILL.md	forbid	use when committing	committing is git-commit's trigger
-#
-# Pack/module creation (comfyui-plugin, foundryvtt-plugin), found by the
-# block-scalar-aware re-inventory the issue asked for before touching these
-# two plugins. Each plugin pairs an orchestrator (repo created, seeded and
-# gitops-adopted) with a scaffold that writes local files only. The scaffold
-# leads with that scope limit, and the orchestrators drop "releasing": their
-# bodies say they do not publish a release, and the release pipeline is
-# comfy-registry-lifecycle's trigger.
-comfyui-plugin/skills/comfyui-node-scaffold/SKILL.md	require	^Local files only	scaffold leads with its scope limit; repo creation is comfy-node
-comfyui-plugin/skills/comfyui-node-scaffold/SKILL.md	forbid	spinning up	standing a pack up end to end is comfy-node's trigger
-comfyui-plugin/skills/comfy-node/SKILL.md	require	gitops-adopted	the gitops adoption is what the scaffold does not do
-comfyui-plugin/skills/comfy-node/SKILL.md	forbid	releas	the body says not to use it to publish a release (comfy-registry-lifecycle)
-foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	require	^Local files only	scaffold leads with its scope limit; repo creation is foundryvtt-module
-foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	forbid	spinning up	standing a module up end to end is foundryvtt-module's trigger
-foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	require	gitops-adopted	the gitops adoption is what the scaffold does not do
-foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	forbid	releas	the body says a due release belongs to release-please, not this skill

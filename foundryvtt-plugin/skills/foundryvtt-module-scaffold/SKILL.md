@@ -1,12 +1,12 @@
 ---
 created: 2026-06-26
-modified: 2026-11-07
+modified: 2026-11-03
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
-  Local files only: a new FoundryVTT v13 module tree (Vite + TS + bun + biome,
-  CI, release-please), basic/app/libwrapper variants; no GitHub repo. Use when
-  generating a new module's files.
+  Scaffold a new FoundryVTT v13 module repo (Vite + TS + bun + biome, CI,
+  release-please) with basic/app/libwrapper variants. Use when bootstrapping or
+  init-ing a foundry module.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 args: "[--name <repo>] [--display <title>] [--desc <text>] [--variant <basic|app|libwrapper>]"
 argument-hint: --name foundryvtt-x --display "X" --desc "…" --variant basic
