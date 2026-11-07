@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.57.1",
+      "version": "2.57.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.70.1",
+      "version": "2.71.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1014,7 +1014,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.17.2",
+      "version": "1.18.0",
       "author": {
         "name": "Lauri Gates"
       },
