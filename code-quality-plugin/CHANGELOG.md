@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.2...code-quality-plugin-v1.29.0) (2026-11-07)
+
+
+### Features
+
+* **testing-plugin,documentation-plugin,code-quality-plugin:** promote comfyui-nodes measurement rules to skills ([#3476](https://github.com/laurigates/claude-plugins/issues/3476)) ([03293ef](https://github.com/laurigates/claude-plugins/commit/03293efee8a22bfc2a530de315a171602196310a))
+
 ## [1.28.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.1...code-quality-plugin-v1.28.2) (2026-11-03)
 
 
