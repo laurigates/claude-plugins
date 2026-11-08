@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-08-15
+modified: 2026-11-08
 reviewed: 2026-04-25
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git fetch *), Bash(git switch *), Bash(git cherry-pick *), Bash(gh pr create *), Bash(gh pr close *), Bash(uv lock *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 args: "[pr-number] [--auto-fix] [--push]"
 argument-hint: "[pr-number] [--auto-fix] [--push]"
 description: "Failing PR checks — reproduce locally, patch the code, push the fix. Use when asked to fix a PR, resolve red CI, or auto-fix lint/test failures."
@@ -76,7 +76,22 @@ Based on failure type:
 - **Type errors**: Fix type annotations or implementations
 - **Test failures**: Fix failing tests or implementation bugs
 
+### Bot dependency PRs: fix on a branch of your own
+
+This section replaces Steps 5–6 when **both** hold:
+
+- the repo's workflows call a reusable auto-resolve-conflicts workflow such as `reusable-auto-resolve-conflicts.yml` (`grep -l reusable-auto-resolve-conflicts .github/workflows/*`), and
+- the PR's head branch is `renovate/*` or `dependabot/*`.
+
+Why: when such a PR starts to conflict with `main`, that workflow does not resolve it. It runs `gh pr close --delete-branch` on those branch patterns by design, because the bot will recreate the PR. The recreated PR carries only the bot's change, so a fix pushed to the bot branch is lost and the check fails again. The workflow's other skipped patterns (release-please, version-tracking, config-sync branches) have their own regeneration paths and are out of scope here.
+
+1. **Leave the bot branch untouched.** Branch from `main` under a name outside those patterns (for example `chore/deps-<topic>`), cherry-pick the bot's commits (`git log origin/main..origin/<bot-branch>`; a fresh Renovate branch holds only its own), commit the fix on top, and open that branch as the PR. Once it merges, `main` has the update and the bot has nothing left to propose. Close the bot PR by hand, or let auto-resolve close it when it conflicts.
+2. **For a lock-maintenance PR, regenerate the locks instead of cherry-picking them.** Run the package manager's upgrade command in each project the PR lists (`uv lock --upgrade` for uv) with the version CI pins: the `version:` input of the setup action (`astral-sh/setup-uv`, `oven-sh/setup-bun`, …) in `.github/workflows/`, not the locally installed one. Commit the failure fix in the same commit, because either change alone can leave the check red, then re-run the failing check. As a sanity check, not a threshold, compare per-file sizes from `git diff --stat origin/main` with the bot PR's file list; a large gap points to a different resolver version or a moved base.
+3. **Hold a bump that cannot be made to work.** When no change in the repo makes the new version pass, add a `packageRules` entry to `renovate.json` with `allowedVersions` (stay below the failing release) or `enabled: false` (stop updates), plus a `description` saying why. Without it, the bot proposes the same bump on its next run.
+
 ### Step 5: Commit and Push (if --push)
+
+For a bot PR that matches [Bot dependency PRs](#bot-dependency-prs-fix-on-a-branch-of-your-own), follow that section instead of Steps 5–6.
 
 1. **Stage fixes**: `git add -u`
 2. **Commit**: `git commit -m "fix: resolve CI failures"`
