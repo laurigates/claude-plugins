@@ -200,7 +200,7 @@ jobs:
         run: rustup toolchain install --no-self-update
 
       - name: Install nextest
-        uses: taiki-e/install-action@v2.90.0
+        uses: taiki-e/install-action@v2.90.1
         with:
           tool: nextest
 

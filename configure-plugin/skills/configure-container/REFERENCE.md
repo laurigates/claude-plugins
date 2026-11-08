@@ -32,7 +32,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4.4.1
 
-      - uses: docker/login-action@v4.7.0
+      - uses: docker/login-action@v4.8.0
         if: github.event_name != 'pull_request'
         with:
           registry: ${{ env.REGISTRY }}
@@ -81,7 +81,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
