@@ -64,7 +64,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4.4.1
 
-      - uses: docker/login-action@v4.7.0
+      - uses: docker/login-action@v4.8.0
         if: github.event_name != 'pull_request'
         with:
           registry: ${{ env.REGISTRY }}
