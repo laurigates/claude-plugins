@@ -47,37 +47,82 @@ venv, not ComfyUI's `.venv/`** — every newly-introduced custom-node Python
 dep ends up in the wrong interpreter where ComfyUI can't see it. You have
 to reinstall each pack's `requirements.txt` against `.venv/` manually.
 
-Full recipe (verified 2026-05-08):
+Full recipe (verified 2026-05-08; the constrained pip procedure in steps 2,
+4, 6 and 7 verified 2026-11-08 on ComfyUI v0.43.0 → c76e64fe5 across ~100
+packs: the venv diff was exactly the core bumps plus the one package a pack
+added, and torch, numpy and transformers did not move):
 
 ```sh
 # 1. Snapshot for rollback
 mkdir -p snapshots
-comfy node save-snapshot --output snapshots/$(date -I)-pre-update.json
+STAMP=$(date -I)
+comfy node save-snapshot --output "snapshots/$STAMP-pre-update.json"
 
-# 2. User stops the service (sudo, not the agent's shell)
-#    ! sudo systemctl stop comfyui.service
-
-# 3. Update core
-git -C <comfyui-root> pull --ff-only
-.venv/bin/python -m pip install -r requirements.txt
-
-# 4. Update every custom node (DO NOT trust its post-install pip step)
-comfy node update all
-
-# 5. Manually reinstall every node's requirements into the CORRECT venv
+# 2. Record the venv before anything moves:
+#    - pins.txt: a pip constraints file holding the GPU/numeric stack at its
+#      installed versions. transformers gets an upper bound rather than an
+#      exact pin, so a core bump can still move it within 4.x (see Pitfalls:
+#      transformers 5.x breaks the diffusers/peft chain).
+#    - freeze-before.txt: the whole venv, for the diff in step 7.
+#    - every pack's requirements.txt, copied aside for the diff in step 6.
+.venv/bin/python -m pip freeze > "snapshots/$STAMP-freeze-before.txt"
+grep -iE '^(torch|torchvision|torchaudio|triton|numpy)==' \
+  "snapshots/$STAMP-freeze-before.txt" > pins.txt
+echo 'transformers<5' >> pins.txt
+REQ_OLD="snapshots/$STAMP-requirements"
+mkdir -p "$REQ_OLD"
 for req in custom_nodes/*/requirements.txt; do
-  echo ">>> $(dirname "$req" | sed 's|custom_nodes/||')"
-  ./.venv/bin/python -m pip install --quiet -r "$req" 2>&1 | tail -3
+  cp "$req" "$REQ_OLD/$(basename "$(dirname "$req")").txt"
 done
 
-# 6. Pin transformers <5 (see Pitfalls — diffusers/peft chain breaks otherwise)
-.venv/bin/python -m pip install 'transformers>=4.50.3,<5'
+# 3. User stops the service (sudo, not the agent's shell)
+#    ! sudo systemctl stop comfyui.service
 
-# 7. Re-apply local hot-patches (project CLAUDE.md tracks them, e.g. WanVideoWrapper)
+# 4. Update core (core deps are expected to move; pins.txt holds the stack)
+git -C <comfyui-root> pull --ff-only
+.venv/bin/python -m pip install -r requirements.txt -c pins.txt
 
-# 8. User restarts the service
+# 5. Update every custom node (DO NOT trust its post-install pip step)
+comfy node update all
+
+# 6. Install only the requirement lines each pack changed or added, into the
+#    CORRECT venv, under the same constraints. A pack with no old copy (newly
+#    installed) diffs against an empty file, so all of its lines count.
+for req in custom_nodes/*/requirements.txt; do
+  pack=$(basename "$(dirname "$req")")
+  old="$REQ_OLD/$pack.txt"
+  [ -f "$old" ] || old=/dev/null
+  changed=$(comm -13 \
+    <(grep -vE '^[[:space:]]*(#|$)' "$old" | sort -u) \
+    <(grep -vE '^[[:space:]]*(#|$)' "$req" | sort -u))
+  [ -n "$changed" ] || continue
+  echo ">>> $pack"
+  printf '%s\n' "$changed" | tee "$REQ_OLD/$pack.changed.txt"
+  .venv/bin/python -m pip install -r "$REQ_OLD/$pack.changed.txt" -c pins.txt \
+    || echo "!!! $pack: install failed; resolve this pack by hand"
+done
+
+# 7. Diff the venv. Expect only the core bumps plus what step 6 printed;
+#    torch, torchvision, torchaudio, triton, numpy and transformers must not
+#    appear. If one does, roll back with the snapshot.
+.venv/bin/python -m pip freeze > "snapshots/$STAMP-freeze-after.txt"
+diff "snapshots/$STAMP-freeze-before.txt" "snapshots/$STAMP-freeze-after.txt"
+
+# 8. Re-apply local hot-patches (project CLAUDE.md tracks them, e.g. WanVideoWrapper)
+
+# 9. User restarts the service
 #    ! sudo systemctl restart comfyui.service
 ```
+
+Steps 2 and 6 replace a blind `pip install -r` over every pack's
+`requirements.txt`. Pack requirement files commonly list unpinned `torch`,
+`torchvision`, `numpy` and `transformers`, so an unconstrained loop can swap
+the torch/CUDA build, pull `numpy>=2.2` (which breaks `numba`), or pull
+transformers 5.x. Under `-c pins.txt`, a pack that needs a different version
+of a pinned package makes pip fail instead of moving the stack; step 6
+reports the pack and continues. The `grep` in step 2 matches only
+`name==version` lines, so a torch installed from a local wheel
+(`torch @ file://…`) is not pinned until you add it to `pins.txt` by hand.
 
 The snapshot captures git refs of every custom node + the core ComfyUI commit
 + the `pip freeze` of `.venv/`. Restoring rolls all three back:
