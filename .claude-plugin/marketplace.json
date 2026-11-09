@@ -574,6 +574,29 @@
       "category": "development"
     },
     {
+      "name": "kitty-plugin",
+      "source": "./kitty-plugin",
+      "description": "kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates",
+        "url": "https://github.com/laurigates"
+      },
+      "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
+      "keywords": [
+        "kitty",
+        "terminal",
+        "remote-control",
+        "kitten",
+        "icat",
+        "image",
+        "session",
+        "snapshot"
+      ],
+      "category": "development"
+    },
+    {
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
@@ -641,7 +664,7 @@
     {
       "name": "macos-plugin",
       "source": "./macos-plugin",
-      "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
+      "description": "macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
       "version": "1.9.4",
       "author": {
         "name": "Lauri Gates",
@@ -652,8 +675,6 @@
       "keywords": [
         "macos",
         "darwin",
-        "kitty",
-        "session-persistence",
         "launchservices",
         "windowserver",
         "kernel-panic",

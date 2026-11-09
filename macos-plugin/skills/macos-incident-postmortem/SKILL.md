@@ -4,7 +4,7 @@ description: Reconstruct macOS freeze, panic, or reboot from DiagnosticReports a
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(uname *), Bash(sysctl *), Bash(uptime *), Bash(last *), Bash(log *), Bash(pmset *), Read, Grep, Glob, TodoWrite
 created: 2026-05-03
-modified: 2026-06-10
+modified: 2026-11-09
 reviewed: 2026-06-10
 ---
 
@@ -206,4 +206,4 @@ When a command fails or the reports do not reach back to T (permission denied, e
 ## Related Skills
 
 - `launchservices-health` — when the timeline points at `launchservicesd`, dig deeper there
-- `kitty-session-persistence` — recover terminal state lost during the incident
+- `kitty-plugin:kitty-session-persistence` — recover terminal state lost during the incident

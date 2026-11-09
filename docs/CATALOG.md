@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-49 plugins, 471 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+50 plugins, 473 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -25,6 +25,7 @@
 | [git-plugin](../git-plugin/) | 49 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
 | [home-assistant-plugin](../home-assistant-plugin/) | 4 | 0 | Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations |
 | [kernel-plugin](../kernel-plugin/) | 4 | 0 | Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists |
+| [kitty-plugin](../kitty-plugin/) | 3 | 0 | kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore |
 | [linux-plugin](../linux-plugin/) | 1 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores |
 | [obsidian-plugin](../obsidian-plugin/) | 21 | 0 | Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks |
 | [project-plugin](../project-plugin/) | 7 | 0 | Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows |
@@ -109,7 +110,7 @@
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [health-plugin](../health-plugin/) | 7 | 0 | Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers |
-| [macos-plugin](../macos-plugin/) | 8 | 0 | macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift |
+| [macos-plugin](../macos-plugin/) | 7 | 0 | macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift |
 | [tools-plugin](../tools-plugin/) | 17 | 0 | General utilities - fd, rg, jq, shell, imagemagick |
 | [video-plugin](../video-plugin/) | 7 | 0 | Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics |
 

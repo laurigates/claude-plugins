@@ -4,7 +4,7 @@ description: Snapshot and restore kitty terminal sessions on macOS. Use when sur
 user-invocable: false
 allowed-tools: Bash(kitty *), Bash(kitten *), Bash(launchctl *), Bash(uname *), Bash(plutil *), Bash(test *), Read, Write, Edit, Grep, Glob
 created: 2026-05-03
-modified: 2026-05-09
+modified: 2026-11-09
 reviewed: 2026-05-03
 ---
 
@@ -17,14 +17,15 @@ reviewed: 2026-05-03
 | Terminal sessions need to survive WindowServer hangs and force-reboots | The user's terminal is iTerm2 / Terminal.app / Ghostty / Wezterm — kitty-specific |
 | Configuring kitty's `listen_on` socket and a snapshot LaunchAgent | Cross-platform terminal config — this is macOS LaunchAgents |
 | Restoring a previous session after a crash | One-off "open these tabs" — `kitty @ launch` directly is enough |
-| Auditing whether snapshot capture is still running | General system diagnostics — see `macos-incident-postmortem` |
+| Auditing whether snapshot capture is still running | General system diagnostics — see `macos-plugin:macos-incident-postmortem` |
+| Snapshotting kitty's layout | Reading another pane's output, or deciding which `kitty @` commands are safe to run — see `kitty-remote-control` |
 
 ## Platform Guard
 
 This skill is **macOS-only**. All commands assume Darwin and `launchctl`-managed LaunchAgents. Refuse to act if `uname -s` is not `Darwin`.
 
 ```bash
-test "$(uname -s)" = "Darwin" || { echo "macos-plugin: not Darwin, refusing"; exit 1; }
+test "$(uname -s)" = "Darwin" || { echo "kitty-session-persistence: not Darwin, refusing"; exit 1; }
 ```
 
 ## Core Expertise

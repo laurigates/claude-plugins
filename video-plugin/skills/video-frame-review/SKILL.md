@@ -3,7 +3,7 @@ name: video-frame-review
 description: Review a video render frame by frame around an event (beat, lyric change, cut) — full-resolution crops stacked into one image. Use when checking render timing or overlays.
 allowed-tools: Bash, Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-09
 reviewed: 2026-10-29
 ---
 
@@ -33,7 +33,7 @@ one image you can read.
 | `--tile` | `1x` | Montage layout: `1x` one column, `5x1` one row |
 
 Each tile is captioned with its frame number, time and offset. Read the image
-yourself, or show it to the user (`kitty-show-image`).
+yourself, or show it to the user (`kitty-plugin:kitty-show-image`).
 
 ## Crop at Full Resolution
 

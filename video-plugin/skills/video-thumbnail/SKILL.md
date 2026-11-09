@@ -3,7 +3,7 @@ name: video-thumbnail
 description: YouTube thumbnail from a video frame — contact sheet of candidate frames, then a 16:9 crop at 1280x720 JPEG under 2 MB. Use when choosing a video's thumbnail.
 allowed-tools: Bash, Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-09
 reviewed: 2026-10-29
 ---
 
@@ -29,7 +29,7 @@ export the chosen frame as a thumbnail.
    ```
 
    Each tile is captioned `t=<time>`. `--cols 3` and `--tile-width 640` set the
-   layout. Show the sheet to the user (`kitty-show-image`, or Read it yourself)
+   layout. Show the sheet to the user (`kitty-plugin:kitty-show-image`, or Read it yourself)
    and let them pick.
 
 2. **Thumbnail.**

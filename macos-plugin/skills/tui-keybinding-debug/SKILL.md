@@ -3,7 +3,7 @@ name: tui-keybinding-debug
 description: "Debug dead TUI/terminal keybindings — terminal interception (kitty), layout-impossible chords, legacy key aliasing. Use when a configured key does nothing in a TUI, fzf, or shell app."
 allowed-tools: Bash, Read, Grep
 created: 2026-07-05
-modified: 2026-07-05
+modified: 2026-11-09
 reviewed: 2026-07-05
 ---
 
@@ -16,7 +16,7 @@ reviewed: 2026-07-05
 | A configured key does nothing in a TUI (ratatui/crossterm/promkit app), fzf, or a shell picker — no error, no reaction | The app throws a visible error on the key — that's an app bug, debug the app |
 | A keybind works on one terminal and is dead on another | You're setting up a *new* keybind and want conventions — this is for diagnosing a *dead* one |
 | An fzf/`gh` picker's `ctrl-/` (or other punctuation-Ctrl) toggle does nothing on a non-US keyboard | The key is dead in the shell line editor itself — that's zsh/readline keymap territory, not terminal interception |
-| You need to prove *where* a keystroke dies before touching code | General terminal/session recovery — see `kitty-session-persistence` |
+| You need to prove *where* a keystroke dies before touching code | General terminal/session recovery — see `kitty-plugin:kitty-session-persistence` |
 
 ## The Core Insight
 
@@ -154,5 +154,5 @@ execute!(stdout, PopKeyboardEnhancementFlags)?; // on teardown
 
 ## Related
 
-- `kitty-session-persistence` — kitty session snapshot/restore (sibling kitty skill)
-- The user-global `kitty-agent-interaction.md` rule — the read-only kitty remote-control surface; this skill is its keyboard-interception debugging complement.
+- `kitty-plugin:kitty-session-persistence` — kitty session snapshot/restore
+- `kitty-plugin:kitty-remote-control` — the read-only kitty remote-control surface; this skill is its keyboard-interception debugging complement.
