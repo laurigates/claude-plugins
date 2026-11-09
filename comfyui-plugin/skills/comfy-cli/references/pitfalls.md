@@ -85,8 +85,9 @@ Failure modes of the `comfy` CLI on a systemd-managed install, each with its sym
   Symptom: post-update logs show `EXECUTE => ['~/.local/pipx/
   venvs/comfy-cli/bin/python', '-m', 'uv', 'pip', 'install', ...]`, and
   the new packages don't appear in `.venv/bin/python -m pip list`. Fix:
-  loop over `custom_nodes/*/requirements.txt` and reinstall against the
-  correct interpreter (see "Safe mass node update" recipe). The same bug
+  install each pack's changed requirement lines into the correct
+  interpreter under a `pins.txt` constraints file (see "Safe mass node
+  update" recipe), not a blind `-r` over every pack. The same bug
   affects `comfy node fix` and `comfy node install` for the same reason.
 - **transformers 5.x breaks the diffusers/peft chain.** ComfyUI core's
   `requirements.txt` is `transformers>=4.50.3` with no upper bound, so
