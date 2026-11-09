@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kitty-plugin",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
   "author": {
     "name": "Lauri Gates",

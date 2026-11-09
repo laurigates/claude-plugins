@@ -26,11 +26,11 @@
   "home-assistant-plugin": "1.4.1",
   "hooks-plugin": "2.20.1",
   "kernel-plugin": "1.1.0",
-  "kitty-plugin": "1.0.0",
+  "kitty-plugin": "2.0.0",
   "kubernetes-plugin": "1.10.2",
   "langchain-plugin": "1.5.10",
   "linux-plugin": "1.1.0",
-  "macos-plugin": "1.9.4",
+  "macos-plugin": "2.0.0",
   "migration-patterns-plugin": "1.7.0",
   "networking-plugin": "1.4.3",
   "obsidian-plugin": "1.3.7",
@@ -46,7 +46,7 @@
   "typescript-plugin": "1.10.3",
   "session-plugin": "1.17.1",
   "software-design-plugin": "1.2.0",
-  "video-plugin": "1.1.0",
+  "video-plugin": "2.0.0",
   "workflow-orchestration-plugin": "1.18.0",
   "youtube-plugin": "1.1.0"
 }
