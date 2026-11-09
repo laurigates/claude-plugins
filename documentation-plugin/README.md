@@ -14,6 +14,7 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `/docs:generate` | Update project documentation from code annotations |
 | `/docs:decommission` | Generate comprehensive service decommission documentation |
 | `/docs:latex` | Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF |
+| `/docs:reference-check` | Flag markdown that names repo paths or relative links that no longer exist (`check-doc-references.py`); advisory or `--strict`, allowlist, chezmoi-aware |
 | `/docs:fetch-fallbacks` | Recover a failed or empty WebFetch: strip the query, `raw.githubusercontent`, `gh api`, docs source at a pinned tag, context7/WebSearch |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 | `docs-single-source` | Link docs to the single source of truth instead of restating it |
@@ -119,6 +120,17 @@ When a `WebFetch` returns 404/403 or times out, walk the fallback ladder instead
 ```
 
 Reads the failure signature and applies the matching fallback — strip the query string, rewrite to `raw.githubusercontent.com`, fall back to `gh api repos/<owner>/<repo>/contents/<path>`, then context7 or `WebSearch`. Stops at two attempts.
+
+### Catch Dangling Doc References
+
+After a refactor moves or deletes files, find every doc still pointing at the old paths:
+
+```bash
+/docs:reference-check            # advisory: STATUS=WARN, exit 0
+/docs:reference-check --strict   # CI gate: STATUS=ERROR, exit 1
+```
+
+Docs that describe another repo's layout, or immutable records such as ADRs, go in `.doc-reference-allow`. The skill also covers copying the script into a repo and wiring it as a pre-commit hook and a lint task.
 
 ### Keep Published Docs Honest
 
