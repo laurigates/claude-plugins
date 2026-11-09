@@ -1694,8 +1694,8 @@ assert_exit_complex \
     "echo x > notes.txt; awk '{print \$1}' data.txt > \"\$OUT/f.txt\""
 
 assert_stderr_contains \
-    "sed -i block message names the mktemp -d and project tmp/ exemptions (#2892/#2837)" \
-    "in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed" \
+    "sed -i block message names the mktemp -d, scratchpad and project tmp/ exemptions (#2892/#2837/#3525)" \
+    "in a mktemp -d scratch dir, in the Claude Code scratchpad, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed" \
     "sed -i 's/a/b/' src/main.py"
 
 assert_stderr_contains \
@@ -1749,6 +1749,84 @@ assert_exit_complex \
 assert_exit_complex \
     "GUARD INTEGRITY: the file as cp DESTINATION is not a snapshot" 2 \
     "cp /tmp/template.ts src/x.ts && sed -i '' 's/a/b/' src/x.ts"
+
+# #3525: the cp token and the sed operand were compared with their quotes on,
+# so `cp "a.sh" …` never covered an unquoted `a.sh` operand (or the reverse).
+assert_exit_complex \
+    "double-quoted cp source covers the same unquoted sed operand (#3525)" 0 \
+    "cp \"src/a.sh\" tmp/a.snap && sed -i 's/x/y/' src/a.sh"
+
+assert_exit_complex \
+    "unquoted cp source covers the same double-quoted sed operand (#3525)" 0 \
+    "cp src/a.sh tmp/a.snap && sed -i 's/x/y/' \"src/a.sh\""
+
+assert_exit_complex \
+    "GUARD INTEGRITY: single-quoted '\$F' (literal) is not the expanded \$F (#3525)" 2 \
+    "cp '\$F' tmp/f.snap && sed -i 's/x/y/' \$F"
+
+# ── sed -i in the Claude Code harness scratchpad (#3525) ──────────────────────
+# The system prompt sends temp files to a session scratchpad. In the cloud it
+# sits under /tmp/claude-<uid>/ (already exempt); locally it can sit under
+# $HOME/tmp/claude-<uid>/<project-slug>/<session-id>/scratchpad/, which matched
+# none of the exemptions. The hook input carries no scratchpad field, so the
+# shape is matched: a home dir, then tmp/claude-<digits>/, then a `scratchpad`
+# path segment. Arbitrary $HOME/tmp/ paths still block.
+echo ""
+echo "sed -i in the harness scratchpad under \$HOME/tmp/claude-<uid>/ is allowed (#3525):"
+
+SP_ABS="/home/dev/tmp/claude-1000/-home-dev-repos-x/0b3c9d1e-aaaa-bbbb-cccc-123456789abc/scratchpad"
+
+assert_exit_complex \
+    "issue repro: cp into scratchpad teeth/ then sed -i both copies (#3525)" 0 \
+    "cp a.sh $SP_ABS/teeth/a.sh && cp b.sh $SP_ABS/teeth/b.sh && sed -i 's/x/y/' $SP_ABS/teeth/a.sh $SP_ABS/teeth/b.sh"
+
+assert_exit_complex \
+    "macOS /Users/<u> scratchpad, -i.bak and -E (#3525)" 0 \
+    "sed -E -i.bak 's/x/y/' /Users/dev/tmp/claude-501/-Users-dev-x/sess/scratchpad/f.sh"
+
+assert_exit_complex \
+    "\$HOME/tmp/claude-<uid>/…/scratchpad operand, double-quoted (#3525)" 0 \
+    "sed -i 's/x/y/' \"\$HOME/tmp/claude-1000/slug/sess/scratchpad/teeth/a.sh\""
+
+assert_exit_complex \
+    "tilde-prefixed tmp/claude-<uid>/…/scratchpad operand (#3525)" 0 \
+    "sed -i 's/x/y/' ~/tmp/claude-1000/slug/sess/scratchpad/a.sh"
+
+assert_exit_complex \
+    "cd into the scratchpad then sed -i a relative file (#3525)" 0 \
+    "cd ~/tmp/claude-1000/slug/sess/scratchpad/teeth && sed -i 's/x/y/' a.sh b.sh"
+
+assert_exit_complex \
+    "scratchpad bound to a variable then sed -i \$SP/f (#3525)" 0 \
+    "SP=\$HOME/tmp/claude-1000/slug/sess/scratchpad; sed -i 's/x/y/' \"\$SP/a.sh\""
+
+assert_exit_complex \
+    "GUARD INTEGRITY: arbitrary \$HOME/tmp/ path still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' \$HOME/tmp/notes/a.sh"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: ~/tmp/claude-<uid>/ without a scratchpad segment still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' ~/tmp/claude-1000/slug/sess/a.sh"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: scratchpad shape not under a home dir still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' /srv/app/tmp/claude-1000/slug/sess/scratchpad/a.sh"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: .. escaping the scratchpad still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' ~/tmp/claude-1000/slug/sess/scratchpad/../../../../repos/x/src/a.sh"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: one scratchpad operand plus one repo file still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' ~/tmp/claude-1000/slug/sess/scratchpad/a.sh src/main.py"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: quoted '~/…' is a literal dir, not \$HOME (#3525)" 2 \
+    "sed -i 's/x/y/' '~/tmp/claude-1000/slug/sess/scratchpad/a.sh'"
+
+assert_exit_complex \
+    "GUARD INTEGRITY (negative control): sed -i on a tracked repo file still blocks (#3525)" 2 \
+    "sed -i 's/x/y/' hooks-plugin/hooks/bash-antipatterns.sh"
 
 # ── a git-ignored project tmp/ is scratch, a tracked one is not (#2837) ───────
 # Regression: the user-global rules send scratch output to the project's tmp/

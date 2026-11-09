@@ -40,7 +40,10 @@ write to a repo path that never uses the variable; `sed -i` has carried the
 same trade-off since W34. `echo`/`printf > file` and `sed -i` also pass when
 every destination is a literal `tmp/` or `./tmp/` path (no glob) that
 `git -C <cwd> check-ignore` reports ignored, and the command contains no
-`cd`/`pushd`/`popd`. A tracked `tmp/` still blocks (#2837).
+`cd`/`pushd`/`popd`. A tracked `tmp/` still blocks (#2837). The Claude Code
+harness scratchpad under `$HOME/tmp/claude-<uid>/…/scratchpad/` counts as
+scratch too, as a literal `sed -i` operand, a `cd` target, or a variable value;
+a plain `$HOME/tmp/` path does not (#3525).
 
 `echo`/`printf > file` no longer blocks. The command runs and the hook returns
 a PreToolUse `additionalContext` note preferring Write, because a Bash-only edit
