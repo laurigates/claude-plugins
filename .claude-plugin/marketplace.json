@@ -215,7 +215,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.15.2",
+      "version": "1.15.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -370,7 +370,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.16.0",
+      "version": "1.16.1",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -433,7 +433,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.71.1",
+      "version": "2.72.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.20.0",
+      "version": "2.20.1",
       "author": {
         "name": "Lauri Gates"
       },
