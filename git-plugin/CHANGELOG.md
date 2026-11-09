@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.72.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.71.1...git-plugin-v2.72.0) (2026-11-09)
+
+
+### Features
+
+* **git-plugin:** route Renovate/Dependabot fixes off the bot branch in git-fix-pr ([90f2c39](https://github.com/laurigates/claude-plugins/commit/90f2c39f9a239aa7fe06f0f7ed785ff18ef6bbd1)), closes [#3520](https://github.com/laurigates/claude-plugins/issues/3520)
+
+
+### Bug Fixes
+
+* **git-plugin:** ignore squash-merged commits in git-drift-probe branch_behind ([efd4dfe](https://github.com/laurigates/claude-plugins/commit/efd4dfed048399fa0ca909e69e862e7728fb33e7)), closes [#3527](https://github.com/laurigates/claude-plugins/issues/3527)
+
+
+### Documentation
+
+* **git-plugin:** describe the stale_remote_ref drift finding ([f250251](https://github.com/laurigates/claude-plugins/commit/f25025181f80eb7277eac80f18b06e13f42fb9da)), closes [#3527](https://github.com/laurigates/claude-plugins/issues/3527)
+
 ## [2.71.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.71.0...git-plugin-v2.71.1) (2026-11-07)
 
 

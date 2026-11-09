@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.2...comfyui-plugin-v1.15.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** constrain the comfy-cli mass-update pip step with a pins file ([59e5678](https://github.com/laurigates/claude-plugins/commit/59e56784d286e92cdfff6c21379b3044b6122060)), closes [#3523](https://github.com/laurigates/claude-plugins/issues/3523)
+
 ## [1.15.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.1...comfyui-plugin-v1.15.2) (2026-11-07)
 
 

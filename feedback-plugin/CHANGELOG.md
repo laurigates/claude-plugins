@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.0...feedback-plugin-v1.16.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** classify hook blocks under the [command hook N] wrapper ([2bc09d4](https://github.com/laurigates/claude-plugins/commit/2bc09d4ae080ed505fae6138a178b5447c064697))
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.15.1...feedback-plugin-v1.16.0) (2026-11-07)
 
 

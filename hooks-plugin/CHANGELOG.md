@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.0...hooks-plugin-v2.20.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow sed -i in the harness scratchpad and fix the cp-snapshot quote match ([769f57b](https://github.com/laurigates/claude-plugins/commit/769f57b500de317b833d0795cf7910234415bb32)), closes [#3525](https://github.com/laurigates/claude-plugins/issues/3525)
+
 ## [2.20.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.19.2...hooks-plugin-v2.20.0) (2026-11-07)
 
 
