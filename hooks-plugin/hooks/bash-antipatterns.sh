@@ -500,11 +500,49 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # uses `$T`. `sed -i` has carried this since W34; this is a style nudge, and
     # a per-destination check would need the hook to model shell state. The
     # test suite pins the behaviour so a change to it is deliberate.
+    #
+    # The Claude Code harness SCRATCHPAD is scratch too (#3525). The system
+    # prompt sends temp files to a per-session scratchpad; in the cloud it lives
+    # under /tmp/claude-<uid>/ (covered above), locally it can live under
+    # $HOME/tmp/claude-<uid>/<project-slug>/<session-id>/scratchpad/. The hook
+    # input has no scratchpad field (only session_id, transcript_path, cwd), so
+    # the shape is matched: a home dir (`~`, `$HOME`, `${HOME}`, /home/<u>,
+    # /Users/<u>, /root), then `tmp/claude-<digits>`, then one or more segments
+    # ending in a `scratchpad` segment. A bare `$HOME/tmp/...` grants nothing.
     SCRATCH_PREFIX_RE='((/private)?/tmp|/var/folders)'
+    # shellcheck disable=SC2016  # `$HOME` is matched literally in the command text
+    HOME_SCRATCHPAD_RE='(~|\$HOME|\$\{HOME\}|/home/[^/[:space:]]+|/Users/[^/[:space:]]+|/root)/tmp/claude-[0-9]+(/[^/[:space:]]+)+/scratchpad'
+    SCRATCH_END_RE='(/|"|$|[[:space:]]|[;&|])'
     MKTEMP_D_RE='\$\(mktemp([[:space:]]+[^[:space:])]+)*[[:space:]]+(-[A-Za-z]*d[A-Za-z]*|--directory)([[:space:]]|\))'
     scratch_ctx() {
-        grep -Eq "(^|[;&|])[[:space:]]*cd[[:space:]]+\"?(${SCRATCH_PREFIX_RE}(/|\"|\$|[[:space:]]|[;&|])|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY" || \
-        grep -Eq "(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*=\"?(${SCRATCH_PREFIX_RE}/|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY"
+        grep -Eq "(^|[;&|])[[:space:]]*cd[[:space:]]+\"?(${SCRATCH_PREFIX_RE}${SCRATCH_END_RE}|${HOME_SCRATCHPAD_RE}${SCRATCH_END_RE}|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY" || \
+        grep -Eq "(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*=\"?(${SCRATCH_PREFIX_RE}/|${HOME_SCRATCHPAD_RE}${SCRATCH_END_RE}|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY"
+    }
+
+    # True for one literal sed operand inside the home scratchpad shape. A
+    # single-quoted `~`/`$HOME` and a double-quoted `~` stay literal, so they
+    # are not $HOME; a `..` segment could climb out, so it voids.
+    home_scratchpad_operand() {
+        local p="$1"
+        case "$p" in
+            \'*\') p="${p#\'}"; p="${p%\'}"
+                   case "$p" in \~*|\$*) return 1 ;; esac ;;
+            \"*\") p="${p#\"}"; p="${p%\"}"
+                   case "$p" in \~*) return 1 ;; esac ;;
+        esac
+        [[ "$p" =~ ^${HOME_SCRATCHPAD_RE}/ ]] || return 1
+        [[ "$p" =~ (^|/)\.\.(/|$) ]] && return 1
+        return 0
+    }
+
+    # Reads sed operands on stdin; true only when every one is in the scratchpad.
+    all_home_scratchpad() {
+        local p n=0
+        while IFS= read -r p; do
+            n=$((n + 1))
+            home_scratchpad_operand "$p" || return 1
+        done
+        [ "$n" -gt 0 ]
     }
 
     # PROJECT tmp/ EXEMPTION (#2837).
@@ -634,6 +672,19 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # earlier in the command (text before the first `sed`). The match is on the
     # literal token, so `F=x.ts; cp $F b && sed -i … $F` matches too. A `cp`
     # that only appears after the sed (the restore) grants nothing.
+    #
+    # Both sides are compared without surrounding double quotes, so
+    # `cp "a.sh" snap && sed -i … a.sh` matches (#3525). Single quotes are
+    # stripped only when the token holds no `$`: `'$F'` is the literal name,
+    # not the expansion of `$F`.
+    snapshot_token() {
+        local t="$1"
+        case "$t" in
+            \"*\") t="${t#\"}"; t="${t%\"}" ;;
+            \'*\') case "$t" in *\$*) ;; *) t="${t#\'}"; t="${t%\'}" ;; esac ;;
+        esac
+        printf '%s' "$t"
+    }
     snapshotted_before_sed() {
         # Any whitespace after `sed`: with a literal space only, `sed<TAB>-i`
         # kept the whole command and a restore cp after the sed counted.
@@ -646,7 +697,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
             srcs=()
             for tok in "${toks[@]:1}"; do
                 case "$tok" in -*) continue ;; esac
-                srcs+=("$tok")
+                srcs+=("$(snapshot_token "$tok")")
             done
             [ "${#srcs[@]}" -ge 2 ] || continue
             sources+=("${srcs[@]:0:${#srcs[@]}-1}")
@@ -658,6 +709,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
         while IFS= read -r p; do
             n=$((n + 1))
             ok=1
+            p=$(snapshot_token "$p")
             for tok in "${sources[@]}"; do
                 [ "$tok" = "$p" ] && { ok=0; break; }
             done
@@ -856,6 +908,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     fi
 
     if ast_matched "sed-inplace" && ! scratch_ctx && \
+       ! { sed_inplace_operands | all_home_scratchpad; } && \
        ! { project_tmp_allowed && sed_inplace_operands | all_project_tmp; } && \
        ! sed_operands_resolve_to_project_tmp && \
        ! { sed_inplace_operands | snapshotted_before_sed; }; then
@@ -865,7 +918,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
             # exactly one deployed block message (#3179).
             block "REMINDER: The 'sed -i' operand '${SED_UNRESOLVED}' could not be resolved to a path (an unset or command-assigned variable, a command substitution, or a cd the hook cannot follow), so the git-ignored tmp/ exemption could not be checked. Use the Edit tool for repo files: Bash-only edits are not restored by /rewind and skip Edit hooks. For a scratch file, spell the path literally, or assign it once with VAR=/abs/path as its own statement."
         fi
-        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). (In-place edits under /tmp, in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed.)"
+        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). (In-place edits under /tmp, in a mktemp -d scratch dir, in the Claude Code scratchpad, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed.)"
     fi
 fi
 
