@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.15.1...documentation-plugin-v1.16.0) (2026-11-09)
+
+
+### Features
+
+* **documentation-plugin:** add docs-reference-check dangling doc-reference gate ([88fd82d](https://github.com/laurigates/claude-plugins/commit/88fd82da96f8363f00daee445051045dfdf7c2a3))
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.15.0...documentation-plugin-v1.15.1) (2026-11-07)
 
 

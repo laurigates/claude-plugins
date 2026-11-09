@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.2...agent-patterns-plugin-v2.57.3) (2026-11-09)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** PAL listmodels trusts placeholder keys; Go monthly limit ([c3e200e](https://github.com/laurigates/claude-plugins/commit/c3e200edc5d5f7fa4490c14d149b327c850772c2))
+
 ## [2.57.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.1...agent-patterns-plugin-v2.57.2) (2026-11-07)
 
 
