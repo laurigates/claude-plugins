@@ -10,6 +10,7 @@ Comprehensive reference for Kubernetes debugging, troubleshooting, Helm workflow
 - [Helm Workflows](#helm-workflows)
 - [Advanced Operations](#advanced-operations)
 - [Cluster Administration](#cluster-administration)
+- [Before Removing a Component: Check Whether Anyone Uses It](#before-removing-a-component-check-whether-anyone-uses-it)
 
 ---
 
@@ -984,6 +985,27 @@ kubectl auth can-i create pods
 kubectl auth can-i create pods --as=mysa
 kubectl auth can-i --list
 ```
+
+---
+
+## Before Removing a Component: Check Whether Anyone Uses It
+
+A component used only on demand, such as a debug relay, a dashboard reached by port-forward, or an admin CLI baked into a pod, leaves no trace in the repo and idles at near-zero CPU whether or not anyone uses it. Neither `git grep` nor `kubectl top` can tell "unused" from "used now and then". The API server's audit log can: humans reach such components with `kubectl exec` or `kubectl port-forward`, and both are recorded as requests on the pod's `exec` / `portforward` subresource.
+
+On GKE these land in the Admin Activity audit log (`_Required` bucket, 400-day retention) with method names such as `io.k8s.core.v1.pods.exec.get` and `io.k8s.core.v1.pods.portforward.get`:
+
+```bash
+# The component's namespace: any exec or port-forward in the retention window?
+gcloud logging read 'resource.type="k8s_cluster" AND resource.labels.cluster_name="<cluster>" AND (protoPayload.methodName:"pods.exec" OR protoPayload.methodName:"pods.portforward") AND protoPayload.resourceName:"namespaces/<ns>/"' --project <project> --freshness=400d --limit=50 --format='value(timestamp,protoPayload.methodName,protoPayload.resourceName,protoPayload.authenticationInfo.principalEmail)'
+
+# Control: the same query without the namespace filter must return events,
+# separately for exec and for port-forward, or an empty result above means nothing
+gcloud logging read 'resource.type="k8s_cluster" AND resource.labels.cluster_name="<cluster>" AND protoPayload.methodName:"pods.portforward"' --project <project> --freshness=400d --limit=3 --format='value(timestamp,protoPayload.resourceName)'
+```
+
+Also check when the component was enabled: `UpdateCluster` calls carry their request body, so a GKE add-on switched on inside the retention window shows up there, and one switched on earlier is older than the evidence. An empty result covers the retention window only; ask the team before removing something enabled before it.
+
+Large `--freshness` windows are slow (minutes). Run them in the background, and narrow the filter rather than raising `--limit`.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-31
+modified: 2026-11-09
 reviewed: 2026-04-25
 name: kubernetes-operations
 description: "Kubernetes operations — deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
@@ -34,7 +34,7 @@ Expert knowledge for Kubernetes cluster management, deployment, and troubleshoot
 2. **Validate & Dry-Run**: Use `kubectl apply --dry-run=client` to validate changes
 3. **Inspect & Verify**: After applying changes, verify with `kubectl get`, `kubectl describe`, `kubectl logs`
 4. **Monitor Health**: Continuously check status of nodes, pods, and services
-5. **Clean Up**: Ensure old or unused resources are properly garbage collected
+5. **Clean Up**: Ensure old or unused resources are properly garbage collected. Before removing an on-demand component (debug relay, port-forwarded dashboard), check the audit log for exec/port-forward use — see REFERENCE.md "Before Removing a Component"
 
 ## Essential Commands
 
