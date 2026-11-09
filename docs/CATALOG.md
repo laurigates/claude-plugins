@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-50 plugins, 472 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+50 plugins, 473 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -80,7 +80,7 @@
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [blog-plugin](../blog-plugin/) | 2 | 0 | Blog post creation - project logs, technical write-ups, personal documentation |
-| [documentation-plugin](../documentation-plugin/) | 10 | 0 | Documentation generation - API docs, README, LaTeX PDF conversion |
+| [documentation-plugin](../documentation-plugin/) | 11 | 0 | Documentation generation - API docs, README, LaTeX PDF conversion |
 
 ## Communication
 
