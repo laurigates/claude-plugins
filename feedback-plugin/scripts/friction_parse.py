@@ -171,6 +171,27 @@ def first_text(content) -> str:
     return ""
 
 
+# Since Claude Code 2.1.317 the harness wraps plugin hook output as
+# "[command hook N]" instead of "[bash .../bash-antipatterns.sh]", so the
+# script name no longer appears in the evidence. These lowercased needles are
+# prose only the bash-antipatterns / bash-safety hooks emit; an unstamped block
+# carrying one of them is attributed to those hooks (2026-W46: 175 of 303
+# blocks fell to `hook:unclassified` without this).
+_UNSTAMPED_BA_NEEDLES = (
+    "blocked: 'cat",
+    "blocked: 'head",
+    "blocked: 'tail",
+    "chaining git commands",
+    "instead of 'sed -i'",
+    "the 'sed -i' operand",
+    "taskoutput tool",
+    "avoid broad staging commands",
+    "'timeout' command is usually unnecessary",
+    "instead of 'awk'",
+    "piping network content directly to a shell",
+)
+
+
 def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     """Collapse similar-looking evidence into a stable cluster key."""
     ev = evidence.lower()
@@ -191,7 +212,11 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
         # `hook:bash-antipatterns:*` signatures so weekly trends stay
         # comparable across the split; without this, those blocks fell to
         # `hook:unclassified`.
-        if "bash-antipatterns" in ev or "bash-safety" in ev:
+        if (
+            "bash-antipatterns" in ev
+            or "bash-safety" in ev
+            or ("[command hook" in ev and any(n in ev for n in _UNSTAMPED_BA_NEEDLES))
+        ):
             if "blocked: 'grep" in ev or "blocked: 'rg" in ev:
                 return "hook:bash-antipatterns:grep-rg"
             if "blocked: 'find" in ev:

@@ -353,11 +353,18 @@ def _bash_safety_rebucket(before: dict, after: dict) -> bool:
     prefix as `hook:unclassified`; the current parser keeps those blocks on
     their `hook:bash-antipatterns:*` detector keys. Once the baseline carries
     the split, this matches nothing.
+
+    The 2026-W46 `[command hook N]` wrapper (Claude Code 2.1.317+) is the
+    second permitted move: a baseline without the unstamped-needle match reads
+    those blocks as `hook:unclassified`.
     """
     return (
         before["signature"] == "hook:unclassified"
         and after["signature"].startswith("hook:bash-antipatterns:")
-        and "bash-safety.sh" in before["evidence"]
+        and (
+            "bash-safety.sh" in before["evidence"]
+            or "[command hook" in before["evidence"]
+        )
         and before["evidence"] == after["evidence"]
     )
 
@@ -717,6 +724,25 @@ def test_sed_unresolved_and_awk_crash_have_own_signatures():
     for body, detector in cases.items():
         sig = mod.canonical_signature("hook_block", "Bash", prefix + body)
         assert sig == f"hook:bash-antipatterns:{detector}", (body, sig)
+
+
+def test_unstamped_command_hook_wrapper_still_classifies():
+    """2026-W46: from Claude Code 2.1.317 the harness labels plugin hook output
+    "[command hook N]" with no script path, and 175 of 303 hook blocks fell to
+    `hook:unclassified`. Blocks whose prose only bash-antipatterns/bash-safety
+    emit must keep their detector keys; unrelated prose stays unclassified.
+    """
+    prefix = "PreToolUse:Bash hook error: [command hook 10]: "
+    mod = _parser_module()
+    cases = {
+        "REMINDER: Chaining git commands with '&&' can cause index.lock races.": "hook:bash-antipatterns:git-chain",
+        "BLOCKED: 'cat file.md' -> use Read(file_path=...)": "hook:bash-antipatterns:cat-head-tail",
+        "REMINDER: Use the Edit tool instead of 'sed -i'.": "hook:bash-antipatterns:sed-inplace",
+        "Some unrelated hook said no.": "hook:unclassified",
+    }
+    for body, expected in cases.items():
+        sig = mod.canonical_signature("hook_block", "Bash", prefix + body)
+        assert sig == expected, (body, sig)
 
 
 def test_external_pr_merge_guard_block_has_own_signature():
