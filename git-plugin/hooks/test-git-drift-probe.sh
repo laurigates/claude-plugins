@@ -250,6 +250,138 @@ out=$(run_probe "$R1" MOCK_PR_JSON="$CHANGES" CLAUDE_HOOKS_DISABLE_WORKTREES_IGN
 expect_kind "opt-out leaves changes_requested intact" "$out" changes_requested
 expect_no_kind "opt-out drops only worktrees_not_ignored" "$out" worktrees_not_ignored
 
+# ── branch_behind vs squash-merged commits (issue #3527) ──────────────────────
+# After a squash merge the remote branch is deleted, but origin/<branch> keeps
+# pointing at the pre-squash commit until `git fetch --prune`. Restarting the
+# branch from main then leaves that commit unreachable from HEAD, though its
+# patch is on main. git cherry marks it `-`; only `+` commits are behind.
+echo ""
+echo "branch_behind (squash-merged, #3527):"
+NOWT="CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE=1"
+
+# new_remote_pair <name> — bare remote + clone on main with origin/HEAD set.
+new_remote_pair() {
+    local remote="$SANDBOX/$1-remote.git" clone="$SANDBOX/$1-clone"
+    git init -q --bare "$remote"
+    git -C "$remote" symbolic-ref HEAD refs/heads/main
+    new_repo "$clone"
+    git -C "$clone" remote add origin "$remote"
+    git -C "$clone" push -q -u origin main 2>/dev/null
+    git -C "$clone" remote set-head origin main >/dev/null 2>&1
+    printf '%s\n' "$clone"
+}
+
+# commit_file <repo> <file> <content> — one commit adding/changing one file.
+commit_file() {
+    printf '%s\n' "$3" >"$1/$2"
+    git -C "$1" add "$2"
+    git -C "$1" commit -q -m "change $2"
+}
+
+# squash_onto_main <repo> <branch> — squash-merge <branch> into main, push.
+squash_onto_main() {
+    git -C "$1" switch -q main
+    git -C "$1" merge -q --squash "$2" >/dev/null 2>&1
+    git -C "$1" commit -q -m "squash $2"
+    git -C "$1" push -q origin main 2>/dev/null
+}
+
+# squashed_fixture <name> <ncommits> — feat with <ncommits> commits, squash-
+# merged into main, remote branch deleted, origin/feat left unpruned, feat
+# restarted from origin/main. Prints the clone path.
+squashed_fixture() {
+    local c i
+    c=$(new_remote_pair "$1")
+    git -C "$c" switch -q -c feat
+    for i in $(seq 1 "$2"); do commit_file "$c" "$1-$i.txt" "$i"; done
+    git -C "$c" push -q -u origin feat 2>/dev/null
+    squash_onto_main "$c" feat
+    # Delete on the remote side (as GitHub does after merge): `push --delete`
+    # from this clone would also drop the local origin/feat, hiding the bug.
+    git -C "$SANDBOX/$1-remote.git" branch -q -D feat
+    git -C "$c" -c fetch.prune=false fetch -q origin   # plain fetch leaves origin/feat
+    git -C "$c" rev-parse --verify -q refs/remotes/origin/feat >/dev/null ||
+        { echo "fixture: origin/feat was pruned" >&2; exit 1; }
+    git -C "$c" switch -q -C feat origin/main
+    printf '%s\n' "$c"
+}
+
+expect_prune_hint() { # expect_prune_hint <label> <json>
+    expect_no_kind "$1 -> no branch_behind" "$2" branch_behind
+    expect_kind "$1 -> stale_remote_ref hint" "$2" stale_remote_ref
+    local s sev
+    s=$(summary_of "$2" stale_remote_ref)
+    case "$s" in *'git fetch --prune'*) printf "  PASS: %s hint suggests git fetch --prune\n" "$1"; PASS=$((PASS + 1)) ;;
+        *) printf "  FAIL: %s hint lacks git fetch --prune: %s\n" "$1" "$s"; FAIL=$((FAIL + 1)) ;; esac
+    sev=$(printf '%s' "$2" | jq -r '.findings[] | select(.kind == "stale_remote_ref") | .severity' 2>/dev/null)
+    if [ "$sev" = "info" ]; then
+        printf "  PASS: %s hint severity is info\n" "$1"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s hint severity is '%s'\n" "$1" "$sev"; FAIL=$((FAIL + 1))
+    fi
+}
+
+# 1. The issue's repro: a one-commit branch squash-merged (cherry marks it -).
+S1=$(squashed_fixture squashed1 1)
+out=$(run_probe "$S1" "$NOWT")
+expect_prune_hint "one-commit squash" "$out"
+
+# 1b. A multi-commit branch squashed into one commit: no single commit is
+#     patch-equivalent (cherry marks each +), but merging origin/feat into
+#     main changes nothing, so it is all on main.
+S1B=$(squashed_fixture squashed3 3)
+out=$(run_probe "$S1B" "$NOWT")
+expect_prune_hint "three-commit squash" "$out"
+
+# 2. Genuinely behind: the remote has 2 commits not on main.
+S2=$(new_remote_pair behind)
+git -C "$S2" switch -q -c feat
+git -C "$S2" push -q -u origin feat 2>/dev/null
+commit_file "$S2" c.txt three
+commit_file "$S2" d.txt four
+git -C "$S2" push -q origin feat 2>/dev/null
+git -C "$S2" reset -q --hard HEAD~2
+out=$(run_probe "$S2" "$NOWT")
+expect_kind "remote has commits not on main -> branch_behind" "$out" branch_behind
+expect_no_kind "remote has commits not on main -> no stale_remote_ref" "$out" stale_remote_ref
+s=$(summary_of "$out" branch_behind)
+case "$s" in *"is 2 commit(s) behind"*) printf "  PASS: behind count is 2\n"; PASS=$((PASS + 1)) ;;
+    *) printf "  FAIL: expected 2 commit(s) behind: %s\n" "$s"; FAIL=$((FAIL + 1)) ;; esac
+
+# 3. Mixed: 2 commits cherry-picked/squashed to main one by one (each -), then
+#    1 more pushed that is not (+).
+S3=$(new_remote_pair mixed)
+git -C "$S3" switch -q -c feat
+commit_file "$S3" e.txt five
+git -C "$S3" push -q -u origin feat 2>/dev/null
+squash_onto_main "$S3" feat
+git -C "$S3" switch -q feat
+commit_file "$S3" f.txt six
+git -C "$S3" push -q origin feat 2>/dev/null
+git -C "$S3" switch -q main
+git -C "$S3" cherry-pick feat >/dev/null 2>&1 ||
+    { echo "fixture: cherry-pick failed" >&2; exit 1; }
+git -C "$S3" push -q origin main 2>/dev/null
+git -C "$S3" switch -q feat
+commit_file "$S3" g.txt seven
+git -C "$S3" push -q origin feat 2>/dev/null
+git -C "$S3" switch -q -C feat origin/main
+out=$(run_probe "$S3" "$NOWT")
+expect_kind "mixed -> branch_behind" "$out" branch_behind
+s=$(summary_of "$out" branch_behind)
+case "$s" in *"is 1 commit(s) behind"*) printf "  PASS: mixed counts only the + commit (1)\n"; PASS=$((PASS + 1)) ;;
+    *) printf "  FAIL: expected 1 commit(s) behind: %s\n" "$s"; FAIL=$((FAIL + 1)) ;; esac
+
+# 4. Default branch unresolvable (no origin/HEAD, no origin/main|master):
+#    fall back to the plain count, so the squash-merged case still warns.
+git -C "$S1B" remote set-head origin -d >/dev/null 2>&1
+git -C "$S1B" update-ref -d refs/remotes/origin/main
+out=$(run_probe "$S1B" "$NOWT")
+expect_kind "no resolvable default branch -> plain-count branch_behind" "$out" branch_behind
+s=$(summary_of "$out" branch_behind)
+case "$s" in *"is 3 commit(s) behind"*) printf "  PASS: fallback reports plain count (3)\n"; PASS=$((PASS + 1)) ;;
+    *) printf "  FAIL: expected plain count 3: %s\n" "$s"; FAIL=$((FAIL + 1)) ;; esac
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

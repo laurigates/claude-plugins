@@ -7,6 +7,10 @@
 #                        a fresh branch off the updated default, not here.
 #   2. branch_behind   — local tip is behind origin/<branch> (a teammate, another
 #                        agent, or a CI auto-fix pushed since last sync).
+#                        Commits already on the default branch (squash-merged or
+#                        cherry-picked) do not count; when they are all there,
+#                        an info `stale_remote_ref` hint to `git fetch --prune`
+#                        is emitted instead (#3527).
 #   3. changes_requested — the PR has CHANGES_REQUESTED reviews to address first.
 #
 # Signals 1-3 no-op on the default branch, on a detached HEAD, or when gh is
@@ -114,15 +118,62 @@ BRANCH=$(git -C "$DRIFT_CWD" symbolic-ref --short HEAD 2>/dev/null || true)
 if [ -z "$BRANCH" ]; then drift_emit; exit 0; fi
 case "$BRANCH" in main|master|develop) drift_emit; exit 0 ;; esac
 
+# default_remote_ref — prints the remote-tracking ref of origin's default
+# branch (origin/HEAD, else origin/main, else origin/master), or nothing.
+default_remote_ref() {
+    local ref cand
+    ref=$(git -C "$DRIFT_CWD" symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null || true)
+    if [ -n "$ref" ] && git -C "$DRIFT_CWD" rev-parse --verify --quiet "$ref" >/dev/null 2>&1; then
+        printf '%s\n' "$ref"; return 0
+    fi
+    for cand in refs/remotes/origin/main refs/remotes/origin/master; do
+        if git -C "$DRIFT_CWD" rev-parse --verify --quiet "$cand" >/dev/null 2>&1; then
+            printf '%s\n' "$cand"; return 0
+        fi
+    done
+    return 0
+}
+
 # Behind count from the existing remote-tracking ref (no fetch — SessionStart
-# stays fast). Stale by at most one fetch; the /git:pr-sync-check skill fetches.
+# stays fast; the /git:pr-sync-check skill fetches). The ref can be stale by
+# more than one fetch: a plain fetch does not prune, so after a squash merge
+# deletes the remote branch, origin/<branch> keeps pointing at the pre-squash
+# commits until `git fetch --prune` (#3527). Those commits are on the default
+# branch as patch-equivalents, so `git cherry <default> origin/<branch> HEAD`
+# marks them `-`; only its `+` commits count as behind. cherry compares one
+# commit at a time, so a multi-commit branch squashed into ONE commit stays
+# all `+`; for that case, a `git merge-tree --write-tree <default>
+# origin/<branch>` whose tree equals the default's tree proves the whole ref is
+# already contained (a non-match proves nothing, so the cherry count stands).
+# When nothing is left behind, an info hint to prune replaces the warning.
+# Without a resolvable default branch the plain HEAD..origin/<branch> count is
+# used. All of this reads local objects only — no network.
 if git -C "$DRIFT_CWD" rev-parse --verify --quiet "refs/remotes/origin/${BRANCH}" >/dev/null 2>&1; then
     behind=$(git -C "$DRIFT_CWD" rev-list --count "HEAD..refs/remotes/origin/${BRANCH}" 2>/dev/null || echo 0)
     case "$behind" in ''|*[!0-9]*) behind=0 ;; esac
     if [ "$behind" -gt 0 ]; then
-        drift_add_finding warn branch_behind \
-            "${BRANCH} is ${behind} commit(s) behind origin/${BRANCH} — reconcile before new work" \
-            "/git:pr-sync-check"
+        default_ref=$(default_remote_ref)
+        if [ -n "$default_ref" ] && [ "$default_ref" != "refs/remotes/origin/${BRANCH}" ] &&
+            cherry_out=$(git -C "$DRIFT_CWD" cherry "$default_ref" "refs/remotes/origin/${BRANCH}" HEAD 2>/dev/null); then
+            behind=$(grep -c '^+' <<<"$cherry_out" || true)
+            case "$behind" in ''|*[!0-9]*) behind=0 ;; esac
+            if [ "$behind" -gt 0 ]; then
+                merged_tree=$(git -C "$DRIFT_CWD" merge-tree --write-tree "$default_ref" "refs/remotes/origin/${BRANCH}" 2>/dev/null | head -n 1 || true)
+                default_tree=$(git -C "$DRIFT_CWD" rev-parse --verify --quiet "${default_ref}^{tree}" 2>/dev/null || true)
+                if [ -n "$merged_tree" ] && [ "$merged_tree" = "$default_tree" ]; then
+                    behind=0
+                fi
+            fi
+        fi
+        if [ "$behind" -gt 0 ]; then
+            drift_add_finding warn branch_behind \
+                "${BRANCH} is ${behind} commit(s) behind origin/${BRANCH} — reconcile before new work" \
+                "/git:pr-sync-check"
+        else
+            drift_add_finding info stale_remote_ref \
+                "origin/${BRANCH} is not in HEAD, but every commit it adds is already on ${default_ref#refs/remotes/} (squash-merged); the ref is likely stale — run git fetch --prune" \
+                "/git:pr-sync-check"
+        fi
     fi
 fi
 
