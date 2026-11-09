@@ -8,7 +8,6 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 
 | Skill | Description |
 |-------|-------------|
-| [kitty-session-persistence](skills/kitty-session-persistence/skill.md) | Snapshot and restore kitty terminal sessions across crashes and reboots via `kitten @ ls` and a LaunchAgent |
 | [launchservices-health](skills/launchservices-health/skill.md) | Quantify the LaunchServices DB, `launchservicesd` RSS/uptime, and surface the safe rebuild command |
 | [macos-incident-postmortem](skills/macos-incident-postmortem/skill.md) | Reconstruct what happened from `/Library/Logs/DiagnosticReports/`, `kern.boottime`, and shell history after a hang or panic |
 | [endpoint-security-cpu](skills/endpoint-security-cpu/skill.md) | Diagnose an EndpointSecurity/EDR extension (Kandji ESF, XProtect) hot from a process-spawn storm; trace the source with `powermetrics` + `eslogger` |
@@ -21,7 +20,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 
 | Scenario | Skill |
 |----------|-------|
-| Terminal sessions vanished after a hard reboot or kitty crash | `kitty-session-persistence` |
+| Terminal sessions vanished after a hard reboot or kitty crash | `kitty-plugin:kitty-session-persistence` |
 | `launchservicesd` is pegged at high CPU; LS DB feels bloated | `launchservices-health` |
 | GUI froze and you're not sure if the machine actually rebooted | `macos-incident-postmortem` |
 | Investigating recent kernel panics, watchdog timeouts, jetsam events | `macos-incident-postmortem` |

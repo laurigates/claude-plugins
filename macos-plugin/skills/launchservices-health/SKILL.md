@@ -4,7 +4,7 @@ description: Diagnose macOS LaunchServices DB bloat and launchservicesd CPU spik
 user-invocable: false
 allowed-tools: Bash(uname *), Bash(ps *), Bash(pgrep *), Bash(uptime *), Bash(awk *), Bash(grep *), Bash(wc *), Bash(ls *), Bash(stat *), Bash(mktemp *), Bash(rm *), Read, Write, Edit, Grep, Glob
 created: 2026-05-03
-modified: 2026-05-03
+modified: 2026-11-09
 reviewed: 2026-05-03
 ---
 
@@ -265,4 +265,4 @@ The `[macos]` attribute (just 1.34+) skips the recipe on non-Darwin. On older ju
 ## Related Skills
 
 - `macos-incident-postmortem` — when LaunchServices CPU caused a GUI hang, parse Diagnostic Reports there
-- `kitty-session-persistence` — recover terminal sessions lost when WindowServer wedged on an LS XPC call
+- `kitty-plugin:kitty-session-persistence` — recover terminal sessions lost when WindowServer wedged on an LS XPC call
