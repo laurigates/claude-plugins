@@ -577,7 +577,7 @@
       "name": "kitty-plugin",
       "source": "./kitty-plugin",
       "description": "kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -665,7 +665,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.9.4",
+      "version": "2.0.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -1010,7 +1010,7 @@
       "name": "video-plugin",
       "source": "./video-plugin",
       "description": "Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
