@@ -26,6 +26,7 @@
   "home-assistant-plugin": "1.4.1",
   "hooks-plugin": "2.20.1",
   "kernel-plugin": "1.1.0",
+  "kitty-plugin": "1.0.0",
   "kubernetes-plugin": "1.10.2",
   "langchain-plugin": "1.5.10",
   "linux-plugin": "1.1.0",
