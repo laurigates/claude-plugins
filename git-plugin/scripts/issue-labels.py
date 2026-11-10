@@ -1076,7 +1076,21 @@ def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
                 )
             if action == "unblock" and not a.dry_run:
                 label = quote(cfg.blocked_label, safe="")
-                gh("api", "-X", "DELETE", f"{issue_path}/labels/{label}")
+                try:
+                    gh("api", "-X", "DELETE", f"{issue_path}/labels/{label}")
+                except Error as delete_failed:
+                    # Another run unblocking the same dependent (two of its
+                    # blockers closed together) may have removed the label
+                    # first; GitHub then answers 404. Read the labels back
+                    # rather than trusting the error text. Any other failure
+                    # reports the DELETE's error.
+                    try:
+                        now = label_names({"labels": gh_list(f"{issue_path}/labels")})
+                    except Error:
+                        raise delete_failed from None
+                    if cfg.blocked_label.lower() in {n.lower() for n in now}:
+                        raise
+                    action, reason = "skip", "already_removed"
         except Error as e:
             failure = [{"type": "dependent_failed", "number": number, "msg": str(e)}]
             rows.append(f"  - NUMBER={number} ACTION=error REASON=gh_failed")

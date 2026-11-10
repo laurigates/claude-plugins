@@ -529,6 +529,50 @@ is "a failed removal exits 1 and counts nothing as removed" \
     "$rc|$(grep -c '^UNBLOCKED=0$' <<<"$out")|$(grep -c '^STATUS=ERROR$' <<<"$out")" "1|1|1"
 has "and names the issue" "$out" "TYPE=dependent_failed NUMBER=11 "
 
+echo "=== unblock: a label another run already removed ==="
+# Two blockers of #11 close together, and each run's job sees every blocker
+# closed. The first run removes the label; GitHub answers the second run's
+# DELETE with 404. #10 blocks #11 and #12, both with every blocker closed.
+race_scenario() { # race_scenario <DELETE stderr for #11> <#11's labels json, or "" for unreadable>
+    stub_reset
+    jq -n '{number: 10, state: "closed"}' >"$STUB/issues-10.json"
+    printf '[%s,%s]' "$(dep 11 open o/r '["blocked", "bug"]')" "$(dep 12 open o/r '["blocked"]')" \
+        >"$STUB/issues-10-dependencies-blocking.json"
+    printf '[%s,%s]' "$(dep 10 closed o/r)" "$(dep 9 closed o/r)" >"$STUB/issues-11-dependencies-blocked_by.json"
+    printf '[%s]' "$(dep 10 closed o/r)" >"$STUB/issues-12-dependencies-blocked_by.json"
+    printf '%s\n' "$1" >"$STUB/fail-DELETE-issues-11-labels-blocked"
+    [ -z "$2" ] || jq -n --argjson l "$2" '[$l[] | {name: .}]' >"$STUB/issues-11-labels.json"
+}
+race_scenario 'gh: Label does not exist (HTTP 404)' '["bug"]'
+rc=0
+out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
+is "a label already gone is not an error: exit 0" "$rc" "0"
+for row in "NUMBER=11 ACTION=skip REASON=already_removed" \
+    "NUMBER=12 ACTION=unblock REASON=all_blockers_closed" "UNBLOCKED=1" "STATUS=OK"; do
+    has "$row" "$out" "$row"
+done
+hasnt "and no error row" "$out" "ACTION=error"
+is "the next dependent is still processed" "$(writes)" \
+    "api -X DELETE repos/o/r/issues/11/labels/blocked
+api -X DELETE repos/o/r/issues/12/labels/blocked"
+has "the label's absence is read back, not inferred from the error" "$(cat "$LOG")" "api --paginate repos/o/r/issues/11/labels"
+
+# Controls: a failed DELETE with the label still on the issue, or whose
+# labels cannot be read back, keeps the stop-and-report behaviour.
+for case in 'gh: Server Error (HTTP 500)|["blocked", "bug"]|a 500 with the label still present' \
+    'gh: Resource not accessible by integration (HTTP 403)|["blocked", "bug"]|a 403 with the label still present' \
+    'gh: Label does not exist (HTTP 404)||a 404 whose labels cannot be read back'; do
+    IFS='|' read -r err labels what <<<"$case"
+    race_scenario "$err" "$labels"
+    rc=0
+    out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
+    is "$what: exits 1" "$rc|$(grep -c '^STATUS=ERROR$' <<<"$out")|$(grep -c '^UNBLOCKED=0$' <<<"$out")" "1|1|1"
+    has "$what: reports #11 as the error" "$out" "NUMBER=11 ACTION=error REASON=gh_failed"
+    has "$what: with the DELETE's own error" "$out" "REASON=dependent_failed: gh api -X DELETE failed: $err"
+    hasnt "$what: stops before #12" "$out" "NUMBER=12 "
+    hasnt "$what: and writes nothing to #12" "$(writes)" "issues/12/"
+done
+
 # ── audit ─────────────────────────────────────────────────────────────────────
 
 # open_issue <number> <labels json> <created_at> <total_blocked_by | null> [pr]
