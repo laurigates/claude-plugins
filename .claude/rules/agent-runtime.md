@@ -165,7 +165,7 @@ The dashboard's "new session" launcher accepts the same flags as the top-level `
 | `--mcp-config <file>` | Load an MCP server config file |
 | `--plugin-dir <path>` | Add a plugin directory (in addition to discovered ones) |
 | `--permission-mode <mode>` | Start in `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
-| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, `fable`, `best`, or a full ID such as `claude-fable-5-1`) |
+| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, `fable`, `best`, or a full ID such as `claude-fable-5-2`) |
 | `--effort <level>` | Set effort (`low`, `medium`, `high`, `xhigh`, `max`) |
 | `--dangerously-skip-permissions` | Skip permission prompts — use only in trusted sandboxes |
 
