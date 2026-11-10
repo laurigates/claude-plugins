@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.4...health-plugin-v1.24.5) (2026-11-10)
+
+
+### Bug Fixes
+
+* **health-plugin:** bring skills and checks in line with current Claude Code ([b298d33](https://github.com/laurigates/claude-plugins/commit/b298d33dcb0712d890b344506cbacc59c3ef337c))
+
 ## [1.24.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.3...health-plugin-v1.24.4) (2026-11-07)
 
 
