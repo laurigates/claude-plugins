@@ -332,6 +332,25 @@ forbid_marker "$agentdef_skill" "sees parent history" \
 forbid_marker "$agentdef_skill" 'Context mode: `fork` or default' \
   "the retired \`context\` agent field-table row (issue #2646)"
 
+# Regression #3558: workflow agents share the session scratchpad even when each
+# runs in its own worktree (isolation: 'worktree'). Parallel agents writing fixed
+# names there (commitmsg.txt, mutate.sh, merge-msg.txt) overwrote each other's
+# files three times across two runs; one reported mutation results from a script
+# a peer had replaced. Pin the clause in the Orchestrator Checklist that lead
+# prompts copy, and the rationale in references/worktree-hazards.md, which OWNS
+# it (the SKILL.md body is at its size ceiling, so only the checklist line lives
+# there).
+require_marker "$dispatch_skill" "#3558" "the per-agent scratch-file reference (issue #3558)"
+require_marker "$dispatch_skill" "never under a fixed name at the scratchpad root" \
+  "the per-agent scratch-file brief clause (issue #3558)"
+require_marker "$dispatch_skill" "Each prompt names a per-agent scratch location" \
+  "the per-agent scratch-file checklist item (issue #3558)"
+require_marker "$worktree_hazards_md" "Scratch files collide across worktrees (#3558)" \
+  "the scratch-file collision section (issue #3558)"
+# shellcheck disable=SC2016  # literal markdown backticks, not command substitution
+require_marker "$worktree_hazards_md" 'under `tmp/` in its own worktree' \
+  "the per-worktree tmp/ remedy (issue #3558)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
