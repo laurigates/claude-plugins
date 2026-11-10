@@ -40,8 +40,10 @@ Every label name comes from a flag default (``--build-prefix build:``,
 ``classify`` reads the type from the title ("[Bug] scope: ...", "fix(scope):
 ..." or neither) and routing labels from the title's scope. A pull request
 also takes every label its changed files match. An issue with no routing label
-takes the label that most of the paths quoted in its body match. It only adds:
-a prefix that already has a label on the item is skipped.
+takes the label that most of the paths quoted in its body match; a body token
+is a path only when it has a slash or a dot, so the word "docs" in a sentence
+is not one. It only adds: a prefix that already has a label on the item is
+skipped.
 
 Output: ``classify`` and ``validate`` print one JSON object. ``provision``,
 ``unblock`` and ``audit`` print a KEY=VALUE block
@@ -313,18 +315,32 @@ SEPARATORS = re.compile(r"[\s`()\[\]<>{}\"',;]+")
 LINE_SUFFIX = re.compile(r":\d+(?:[-:,]\d+)*$")
 
 
+def path_shaped(token: str) -> bool:
+    """Whether a token of free text reads as a repo path: it has a slash or a dot.
+
+    Prose uses directory and file names as words ("the upstream docs", "a
+    justfile recipe"), and such a word would match ``docs/**`` or ``justfile``
+    as if the issue had cited the path. ``docs/``, ``docs/a.md``, ``.mcp.json``
+    and ``./justfile`` are paths; ``docs`` and ``justfile`` are words.
+    """
+    return "/" in token or "." in token
+
+
 def path_candidates(body: str) -> list[str]:
     """Path-shaped tokens in free text, in order, without duplicates.
 
     Backticks, brackets and quotes delimit tokens, so `a/b.c`, (a/b.c) and a
     bare a/b.c all yield the same candidate. A ``file.c:12-14`` line suffix and
-    trailing sentence punctuation are dropped; URLs are skipped.
+    trailing sentence punctuation are dropped; URLs and tokens with neither a
+    slash nor a dot are skipped.
     """
     seen: dict[str, None] = {}
     for raw in SEPARATORS.split(body or ""):
         if "://" in raw:
             continue
         token = LINE_SUFFIX.sub("", raw.rstrip(".:!?"))
+        if not path_shaped(token):
+            continue
         token = token.removeprefix("./").lstrip("/")
         if token and not token.startswith(("#", "@", "-")):
             seen.setdefault(token)

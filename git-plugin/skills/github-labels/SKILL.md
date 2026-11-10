@@ -106,7 +106,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `parser: crashes on empty input` | none | `parser` |
 
 An issue whose title scope matches nothing is routed by the repo paths its body
-quotes; a PR by its changed files. `classify` and `validate` only print labels;
+quotes; a PR by its changed files. A body token is a path only when it has a
+`/` or a `.`: `docs/` and `./justfile` are paths, the words "docs" and
+"justfile" are not. `classify` and `validate` only print labels;
 apply them with `gh issue edit <N> --add-label`. `audit` findings come back as
 `STATUS=WARN` with exit 0, and a failed read as `STATUS=ERROR` with exit 1.
 

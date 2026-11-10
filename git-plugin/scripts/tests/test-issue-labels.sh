@@ -24,8 +24,9 @@
 #
 # What the suite must catch: a model-proposed label outside the allowlist being
 # accepted, a needs label kept without a quote from the issue, a label added
-# over one a person already set, and a blocked label cleared while a blocker is
-# still open or when no dependency link exists.
+# over one a person already set, a blocked label cleared while a blocker is
+# still open or when no dependency link exists, and a word in an issue body
+# ("the docs") read as a repo path.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -180,6 +181,27 @@ is "the taxonomy's core.docs paths replace the default" "$(core docs/reference/b
 is "the taxonomy's core.docs paths apply" "$(core docs/decisions/ADR-001.md "$FX/taxonomy.json")" "core:docs"
 is "a core entry the taxonomy adds" "$(core packages/components/improv-wifi/a.c "$FX/taxonomy.json")" "area:connectivity,core:components"
 is "an untouched default survives the override" "$(core .github/workflows/build.yml "$FX/taxonomy.json")" "core:ci"
+
+echo "=== body paths: a word is not a path ==="
+# With no taxonomy file only the built-in globs apply. A directory or file name
+# used as a word matched them: `docs` in a sentence gave core:docs.
+# bodycls <body> [taxonomy] — labels an unlabelled issue with no title scope takes from its body.
+bodycls() {
+    item "Sensor reads zero after reset" "$1"
+    python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "${2:-$TMP/empty.json}" \
+        --repo-labels "$FX/repo-labels.json" | jq -r '.add | join(",")'
+}
+is "the word docs in a sentence is not docs/**" "$(bodycls "According to the upstream docs the register clears on read.")" ""
+is "nor at the end of a sentence, in backticks or in brackets" "$(bodycls 'See the docs. The `docs` moved; (docs) too.')" ""
+is "the word justfile is not the root justfile" "$(bodycls "Add a justfile recipe for the sweep.")" ""
+# Controls: the same globs match once the token is written as a path, so the
+# cases above are empty because of the token's shape and nothing else.
+is "control: docs/ with its slash is the directory" "$(bodycls 'Everything under `docs/` is stale.')" "core:docs"
+is "control: a file under docs/" "$(bodycls "See docs/guide.md for the steps.")" "core:docs"
+is "control: ./justfile is the root justfile" "$(bodycls 'The recipe is in `./justfile`.')" "core:build"
+is "control: a dotted root file" "$(bodycls "Register the server in .mcp.json first.")" "core:agent"
+is "control: a directory cited without a trailing slash" \
+    "$(bodycls 'The fault is in `packages/robocar`.' "$FX/taxonomy.json")" "build:robocar"
 
 echo "=== additive only ==="
 # #1055 carries bug, build:robocar and area:ota by hand.
@@ -564,9 +586,10 @@ m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 body = (
     "See `main/ota.c:245-247`, [the doc](docs/a/b.md) and tools/x.py.\n"
-    "Not https://example.com/tools/y.py, #12 or @someone. Again: `tools/x.py`."
+    "Not https://example.com/tools/y.py, #12 or @org/team. Again: `tools/x.py`.\n"
+    "The docs, a justfile and `Makefile` are words; docs/ and ./justfile and .mcp.json are paths."
 )
-print([p for p in m.path_candidates(body) if "/" in p])
+print(m.path_candidates(body))
 cases = [
     ("docs/**", "docs/a/b.md"), ("docs/**", "docs"), ("docs/**", "docsx/a"),
     ("*.just", "a.just"), ("*.just", "tools/a.just"), ("**/*.just", "tools/a.just"),
@@ -576,8 +599,8 @@ cases = [
 print("".join("y" if m.path_matches(p, g) else "n" for g, p in cases))
 PY
 )
-is "paths keep their order, lose line suffixes and duplicates; URLs are skipped" \
-    "$(sed -n 1p <<<"$out")" "['main/ota.c', 'docs/a/b.md', 'tools/x.py']"
+is "paths keep their order, lose line suffixes and duplicates; URLs, mentions and words are skipped" \
+    "$(sed -n 1p <<<"$out")" "['main/ota.c', 'docs/a/b.md', 'tools/x.py', 'docs/', 'justfile', '.mcp.json']"
 is "glob semantics: * stays in a segment, ** crosses, /** takes the directory" "$(sed -n 2p <<<"$out")" "yynynyynyyyn"
 
 # ── the skills that document this script ──────────────────────────────────────
@@ -593,6 +616,7 @@ done
 for needle in ".github/issue-labels.json" "gh label list --limit 500"; do
     has "github-issue-writing names $needle" "$writing_skill" "$needle"
 done
+has "github-labels says which body tokens are paths" "$labels_skill" 'A body token is a path only when it has a'
 hasnt "github-labels dropped the priority: vocabulary" "$labels_skill" "priority:"
 # The old body listed with --limit 50, under the label count of a large repo.
 grep -Eq -- '--limit [0-9]{1,2}([^0-9]|$)' <<<"$labels_skill$writing_skill" &&
