@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.1...feedback-plugin-v1.16.2) (2026-11-10)
+
+
+### Documentation
+
+* **skills:** cite /health:check scopes instead of hidden health skills ([26c7807](https://github.com/laurigates/claude-plugins/commit/26c7807e4f01df6794aa3bcd3bb58bb77d47c6b0))
+
 ## [1.16.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.0...feedback-plugin-v1.16.1) (2026-11-09)
 
 

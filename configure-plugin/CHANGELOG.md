@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.3...configure-plugin-v1.43.4) (2026-11-10)
+
+
+### Documentation
+
+* **skills:** cite /health:check scopes instead of hidden health skills ([26c7807](https://github.com/laurigates/claude-plugins/commit/26c7807e4f01df6794aa3bcd3bb58bb77d47c6b0))
+
 ## [1.43.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.2...configure-plugin-v1.43.3) (2026-11-10)
 
 
