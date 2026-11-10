@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-10
 compatibility: claude-code
 reviewed: 2026-09-23
 allowed-tools: Glob, Read, TodoWrite
@@ -39,7 +39,7 @@ name: meta-audit
 For each agent, verify required fields are present:
 
 - ✅ **name**: Agent identifier (must match filename)
-- ✅ **model**: an alias (`opus`, `fable`, `sonnet`, `haiku`, `inherit`) or a current full ID (e.g. `claude-fable-5-1`); a dated ID from a superseded generation (`claude-opus-4-7`, `claude-sonnet-4-6`) is a finding — recommend the alias unless the pin is deliberate
+- ✅ **model**: an alias (`opus`, `fable`, `sonnet`, `haiku`, `inherit`) or a current full ID (e.g. `claude-fable-5-2`); a dated ID from a superseded generation (`claude-opus-4-7`, `claude-sonnet-4-6`, `claude-fable-5-1`) is a finding — recommend the alias unless the pin is deliberate
 - ℹ️ **effort**: optional `low`…`max` (overrides the session effort while the agent runs; default inherits); recommend `low` where the body describes mechanical work
 - ✅ **color**: Hex color code for UI (e.g., "#E53E3E")
 - ✅ **description**: Clear usage guidance with "Use proactively when..."

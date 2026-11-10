@@ -89,7 +89,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`); at most 256 characters, a longer name is rejected (2.1.292) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5.5 on the Anthropic API since 2.1.284, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-2`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5.5 on the Anthropic API since 2.1.284, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.2 since 2.1.321). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |

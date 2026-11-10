@@ -83,7 +83,7 @@ model now does it unaided (redundant) or now does it worse (needs adjusting).
 - Pinned model IDs recorded as **full ids** in `model-matrix.json
   metadata.models` (never aliases — `opus` now resolves to `claude-opus-5`, not
   `claude-opus-4-8`, and will move again). Current set: `claude-opus-5`,
-  `claude-sonnet-5`, `claude-haiku-4-5`; add `claude-fable-5-1` for the "new
+  `claude-sonnet-5`, `claude-haiku-4-5`; add `claude-fable-5-2` for the "new
   model dropped" re-sweep of the golden set. Record the effort level alongside
   each id; level names are not comparable across models, so a new model gets
   its own effort sweep before its delta column is read.
