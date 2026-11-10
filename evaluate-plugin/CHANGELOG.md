@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.20.0...evaluate-plugin-v1.20.1) (2026-11-10)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** name Fable 5.2 as the current Fable model ID ([#3559](https://github.com/laurigates/claude-plugins/issues/3559)) ([5c17031](https://github.com/laurigates/claude-plugins/commit/5c17031e24b9cfe4fb14d2a81932be046a6648f1)), closes [#3542](https://github.com/laurigates/claude-plugins/issues/3542)
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.19.0...evaluate-plugin-v1.20.0) (2026-11-06)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.73.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.72.0...git-plugin-v2.73.0) (2026-11-10)
+
+
+### Features
+
+* **git-plugin:** add issue-labels.py and document the label taxonomy ([#3567](https://github.com/laurigates/claude-plugins/issues/3567)) ([34263a7](https://github.com/laurigates/claude-plugins/commit/34263a70b0cb03ce5fe6cb0c87a3e2d9e2b689f9))
+
+
+### Documentation
+
+* **git-plugin:** add uv.lock extra-file recipe to release-please-configuration ([#3560](https://github.com/laurigates/claude-plugins/issues/3560)) ([7146bda](https://github.com/laurigates/claude-plugins/commit/7146bda8be003ce6bde5afae9a33de459da53bdd)), closes [#3557](https://github.com/laurigates/claude-plugins/issues/3557)
+
 ## [2.72.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.71.1...git-plugin-v2.72.0) (2026-11-09)
 
 
