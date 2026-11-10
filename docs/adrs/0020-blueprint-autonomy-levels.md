@@ -2,7 +2,7 @@
 id: ADR-0020
 date: 2026-07-05
 created: 2026-07-05
-modified: 2026-10-09
+modified: 2026-11-10
 status: Accepted
 deciders: claude-plugins team
 domain: automation
@@ -12,6 +12,7 @@ relates-to:
   - ADR-0016
   - ADR-0017
   - ADR-0024  # partially supersedes this ADR: work-order and prp-execute are model-invocable
+  - ADR-0027
 ---
 
 # ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model
@@ -24,6 +25,14 @@ relates-to:
 > Everything else stands: the level model, the draft-only automation policy
 > (now stated in the automating skills rather than enforced by the flag), and
 > the safety rails.
+
+> **Amended by [ADR-0027](0027-id-registry-single-engine.md) (2026-11-10).**
+> § The deterministic runner: deterministic tasks (`sync-ids`) keep no run
+> state. The runner reconciles them on every run whatever their schedule, and
+> writes `id_registry` only when it differs; it no longer writes
+> `last_completed_at`/`last_result`/`stats` for them. Agent-judgment tasks keep
+> `last_completed_at`/`last_result`, written only after an explicit run. The
+> runner change lands in #3548; until then the runner behaves as described below.
 
 ## Context
 

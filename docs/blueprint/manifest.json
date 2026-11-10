@@ -432,8 +432,61 @@
         ],
         "github_issues": [],
         "created": "2026-11-02"
+      },
+      "ADR-0027": {
+        "path": "docs/adrs/0027-id-registry-single-engine.md",
+        "title": "ADR-0027: One Engine for the Blueprint ID Registry; Deterministic Tasks Keep No Run State",
+        "status": "Accepted",
+        "relates_to": [
+          "ADR-0011",
+          "ADR-0020"
+        ],
+        "github_issues": [
+          3545,
+          3544,
+          3169,
+          3548,
+          3549,
+          3550,
+          3551,
+          3552,
+          3553,
+          3554
+        ],
+        "created": "2026-11-10"
       }
     },
-    "github_issues": {}
+    "github_issues": {
+      "3545": [
+        "ADR-0027"
+      ],
+      "3544": [
+        "ADR-0027"
+      ],
+      "3169": [
+        "ADR-0027"
+      ],
+      "3548": [
+        "ADR-0027"
+      ],
+      "3549": [
+        "ADR-0027"
+      ],
+      "3550": [
+        "ADR-0027"
+      ],
+      "3551": [
+        "ADR-0027"
+      ],
+      "3552": [
+        "ADR-0027"
+      ],
+      "3553": [
+        "ADR-0027"
+      ],
+      "3554": [
+        "ADR-0027"
+      ]
+    }
   }
 }
