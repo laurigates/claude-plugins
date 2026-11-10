@@ -2,6 +2,77 @@
 
 Detail for [`plugin-registry`](SKILL.md). Loaded on demand.
 
+## Field reference
+
+Field sets re-read 2026-11-10 from one machine's registry (`version: 2`, 983
+entries, structure only): every `user` entry had the six fields without
+`projectPath`, every `project` entry had all seven.
+
+| Field | Present | Description |
+|-------|---------|-------------|
+| `scope` | always | Install scope: `user`, `project` or `local` (the `--scope` values of `claude plugin install`). Only `user` and `project` were observed in the file |
+| `projectPath` | `project` (and `local`, per `claude plugin list --json`) | Project the install belongs to |
+| `installPath` | always | Cache directory for the installed version |
+| `version` | always | Installed version |
+| `installedAt` | always | ISO timestamp of installation |
+| `lastUpdated` | always | ISO timestamp of last update |
+| `gitCommitSha` | always (observed) | Git commit of the installed version |
+
+`claude plugin list --json` also reports `managed` for admin-installed plugins;
+`claude plugin update --scope managed` is the one scope you can update but not
+install to. Whether `managed` rows appear in this file was not observed.
+
+## The registry holds version pointers, not plugin copies
+
+Every entry's `installPath`, at any scope, resolves under
+`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, and nothing is
+written inside the project. Measured 2026-09-13 on one machine: all 44
+project-scope and all 50 user-scope entries pointed into that one cache. So an
+entry is a claim about *which cached version this scope uses*, and two entries
+for one plugin mean two version directories sitting side by side.
+
+## Session-start sync creates project entries
+
+A project entry is also created **without anyone running an install command**.
+Observed in a session-start debug log: `Syncing installed_plugins.json with
+enabledPlugins from all settings.json files`, then one `Added
+<plugin>@<marketplace> installation for scope project (<projectPath>)` per
+plugin the project's committed `.claude/settings.json` enables. The version
+recorded is whatever is current at that moment, and it does not follow later
+updates to the user-scope install, so the entry starts correct and drifts
+(§ Which install loads, and why a project can run an old version).
+
+The official plugin loading reference says instead that a plugin enabled only
+in project settings does not load at session start until it is installed on the
+machine, so treat this sync as observed behaviour, not documented behaviour.
+
+## Known issue #14202
+
+[anthropics/claude-code#14202](https://github.com/anthropics/claude-code/issues/14202)
+is **open** as of 2026-10-30. Problem: project-scoped plugins appear as
+globally installed.
+
+Root cause, as analysed in the report (Claude Code 2.0.70):
+
+| Operation | Checks projectPath? | Result |
+|-----------|---------------------|--------|
+| Marketplaces "(installed)" | No | Shows installed everywhere |
+| Install command | No | Refuses to install |
+| Installed tab listing | Yes | Correctly filtered |
+
+Reported symptoms, in a project other than the one installed into:
+
+1. Plugin shows the "(installed)" checkmark in the `/plugin` Marketplaces view
+2. The install command says it is already installed
+3. Plugin doesn't appear in the Installed tab for the current project
+4. Plugin doesn't work in the current project
+
+Comments through 2026-10-30 say it still happens but name no version, so
+confirm each symptom on the installed release before relying on it. The
+report's own workaround is a hand-edited registry entry plus an
+`enabledPlugins` key in the target project; the skill keeps the registry edit
+only as its last resort ([SKILL.md](SKILL.md) § Last resort: edit the registry by hand).
+
 ## Which install loads, and why a project can run an old version
 
 When a plugin has both a project entry for the current directory and a user
@@ -67,8 +138,11 @@ So treat the settings file as an output of the command:
    does not prove it.
 
 For a row whose `projectPath` no longer exists (a deleted worktree), there is no
-directory to run the command from; drop the entry from the registry with `jq`
-after backing the file up.
+directory to run the command from. Remove it with the `fix-registry.sh` script
+bundled with `health-plugin:health-plugins`, which backs the registry up and
+validates the result; the exact command is in [SKILL.md](SKILL.md) § Fixing
+Registry Issues. Run it with `--dry-run` first. Hand-editing the registry is the
+last resort described in [SKILL.md](SKILL.md) § Last resort: edit the registry by hand.
 
 ### Removal is a repair, not a fix
 

@@ -39,6 +39,14 @@ Status: [OK|WARN|ERROR|N/A]
 - Shadowed: <server-name> in <outer .mcp.json> (overridden by <nearer .mcp.json>)
 - Issues: <details if any>
 
+Permissions Coverage
+--------------------
+Status: [OK|WARN|ERROR]
+- Scanned: <justfile, Makefile, .pre-commit-config.yaml | none>
+- Tools found: N (covered N, missing N)
+- Missing: <tool> in <file> — `<first unmatched command>`
+- Unused project rules: N
+
 Summary
 -------
 [All checks passed | N issues found]
@@ -47,7 +55,7 @@ Recommended Actions:
 1. <action if needed>
 2. <action if needed>
 
-Run `/health:plugins --fix` to fix plugin registry issues.
+Run `/health:check --scope=registry --fix` to fix plugin registry issues.
 Run `/health:check --fix` to fix settings issues.
 ```
 
@@ -75,7 +83,7 @@ Include a summary table in the Step 3 report, one row per check:
 
 | Issue | Symptoms | Solution |
 |-------|----------|----------|
-| #14202 | Plugin shows "installed" but not active in project | Run `/health:plugins --fix` |
-| Orphaned projectPath | Plugin was installed for deleted project | Run `/health:plugins --fix` |
+| #14202 | Plugin shows "installed" but not active in project | Run `/health:check --scope=registry --fix` |
+| Orphaned projectPath | Plugin was installed for deleted project | Run `/health:check --scope=registry --fix` |
 | Invalid JSON | Settings file won't load | Validate and fix JSON syntax |
-| Hook timeout | Commands hang or fail silently | Hook `timeout` is in **seconds**. `check-hooks.sh` reports `high_timeout` above 60 s and `ms_timeout` at 1000 or more (a millisecond figure written as seconds — divide by 1000) |
+| Hook timeout | Commands hang or fail silently | Hook `timeout` is in **seconds**. `check-hooks.sh` reports `ms_timeout` at 1000 or more (a millisecond figure written as seconds; divide by 1000) and `high_timeout` above the event's limit, shown as `LIMIT=`: 300 s for `SessionStart`/`Setup` install hooks, 60 s for every other event |

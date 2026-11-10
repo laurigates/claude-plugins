@@ -2,32 +2,29 @@
 
 ## Bare CLI Command Patterns
 
-| Pattern | Issue | Suggested Fix |
-|---------|-------|---------------|
-| `kubectl get` without `-o` flag | Verbose default table output | Add `-o wide` or `-o json` |
-| `kubectl describe` without `-o` | Verbose narrative output | Consider `-o json` or targeted `get` |
-| `helm list` without `-o json` | Text table output | Add `-o json` or `--output json` |
-| `helm history` without `-o json` | Text table output | Add `-o json` |
-| `helm status` without `-o json` | Text output | Add `-o json` |
-| `cargo clippy` without `--message-format` | Verbose default output | Add `--message-format=short` |
-| `cargo test` without `--format` | Verbose default output | Add `-- --format terse` or use `cargo-nextest` |
-| `ruff check` without `--output-format` | Default verbose output | Add `--output-format=concise` or `github` |
-| `docker ps` without `--format` | Verbose default table | Add `--format` with Go template |
-| `docker images` without `--format` | Verbose default table | Add `--format` with Go template |
-| `cat <file>` in context sections | Reads entire file | Use `head -N <file>` or targeted extraction |
-| Test commands without `--bail`/`-x` | No fail-fast | Add `--bail=1`, `-x`, or `--bail` |
-| `eslint` without `--format` | Verbose default output | Add `--format=unix` or `--format=stylish` |
-| `biome check` without `--reporter` | Verbose default output | Add `--reporter=github` |
+`--fix applies` names the one replacement `--fix` may write, and only when the flagged command is the last stage of its pipeline. A row marked "report only" has no single safe replacement (several options, a value to choose, or a format change that would flood the output), so `--fix` lists it for manual follow-up.
+
+| Pattern | Issue | Suggested Fix | `--fix` applies |
+|---------|-------|---------------|-----------------|
+| `kubectl get` without `-o` flag | Verbose default table output | Add `-o wide` or `-o json` | report only |
+| `kubectl describe` without `-o` | Verbose narrative output | Consider `-o json` or targeted `get` | report only |
+| `helm list` without `-o json` | Text table output | Add `-o json` or `--output json` | `-o json` |
+| `helm history` without `-o json` | Text table output | Add `-o json` | `-o json` |
+| `helm status` without `-o json` | Text output | Add `-o json` | `-o json` |
+| `cargo clippy` without `--message-format` | Verbose default output | Add `--message-format=short` | `--message-format=short` |
+| `cargo test` without `--format` | Verbose default output | Add `-- --format terse` or use `cargo-nextest` | report only |
+| `ruff check` without `--output-format` | Default verbose output | Add `--output-format=concise` or `github` | `--output-format=concise` |
+| `docker ps` without `--format` | Verbose default table | Add `--format` with Go template | report only |
+| `docker images` without `--format` | Verbose default table | Add `--format` with Go template | report only |
+| `cat <file>` in context sections | Reads entire file | Use `head -N <file>` or targeted extraction | report only |
+| Test commands without `--bail`/`-x` | No fail-fast | Add `--bail=1`, `-x`, or `--bail` | report only |
+| `eslint` without `--format` | Verbose default output | Add `--format=unix` or `--format=stylish` | report only |
+| `biome check` without `--reporter` | Verbose default output | Add `--reporter=github` | `--reporter=github` |
 
 ## Report Template
 
 ```
 ## Agentic Output Audit Report
-
-### Missing Agentic Optimizations Tables
-| File | Plugin | CLI Tools Detected |
-|------|--------|--------------------|
-(List skills with bash blocks but no table)
 
 ### Bare CLI Commands (no compact flags)
 | File | Line | Command | Suggested Fix |
@@ -40,29 +37,21 @@
 (Context commands using cat or verbose output)
 
 ### Stale Reviews (>90 days)
-| File | Last Modified | Days Stale |
-|------|---------------|------------|
+| File | Last Reviewed | Days Since Review |
+|------|---------------|-------------------|
+(A missing `reviewed` field is listed as "never")
+
+### CLI-Wrapper Skills Without an Agentic Optimizations Table (INFO)
+| File | Dominant Tool |
+|------|---------------|
+(Omit this section when empty; INFO notes are not issues)
 
 ### Summary
 - X skills scanned, Y commands scanned, Z agents scanned
-- N missing Agentic Optimizations tables
 - M bare CLI commands found
 - P context section issues
 - Q stale reviews
-```
-
-## Skeleton Agentic Optimizations Table
-
-Use this template when adding tables to flagged skills via `--fix`:
-
-```markdown
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Quick check | `TODO: add compact command` |
-| CI mode | `TODO: add CI-friendly command` |
-| Errors only | `TODO: add errors-only command` |
+- I INFO notes (not counted as issues)
 ```
 
 ## Code Block Detection
@@ -83,7 +72,10 @@ And inline backtick commands in context sections:
 
 ## Frontmatter Extraction
 
-Use the standard extraction pattern:
+Read the review date with the standard extraction pattern (`.claude/rules/shell-scripting.md`):
+
 ```bash
-head -20 "$file" | grep -m1 "^modified:" | sed 's/^[^:]*:[[:space:]]*//'
+head -50 "$file" | grep -m1 "^reviewed:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r'
 ```
+
+An empty result means the file has no `reviewed` field.

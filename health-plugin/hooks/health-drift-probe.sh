@@ -149,7 +149,7 @@ if [ "$unused_count" -gt 0 ]; then
     drift_add_finding info \
         enabled_plugins_unused \
         "${unused_count} enabled plugin(s) with no detected stack: ${unused_list}" \
-        "/health:audit"
+        "/health:check --scope=stack"
 fi
 
 drift_emit

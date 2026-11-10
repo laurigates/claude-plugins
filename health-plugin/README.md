@@ -23,7 +23,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 |-------|--------|----------------|
 | `registry` | Orphaned `projectPath` entries, stale `enabledPlugins` keys (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) | `health-plugins` |
 | `stack` | Enabled plugins vs project tech stack | `health-audit` |
-| `agentic` | Skill/command/agent agentic-optimisation compliance | `health-agentic-audit` |
+| `agentic` | Bare CLI commands missing compact/fail-fast/JSON flags; stale `reviewed` dates | `health-agentic-audit` |
 | `runtime` | `~/.claude.json` bloat (dead projects/githubRepoPaths, orphaned MCP, legacy per-project history), `history.jsonl` growth, `cleanupPeriodDays` validity. Read-only | `check-runtime.sh` |
 | `usage` | Never-fired and dormant skills *and* plugin agents mined from session telemetry. Read-only, local-leaning ([ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md)) | `check-usage.sh` |
 | `all` | All of the above (default) | — |
@@ -301,13 +301,17 @@ needed), feeding skill-consolidation and description-quality reviews. The audit
 is read-only and **local-leaning**: it needs a long-running local install and
 emits `STATUS=SKIP` in a fresh/remote checkout where there is no history. See
 [ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md).
+"Enabled" means enabled in settings and installed for this project: the
+inventory comes from `~/.claude/plugins/installed_plugins.json` and
+`enabledPlugins`, at each plugin's active version, so older cached versions and
+disabled plugins are not counted.
 
 ### Permission Debugging
 
 When tools are blocked unexpectedly, use the settings-configuration skill to understand:
-- Settings file hierarchy (user → project → local)
-- Permission wildcard patterns
-- Shell operator protections
+- Settings precedence (managed → `--settings` → project local → shared project → user)
+- Permission rules: the deny → ask → allow order and per-subcommand matching of compound commands
+- Permission modes, including which allow rules auto mode drops
 
 ### Prune Config File
 

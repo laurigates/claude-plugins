@@ -8,11 +8,34 @@ If `check-settings.sh` emits `PROJECT_DIR_RESOLVED=<path>`, the workspace root h
 
 `check-plugin-scope-lag.sh` compares every project-scope entry in `installed_plugins.json` with the user-scope entry of the same plugin, using a semver-aware sort (`sort -V`, so 2.9.0 < 2.10.0). Each project-scope install below the user-scope version is one `SEVERITY=WARN TYPE=scope_lag` row naming `PLUGIN=`, `PROJECT=`, `PROJECT_VERSION=` and `USER_VERSION=` (issue #3220). There is no allowlist: a deliberate pin also warns. Equal versions, a project pin newer than user scope, and a plugin with no user-scope entry are not findings; a missing registry or missing `jq` yields `STATUS=OK`. A lagging project keeps loading the old build after a user-scope update, so a fix that has shipped does not reach it. Report each row with the project path and both versions, and point to the `plugin-registry` skill (§ Which Install Loads, and Why a Project Can Run an Old Version) for confirming which version loads and repairing the entry. The check is read-only.
 
-## Checks 1b–1e
+`check-hooks.sh` inventories settings hooks (`~/.claude/settings.json`, `<project>/.claude/settings.json` and `<project>/.claude/settings.local.json`; `~/.claude/settings.local.json` is local scope for the home directory, so it counts only when the project is the home directory) and the hooks of every enabled plugin. Every plugin in `installed_plugins.json` is a candidate: `enabledPlugins` merges local over project over user, a plugin set to `false` is dropped, and a plugin with no entry at any scope falls back to its manifest `defaultEnabled` (default `true`), the same rule the usage scope applies. Each plugin is read from the one install that loads in this project: the project/local-scope entry in `installed_plugins.json` for this project if there is one, otherwise the user-scope entry. Its `<installPath>/hooks/hooks.json` is read, plus the `plugin.json` `hooks` field (a path, an inline event map, or an array of either). `HOOK_COUNT=` is the total, split into `SETTINGS_HOOK_COUNT=` and `PLUGIN_HOOK_COUNT=`. `PLUGINS_ENABLED=` counts enabled plugins with an install on disk, which is what `check-usage.sh` reports under the same key. `PLUGINS_UNRESOLVED=` counts plugins set to `true` with no install for this project (`--verbose` names them as `PLUGIN_UNRESOLVED:`); the registry scope reports those, not this check. Every `ISSUES:` row carries `SOURCE=settings` or `SOURCE=plugin:<name@marketplace>` plus `FILE=`. Finding types: `unknown_event` (not in the documented event list; Claude Code skips it, so its hooks never fire), `unknown_hook_type` (not `command`/`http`/`mcp_tool`/`prompt`/`agent`, or missing), `missing_command` (the first word is neither on PATH nor a file; for `bash`/`sh`/`zsh <script>`, the absolute script path does not exist), `missing_hooks_file`, `invalid_hooks_file` (not JSON, or no top-level `"hooks"` key), `ms_timeout` (1000 or more), and `high_timeout` (above `LIMIT=`: 300 s for `SessionStart`/`Setup`, 60 s otherwise). Report each finding with its `SOURCE` and `FILE`.
+
+### 1d. Permissions coverage (`check-permissions-coverage.sh`)
+
+The script compares the commands a project's task files run with the Bash allow rules Claude Code would apply, so the report shows which recipe commands will prompt.
+
+| Input | What is read |
+|---|---|
+| Allow rules | `permissions.allow` in `~/.claude/settings.json`, `<project>/.claude/settings.json` and `<project>/.claude/settings.local.json` (each reported as `<KEY>=OK\|MISSING\|INVALID`). `~/.claude/settings.local.json` is local scope for the home directory: Claude Code reads it only in a session started there, so it counts only when `--project-dir` is the home directory, as that project's local file |
+| Rule forms | `Bash(<prefix> *)`, the legacy `Bash(<prefix>:*)`, any rule with `*` elsewhere, and bare `Bash` / `Bash(*)` (`BASH_ALLOW_ALL=true`). A trailing ` *` that is the only wildcard also matches the bare command |
+| Commands | `justfile` / `Justfile` recipe lines, `Makefile` TAB-led recipe lines, `.pre-commit-config.yaml` `entry:` values (`SCANNED_FILES=`) |
+
+Each line is split on `&&`, `||`, `;` and `|` outside quotes. A quoted string that continues onto later lines, a here-document body, a `#` comment and an `x=$(...)` substitution are skipped. The wrappers Claude Code strips before matching (`timeout`, `time`, `nice`, `nohup`, `stdbuf`, `command`, `builtin`, `noglob`) are dropped. Claude Code also strips a leading assignment of "certain known-safe environment variables" but does not publish the list; the docs name only `NODE_ENV`, so the script drops `NODE_ENV=…` and keeps any other assignment in the matched text (`FOO=1 npm test` is missing under `Bash(npm test *)`, because an allow rule does not match past it). Commands in Claude Code's built-in read-only set (`ls`, `cat`, `echo`, `pwd`, `head`, `tail`, `grep`, `find`, `wc`, `which`, `diff`, `stat`, `du`, `cd`) and shell keywords are not counted. A rule for one subcommand does not cover another: `Bash(npm run *)` leaves `npm install` missing.
+
+| Key / row | Meaning |
+|---|---|
+| `TOOLS_FOUND=` / `TOOLS_COVERED=` / `TOOLS_MISSING=` | Distinct tools that need a rule, and how many have at least one command no rule matches |
+| `TOOLS_UNRESOLVED=` (`TOOL=<word> STATE=unresolved FILE=` with `--verbose`) | First words that are not on PATH, not a file in the project and not `./`-prefixed: a shebang recipe's body, a word the line scanner misread, or a tool not installed. Not counted in `STATUS` |
+| `TYPE=missing_permission` row | One per missing tool: `TOOL=`, `FILE=`, and the first unmatched command in `MSG=` |
+| `UNUSED_RULE_COUNT=` (`UNUSED_RULE=` with `--verbose`) | Project or project-local rules whose tool no scanned file runs. Informational, never a finding |
+
+Scoring: OK with no missing tool, WARN for 1–3, ERROR for 4 or more (exit 1). The script needs bash 4 or later; under macOS `/bin/bash` 3.2 it reports `STATUS=ERROR` with `TYPE=bash_too_old` rather than a coverage result. The check is read-only and has no `--fix` path.
+
+## Checks 1b, 1c, 1e
 
 #### 1b. SessionStart smoke test
 
-Check whether `scripts/install_pkgs.sh` (or any script registered in the `SessionStart` hook in `.claude/settings.json`) is executable and exits cleanly in both remote and local contexts.
+Check whether `scripts/install_pkgs.sh` (or any script registered in the `SessionStart` hook in `.claude/settings.json`) is executable and exits cleanly in both remote and local contexts. These runs execute project code, so the skill's `allowed-tools` does not pre-approve them; they go through the session's normal permission flow.
 
 1. Locate the `SessionStart` hook command from `.claude/settings.json` (look for the `command` field).
 2. If a script is found, run:
@@ -44,24 +67,7 @@ Report:
 - WARN: `pre-commit` not installed — skip check, suggest `pip install pre-commit`
 - ERROR: exits non-zero — show validation error
 
-#### 1d. Permissions coverage check
-
-Compare tools referenced in project files against `permissions.allow` in `.claude/settings.json`.
-
-1. Read `permissions.allow` from `.claude/settings.json`. Extract the command prefix from each `Bash(<prefix>:*)` entry.
-2. Scan these files for tool invocations:
-   - `justfile` / `Justfile` — commands on recipe lines
-   - `Makefile` — shell commands on recipe lines
-   - `.pre-commit-config.yaml` — `entry:` fields
-3. For each tool found in project files:
-   - Flag as **MISSING** if no matching `Bash(<tool>:*)` entry exists in `permissions.allow`
-4. For each `Bash(<tool>:*)` entry in `permissions.allow`:
-   - Flag as **UNUSED** if the tool is not found in any project file (informational, not an error)
-
-Scoring:
-- OK: No missing permissions
-- WARN: 1–3 missing permissions
-- ERROR: 4+ missing permissions
+Permissions coverage (1d) runs as a script in Step 1a; see [1d. Permissions coverage](#1d-permissions-coverage-check-permissions-coveragesh).
 
 #### 1e. Marketplace enrollment check
 

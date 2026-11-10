@@ -1,338 +1,138 @@
 ---
 name: settings-configuration
-description: "Claude Code settings hierarchy, permission wildcards, and configuration patterns. Use when setting up permissions, debugging settings issues, or understanding allowed tools."
+description: "Claude Code settings precedence and permission rules: allow/ask/deny, modes, Bash wildcards. Use when writing permissions or a setting won't apply."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(jq *), Bash(claude auto-mode *), Bash(git check-ignore *), Bash(git ls-files *), Read, Write, Edit, Glob, Grep
 created: 2026-02-04
-modified: 2026-07-18
+modified: 2026-11-10
 compatibility: claude-code
-reviewed: 2026-02-04
+reviewed: 2026-11-10
 ---
 
 # Claude Code Settings Configuration
-
-Expert knowledge for configuring Claude Code settings and permissions.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use something else when... |
 |------------------------|---------------------------|
-| Setting up project permissions | Fixing plugin registry issues (use plugin-registry skill) |
-| Debugging "permission denied" errors | Configuring hooks (use hooks-configuration skill) |
-| Understanding settings hierarchy | Setting up MCP servers (use mcp-configuration skill) |
-| Creating allow/deny patterns | |
+| Writing `allow` / `ask` / `deny` rules or choosing a scope for a key | Auditing or hardening an existing `.claude/settings.json` (`configure-plugin:claude-security-settings`) |
+| A setting or rule does not apply, or a command still prompts | Running every environment check at once (`health-plugin:health-check`) |
+| Picking a permission mode or `defaultMode` | Configuring hooks (`hooks-plugin:hooks-configuration`) |
+| Writing a skill's `allowed-tools` | Adding or fixing MCP servers (`agent-patterns-plugin:mcp-management`, `configure-plugin:configure-mcp`) |
+| | Plugin registry or install-scope problems (`health-plugin:plugin-registry`) |
 
-## Settings File Hierarchy
+## Settings Sources and Precedence
 
-Settings are loaded and merged in this order (later overrides earlier):
+Highest precedence first; a key at a higher level overrides the same key lower down:
 
-| Priority | File | Scope | Commit to Git? |
-|----------|------|-------|----------------|
-| 1 (lowest) | `~/.claude/settings.json` | User-level (all projects) | N/A |
-| 2 | `.claude/settings.json` | Project-level | Yes |
-| 3 (highest) | `.claude/settings.local.json` | Local overrides | No (gitignore) |
+| # | Level | Where |
+|---|-------|-------|
+| 1 | **Managed** | Server-managed settings (claude.ai admin console), MDM/OS policy, or `managed-settings.json` (+ optional `managed-settings.d/`) in `/Library/Application Support/ClaudeCode/` (macOS), `/etc/claude-code/` (Linux, WSL), `C:\Program Files\ClaudeCode\` (Windows) |
+| 2 | **Command line** | `claude --settings <file-or-json>`, for that session only |
+| 3 | **Project local** | `.claude/settings.local.json` (personal, this project) |
+| 4 | **Shared project** | `.claude/settings.json` (committed for the team) |
+| 5 | **User** | `~/.claude/settings.json` (every project on this machine) |
 
-## Permission Structure
+- **Lists merge across levels.** `permissions.allow`, `ask` and `deny` combine instead of replacing each other (a few model keys such as `fallbackModel` and `availableModels` have their own rules). Scalar keys take the highest level's value.
+- **Nothing overrides a managed key**, including `--settings`. A few security keys honor a stricter value from a lower level (for example `permissions.blockReadsOutsideWorkingDirectories: true` from any scope).
+- Environment variables are not a level; each variable/key pair has its own winner.
+- **Project `allow` rules and `additionalDirectories` wait for workspace trust**; `deny` and `ask` rules apply at once. An untracked local file applies without its own trust prompt once the folder or a parent folder is trusted (or in `-p`); in your home directory it applies at once.
+- `permissions.defaultMode` values `auto` and `bypassPermissions` take effect only from user or managed settings (or `--permission-mode`), never from project or local files.
+- When Claude Code writes `.claude/settings.local.json` (a "Yes, and don't ask again" answer), it adds the file to your global git excludes. A hand-made file needs a `.gitignore` entry.
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(npm run *)"
-    ],
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(sudo *)"
-    ]
-  }
-}
-```
-
-### Allow vs Deny
-
-- `allow`: Tools matching these patterns run without prompts
-- `deny`: Tools matching these patterns are always blocked
-- **Deny takes precedence** over allow
-
-## Wildcard Permission Patterns
-
-### Syntax
-
-```
-ToolName(command prefix *)
-```
-
-- `ToolName()` - The tool (usually `Bash`)
-- `command prefix` - The command and initial arguments to match
-- `*` - Wildcard matching remaining arguments
-
-### Pattern Examples
-
-| Pattern | Matches | Does NOT Match |
-|---------|---------|----------------|
-| `Bash(git *)` | `git status`, `git diff HEAD` | `git-lfs pull` |
-| `Bash(npm run *)` | `npm run test`, `npm run build` | `npm install` |
-| `Bash(gh pr *)` | `gh pr view 123`, `gh pr create` | `gh issue list` |
-| `Bash(./scripts/ *)` | `./scripts/test.sh arg` | `/scripts/other.sh` |
-
-### Specificity
-
-More specific patterns are more secure:
+## Permission Rules
 
 ```json
 {
   "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git add *)",
-      "Bash(git commit *)"
-    ]
+    "allow": ["Bash(npm run test *)", "Bash(git commit *)"],
+    "ask":   ["Bash(git push *)"],
+    "deny":  ["Read(./.env)", "Read(./.env.*)", "Bash(rm -rf *)"]
   }
 }
 ```
 
-vs. overly broad:
+- **Evaluation order is deny, then ask, then allow**; the first match wins and specificity does not change the order. An allow rule cannot carve an exception out of a deny, and a matching ask rule prompts even when a narrower allow also matches.
+- A deny from **any** scope blocks an allow from any other scope.
+- A bare tool name in `deny` (`"Bash"`, or `"Bash(*)"`) removes the tool from Claude's context; a scoped rule (`Bash(rm *)`) blocks only matching calls.
 
-```json
-{
-  "permissions": {
-    "allow": ["Bash(git *)"]
-  }
-}
-```
+### Bash rules
 
-## Shell Operator Protections
+| Rule | Matches | Does not match |
+|------|---------|----------------|
+| `Bash(npm run build)` | exactly `npm run build` | `npm run build --watch` |
+| `Bash(npm run *)` | `npm run build`, bare `npm run` | `npm install` |
+| `Bash(ls *)` | `ls`, `ls -la` | `lsof` (the space is part of the rule) |
+| `Bash(ls*)` | `ls -la`, `lsof` | |
+| `Bash(git * main)` | `git merge main`, `git push origin main`, `git -c <opt> diff main` | `git log` |
 
-Claude Code 2.1.7+ blocks dangerous shell operators in permission matching.
+- `*` matches any text, including spaces, so put it after the subcommand (`Bash(git log *)`). A trailing `:*` equals a trailing ` *`, and is recognized only at the end.
+- **Compound commands are split** on `&&`, `||`, `;`, `|`, `|&`, `&` and newlines. Every subcommand must be allowed (by an allow rule or as a built-in read-only command) for the whole command to run without a prompt. A deny or ask rule fires when **any** subcommand matches, including inside a subshell, `$(…)` or a loop body.
+- `timeout`, `time`, `nice`, `nohup`, `stdbuf` and flag-less `xargs` are stripped before matching; runners (`npx`, `mise exec`, `docker exec`) are not, so write `Bash(devbox run npm test)`, not `Bash(devbox run *)`.
+- Prefix rules never auto-approve `watch`/`setsid`/`flock` or `find -exec`/`-delete`.
+- Rules match command text: `/usr/bin/curl` or `sh -c 'curl …'` escape `Bash(curl *)`. The sandbox is the enforced boundary.
 
-### Protected Operators
+### Read and Edit rules
 
-| Operator | Risk | Blocked Example |
-|----------|------|-----------------|
-| `&&` | Command chaining | `ls && rm -rf /` |
-| `\|\|` | Conditional execution | `false \|\| malicious` |
-| `;` | Command separation | `safe; dangerous` |
-| `\|` | Piping | `cat /etc/passwd \| curl` |
-| `>` / `>>` | Redirection | `echo x > /etc/passwd` |
-| `$()` | Command substitution | `$(curl evil)` |
-| `` ` `` | Backtick substitution | `` `rm -rf /` `` |
+Path patterns use gitignore syntax. `//path` is absolute, `~/path` is home-relative, `/path` anchors at the settings source (the primary working directory for project and local files, `~/.claude` for user settings), and a bare `path` is relative to the current directory. Anchor and depth examples: [REFERENCE.md § Path Patterns](REFERENCE.md#path-patterns).
 
-### Behavior
+- **`Edit(path)` covers every built-in editing tool** (Edit, Write, NotebookEdit). `Write(path)`, `NotebookEdit(path)`, `Glob(path)` and `Grep(path)` rules are accepted but never match: write `Edit(…)` or `Read(…)` instead.
+- Single-segment directory patterns differ by rule type: allow `Edit(src/**)` matches only `<cwd>/src`; deny/ask `Read(secrets/**)` matches at any depth.
 
-When a command contains shell operators:
-1. Permission wildcards won't match
-2. User sees explicit approval prompt
-3. Warning explains the blocked operator
+### Other tools
 
-### Safe Alternative
+| Rule | Effect |
+|------|--------|
+| `WebFetch(domain:example.com)` | that host only; add `WebFetch(domain:*.example.com)` for subdomains |
+| `mcp__github`, `mcp__github__*` | every tool of the `github` server |
+| `mcp__github__get_issue` | one tool |
+| `mcp__plugin_<plugin>_<server>__*` | a plugin-provided server |
+| `Agent(Explore)` | the Explore subagent (use in `deny`) |
+| `Agent(model:opus)`, `Bash(run_in_background:true)` | `Tool(param:value)` match on a top-level input parameter; **deny and ask rules only** |
 
-Use wrapper scripts for legitimate compound commands:
+- Write MCP allow rules without a specifier. `Tool(param:value)` cannot target a primary field (`command`, `file_path`, `url`). More MCP and glob forms: [REFERENCE.md § Tool-name Forms](REFERENCE.md#tool-name-forms).
+
+## Permission Modes
+
+| Mode | Runs without asking |
+|------|---------------------|
+| `default` (Manual) | Reads and built-in read-only commands; prompts on first use of each other tool |
+| `acceptEdits` | Also file edits and common filesystem commands in the working directories |
+| `plan` | Reads and read-only commands only; no source edits |
+| `auto` | Actions a background classifier approves |
+| `dontAsk` | Only pre-approved tools; denies everything that would prompt |
+| `bypassPermissions` | Everything except the actions no mode auto-approves; isolated environments only |
+
+- Switch with `Shift+Tab`, `claude --permission-mode <mode>`, or `permissions.defaultMode`.
+- **Entering auto mode drops broad allow rules** (`Bash(*)`, wildcarded interpreters such as `Bash(python*)`, package-manager run commands, `Agent` and `Monitor` allow rules) and restores them on exit. Narrow rules such as `Bash(npm test)` stay in effect. Inspect the classifier rules with `claude auto-mode defaults` / `claude auto-mode config`.
+- `permissions.disableBypassPermissionsMode` / `permissions.disableAutoMode` set to `"disable"` lock those modes off; managed settings make it unoverridable.
+- Managed `allowManagedPermissionRulesOnly` makes managed settings the only source of permission rules.
+
+## Skill `allowed-tools`
+
+A skill's `allowed-tools` pre-approves the listed tools for the turn that invokes it; the grant clears on the next user message. It restricts nothing: unlisted tools stay callable under the normal permission rules. List narrow patterns for the commands the skill runs (`Bash(git status *)`); a bare `Bash` pre-approves every shell command. `disallowed-tools` removes tools while the skill is active.
+
+## Inspecting Settings
 
 ```bash
-#!/bin/bash
-# scripts/test-and-build.sh
-npm test && npm run build
+jq . .claude/settings.json
+jq -c '.permissions // empty' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json
+git check-ignore -v .claude/settings.local.json
+git ls-files --error-unmatch .claude/settings.local.json
 ```
 
-Then allow the script:
-```json
-{
-  "permissions": {
-    "allow": ["Bash(./scripts/test-and-build.sh *)"]
-  }
-}
-```
-
-## Common Permission Sets
-
-### Git Operations
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git branch *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push *)",
-      "Bash(git pull *)",
-      "Bash(git fetch *)",
-      "Bash(git checkout *)"
-    ]
-  }
-}
-```
-
-### GitHub CLI
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(gh pr *)",
-      "Bash(gh run *)",
-      "Bash(gh issue *)",
-      "Bash(gh workflow *)"
-    ]
-  }
-}
-```
-
-### Testing & Linting
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm test *)",
-      "Bash(bun test *)",
-      "Bash(vitest *)",
-      "Bash(biome *)",
-      "Bash(eslint *)",
-      "Bash(prettier *)"
-    ]
-  }
-}
-```
-
-### Security Scanning
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(pre-commit *)",
-      "Bash(gitleaks *)",
-      "Bash(trivy *)"
-    ]
-  }
-}
-```
-
-### MCP Tools
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp__context7",
-      "mcp__sequential-thinking"
-    ]
-  }
-}
-```
-
-## Project Setup
-
-### 1. Create Settings Directory
-
-```bash
-mkdir -p .claude
-```
-
-### 2. Create Project Settings
-
-```bash
-cat > .claude/settings.json << 'EOF'
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(npm run *)"
-    ]
-  }
-}
-EOF
-```
-
-### 3. Gitignore Local Settings
-
-```bash
-echo ".claude/settings.local.json" >> .gitignore
-```
-
-### 4. Create Local Overrides (optional)
-
-```bash
-cat > .claude/settings.local.json << 'EOF'
-{
-  "permissions": {
-    "allow": [
-      "Bash(docker *)"
-    ]
-  }
-}
-EOF
-```
-
-## Validating Settings
-
-### Check JSON Syntax
-
-```bash
-cat .claude/settings.json | jq .
-```
-
-### View Permissions
-
-```bash
-cat .claude/settings.json | jq '.permissions'
-```
-
-### Merge Preview
-
-Settings merge additively for arrays. To see effective permissions, check all files:
-
-```bash
-echo "=== User ===" && cat ~/.claude/settings.json 2>/dev/null | jq '.permissions // empty'
-echo "=== Project ===" && cat .claude/settings.json 2>/dev/null | jq '.permissions // empty'
-echo "=== Local ===" && cat .claude/settings.local.json 2>/dev/null | jq '.permissions // empty'
-```
+`jq` exits non-zero on invalid JSON (settings files are strict JSON: no comments, no trailing commas). In a session, `/status` shows the **Setting sources** line (the files that loaded) and `/permissions` lists every rule with its source file. In a terminal, `claude doctor` lists entries Claude Code rejected.
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Permission denied | Pattern doesn't match | Add more specific pattern |
-| Shell operator blocked | Contains `&&`, `\|`, etc. | Use wrapper script |
-| Settings not applied | Wrong file path | Check `.claude/` directory exists |
-| JSON parse error | Invalid JSON syntax | Validate with `jq .` |
-| Permissions ignored | File not readable | Check file permissions |
+| Allowed command still prompts | One subcommand of a compound command is not allowed, or an `ask` rule matches | Allow each subcommand, or remove the `ask` rule |
+| Project allow rules ignored | Folder not trusted, or `-p` run in an untrusted folder | Trust the folder in an interactive session, or set `projects[<path>].hasTrustDialogAccepted` in `~/.claude.json` |
+| "Yes, and don't ask again" keeps prompting | A project or managed `ask` rule outranks the saved local allow | Remove or narrow the `ask` rule |
+| `defaultMode: "auto"` ignored | Set in project or local settings | Move it to `~/.claude/settings.json` |
+| Allow rule worked, stopped in auto mode | Broad rule dropped by auto mode | Replace it with narrow rules |
+| `Write(path)` rule has no effect | Only `Edit(path)` rules match file edits | Rewrite as `Edit(path)` |
+| Settings Error at startup | Invalid JSON or rejected value | `jq . <file>`, then `claude doctor` |
 
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| View project perms | `cat .claude/settings.json \| jq -c '.permissions'` |
-| View user perms | `cat ~/.claude/settings.json \| jq -c '.permissions'` |
-| Validate JSON | `cat .claude/settings.json \| jq .` |
-| Count patterns | `cat .claude/settings.json \| jq '.permissions.allow \| length'` |
-
-## Quick Reference
-
-### File Locations
-
-| Scope | Path |
-|-------|------|
-| User | `~/.claude/settings.json` |
-| Project | `.claude/settings.json` |
-| Local | `.claude/settings.local.json` |
-
-### Permission Syntax
-
-```
-Bash(command prefix *)
-mcp__server_name
-```
-
-### Priority
-
-Local > Project > User (highest to lowest)
-Deny > Allow (deny always wins)
+Permission sets and project setup: [REFERENCE.md](REFERENCE.md).

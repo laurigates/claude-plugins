@@ -1,10 +1,10 @@
 ---
 created: 2026-02-04
-modified: 2026-11-04
+modified: 2026-11-10
 compatibility: claude-code
 reviewed: 2026-06-17
 description: "Claude Code health check — every environment check in one pass, names the broken layer, `--fix` repairs. Use when asked for a health check, or the install misbehaves and the cause is unknown."
-allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-settings.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-permissions-coverage.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-usage.sh *), Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/check-registry.sh *), Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/fix-registry.sh *), Bash(pre-commit validate-config *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--scope=all|registry|stack|agentic|runtime|usage] [--fix] [--dry-run] [--verbose]"
 argument-hint: "[--scope=all|registry|stack|agentic|runtime|usage] [--fix] [--dry-run] [--verbose]"
 name: health-check
@@ -56,47 +56,49 @@ Parse these from `$ARGUMENTS`:
 
 Execute this diagnostic router. Default scope is `all` when `--scope` is not provided.
 
+Run every bundled script exactly as spelled in this file — `bash ${CLAUDE_SKILL_DIR}/scripts/<name>.sh …` or `bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/<name>.sh …`, path unquoted. Each `allowed-tools` rule pre-approves the command text it spells, so an invocation written another way is not pre-approved and goes through the normal permission flow.
+
 ### Step 1: Run environment checks (always)
 
 Environment checks run regardless of `--scope`. They cover the baseline health of the Claude Code installation and the current project's `.claude/` directory.
 
-#### 1a. Core environment scripts
+#### 1a. Core environment scripts (including 1d permissions coverage)
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh" --home-dir "$HOME" --project-dir "$(pwd)"
-bash "${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh" --home-dir "$HOME" --project-dir "$(pwd)"
-bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --project-dir "$(pwd)"
-bash "${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh" --home-dir "$HOME" --project-dir "$(pwd)"
-bash "${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-settings.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-permissions-coverage.sh --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=` and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`.
+Parse `STATUS=`, `REASON=` (when present) and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`.
 
-Read the extra `check-settings.sh` keys (`PROJECT_DIR_RESOLVED=`, `PROJECT_DIR_HINT=`), `check-mcp.sh` keys (`MCP_SOURCE_COUNT=`, `SERVER:`, `SERVER_SHADOWED:`), and `check-plugin-scope-lag.sh` `TYPE=scope_lag` rows as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the config or `.mcp.json` file each finding came from (for `scope_lag`, the project path and both versions).
+Read the extra `check-settings.sh` keys (`PROJECT_DIR_RESOLVED=`, `PROJECT_DIR_HINT=`), `check-mcp.sh` keys (`MCP_SOURCE_COUNT=`, `SERVER:`, `SERVER_SHADOWED:`), `check-plugin-scope-lag.sh` `TYPE=scope_lag` rows, `check-hooks.sh` keys (`SETTINGS_HOOK_COUNT=`, `PLUGIN_HOOK_COUNT=`, `PLUGINS_UNRESOLVED=`, and the `SOURCE=` field on each `ISSUES:` row), and `check-permissions-coverage.sh` keys (`TOOLS_FOUND=`, `TOOLS_MISSING=`, `TOOLS_UNRESOLVED=`, `UNUSED_RULE_COUNT=`, `TYPE=missing_permission` rows) as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the config or `.mcp.json` file each finding came from (for `scope_lag`, the project path and both versions; for a hook finding, the settings file or the plugin that declared it; for `missing_permission`, the tool and the task file).
 
-#### 1b–1e. SessionStart smoke test, pre-commit config, permissions coverage, marketplace enrollment
+#### 1b, 1c, 1e. SessionStart smoke test, pre-commit config, marketplace enrollment
 
-Run each check as specified in [references/environment-checks.md](references/environment-checks.md#checks-1b1e) and score it OK/WARN/ERROR (pre-commit may SKIP when the tool is absent).
+Run each check as specified in [references/environment-checks.md](references/environment-checks.md#checks-1b-1c-1e) and score it OK/WARN/ERROR (pre-commit may SKIP when the tool is absent).
 
 ### Step 2: Run scope-specific audits
 
 For `--scope=registry` or `all`:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/check-registry.sh" \
-  --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/check-registry.sh --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
 Parse `STATUS=`, `PLUGIN_COUNT=`, `ORPHANED_ENTRIES=`, `STALE_ENABLED_ENTRIES=`, and `ISSUES:`.
 
-For `--scope=stack` or `all`: follow the tech-stack audit steps from the internal `health-audit` skill (see `${CLAUDE_PLUGIN_ROOT}/skills/health-audit/SKILL.md` and its `REFERENCE.md`).
+For `--scope=stack` or `all`: invoke the `health-plugin:health-audit` skill with the Skill tool, passing `--verbose` when set. Load it through the Skill tool rather than reading its SKILL.md: only a loaded skill gets its own `${CLAUDE_SKILL_DIR}` substituted and its own `allowed-tools` (its `enabled-plugins.sh` and `claude plugin list` commands are not granted here).
 
-For `--scope=agentic` or `all`: follow the skill-quality audit steps from the internal `health-agentic-audit` skill (see `${CLAUDE_PLUGIN_ROOT}/skills/health-agentic-audit/SKILL.md` and its `REFERENCE.md`).
+For `--scope=agentic` or `all`: invoke the `health-plugin:health-agentic-audit` skill with the Skill tool the same way, passing `--verbose` when set.
 
 For `--scope=runtime` or `all`:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
 Parse `STATUS=`, `ISSUES:`, `CLEANUP_SUGGESTED=`, and the per-finding counts (`PROJECTS_DEAD=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `LEGACY_PROJECT_HISTORY_ENTRIES=`, `HISTORY_JSONL_BYTES=`, `CLEANUP_PERIOD_DAYS=`). `--history-warn-mb N` sets the `history.jsonl` WARN threshold (default 50). Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
@@ -108,10 +110,10 @@ The runtime audit is **read-only**: it prints suggested cleanups (`claude purge 
 For `--scope=usage` or `all`:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-usage.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-usage.sh --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `RETENTION_DAYS=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
+Parse `STATUS=`, `REASON=` (when present), `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `INVENTORY_SOURCE=`, `PLUGINS_ENABLED=`, `RETENTION_DAYS=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30). The inventory is read from `installed_plugins.json` + `enabledPlugins`, so only enabled plugins at their active version count.
 
 The usage audit is **read-only** and advisory (review candidates, not a delete list); it SKIPs on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it. Details: [references/audit-scopes.md](references/audit-scopes.md#usage-scope).
 
@@ -119,10 +121,10 @@ The usage audit is **read-only** and advisory (review candidates, not a delete l
 
 Print a consolidated report grouped by scope:
 
-1. **Environment** — plugins/settings/hooks/MCP status + counts, SessionStart smoke test, pre-commit validity, permissions coverage, marketplace enrollment
+1. **Environment** — plugins/settings/hooks/MCP status + counts, SessionStart smoke test, pre-commit validity, permissions coverage (tools found, tools missing an allow rule, unused project rules), marketplace enrollment
 2. **Registry** — orphaned projectPath entries, stale enabledPlugins keys, registry-vs-settings drift
 3. **Stack** — detected stack + relevant/irrelevant/missing plugin recommendations
-4. **Agentic** — skills missing optimisation tables, bare CLI commands, stale reviews
+4. **Agentic** — bare CLI commands missing compact/fail-fast/JSON flags, stale or missing `reviewed` dates (CLI-wrapper skills without an Agentic Optimizations table appear as INFO only)
 5. **Runtime** — `~/.claude.json` size, dead projects/githubRepoPaths, orphaned disabledMcpServers, duplicate MCP naming, legacy per-project history; `history.jsonl` size; effective `cleanupPeriodDays` (read-only — no `--fix` path)
 6. **Usage** — never-fired and dormant skills from session telemetry (read-only — no `--fix` path; SKIPs when history is insufficient)
 
@@ -139,12 +141,14 @@ If `--fix` is set:
 
    | Scope | Delegate to |
    |-------|-------------|
-   | `registry` | `bash "${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/fix-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)"` (pass `--dry-run` when set) |
-   | `stack` | Follow the `--fix` flow in `${CLAUDE_PLUGIN_ROOT}/skills/health-audit/SKILL.md` (Step 6) |
-   | `agentic` | Follow the `--fix` flow in `${CLAUDE_PLUGIN_ROOT}/skills/health-agentic-audit/SKILL.md` (Step 6) |
+   | `registry` | `bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/fix-registry.sh --home-dir "$HOME" --project-dir "$(pwd)"` (append `--dry-run` when set) |
+   | `stack` | Skill tool: `health-plugin:health-audit` with `--fix` (plus `--dry-run` when set); it runs its own Step 6 |
+   | `agentic` | Skill tool: `health-plugin:health-agentic-audit` with `--fix`; it runs its own Step 6 |
 
 3. Parse each script's output (`STATUS=`, `REMOVED_COUNT=`, `MESSAGE=`, `RESTART_REQUIRED=`) and report what changed.
 4. If any fix reports `RESTART_REQUIRED=true`, remind the user to restart Claude Code.
+
+Permissions coverage has no `--fix` path: report the missing rules and let the user decide which to add.
 
 ### Step 5: Verify
 
@@ -157,4 +161,3 @@ Per-scope invocations and quick manual checks: [references/command-reference.md]
 ## Known Issues
 
 Known symptoms and their fix paths: [references/known-issues.md](references/known-issues.md).
-

@@ -95,6 +95,16 @@ on:
       # test-tripwire's test-can-fail-section.sh pins the SKILL.md body (#3094),
       # which no entry above matches.
       - 'testing-plugin/skills/test-tripwire/SKILL.md'
+      # health-plugin/scripts/tests/test-{settings-configuration,health-agentic-audit,
+      # health-audit,health-check,registry}-skill(s).sh pin the skills' markdown
+      # (SKILL.md, REFERENCE.md, references/), the plugin README and docs/flow.md,
+      # which no entry above matches. test-health-check-skill.sh also scans every
+      # plugin's markdown for hidden /health: commands; that cross-plugin half runs
+      # in pre-commit (test-health-command-references) rather than firing this
+      # whole workflow on every markdown edit.
+      - 'health-plugin/skills/**/*.md'
+      - 'health-plugin/README.md'
+      - 'health-plugin/docs/**'
   push:
     branches: [main]
     paths:
@@ -123,6 +133,9 @@ on:
       - 'git-plugin/skills/git-merge-hazards/**'
       - '.claude/rules/gh-json-fields.md'
       - 'testing-plugin/skills/test-tripwire/SKILL.md'
+      - 'health-plugin/skills/**/*.md'
+      - 'health-plugin/README.md'
+      - 'health-plugin/docs/**'
       - '.github/workflows/github-workflow-auto-fix.yml'
       - '.github/workflows/plugin-pr-checks.yml'
 
