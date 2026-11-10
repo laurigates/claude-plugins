@@ -40,6 +40,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0024](0024-blueprint-work-order-model-invocable.md) | Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable (partially supersedes 0020) | Accepted | 2026-10 |
 | [0025](0025-visibility-gated-public-leak-nudge.md) | Gate Public-Repo Leaks at the Write, Keyed on the Destination's Visibility | Accepted | 2026-10 |
 | [0026](0026-commands-migrated-to-skills.md) | Commands Migrated to Skills (supersedes 0007, partially 0003) | Accepted | 2026-02 |
+| [0027](0027-id-registry-single-engine.md) | One Engine for the Blueprint ID Registry; Deterministic Tasks Keep No Run State | Accepted | 2026-11 |
 
 ## Categories
 
@@ -66,6 +67,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0012: Blog Plugin for Project Documentation
 - ADR-0020: Blueprint Autonomy Levels (partially superseded by ADR-0024)
 - ADR-0024: Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable
+- ADR-0027: One Engine for the Blueprint ID Registry; Deterministic Tasks Keep No Run State
 
 ### CI/CD & Infrastructure
 - ADR-0014: Reusable GitHub Workflows in Plugin Repository (Superseded)
