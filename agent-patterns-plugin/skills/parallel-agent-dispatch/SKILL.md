@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-11-07
+modified: 2026-11-10
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -407,6 +407,7 @@ also dodges the burst rate limit), checking for an already-open PR first
 - [ ] Working tree clean; no conflicting worktrees
 - [ ] Each agent has unique branch name and exclusive file scope
 - [ ] Each prompt includes file/read/output budgets
+- [ ] Each prompt names a per-agent scratch location, never under a fixed name at the scratchpad root (#3558; worktree-hazards.md)
 - [ ] Each prompt includes the Return Contract schema verbatim
 - [ ] Each prompt mandates the loud-failure contract (no one-word surrenders)
 - [ ] Agents authorized to push their own commits (unless sandbox/dependency exception)

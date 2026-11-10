@@ -166,6 +166,17 @@ your commits and only your paths.
 > the other a verification `grep` that would have cried wolf. Neither shipped
 > contaminated, but only because they were talking to each other.
 
+### Scratch files collide across worktrees (#3558)
+
+Worktree isolation does not separate scratch files: agents dispatched with
+`isolation: 'worktree'` still share the session scratchpad, so parallel agents
+writing fixed names there (`commitmsg.txt`, `mutate.sh`, `merge-msg.txt`)
+overwrite each other's files, and an agent can commit a peer's message or
+report results from a script a peer has replaced. Brief each agent to write
+scripts, commit messages and PR bodies under `tmp/` in its own worktree
+(git-ignored), or under a scratchpad subdirectory named for its unit — never
+under a fixed name at the scratchpad root.
+
 ## Deleted worktree kills the shell, not the agent (#2372)
 
 An isolation worktree removed **while its agent is still running** takes the
