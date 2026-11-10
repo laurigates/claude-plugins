@@ -1,29 +1,31 @@
 ---
 created: 2026-02-04
-modified: 2026-11-06
+modified: 2026-11-10
 compatibility: claude-code
-reviewed: 2026-06-03
+reviewed: 2026-11-10
 user-invocable: false
-description: "Diagnose and fix Claude Code plugin registry corruption — orphaned entries, stale keys, scope conflicts. Use when seeing plugin-already-installed errors or registry drift."
-allowed-tools: Bash(bash *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
+description: "Run check-registry.sh and fix-registry.sh: find orphaned projectPath rows and stale enabledPlugins keys, back up, remove. Use when seeing plugin-already-installed errors or registry drift."
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-registry.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh *), Bash(claude plugin list *), Bash(claude plugin install *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--plugin <name>]"
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"
 name: health-plugins
 ---
 
-# /health:plugins
+# Orphaned-Entry Diagnostic and Repair Scripts
 
-Diagnose and fix issues with the Claude Code plugin registry. This command specifically addresses issue #14202 where project-scoped plugins incorrectly appear as globally installed.
+Run the bundled registry diagnostic and repair scripts: find orphaned and stale entries, remove them with a backup, and install a plugin into the current project. For what the registry holds, how scopes resolve, and the #14202 background, use `health-plugin:plugin-registry`.
+
+This skill is model-invoked only (`user-invocable: false`). The user-facing entry point is `/health:check --scope=registry`, with `--fix` to apply repairs; it runs the same bundled scripts.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Fixing plugin registry corruption (issue #14202) | Comprehensive health check (use `/health:check`) |
-| Diagnosing project-scope vs global plugin issues | Auditing plugins for relevance (use `/health:audit`) |
-| Cleaning up orphaned plugin entries | Settings validation only needed |
-| Resolving "plugin already installed" errors | Agentic optimization audit (use `/health:agentic-audit`) |
-| Manually inspecting registry JSON | Just viewing installed plugins (read registry file) |
+| Running the orphan/stale-entry diagnostic or its fix script | Comprehensive health check (`/health:check`) |
+| Diagnosing project-scope vs global plugin issues | Auditing plugins for relevance (`health-plugin:health-audit`) |
+| Cleaning up orphaned plugin entries | Settings validation only (`health-plugin:settings-configuration`) |
+| Resolving "plugin already installed" errors | Agentic optimization audit (`health-plugin:health-agentic-audit`) |
+| A project runs an older plugin version than the user install | Registry structure and field reference (`health-plugin:plugin-registry`) |
 
 ## Context
 
@@ -31,16 +33,6 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 - Current project has plugins: !`find . -maxdepth 2 -path '*/.claude-plugin/plugin.json' -type f`
 - Project settings exists: !`find . -maxdepth 2 -path './.claude/settings.json' -type f`
 - Project plugins dir: !`find . -maxdepth 1 -type d -name '.claude-plugin'`
-
-## Background: Issue #14202
-
-When a plugin is installed with `--scope project` in one project, other projects incorrectly show the plugin as "(installed)" in the Marketplaces view. This happens because:
-
-1. The plugin registry at `~/.claude/plugins/installed_plugins.json` stores `projectPath` for project-scoped installs
-2. The Marketplaces view only checks if a plugin key exists, not whether it's installed for the *current* project
-3. The install command refuses to install because it thinks the plugin already exists
-
-**Impact**: Users cannot install the same plugin across multiple projects with project-scope isolation.
 
 ## Parameters
 
@@ -54,12 +46,12 @@ Parse these from `$ARGUMENTS`:
 
 ## Execution
 
-Execute this plugin registry diagnostic by running the scripts below. Pass `--plugin <name>` through from `$ARGUMENTS` when specified.
+Execute this plugin registry diagnostic with the bundled scripts. Both default `--home-dir` to `$HOME` and `--project-dir` to the current directory, so pass only the flags taken from `$ARGUMENTS`. Run each script exactly as spelled in the steps, so the `allowed-tools` rule pre-approves it.
 
 ### Step 1: Diagnose the registry
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)" [--plugin <name>] [--verbose]
+bash ${CLAUDE_SKILL_DIR}/scripts/check-registry.sh [--plugin <name>] [--verbose]
 ```
 
 Parse the `STATUS=`, `PLUGIN_COUNT=`, `ORPHANED_ENTRIES=`, and `ISSUES:` lines from output. The `=== PLUGINS ===` section lists each installed plugin with scope, version, source, and projectPath.
@@ -83,7 +75,7 @@ If `$ARGUMENTS` contains `--fix`:
 2. Run the fix script:
 
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)" [--plugin <name>] [--dry-run]
+   bash ${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh [--plugin <name>] [--dry-run]
    ```
 
    The script creates a timestamped backup at `~/.claude/plugins/installed_plugins.json.backup.<UTC-timestamp>` before modifying the registry, validates the resulting JSON, and aborts safely on any error.
@@ -92,72 +84,35 @@ If `$ARGUMENTS` contains `--fix`:
 
 ### Step 4: Handle "plugin needed in current project"
 
-When a plugin exists in the registry under a different `projectPath` and the user wants it available in the current project, use `AskUserQuestion` to confirm, then:
+When a plugin exists in the registry under a different `projectPath` and the user wants it in the current project:
 
-1. Add a new entry to `.claude/settings.json` under `enabledPlugins` using the `Edit` tool.
-2. Remind the user to run `/plugin install` via the Claude Code UI for proper registry registration.
+1. Confirm with `AskUserQuestion`, naming the scope: `project` records the plugin in the committed `.claude/settings.json` for everyone who clones the repo; `local` records it in `.claude/settings.local.json` for this user only; `user` covers every project on this machine.
+2. Run the install from the project directory with the chosen scope:
+
+   ```bash
+   claude plugin install <plugin>@<marketplace> --scope project
+   ```
+
+3. Verify the side effect, not the message: `claude plugin list --json` must show a row for the plugin whose `scope` is the chosen one and whose `projectPath` is the current directory (for `project` and `local`).
+4. If the install reports the plugin as already installed and no such row exists, that is the upstream #14202 symptom (background in `health-plugin:plugin-registry`). Report it, and point to the last-resort registry edit in `health-plugin:plugin-registry` (§ Last resort: edit the registry by hand) rather than editing the registry from this skill.
 
 ### Step 5: Verify the fix
 
-After applying fixes, re-run Step 1 and confirm the issue count has dropped. Remind the user to restart Claude Code for changes to take effect.
-
-## Registry Structure Reference
-
-```json
-{
-  "version": 2,
-  "plugins": {
-    "plugin-name@marketplace-name": [
-      {
-        "scope": "project",
-        "projectPath": "/path/to/project",
-        "installPath": "~/.claude/plugins/cache/marketplace/plugin-name/1.0.0",
-        "version": "1.0.0",
-        "installedAt": "2024-01-15T10:30:00Z",
-        "lastUpdated": "2024-01-15T10:30:00Z",
-        "gitCommitSha": "abc123"
-      }
-    ]
-  }
-}
-```
-
-**Scope types:**
-- `"scope": "project"` — has `projectPath`, only active in that project
-- `"scope": "user"` — no `projectPath`, active globally
-
-## Manual Workaround
-
-If automatic fix fails, users can manually edit `~/.claude/plugins/installed_plugins.json`:
-
-1. Open the file in an editor
-2. Find the plugin entry
-3. Either:
-   - Remove `projectPath` to make it global
-   - Change `projectPath` to current project path
-   - Add a new entry with different key for current project
-4. Save and restart Claude Code
+After applying fixes, re-run Step 1 and confirm the issue count has dropped. Tell the user to run `/reload-plugins` or start a new session for the changes to load.
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Plugin registry diagnostics | `/health:plugins` |
-| Fix registry issues | `/health:plugins --fix` |
-| Dry-run mode | `/health:plugins --dry-run` |
-| Diagnose only (script) | `bash "${CLAUDE_SKILL_DIR}/scripts/check-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)"` |
-| Fix only (script) | `bash "${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)"` |
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--fix` | Apply fixes (with confirmation prompts) |
-| `--dry-run` | Show what would be fixed without changes |
-| `--plugin <name>` | Target a specific plugin |
+| Registry diagnostics (user-facing) | `/health:check --scope=registry` |
+| Fix registry issues (user-facing) | `/health:check --scope=registry --fix` |
+| Dry-run (user-facing) | `/health:check --scope=registry --fix --dry-run` |
+| Diagnose only (script) | `bash ${CLAUDE_SKILL_DIR}/scripts/check-registry.sh` |
+| Fix only (script) | `bash ${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh` |
+| Installs per scope | `claude plugin list --json` |
 
 ## See Also
 
-- `/health:check` - Full diagnostic scan
-- `/health:settings-configuration` - Settings hierarchy and permission patterns
-- [Issue #14202](https://github.com/anthropics/claude-code/issues/14202) - Upstream bug report
+- `/health:check` — full diagnostic scan; `--scope=registry` runs this skill's scripts
+- `health-plugin:plugin-registry` — registry structure, install scopes, version lag, issue #14202, last-resort manual edits
+- `health-plugin:settings-configuration` — settings hierarchy and permission patterns

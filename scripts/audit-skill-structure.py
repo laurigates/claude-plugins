@@ -4,7 +4,7 @@ Audit SKILL.md files for overlap, split-pressure, and consolidation candidates.
 
 Complements existing audits — `plugin-compliance-check.sh` owns frontmatter,
 size, and body corruption; `audit-skill-descriptions.py` owns trigger-phrase
-presence; `/health:agentic-audit` owns CLI-flag compactness. This audit fills
+presence; `health-plugin:health-agentic-audit` owns CLI-flag compactness. This audit fills
 the remaining gap: **skill-to-skill** relationships.
 
 Outputs four artefacts under ``tmp/skill-audit/``:

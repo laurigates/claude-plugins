@@ -14,7 +14,7 @@ flowchart TD
     R --> SCOPE{scope?}
     SCOPE -->|registry<br/>or all| REG[check-registry.sh<br/>• orphaned projectPath<br/>• stale enabledPlugins<br/>• marketplace drift]
     SCOPE -->|stack<br/>or all| STK[health-audit<br/>enabled plugins vs.<br/>project tech stack]
-    SCOPE -->|agentic<br/>or all| AGT[health-agentic-audit<br/>skill optimisation<br/>compliance]
+    SCOPE -->|agentic<br/>or all| AGT[health-agentic-audit<br/>bare CLI commands<br/>stale reviews]
     SCOPE -->|runtime<br/>or all| RUN[check-runtime.sh<br/>~/.claude.json bloat,<br/>history.jsonl, retention<br/>read-only]
     SCOPE -->|usage<br/>or all| USG[check-usage.sh<br/>never-fired / dormant skills<br/>read-only · local-leaning]
 
@@ -27,8 +27,8 @@ flowchart TD
     ASK --> DELEGATE{selected scope}
 
     DELEGATE -->|registry| FR[fix-registry.sh<br/>backup settings.json<br/>prune orphans<br/>jq del enabledPlugins<br/>RESTART_REQUIRED=true]
-    DELEGATE -->|stack| FS[health-audit --fix<br/>disable irrelevant<br/>install missing]
-    DELEGATE -->|agentic| FA[health-agentic-audit --fix<br/>add optimisation tables<br/>update reviewed dates]
+    DELEGATE -->|stack| FS[health-audit --fix<br/>enable relevant<br/>remove irrelevant keys]
+    DELEGATE -->|agentic| FA[health-agentic-audit --fix<br/>apply named flag fixes<br/>to bare CLI commands<br/>update modified dates]
 
     FR & FS & FA --> VER[Step 5: Verify<br/>re-run checks]
     VER --> DONE

@@ -2,36 +2,28 @@
 name: plugin-registry
 description: "Claude Code plugin registry structure, install scopes, and version lag. Use when troubleshooting plugin problems, a stale plugin version in one project, or fixing registry entries."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(jq *), Bash(cp ~/.claude/plugins/installed_plugins.json *), Bash(claude plugin list *), Bash(bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/check-registry.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/fix-registry.sh *), Read, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-11-02
+modified: 2026-11-10
 compatibility: claude-code
-reviewed: 2026-09-17
+reviewed: 2026-11-10
 ---
 
 # Claude Code Plugin Registry
-
-Expert knowledge for understanding and troubleshooting the Claude Code plugin registry.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use something else when... |
 |------------------------|---------------------------|
-| Plugin shows "installed" but isn't working | Setting up new plugins (use `/configure:claude-plugins`) |
-| Need to understand plugin scopes | Configuring plugin permissions (use settings-configuration skill) |
-| Fixing orphaned registry entries | Creating workflows with plugins (use github-actions-plugin) |
+| Plugin shows "installed" but isn't working | Setting up new plugins (`configure-plugin:configure-claude-plugins`) |
+| Need to understand plugin scopes | Configuring plugin permissions (`health-plugin:settings-configuration`) |
+| Fixing orphaned registry entries | Running the registry diagnostic and fix (`health-plugin:health-plugins`; for the user, `/health:check --scope=registry`) |
 | Debugging installation failures | |
 | A declared capability (LSP server, hook, command) silently never loads — see [REFERENCE.md](REFERENCE.md) § A capability declared in a registry is not proof it reached the installed copy | |
 
 ## Registry Location
 
-The plugin registry is stored at:
-
-```
-~/.claude/plugins/installed_plugins.json
-```
-
-This file tracks all installed plugins across all projects.
+`~/.claude/plugins/installed_plugins.json` (the root moves with `CLAUDE_CODE_PLUGIN_CACHE_DIR`) records every install across all projects; plugin files live under `cache/`. Official reference: [plugin loading](https://code.claude.com/docs/en/plugins/loading), "Find plugins on disk".
 
 ## Registry Structure (v2)
 
@@ -54,91 +46,38 @@ This file tracks all installed plugins across all projects.
 }
 ```
 
-Each plugin key maps to an **array** of installations (supporting multiple scopes).
+Each plugin key maps to an **array** of installations (supporting multiple scopes). Entries are version pointers into the shared cache, not plugin copies ([REFERENCE.md](REFERENCE.md) § The registry holds version pointers, not plugin copies).
 
-**The registry holds version pointers, not plugin copies.** Every entry's
-`installPath` — at any scope — resolves under
-`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, and nothing is
-written inside the project. Measured 2026-09-13 on one machine: all 44
-project-scope and all 50 user-scope entries pointed into that one cache. So an
-entry is a claim about *which cached version this scope uses*, and two entries
-for one plugin mean two version directories sitting side by side.
-
-### Field Reference
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `scope` | Yes | `"project"` or `"user"` (global) |
-| `projectPath` | project only | Directory where plugin is active |
-| `installPath` | Yes | Cache path for installed plugin files |
-| `version` | Yes | Installed version |
-| `installedAt` | Yes | ISO timestamp of installation |
-| `lastUpdated` | Yes | ISO timestamp of last update |
-| `gitCommitSha` | Yes | Git commit of installed version |
+`scope` is `user`, `project` or `local`; `project` and `local` entries also carry `projectPath`. The per-field table, re-read from a live registry, is in [REFERENCE.md](REFERENCE.md) § Field reference.
 
 ## Installation Scopes
 
-### User Scope (global, default)
+`--scope` names the settings file whose `enabledPlugins` the command writes:
 
-```bash
-/plugin install my-plugin@marketplace
-```
+| Scope | Command | Settings file | Reaches |
+|-------|---------|---------------|---------|
+| `user` (default) | `claude plugin install my-plugin@marketplace` | `~/.claude/settings.json` | You, in every project |
+| `project` | `claude plugin install my-plugin@marketplace --scope project` | `.claude/settings.json` | Everyone who clones the repo; each person also installs in their own clone |
+| `local` | `claude plugin install my-plugin@marketplace --scope local` | `.claude/settings.local.json` | You, in this repo only |
 
-- `"scope": "user"` in registry entry
-- No `projectPath` field
-- Available in all projects
+When scopes disagree, `local` overrides `project`, which overrides `user`, and managed settings override everything (official plugin loading reference, "Find where a plugin is enabled").
 
-### Project Scope
-
-```bash
-/plugin install my-plugin@marketplace --scope project
-```
-
-- `"scope": "project"` in registry entry
-- Has `projectPath` set to installation directory
-- Should only be active in that project
-- **Bug #14202**: Still shows as "installed" in other projects
-
-A project entry is also created **without anyone running an install command**.
-At session start Claude Code logs `Syncing installed_plugins.json with
-enabledPlugins from all settings.json files` and then one `Added
-<plugin>@<marketplace> installation for scope project (<projectPath>)` per
-plugin the project's committed `.claude/settings.json` enables. The version
-recorded is whatever is current at that moment, and it does not follow later
-updates to the user-scope install — so the entry starts correct and drifts.
-See "Which install loads" below for the consequence.
+A project entry can also appear with no install command run: a session-start sync was observed adding one per plugin the committed `.claude/settings.json` enables, recorded at the then-current version ([REFERENCE.md](REFERENCE.md) § Session-start sync creates project entries).
 
 ## Known Issue: #14202
 
-**Problem**: Project-scoped plugins incorrectly appear as globally installed.
+[anthropics/claude-code#14202](https://github.com/anthropics/claude-code/issues/14202) is **open** as of 2026-10-30: after a `--scope project` install in one project, other projects were reported (on 2.0.70) to show the plugin as "(installed)" and refuse to install it, while it does not load there. Recent comments name no version; details in [REFERENCE.md](REFERENCE.md) § Known issue #14202.
 
-**Root Cause**: Inconsistent `projectPath` checking:
-
-| Operation | Checks projectPath? | Result |
-|-----------|---------------------|--------|
-| Marketplaces "(installed)" | No | Shows installed everywhere |
-| `/plugin install` | No | Refuses to install |
-| Installed tab listing | Yes | Correctly filtered |
-
-**Symptoms**:
-1. Plugin shows "(installed)" checkmark in Marketplaces view
-2. `/plugin install` says "already installed"
-3. Plugin doesn't appear in Installed tab for current project
-4. Plugin doesn't actually work in current project
-
-**Workaround**: Manually edit the registry to add an entry for the current project.
+An "already installed (scope: project)" message exits `0`, so check `claude plugin list --json` for a row with your `projectPath`. Try `--scope local` (not verified to escape #14202) before § Last resort: edit the registry by hand.
 
 ## Which Install Loads, and Why a Project Can Run an Old Version
 
 When a plugin has both a project entry for the current directory and a user
 entry, **the project entry decides which cached version loads there**, and it
-does not follow the user install's updates — so a project can quietly run a
-version behind the rest of the machine, missing skills that a newer version
-added.
-
-`claude plugin details` reports the **user** version from inside such a project
-and so cannot detect this; `claude plugin list --json` reports each row's
-`scope` but not which row wins. The reliable read is the debug log:
+does not follow the user install's updates, so a project can run a version
+behind the rest of the machine. `claude plugin details` reports the **user**
+version from inside such a project; `claude plugin list --json` reports each
+row's `scope` but not which row wins. The reliable read is the debug log:
 
 ```bash
 CLAUDECODE= claude -p "reply ok" --debug plugins --debug-file /tmp/p.log
@@ -149,110 +88,59 @@ Then read its `skillsPath:` lines for the version actually loaded.
 `/health:check` runs `check-plugin-scope-lag.sh`, which lists every project-scope
 entry below its user-scope version as a `scope_lag` WARN.
 
-Removing a lagging row is a **repair, not a fix** — the next session in that
-project re-creates it, so the lag returns after the next release. Measured on
-one machine: a sweep removing 462 entries left zero lagging on 2026-09-13, and
-19 had returned by 2026-09-17.
-
-For the measured evidence, the query that finds lagging rows, the
-uninstall-rewrites-committed-settings hazard and its snapshot-restore procedure,
-and the upstream report, see [REFERENCE.md](REFERENCE.md).
-
-## Manual Registry Operations
-
-### View Registry
-
-```bash
-jq . ~/.claude/plugins/installed_plugins.json
-```
-
-### List All Plugins
-
-```bash
-jq -r '.plugins | keys[]' ~/.claude/plugins/installed_plugins.json
-```
-
-### Find Project-Scoped Plugins
-
-```bash
-jq '.plugins | to_entries[] | .value[] | select(.scope == "project") | {projectPath, version}' ~/.claude/plugins/installed_plugins.json
-```
-
-### Find Orphaned Entries
-
-Use the Read tool to read `~/.claude/plugins/installed_plugins.json`, then check each `projectPath` with `test -d`.
-
-### Backup Registry
-
-```bash
-cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.json.backup
-```
+Removing a lagging row is a **repair, not a fix**: the next session in that project re-creates it. The measured evidence, the lag query, and the uninstall-rewrites-committed-settings hazard are in [REFERENCE.md](REFERENCE.md).
 
 ## Fixing Registry Issues
 
-### Remove Orphaned Entry
+Find orphaned entries (a `projectPath` whose directory is gone) with the diagnostic, not by testing each path by hand:
 
-1. Read `~/.claude/plugins/installed_plugins.json` with the Read tool
-2. Back up with `cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.json.backup`
-3. Remove the orphaned entry from the `plugins` object
-4. Write the updated JSON with the Write tool
+```bash
+bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/check-registry.sh --verbose
+```
 
-### Add Entry for Current Project
+Prefer the CLI and the bundled fix script, and confirm with the user before any write.
 
-1. Read the registry with Read tool
-2. Add a new entry to the plugin's array with `scope: "project"` and current `projectPath`
-3. Write the updated JSON with Write tool
+| Task | Use |
+|------|-----|
+| Remove orphaned entries | `bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/fix-registry.sh [--plugin <name>] [--dry-run]` (timestamped backup, JSON validation, aborts on error) |
+| Plugin needed in this project | `claude plugin install <plugin>@<marketplace> --scope project` (or `--scope local`), run from the project |
+| Make a project-only plugin global | `claude plugin install <plugin>@<marketplace>`, then `claude plugin uninstall <plugin>@<marketplace> --scope project` from the project |
+| Remove a lagging project row | `claude plugin uninstall <plugin>@<marketplace> --scope project`, with the snapshot-restore steps in [REFERENCE.md](REFERENCE.md) § Removing a lagging row rewrites the project's committed settings |
 
-### Convert Project-Scoped to User (Global)
+A project-scope uninstall also rewrites the committed `.claude/settings.json`. Install and uninstall are not pre-approved here, so each goes through the normal permission flow. Verify by re-reading the registry or `claude plugin list --json`; an exit code alone does not prove the row changed.
 
-1. Read the registry with Read tool
-2. Change `"scope": "project"` to `"scope": "user"` and remove `projectPath`
-3. Write the updated JSON with Write tool
+### Last resort: edit the registry by hand
+
+Only when neither the CLI nor `fix-registry.sh` can make the change, such as a row whose `projectPath` no longer exists for a case the script does not cover, or the #14202 refusal with no other scope working:
+
+1. Back up first, every time:
+
+   ```bash
+   cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.json.backup
+   ```
+
+2. Read the file, then make the smallest change with the Edit tool: drop one array element, or add one element copied from an existing entry with `scope` and `projectPath` changed.
+3. Validate: `jq empty ~/.claude/plugins/installed_plugins.json` must exit 0. If it does not, restore the backup.
+4. Run `/reload-plugins` or start a new session, then re-run the diagnostic.
 
 ## Project Settings Integration
 
-Project-scoped plugins also need entries in `.claude/settings.json`.
-`enabledPlugins` is an **object** mapping `plugin@marketplace` to a boolean —
-not an array of names:
-
-```json
-{
-  "enabledPlugins": {
-    "plugin-name@marketplace": true
-  }
-}
-```
-
-Without this, even a correctly registered project-scoped plugin won't load. And
-because session start syncs the registry from these keys, every plugin enabled
-here also gains a project-scope registry row.
+Project-scoped plugins also need a key in `.claude/settings.json`: `enabledPlugins` is an **object** mapping `plugin@marketplace` to a boolean (`{"enabledPlugins": {"plugin-name@marketplace": true}}`), not an array of names. `claude plugin install --scope project` writes this key itself. Without it, even a correctly registered project-scoped plugin won't load.
 
 ## Troubleshooting Checklist
 
-1. **Plugin shows installed but doesn't work**
-   - Check if `projectPath` matches current directory
-   - Check `.claude/settings.json` for `enabledPlugins`
-   - Run `/health:plugins` for diagnosis
+1. **Plugin shows installed but doesn't work**: check that `projectPath` matches the current directory and `.claude/settings.json` has the `enabledPlugins` key, then run the registry diagnostic (`health-plugin:health-plugins`; for the user, `/health:check --scope=registry`)
 
-2. **Can't install plugin (already installed)**
-   - Check registry for existing entry
-   - Check if entry has different `projectPath`
-   - Use `/health:plugins --fix` or manual edit
+2. **Can't install plugin (already installed)**: look for an existing entry with a different `projectPath`; try `--scope local`, then § Last resort: edit the registry by hand
 
-3. **Plugin works in one project but not another**
-   - Likely a project-scoped plugin
-   - Need separate registry entry per project
-   - Or convert to global scope
+3. **Plugin works in one project but not another**: likely project-scoped; install it in the other project, or at user scope
 
 4. **A skill or command is missing in one project only, or behaves as an older version**
-   - Suspect a project entry lagging the user install — run the `jq` query above
+   - Suspect a project entry lagging the user install — run the lag query in [REFERENCE.md](REFERENCE.md) § Find rows that lag their user install
    - Confirm with `--debug plugins` and read the `skillsPath:` version
    - `claude plugin details` reports the user version here and will mislead you
 
-5. **Registry file is corrupted**
-   - Restore from backup if available
-   - Or delete and reinstall plugins
-   - Location: `~/.claude/plugins/installed_plugins.json`
+5. **Registry file is corrupted**: Claude Code keeps a dated `installed_plugins.unreadable.*.kept` copy when it rebuilds an unreadable registry; restore a backup, or reinstall with `claude plugin install`
 
 ## Agentic Optimizations
 
@@ -261,23 +149,8 @@ here also gains a project-scope registry row.
 | View registry | `jq -c . ~/.claude/plugins/installed_plugins.json` |
 | List plugins | `jq -r '.plugins \| keys[]' ~/.claude/plugins/installed_plugins.json` |
 | Check specific | `jq '.plugins."name@market"' ~/.claude/plugins/installed_plugins.json` |
-| Project plugins | `jq '.plugins \| to_entries[] \| .value[] \| select(.scope=="project")' ~/.claude/plugins/installed_plugins.json` |
+| Project-scoped rows | `jq '.plugins \| to_entries[] \| .value[] \| select(.scope=="project") \| {projectPath, version}' ~/.claude/plugins/installed_plugins.json` |
+| Installs per scope | `claude plugin list --json` |
+| Orphan diagnostic | `bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/check-registry.sh` |
 
-## Quick Reference
-
-### Registry Path
-```
-~/.claude/plugins/installed_plugins.json
-```
-
-### Key Format
-```
-{plugin-name}@{marketplace-name}
-```
-
-### Scope Indicator
-- `"scope": "project"` + `projectPath` → Project-scoped
-- `"scope": "user"` → Global (user-wide)
-
-### After Editing
-Always restart Claude Code for registry changes to take effect.
+Keys are `{plugin-name}@{marketplace-name}`. After any registry change, run `/reload-plugins` or start a new session for it to load.

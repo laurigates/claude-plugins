@@ -2,7 +2,7 @@
 id: ADR-0018
 date: 2026-06-16
 created: 2026-06-16
-modified: 2026-11-02
+modified: 2026-11-10
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
@@ -67,7 +67,9 @@ every other tool call appears the same way with its own `.name`. A `date`/recenc
 signal is available from the per-event timestamps and the file mtime. This is
 enough to compute, with `jq` over the JSONL set:
 
-- **Never-fired**: enabled skills (from the plugin manifests) that appear in
+- **Never-fired**: enabled skills (plugins enabled in `enabledPlugins` and
+  installed for the project per `~/.claude/plugins/installed_plugins.json`,
+  enumerated at each install record's `installPath` only) that appear in
   **zero** `tool_use name=="Skill"` events in the window.
 - **Dormant**: skills whose most-recent invocation is older than N days.
 - **Hot/cold ranking**: invocation counts per skill, per tool.
@@ -135,7 +137,11 @@ AGENTS_ENABLED=20
 AGENTS_FIRED=12
 AGENTS_NEVER_FIRED=8
 AGENTS_DORMANT=0
+SCHEMA_DRIFT_SUSPECTED=false
+INVENTORY_SOURCE=registry
+PLUGINS_ENABLED=48
 STATUS=WARN
+REASON=never_fired: enabled skills with zero invocations in window (use --verbose to list) (+2 more)
 ISSUE_COUNT=3
 ISSUES:
   - SEVERITY=WARN TYPE=never_fired COUNT=147 MSG=enabled skills with zero invocations in window (use --verbose to list)
@@ -146,7 +152,9 @@ ISSUES:
 
 | Behaviour | Rule |
 |---|---|
-| Flags | `--home-dir`, `--project-dir`, `--window-days N` (default 30), `--verbose` |
+| Flags | `--home-dir`, `--project-dir`, `--window-days N` (default 30), `--plugins-dir <path>`, `--skills-dir <path>`, `--min-transcripts N`, `--verbose` |
+| Inventory | Registry by default (`INVENTORY_SOURCE=registry`): the install record that applies to `--project-dir`, dropped when `enabledPlugins` sets it `false`; `--skills-dir` is the legacy filesystem scan, deduplicated by name |
+| Matching | Exact on `<plugin>:<name>`, the bare name, and `<ns>:<name>` / `<ns>:<rest>`; no substring matching |
 | Empty / no history | `HISTORY_AVAILABLE=false`, `STATUS=SKIP`, `ISSUE_COUNT=0`, exit 0 — never report all-never-fired on a fresh clone |
 | Remote sandbox | Same `SKIP` path triggers naturally (fresh clone → 1 transcript) — no `CLAUDE_CODE_REMOTE` branch needed, but documented |
 | Parallel-safe | `jq` over the JSONL set returns `[]`/0 and exits 0 on empty (`.claude/rules/parallel-safe-queries.md`) |
@@ -188,7 +196,8 @@ This mirrors how `--scope=runtime` only *suggests* `jq` cleanups.
 | Transcript schema drifts; parser silently returns zero | Format sentinel: if `TRANSCRIPTS_SCANNED>0` but **all** tool counts are 0, emit `STATUS=WARN TYPE=schema_drift` instead of "all never-fired" |
 | "Never-fired" misread as "delete me" | Report frames it as review candidates; no `--fix` path |
 | Auto-invoked (non-`/`) skills not captured if they register differently | Pilot validates capture against a known-invoked skill before trusting counts; documented as a known limitation if partial |
-| `jq` over hundreds of transcripts is slow | Window-bound by mtime before parsing; prune `.claude/worktrees/` |
+| `jq` over hundreds of transcripts is slow | One batched `stat` plus a parallel `jq -R` stream joined by one `awk` (1,634 transcripts: 117 s before the change, 16–22 s after, measured 2026-11-10 on one machine); worktree clones pruned |
+| A recursive scan of the plugin cache counts every cached version and disabled plugins (5,756 enabled skills reported against 456 actually enabled, measured 2026-11-10) | Inventory from `installed_plugins.json` + `enabledPlugins`; regression cases 8–15 in `test-check-usage.sh` |
 
 ### Follow-up (explicitly not in this ADR)
 

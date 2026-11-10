@@ -1077,6 +1077,31 @@ repos:
         language: system
         files: '^scripts/(check-loop-integrity\.sh|tests/test-check-loop-integrity\.sh)$'
         pass_filenames: false
+      # The health-plugin skill guards (test-settings-configuration-skill.sh,
+      # test-health-agentic-audit-skill.sh, test-health-audit-skill.sh,
+      # test-health-check-skill.sh, test-registry-skills.sh) pin SKILL.md /
+      # REFERENCE.md text, README.md and docs/flow.md, so an edit to the markdown
+      # alone must run them locally. The skill-script suites
+      # (skills/*/scripts/tests: check-hooks, check-usage,
+      # check-permissions-coverage, …) run on an edit to the script they test,
+      # matching CI's test-skill-scripts.yml.
+      - id: test-health-plugin-skill-guards
+        name: health-plugin skill guards and skill-script suites
+        entry: bash ./scripts/run-skill-script-tests.sh --only 'health-plugin/scripts/tests/test-*.sh' --only 'health-plugin/skills/*/scripts/tests/test-*.sh'
+        language: system
+        files: '^health-plugin/(skills/.*\.(md|sh)|scripts/.*\.(sh|py)|hooks/.*\.sh|README\.md|docs/.*\.md)$'
+        pass_filenames: false
+      # test-health-check-skill.sh invariant 3 scans every plugin's markdown for a
+      # `/health:<name>` citation of a user-invocable:false skill, so markdown in
+      # any plugin can break it. It runs in under a second; the full suite above
+      # (about 50 s) stays scoped to health-plugin.
+      - id: test-health-command-references
+        name: no plugin cites a hidden /health:<name> command
+        entry: bash ./health-plugin/scripts/tests/test-health-check-skill.sh
+        language: system
+        files: '^[a-z0-9-]+-plugin/.*\.md$'
+        exclude: '(^|/)CHANGELOG\.md$'
+        pass_filenames: false
       - id: check-routine-prompt
         name: checked-in Routine prompts keep their anchor/marker/no-silence invariants (docs/routines)
         entry: bash ./scripts/check-routine-prompt.sh --strict

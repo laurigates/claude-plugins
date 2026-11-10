@@ -93,13 +93,6 @@
   },
   {
    "kind": "review_staleness",
-   "path": "health-plugin/skills/settings-configuration/SKILL.md",
-   "hash": "821b0c1222270c3d",
-   "reason": "Body changed by 4 line(s) since the review on 2026-02-04, all of it mechanical: retired Serena and detect-secrets entries dropped from an example allowlist. The reviewed content is otherwise intact.",
-   "finding": "review_staleness: settings-configuration changed 164d after its declared reviewed:2026-02-04"
-  },
-  {
-   "kind": "review_staleness",
    "path": "migration-patterns-plugin/skills/shadow-mode/SKILL.md",
    "hash": "10cf640a4a46d6b6",
    "reason": "Body byte-identical to the revision reviewed on 2026-02-18; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",

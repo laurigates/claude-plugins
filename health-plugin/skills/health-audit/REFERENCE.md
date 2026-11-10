@@ -47,6 +47,50 @@
 | agents-plugin | Agent development context |
 | project-plugin | Project management needs |
 
+## enabledPlugins Shape
+
+`enabledPlugins` is an object keyed by `plugin-name@marketplace-name`, each value a boolean ([settings reference](https://code.claude.com/docs/en/settings-reference#enabledplugins)):
+
+```json
+{
+  "enabledPlugins": {
+    "python-plugin@laurigates-claude-plugins": true,
+    "terraform-plugin@laurigates-claude-plugins": false
+  }
+}
+```
+
+| Value | Meaning |
+|-------|---------|
+| `true` | Enabled at this scope |
+| `false` | Disabled at this scope; overrides a `true` at a lower-precedence scope |
+| no entry | Falls back to the next scope, then to the plugin's `defaultEnabled` |
+
+Precedence: managed, then local (`.claude/settings.local.json`), then project (`.claude/settings.json`), then user (`~/.claude/settings.json`). `scripts/enabled-plugins.sh` reads and writes this shape; read names with `to_entries[] | select(.value == true) | .key`, never by iterating the values.
+
+## Plugin List JSON
+
+`claude plugin list --json --available` (Claude Code 2.1.322; `--available` requires `--json`) prints:
+
+```json
+{
+  "installed": [
+    {"id": "python-plugin@laurigates-claude-plugins", "version": "1.2.3", "scope": "user", "enabled": true}
+  ],
+  "available": [
+    {"pluginId": "rust-plugin@laurigates-claude-plugins", "name": "rust-plugin",
+     "description": "...", "marketplaceName": "laurigates-claude-plugins", "version": "1.0.0"}
+  ]
+}
+```
+
+| Array | Holds | Fields the audit uses |
+|-------|-------|-----------------------|
+| `installed` | Installed plugins, every scope | `id`, `scope` |
+| `available` | Marketplace plugins not installed | `pluginId`, `name`, `description`, `marketplaceName` |
+
+Installed entries carry no description, and neither array has keyword or category fields. Plain `claude plugin list --json` prints only the installed entries, as a bare array rather than this object.
+
 ## Report Template
 
 ```
@@ -88,5 +132,5 @@ Relevant: N plugins
 Irrelevant: N plugins (consider removing)
 Missing: N plugins (consider adding)
 
-Run `/health:audit --fix` to apply these recommendations.
+Run `/health:check --scope=stack --fix` to apply these recommendations.
 ```
