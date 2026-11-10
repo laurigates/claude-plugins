@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.5...blueprint-plugin-v3.51.6) (2026-11-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** read frontmatter only when it opens the file in the sync-ids sweep ([#3544](https://github.com/laurigates/claude-plugins/issues/3544)) ([ff56a8a](https://github.com/laurigates/claude-plugins/commit/ff56a8a1624736767719892f51e45cd853dd3e0c))
+
 ## [3.51.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.4...blueprint-plugin-v3.51.5) (2026-11-07)
 
 
