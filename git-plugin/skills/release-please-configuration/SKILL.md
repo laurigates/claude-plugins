@@ -1,6 +1,6 @@
 ---
 created: 2025-12-28
-modified: 2026-07-05
+modified: 2026-11-10
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
@@ -230,7 +230,7 @@ package path.
 |-----------|--------|
 | JSON | `{"type": "json", "path": "...", "jsonpath": "$.version"}` |
 | YAML | `{"type": "yaml", "path": "...", "jsonpath": "$.version"}` |
-| TOML | `{"type": "toml", "path": "...", "jsonpath": "$.version"}` |
+| TOML | `{"type": "toml", "path": "...", "jsonpath": "$.version"}`; `uv.lock`, stale PR: [uv-lock.md](references/uv-lock.md) |
 | XML | `{"type": "xml", "path": "...", "xpath": "//version"}` |
 | Plain text | `"path/to/version.txt"` (string is fine) |
 
