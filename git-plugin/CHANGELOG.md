@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.73.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.0...git-plugin-v2.73.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **git-plugin:** stop issue-labels reading body words as repo paths ([#3569](https://github.com/laurigates/claude-plugins/issues/3569)) ([2a46797](https://github.com/laurigates/claude-plugins/commit/2a46797490f5fe50e3f56ccc7818c839e4cf838c))
+
 ## [2.73.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.72.0...git-plugin-v2.73.0) (2026-11-10)
 
 
