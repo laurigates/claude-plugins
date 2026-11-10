@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.73.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.1...git-plugin-v2.73.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* **git-plugin:** treat an already-removed blocked label as done in unblock ([f0dc8d6](https://github.com/laurigates/claude-plugins/commit/f0dc8d6cac9a7fc59b41ff6b14414683ef246f25))
+
 ## [2.73.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.0...git-plugin-v2.73.1) (2026-11-10)
 
 
