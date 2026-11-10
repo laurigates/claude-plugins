@@ -8,7 +8,9 @@
 #   gh api [--paginate] <path>          prints $GH_STUB_DIR/<key>.json, or fails
 #                                       with "HTTP 404" when that file is absent
 #   gh api -X POST|PATCH|DELETE <path>  prints {}; fails when
-#                                       $GH_STUB_DIR/fail-writes exists
+#                                       $GH_STUB_DIR/fail-writes exists, or
+#                                       when $GH_STUB_DIR/fail-<METHOD>-<key>
+#                                       exists, with that file's text on stderr
 #
 # <key> is <path> without its "repos/<owner>/<name>/" prefix and query string,
 # with each "/" turned into "-":
@@ -58,7 +60,14 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+key=${endpoint%%\?*}
+key=$(printf '%s' "$key" | sed -e 's#^repos/[^/]*/[^/]*/##' -e 's#/#-#g')
+
 if [ "$method" != "GET" ]; then
+    if [ -e "$stub_dir/fail-$method-$key" ]; then
+        cat "$stub_dir/fail-$method-$key" >&2
+        exit 1
+    fi
     if [ -e "$stub_dir/fail-writes" ]; then
         echo "gh: Validation Failed (HTTP 422)" >&2
         exit 1
@@ -67,8 +76,6 @@ if [ "$method" != "GET" ]; then
     exit 0
 fi
 
-key=${endpoint%%\?*}
-key=$(printf '%s' "$key" | sed -e 's#^repos/[^/]*/[^/]*/##' -e 's#/#-#g')
 if [ -f "$stub_dir/$key.json" ]; then
     cat "$stub_dir/$key.json"
     exit 0
