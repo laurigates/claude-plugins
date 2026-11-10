@@ -91,9 +91,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 
 | Subcommand | Does | Writes |
 |------------|------|--------|
-| `provision` | Creates the taxonomy file's missing `build:` and `area:` labels, updates colour and description, renames through `renamed_from`. Refuses any other name and deletes nothing. `--dry-run` prints the actions | Labels |
+| `provision` | Creates the taxonomy file's missing `build:` and `area:` labels, updates colour and (when the entry gives one) description, renames through `renamed_from`. Refuses any other name and deletes nothing. `--dry-run` prints the actions | Labels |
 | `classify --issue <N>` or `--pr <N>` | Prints the labels the item's title, body and changed files point at, as JSON (`add`). A prefix that already has a label is skipped. It does not set `security` | Nothing |
-| `validate --issue <N> --labels-file <file>` | Filters labels a model proposed: type labels and `build:`/`area:`/`core:`/`needs:` names that exist in the repo. A `needs:` label is kept only with a quote found in the issue | Nothing |
+| `validate --issue <N> --labels-file <file>` | Filters labels a model proposed: type labels and `build:`/`area:`/`core:`/`needs:` names that exist in the repo. A `needs:` label is kept only with a quote found in the issue, and of two type labels only the first | Nothing |
 | `unblock --issue <N>` | After issue N closes, removes `blocked` from each open issue it was blocking whose `blocked_by` issues are all closed | Removes `blocked` |
 | `audit` | Lists open issues with no type label, no routing label, `blocked` without a link, an open `blocked_by` link without `blocked`, or a `needs:` label older than `--needs-stale-days` (30) | Nothing |
 

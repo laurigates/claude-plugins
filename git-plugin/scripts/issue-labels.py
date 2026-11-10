@@ -25,12 +25,12 @@ branch)::
      "area":  {"ota": {"description": "...", "color": "0e8a16", "scopes": ["ota"]}},
      "core":  {"components": {"paths": ["packages/components/**"]}}}
 
-``build`` and ``area`` entries own a label's description and colour; ``core``
-entries carry only ``paths`` and ``scopes``, and replace the built-in globs in
-DEFAULT_CORE key by key. An entry's key is always one of its scopes. A glob
-matches the whole repo-relative path: ``*`` and ``?`` stay inside one path
-segment, ``**`` crosses segments, and a trailing ``/**`` also matches the
-directory itself.
+``build`` and ``area`` entries own a label's colour and, when they give one,
+its description; ``core`` entries carry only ``paths`` and ``scopes``, and
+replace the built-in globs in DEFAULT_CORE key by key. An entry's key is always
+one of its scopes. A glob matches the whole repo-relative path: ``*`` and ``?``
+stay inside one path segment, ``**`` crosses segments, and a trailing ``/**``
+also matches the directory itself.
 
 Every label name comes from a flag default (``--build-prefix build:``,
 ``--area-prefix area:``, ``--core-prefix core:``, ``--needs-prefix needs:``,
@@ -171,6 +171,7 @@ def check_taxonomy(tax: object, for_provision: bool = False) -> list[str]:
     if not isinstance(tax, dict):
         return ["taxonomy is not a JSON object"]
     problems: list[str] = []
+    renamed: dict[str, str] = {}  # old label name -> the entry that renames it
     for section, entries in tax.items():
         if section.startswith(("$", "_")):
             continue
@@ -215,6 +216,15 @@ def check_taxonomy(tax: object, for_provision: bool = False) -> list[str]:
             old = entry.get("renamed_from")
             if old is not None and not (isinstance(old, str) and old.strip()):
                 problems.append(f"{where}.renamed_from must be a label name or null")
+            elif old is not None:
+                # One label can be renamed once: the second PATCH would find
+                # the old name gone, after the first had already been applied.
+                first = renamed.setdefault(norm(old), where)
+                if first != where:
+                    problems.append(
+                        f"{where}.renamed_from: '{old.strip()}' is already "
+                        f"renamed by {first}"
+                    )
     return problems
 
 
@@ -284,6 +294,7 @@ def parse_title(title: str, type_keywords: frozenset[str]) -> Title:
     """The type keyword and scope candidates a title carries, by its form.
 
     bracket       "[Bug] enclosure: lid does not close"   keyword bug, scope enclosure
+                  "[Bug] fix(kicad): close the gaps"      keyword bug, scopes kicad, fix
     conventional  "fix(kicad): close the gaps"            keyword fix, scopes kicad, fix
                   "ci: run the check"                     keyword ci, scope ci
     scope         "balancebot: read the divider"          scope balancebot
@@ -292,13 +303,14 @@ def parse_title(title: str, type_keywords: frozenset[str]) -> Title:
 
     A title is conventional when its leading word carries a parenthesised
     scope or is one of ``type_keywords``. That word is offered as a scope too,
-    so "ci(robot): ..." can select a ci entry as well as a robot one.
+    so "ci(robot): ..." can select a ci entry as well as a robot one. What
+    follows a bracket is read for its scopes in the same forms; the bracket
+    word stays the keyword.
     """
     m = BRACKET.match(title)
     if m:
-        lead = LEADING.match(m.group("rest"))
-        scopes = (norm(lead.group("scope")),) if lead else ()
-        return Title("bracket", norm(m.group("kw")), scopes)
+        rest = parse_title(m.group("rest"), type_keywords)
+        return Title("bracket", norm(m.group("kw")), rest.scopes)
     m = CONVENTIONAL.match(title)
     if m and (m.group("scope") is not None or m.group("kw").lower() in type_keywords):
         keyword = m.group("kw").lower()
@@ -505,7 +517,11 @@ def validate(
     cfg: Config,
     min_evidence: int,
 ) -> dict:
-    """Keep the proposed labels that pass every gate; report the rest."""
+    """Keep the proposed labels that pass every gate; report the rest.
+
+    An item carries one type label, so of two types in one file the first is
+    kept. Routing and needs labels may be several.
+    """
     canonical = {name.lower(): name for name in repo_labels}
     text = squash(f"{item.get('title') or ''}\n{item.get('body') or ''}")
     taken = {g for g in (label_group(lb, cfg) for lb in item["labels"]) if g}
@@ -531,6 +547,12 @@ def validate(
             drop(name, "already_set")
         elif label_group(name, cfg) in taken:
             drop(name, "prefix_present")
+        elif (
+            label_group(name, cfg) == "type"
+            and canonical[name.lower()] not in add
+            and any(label_group(kept, cfg) == "type" for kept in add)
+        ):
+            drop(name, "second_type")
         elif has_prefix(name, cfg.needs_prefix) and len(evidence) < min_evidence:
             drop(name, "no_evidence" if not evidence else "evidence_too_short")
         elif has_prefix(name, cfg.needs_prefix) and evidence not in text:
@@ -564,7 +586,8 @@ def plan_provision(
 
     Only build and area entries are provisioned, so every name written starts
     with one of those two prefixes. A problem stops the whole run before any
-    write.
+    write. An entry with no ``description`` leaves the label's description as
+    it is: the field is neither compared nor written.
     """
     problems = check_taxonomy(tax, for_provision=True)
     if problems:
@@ -574,10 +597,9 @@ def plan_provision(
     for section in PROVISIONED_SECTIONS:
         for key, entry in (tax.get(section) or {}).items():
             name = cfg.prefix(section) + key
-            want = {
-                "color": entry["color"].lower(),
-                "description": entry.get("description", ""),
-            }
+            want = {"color": entry["color"].lower()}
+            if "description" in entry:
+                want["description"] = entry["description"]
             current = by_name.get(name.lower())
             old = (entry.get("renamed_from") or "").strip()
             if current is None and old and old.lower() in by_name:
@@ -597,9 +619,9 @@ def plan_provision(
                 )
             elif current is None:
                 actions.append({"op": "create", "label": name} | want)
-            elif (
-                current.get("color", "").lower() != want["color"]
-                or (current.get("description") or "") != want["description"]
+            elif current.get("color", "").lower() != want["color"] or (
+                "description" in want
+                and (current.get("description") or "") != want["description"]
             ):
                 actions.append({"op": "update", "label": current["name"]} | want)
             else:
@@ -634,16 +656,25 @@ def dependent_skip(dependent: dict, repo: str, cfg: Config) -> str | None:
     return None
 
 
+def not_closed(blockers: list[dict]) -> list[dict]:
+    """The blockers that still block: every one whose state is not "closed".
+
+    A blocker with no state, or one this script does not know, counts as open,
+    so a response in an unexpected shape keeps the blocked label.
+    """
+    return [b for b in blockers if b.get("state") != "closed"]
+
+
 def blockers_verdict(blockers: list[dict]) -> tuple[str, str]:
     """(action, reason) from a blocked issue's own blocked_by list.
 
-    The label comes off only when the list is non-empty and holds no open
-    issue. The dependency link is the record, so a blocked label with no link
-    behind it is left for a person.
+    The label comes off only when the list is non-empty and every issue in it
+    is closed. The dependency link is the record, so a blocked label with no
+    link behind it is left for a person.
     """
     if not blockers:
         return "skip", "no_link"
-    still_open = [b for b in blockers if b.get("state") == "open"]
+    still_open = not_closed(blockers)
     if still_open:
         return "keep", f"open_blocker:#{still_open[0].get('number')}"
     return "unblock", "all_blockers_closed"
@@ -698,7 +729,7 @@ def audit_issue(
     if not groups & set(cfg.routing_prefixes):
         finding("missing_routing", f"no {' / '.join(cfg.routing_prefixes)} label")
     is_blocked = cfg.blocked_label.lower() in {lb.lower() for lb in labels}
-    open_blockers = [b for b in blockers if b.get("state") == "open"]
+    open_blockers = not_closed(blockers)
     if is_blocked and not blockers:
         finding("blocked_no_link", f"'{cfg.blocked_label}' with no blocked_by link")
     elif is_blocked and not open_blockers:
@@ -933,12 +964,9 @@ def cmd_validate(a: argparse.Namespace, cfg: Config) -> int:
 
 
 def apply_action(repo: str, action: dict) -> None:
-    fields = [
-        "-f",
-        f"color={action['color']}",
-        "-f",
-        f"description={action['description']}",
-    ]
+    fields = ["-f", f"color={action['color']}"]
+    if "description" in action:
+        fields += ["-f", f"description={action['description']}"]
     if action["op"] == "create":
         gh(
             "api",
@@ -1032,26 +1060,35 @@ def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
         if state == "closed"
         else []
     )
+    failure: list[dict] = []
     for dep in dependents:
-        issue_path = f"repos/{repo}/issues/{dep.get('number')}"
+        number = dep.get("number")
+        issue_path = f"repos/{repo}/issues/{number}"
         skip = dependent_skip(dep, repo, cfg)
-        if skip:
-            action, reason = "skip", skip
-        else:
-            action, reason = blockers_verdict(
-                gh_list(f"{issue_path}/dependencies/blocked_by")
-            )
-        if action == "unblock":
-            if not a.dry_run:
+        # A failed call stops the run, and the report still lists the labels
+        # removed before it.
+        try:
+            if skip:
+                action, reason = "skip", skip
+            else:
+                action, reason = blockers_verdict(
+                    gh_list(f"{issue_path}/dependencies/blocked_by")
+                )
+            if action == "unblock" and not a.dry_run:
                 label = quote(cfg.blocked_label, safe="")
                 gh("api", "-X", "DELETE", f"{issue_path}/labels/{label}")
+        except Error as e:
+            failure = [{"type": "dependent_failed", "number": number, "msg": str(e)}]
+            rows.append(f"  - NUMBER={number} ACTION=error REASON=gh_failed")
+            break
+        if action == "unblock":
             unblocked += 1
-        rows.append(f"  - NUMBER={dep.get('number')} ACTION={action} REASON={reason}")
+        rows.append(f"  - NUMBER={number} ACTION={action} REASON={reason}")
     lines += [f"DEPENDENTS={len(dependents)}", f"UNBLOCKED={unblocked}"]
     if rows:
         lines += ["DEPENDENTS_DETAIL:", *rows]
-    print(block(name, [*lines, "STATUS=OK", "ISSUE_COUNT=0"]))
-    return 0
+    print(block(name, [*lines, *status_lines(failure, "ERROR")]))
+    return 1 if failure else 0
 
 
 def cmd_audit(a: argparse.Namespace, cfg: Config) -> int:
