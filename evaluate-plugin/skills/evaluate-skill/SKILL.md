@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit [--runs 3] [--baseline] [--harness headles
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-11-05
+modified: 2026-11-10
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -24,7 +24,7 @@ Evaluate a skill's effectiveness by running behavioral test cases and grading th
 |------------------------|------------------------|
 | Want to test if a skill produces correct results | Need structural validation -> `scripts/plugin-compliance-check.sh` |
 | Validating skill improvements before merging | Want to file feedback about a session -> `/feedback:session` |
-| Benchmarking a skill against a baseline | Need to check skill freshness -> `/health:audit` |
+| Benchmarking a skill against a baseline | Need to check skill freshness -> `/health:check --scope=agentic` |
 | Creating eval cases for a new skill | Want to review code quality -> `/code-review` |
 
 ## Context

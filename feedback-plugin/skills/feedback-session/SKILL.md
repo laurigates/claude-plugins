@@ -6,7 +6,7 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 model: opus
 argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-11-07
+modified: 2026-11-10
 compatibility: claude-code
 reviewed: 2026-06-28
 ---
@@ -20,7 +20,7 @@ Analyze the current session for skill feedback and create GitHub issues to track
 | Use this skill when... | Use alternative when... |
 |------------------------|------------------------|
 | A skill gave wrong or outdated guidance | Want to update skills directly -> `session-plugin:session-distill` |
-| A command failed due to skill advice | Need static skill quality analysis -> `/health:audit` |
+| A command failed due to skill advice | Need static skill quality analysis -> `/health:check --scope=agentic` |
 | Discovered a better flag or pattern | Want to capture general learnings -> `session-plugin:session-distill` |
 | A skill worked particularly well | Want to track command usage stats -> `/analytics-report` |
 | End of session, want to file feedback | Need to fix a skill right now -> edit the SKILL.md directly |
