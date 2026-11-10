@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.57.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.3...agent-patterns-plugin-v2.57.4) (2026-11-10)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** give each dispatched agent its own scratch directory ([#3561](https://github.com/laurigates/claude-plugins/issues/3561)) ([51ec928](https://github.com/laurigates/claude-plugins/commit/51ec92890cf96027c63683fb933d4ce0f822e8b3))
+* **agent-patterns-plugin:** name Fable 5.2 as the current Fable model ID ([#3559](https://github.com/laurigates/claude-plugins/issues/3559)) ([5c17031](https://github.com/laurigates/claude-plugins/commit/5c17031e24b9cfe4fb14d2a81932be046a6648f1)), closes [#3542](https://github.com/laurigates/claude-plugins/issues/3542)
+
 ## [2.57.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.2...agent-patterns-plugin-v2.57.3) (2026-11-09)
 
 
