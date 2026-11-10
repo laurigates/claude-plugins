@@ -14,7 +14,10 @@
 #   6. account for every labelled issue in the run summary,
 #   7. treat an epic's or milestone's group as the unit of work (one subagent
 #      and one PR per group), and report ungrouped issues found by
-#      scripts/check-issue-grouping.sh (.claude/rules/issue-grouping.md).
+#      scripts/check-issue-grouping.sh (.claude/rules/issue-grouping.md),
+#   8. NAME its decision label (`needs:decision`) instead of choosing one from
+#      the repo's label list, and keep `blocked` and every other `needs:*`
+#      issue out of the work.
 #
 # WHY A SEMANTIC GUARD
 # Between 2026-08-11 and 2026-09-03 the live Routine stopped emitting its own
@@ -68,6 +71,18 @@ require() {
     if ! grep -qF "$token" "$file"; then
         issue_count=$((issue_count + 1))
         issues+=("  - SEVERITY=ERROR TYPE=missing_token FILE=$rel TOKEN=\"$token\" MSG=$msg")
+    fi
+}
+
+# forbid FILE TOKEN MESSAGE — assert a literal token is absent. A missing file
+# is reported by require(), so it is not reported a second time here.
+forbid() {
+    local file="$1" token="$2" msg="$3" rel
+    rel="${file#"$ROOT_DIR"/}"
+    [ -f "$file" ] || return 0
+    if grep -qF "$token" "$file"; then
+        issue_count=$((issue_count + 1))
+        issues+=("  - SEVERITY=ERROR TYPE=forbidden_token FILE=$rel TOKEN=\"$token\" MSG=$msg")
     fi
 }
 
@@ -154,8 +169,36 @@ require "$PROMPT" "UNGROUPED" \
     "prompt lost the UNGROUPED run-summary list"
 require "$PROMPT" "standalone fix" \
     "prompt lost the single-file standalone-fix exception for ungrouped issues"
-require "$PROMPT" "needs-human" \
-    "prompt lost the needs-human exclusion"
+
+# (8) Label vocabulary. Until 2026-11 the prompt chose its decision label as
+#     "the closest existing one" from `needs-decision`, `needs-input`,
+#     `question`, `blocked`. That made every label in the list part of the
+#     Routine's state: a label added to the repo for another purpose (`blocked`
+#     and `needs:decision` arrive with the gitops standard set) could move the
+#     queue onto a label no open thread carries. The label is now named, and
+#     `blocked` plus every other `needs:*` label keep an issue out of the work.
+require "$PROMPT" "the decision label is \`needs:decision\`" \
+    "prompt no longer names its decision label (a label picked from the repo's list can move the queue off its open threads)"
+require "$PROMPT" "Never substitute a label that looks close" \
+    "prompt lost the ban on substituting a near-match for the decision label"
+require "$PROMPT" "gh label list --limit 500" \
+    "prompt lists labels with the default page of 30 (an existing label past the page reads as missing and gets re-created)"
+require "$PROMPT" "any \`needs:*\` label other than \`needs:decision\`" \
+    "prompt lost the needs:* exclusion (issues waiting on a person or on hardware get picked up as work)"
+require "$PROMPT" "\`on-hold\`, \`blocked\`" \
+    "prompt lost the blocked exclusion (issues waiting on another PR, issue or upstream change get picked up as work)"
+require "$PROMPT" "another \`needs:*\` label such as \`needs:human\`" \
+    "prompt lost the rule that blocked and needs:* siblings stay out of a group's work unit"
+# The pre-2026-11 spellings must not come back through a revert or a paste from
+# an older copy of the prompt.
+forbid "$PROMPT" "Reuse the closest" \
+    "prompt chooses its decision label from a list again instead of naming it"
+forbid "$PROMPT" "needs-input" \
+    "prompt carries the pre-2026-11 decision-label candidate list again"
+forbid "$PROMPT" "gh label create needs-decision" \
+    "prompt creates the hyphenated needs-decision label instead of needs:decision"
+forbid "$PROMPT" "needs-human" \
+    "prompt names needs-human, which was renamed needs:human"
 
 # The doc that explains why all of the above exists.
 require "$README" "resolve-claude-plugins-issues.md" \
@@ -208,7 +251,7 @@ if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"
     printf '%s\n' "${issues[@]}"
     echo ""
-    echo "FIX: restore the missing token; see docs/routines/README.md"
+    echo "FIX: restore each missing token and remove each forbidden one; see docs/routines/README.md"
 fi
 echo "=== END ROUTINE PROMPT ==="
 

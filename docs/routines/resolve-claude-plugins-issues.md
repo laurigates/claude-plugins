@@ -28,9 +28,13 @@ Do all GitHub work with `gh` against that repo.
    (`gh pr list --state open --limit 100 --json number,title,body,headRefName`),
    collect every `#<n>` in the title/body and every `<n>` embedded in the branch
    name. Exclude those issues.
-3. Also exclude: issues labelled `wontfix`, `duplicate`, `on-hold`, `needs-human`,
-   or `epic`; issues assigned to a human other than the repo owner; and pure
-   discussion threads with no actionable ask.
+3. Also exclude: issues labelled `wontfix`, `duplicate`, `on-hold`, `blocked`,
+   or `epic`; issues carrying any `needs:*` label other than `needs:decision`
+   (`needs:human`, `needs:hardware`, and any later label with that prefix);
+   issues assigned to a human other than the repo owner; and pure discussion
+   threads with no actionable ask. `needs:decision` is this Routine's own
+   decision label: those issues stay in the inventory so that Step 3 can read
+   their threads, and Step 4 keeps them out of the work while they carry it.
 4. Map every remaining issue to its **group**. Related issues are grouped under an
    `epic` tracking issue as native sub-issues, or under a milestone. For each
    open `epic` issue, list its children:
@@ -111,10 +115,17 @@ comment raw, entity-escaped, or absent-with-an-orphan-leading-newline — and
 treat the footer as authoritative whenever they disagree. Do not use the absence
 of a marker to conclude a comment is not yours: use the footer.
 
-Label setup, once per run: check `gh label list` for an existing decision label
-(`needs-decision`, `needs-input`, `question`, `blocked`). Reuse the closest
-existing one. Only if none exists, create it:
-`gh label create needs-decision --description "Blocked on a decision from the maintainer" --color D93F0B`
+Label setup, once per run: the decision label is `needs:decision`, by that exact
+name. Never substitute a label that looks close. `blocked`, `question` and the
+other `needs:*` labels exist in this repo and mean other things, and a decision
+request filed under any of them is a thread no later run will read. Check that
+the label exists with `gh label list --limit 500 --json name --jq '.[].name'`.
+The default page is 30 labels and this repo has more, so a shorter list makes an
+existing label read as missing. Only if `needs:decision` is absent, create it:
+`gh label create "needs:decision" --description "Waiting on a decision from Lauri" --color D93F0B`
+
+The marker line keeps its hyphenated `routine:needs-decision` spelling. It is
+matched in existing threads and is not the label name.
 
 ### 3.1 — Find the anchor before choosing a branch
 
@@ -221,8 +232,9 @@ parallel PRs produces changes that have to be reconciled afterwards. So:
 1. **Grouped issues.** For each group with at least one actionable member, look
    at *all* its open members, not only the actionable ones. The actionable
    members form one **work unit**. Members still blocked — carrying the decision
-   label, `needs-human`, or an open `blocked_by` — stay out of the unit and are
-   named in the run summary with the reason.
+   label, `blocked`, another `needs:*` label such as `needs:human`, or an open
+   `blocked_by` — stay out of the unit and are named in the run summary with the
+   reason.
    **Defer the whole group** when an actionable member's change would constrain
    or conflict with a blocked sibling: they touch the same files, or the open
    decision would change the shape of what the actionable member builds. Doing

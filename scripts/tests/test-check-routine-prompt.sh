@@ -118,6 +118,12 @@ for token in \
   "3 work units and 6 issues in total" \
   "check-issue-grouping.sh" \
   "UNGROUPED" \
+  "the decision label is \`needs:decision\`" \
+  "Never substitute a label that looks close" \
+  "gh label list --limit 500" \
+  "any \`needs:*\` label other than \`needs:decision\`" \
+  "\`on-hold\`, \`blocked\`" \
+  "another \`needs:*\` label such as \`needs:human\`" \
   ; do
   slug="$WORK/strip-$(printf '%s' "$token" | tr -c 'a-zA-Z0-9' '-')"
   seed "$slug"
@@ -126,6 +132,50 @@ for token in \
   assert_eq "stripping '$token' sets STATUS=ERROR" "ERROR" "$(printf '%s\n' "$out" | grep -E '^STATUS=' | cut -d= -f2)"
   assert_contains "stripping '$token' names it in the report" "$token" "$out"
 done
+
+# 4b. Each pre-2026-11 label spelling, pasted back one at a time, must be
+#     flagged by name. The lines are the ones the prompt carried before the
+#     decision label was named (docs/routines/README.md, "Labels the Routine
+#     reads"): a list to choose the decision label from, and the `needs-human`
+#     exclusion. The faithful-copy case above is the control that a prompt
+#     without them passes.
+inject_line() {
+  # inject_line DIR LINE -- add one line inside the prompt, before its end marker.
+  local root="$1" line="$2"
+  local f="$root/docs/routines/resolve-claude-plugins-issues.md"
+  awk -v line="$line" '/^<!-- END ROUTINE PROMPT -->$/ { print line } { print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  if ! grep -qF "$line" "$f"; then
+    printf "  FAIL: fixture validity -- line was not injected: %s\n" "$line"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+legacy_case() {
+  # legacy_case SLUG LINE TOKEN -- the injected LINE must be flagged as TOKEN.
+  local root="$WORK/legacy-$1" line="$2" token="$3" out
+  seed "$root"
+  inject_line "$root" "$line"
+  out="$(bash "$GUARD" "$root" 2>&1)"
+  assert_eq "pasting back '$token' sets STATUS=ERROR" "ERROR" "$(printf '%s\n' "$out" | grep -E '^STATUS=' | cut -d= -f2)"
+  assert_eq "pasting back '$token' is the only finding" "1" "$(printf '%s\n' "$out" | grep -E '^ISSUE_COUNT=' | cut -d= -f2)"
+  assert_contains "pasting back '$token' names it as a forbidden token" \
+    "TYPE=forbidden_token FILE=docs/routines/resolve-claude-plugins-issues.md TOKEN=\"$token\"" "$out"
+  printf '%s\n' "$out" | bash "$REPO_ROOT/scripts/check-structured-output-contract.sh" --validate - >/dev/null 2>&1
+  assert_eq "forbidden-token output for '$token' satisfies the structured-output contract" "0" "$?"
+}
+
+legacy_case closest \
+  "existing one. Reuse the closest existing one. Only if none exists, create it:" \
+  "Reuse the closest"
+legacy_case candidates \
+  "(\`needs-decision\`, \`needs-input\`, \`question\`, \`blocked\`)." \
+  "needs-input"
+legacy_case create \
+  "\`gh label create needs-decision --description \"Blocked on a decision from the maintainer\" --color D93F0B\`" \
+  "gh label create needs-decision"
+legacy_case needs-human \
+  "3. Also exclude: issues labelled \`wontfix\`, \`duplicate\`, \`on-hold\`, \`needs-human\`," \
+  "needs-human"
 
 # 5. Coverage -- a NEW routine prompt fires the pre-commit trigger but is
 #    asserted on by nothing. That must be an error naming the file, not a
