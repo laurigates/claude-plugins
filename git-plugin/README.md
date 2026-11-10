@@ -78,7 +78,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `worktree-stale-base-merge` | A parallel worktree-agent branch's green CI is about a `main` that no longer exists — merge-base equality as the gate, and the `update-branch` vs rebase choice |
 | `github-issue-autodetect` | Fixes/Closes/Refs keywords for a change — match the staged diff against open issues by path, label and title |
 | `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
-| `github-labels` | Discover and apply labels to GitHub PRs and issues |
+| `github-labels` | Discover and apply labels to GitHub PRs and issues; the type / `build:` / `area:` / `core:` / `needs:` taxonomy, who sets and clears `needs:` and `blocked`, and `scripts/issue-labels.py` (`provision`, `classify`, `validate`, `unblock`, `audit`) |
 | `github-pr-title` | PR title only — the `type(scope): subject` line that squash-merge lands and release-please parses |
 | `git-derive-docs` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please **monorepo** strategy — component tags, per-package extra-files, tag migration (single-repo standards live in configure-plugin) |
