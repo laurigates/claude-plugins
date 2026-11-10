@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.2...configure-plugin-v1.43.3) (2026-11-10)
+
+
+### Documentation
+
+* **kubernetes-plugin:** check the audit log before removing an on-demand component ([#3541](https://github.com/laurigates/claude-plugins/issues/3541)) ([64da184](https://github.com/laurigates/claude-plugins/commit/64da1849d42492abb16ba67b94383471a7b7918d))
+
 ## [1.43.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.1...configure-plugin-v1.43.2) (2026-11-07)
 
 

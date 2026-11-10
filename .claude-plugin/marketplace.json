@@ -276,7 +276,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.43.2",
+      "version": "1.43.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -600,7 +600,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.10.2",
+      "version": "1.10.3",
       "author": {
         "name": "Lauri Gates"
       },
