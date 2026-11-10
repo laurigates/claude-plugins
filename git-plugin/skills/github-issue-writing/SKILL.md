@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-08-15
+modified: 2026-11-10
 reviewed: 2026-04-29
 name: github-issue-writing
 description: "GitHub issue body and `[Type] Component:` title — bug/feature templates, repro steps, acceptance criteria. Use when filing a bug or feature request with gh."
@@ -37,8 +37,27 @@ Create well-structured, actionable GitHub issues.
 
 **Guidelines:**
 - Be specific (not "Bug" but "Login fails with OAuth")
-- Include component for triage
+- Include component for triage; where the repo has a taxonomy file, use a scope it lists so the routing label can be derived from the title
 - Keep under 72 characters
+
+## Labels
+
+Take labels from the repository: read `.github/issue-labels.json` (the repo's
+taxonomy file) when it exists, and run `gh label list --limit 500`. The default
+listing stops at 30 labels, so a label that exists can read as missing.
+
+| Label | Says |
+|-------|------|
+| `bug`, `enhancement`, `chore`, `docs`, `security`, `refactor` | Type: one per issue. `[Bug]` is `bug`, `[Feature]` is `enhancement`, `[Docs]` is `docs`, `[Chore]` is `chore` |
+| `build:<name>` | The build in a monorepo the issue belongs to |
+| `area:<name>` | The toolchain or subsystem it concerns |
+| `core:<name>` | Repo machinery: CI, lint, agent config, the build system, shared components, docs upkeep |
+| `needs:hardware`, `needs:decision`, `needs:human`, `blocked` | What stops the issue being picked up. Set one together with the comment or dependency link that says why |
+
+Give an issue one type label and at least one `build:`, `area:` or `core:`
+label. A repository without these prefixes is labelled with what the listing
+shows. The `github-labels` skill covers who sets and clears the `needs:` and
+`blocked` labels, and the script that derives and audits labels.
 
 ## Bug Report Template
 
@@ -128,8 +147,8 @@ gh issue create --title "[Bug] Auth: Login fails" --body-file /tmp/issue-body.md
 # Trivially short body — inline --body is acceptable
 gh issue create --title "[Chore] Bump dep" --body "See renovate PR"
 
-# With labels
-gh issue create --title "..." --body-file /tmp/body.md --label "bug" --label "priority: high"
+# With labels: one type label and a routing label the repo has
+gh issue create --title "..." --body-file /tmp/body.md --label "bug" --label "area:auth"
 
 # With assignee
 gh issue create --title "..." --body-file /tmp/body.md --assignee "@me"
@@ -173,7 +192,7 @@ sidebar and on project boards.
 | View | `gh issue view N` |
 | Edit body | `gh issue edit N --body-file /tmp/body.md` |
 | Comment | `gh issue comment N --body-file /tmp/comment.md` |
-| Labels | `gh label list` |
+| Labels | `gh label list --limit 500` |
 
 ## Agentic Optimizations
 
@@ -181,6 +200,6 @@ sidebar and on project boards.
 |---------|---------|
 | Create issue | `gh issue create --title "..." --body-file /tmp/body.md` |
 | Create with type | `gh issue create --title "..." --type "Bug" --body-file /tmp/body.md` |
-| List labels | `gh label list --json name` |
+| List labels | `gh label list --limit 500 --json name` |
 | Search issues | `gh issue list --search "keyword" --state all --json number,title` |
 | View issue | `gh issue view N --json title,body,labels` |

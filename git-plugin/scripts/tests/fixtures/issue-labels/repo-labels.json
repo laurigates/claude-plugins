@@ -1,0 +1,242 @@
+[
+ {
+  "color": "d73a4a",
+  "description": "Something isn't working",
+  "name": "bug"
+ },
+ {
+  "color": "cfd3d7",
+  "description": "This issue or pull request already exists",
+  "name": "duplicate"
+ },
+ {
+  "color": "a2eeef",
+  "description": "New feature or improvement",
+  "name": "enhancement"
+ },
+ {
+  "color": "7057ff",
+  "description": "Good for newcomers",
+  "name": "good first issue"
+ },
+ {
+  "color": "008672",
+  "description": "Extra attention is needed",
+  "name": "help wanted"
+ },
+ {
+  "color": "e4e669",
+  "description": "This doesn't seem right",
+  "name": "invalid"
+ },
+ {
+  "color": "d876e3",
+  "description": "Further information is requested",
+  "name": "question"
+ },
+ {
+  "color": "ffffff",
+  "description": "This will not be worked on",
+  "name": "wontfix"
+ },
+ {
+  "color": "b60205",
+  "description": "Waiting on another PR, issue or upstream change",
+  "name": "blocked"
+ },
+ {
+  "color": "fef2c0",
+  "description": "Maintenance, deps, refactoring",
+  "name": "chore"
+ },
+ {
+  "color": "0075ca",
+  "description": "Pull requests that update a dependency file",
+  "name": "dependencies"
+ },
+ {
+  "color": "7b42bc",
+  "description": "Pull requests that update OpenTofu code",
+  "name": "opentofu"
+ },
+ {
+  "color": "000000",
+  "description": "Pull requests that update GitHub Actions code",
+  "name": "github-actions"
+ },
+ {
+  "color": "ededed",
+  "description": "",
+  "name": "epic"
+ },
+ {
+  "color": "1d76db",
+  "description": "ThinkPack mesh boxes and their shared components",
+  "name": "build:thinkpack"
+ },
+ {
+  "color": "FBCA04",
+  "description": "Embedded firmware (ESP32/STM32/Arduino)",
+  "name": "firmware"
+ },
+ {
+  "color": "d876e3",
+  "description": "Feedback from session analysis",
+  "name": "session-feedback"
+ },
+ {
+  "color": "0e8a16",
+  "description": "Skills that worked well",
+  "name": "positive-feedback"
+ },
+ {
+  "color": "5319E7",
+  "description": "NotebookLM knowledge base maintenance",
+  "name": "notebooks"
+ },
+ {
+  "color": "b60205",
+  "description": "Security-related fix or improvement",
+  "name": "security"
+ },
+ {
+  "color": "0075ca",
+  "description": "Documentation changes",
+  "name": "docs"
+ },
+ {
+  "color": "c5def5",
+  "description": "Code restructure (no behavior change)",
+  "name": "refactor"
+ },
+ {
+  "color": "ededed",
+  "description": "",
+  "name": "autorelease: pending"
+ },
+ {
+  "color": "EDEDED",
+  "description": "release-please: PR processed and tagged",
+  "name": "autorelease: tagged"
+ },
+ {
+  "color": "5319e7",
+  "description": "GitHub workflows, project matrix, release automation",
+  "name": "core:ci"
+ },
+ {
+  "color": "d73a4a",
+  "description": "CI failure reported by the auto-fix workflow",
+  "name": "ci-failure"
+ },
+ {
+  "color": "5319e7",
+  "description": "Merge with Squash and merge",
+  "name": "merge:squash"
+ },
+ {
+  "color": "0e8a16",
+  "description": "Merge with Rebase and merge",
+  "name": "merge:rebase"
+ },
+ {
+  "color": "0e8a16",
+  "description": "WiFi, MQTT, provisioning, ESP-NOW",
+  "name": "area:connectivity"
+ },
+ {
+  "color": "1d76db",
+  "description": "Self-balancing robot firmware and carrier",
+  "name": "build:balancebot"
+ },
+ {
+  "color": "1d76db",
+  "description": "robocar-unified, unified-integrated, twin, simulation, Teuvo",
+  "name": "build:robocar"
+ },
+ {
+  "color": "1d76db",
+  "description": "LEGO Boost Xbox bridge and hub firmware",
+  "name": "build:lego-boost"
+ },
+ {
+  "color": "1d76db",
+  "description": "Melody detector firmware and ML training",
+  "name": "build:melody-detector"
+ },
+ {
+  "color": "0e8a16",
+  "description": "Printed parts: enclosure, mechanism, cadstd",
+  "name": "area:cad"
+ },
+ {
+  "color": "0e8a16",
+  "description": "tools/kicad, hardware join, parts registry, perfboard",
+  "name": "area:carrier-pcb"
+ },
+ {
+  "color": "0e8a16",
+  "description": "docs/schematics router, symbols and gates",
+  "name": "area:schematics"
+ },
+ {
+  "color": "0e8a16",
+  "description": "Part sourcing, cost rules, quotes, tariffs",
+  "name": "area:sourcing"
+ },
+ {
+  "color": "0e8a16",
+  "description": "tools/labels sticker sheets",
+  "name": "area:labels"
+ },
+ {
+  "color": "0e8a16",
+  "description": "OTA updates and the untethered dev loop",
+  "name": "area:ota"
+ },
+ {
+  "color": "0e8a16",
+  "description": "TTS, microphone, hands-free, Gemini Live",
+  "name": "area:voice"
+ },
+ {
+  "color": "0e8a16",
+  "description": "Motors, servos, reflexes, rangefinders, cliff sensors",
+  "name": "area:motion"
+ },
+ {
+  "color": "5319e7",
+  "description": "pre-commit, lint and format config, repo check scripts",
+  "name": "core:quality"
+ },
+ {
+  "color": "5319e7",
+  "description": "Claude skills, rules, hooks, agents, MCP config",
+  "name": "core:agent"
+ },
+ {
+  "color": "5319e7",
+  "description": "justfiles, ESP-IDF container and version, scaffold, sdkconfig conventions",
+  "name": "core:build"
+ },
+ {
+  "color": "5319e7",
+  "description": "Shared firmware components in packages/components",
+  "name": "core:components"
+ },
+ {
+  "color": "5319e7",
+  "description": "Blueprint registry, PRD/ADR upkeep, reference pages, doc checks",
+  "name": "core:docs"
+ },
+ {
+  "color": "d93f0b",
+  "description": "Waiting on a decision from Lauri",
+  "name": "needs:decision"
+ },
+ {
+  "color": "d93f0b",
+  "description": "Needs Lauri at the bench: verification, test print, measurement",
+  "name": "needs:hardware"
+ }
+]

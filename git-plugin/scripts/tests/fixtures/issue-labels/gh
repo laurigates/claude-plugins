@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Stub gh for test-issue-labels.sh. It serves canned JSON from $GH_STUB_DIR and
+# appends every call to $GH_STUB_LOG, so the suite never reaches GitHub and can
+# assert which writes were attempted.
+#
+#   gh --stub-sentinel                  prints STUB_GH_ISSUE_LABELS (the real gh does not)
+#   gh label list ...                   prints $GH_STUB_DIR/labels.json
+#   gh api [--paginate] <path>          prints $GH_STUB_DIR/<key>.json, or fails
+#                                       with "HTTP 404" when that file is absent
+#   gh api -X POST|PATCH|DELETE <path>  prints {}; fails when
+#                                       $GH_STUB_DIR/fail-writes exists
+#
+# <key> is <path> without its "repos/<owner>/<name>/" prefix and query string,
+# with each "/" turned into "-":
+#   repos/o/r/issues/7/dependencies/blocked_by?per_page=100
+#     -> issues-7-dependencies-blocked_by
+set -u
+
+if [ "${1:-}" = "--stub-sentinel" ]; then
+    echo "STUB_GH_ISSUE_LABELS"
+    exit 0
+fi
+
+stub_dir=${GH_STUB_DIR:?GH_STUB_DIR is not set}
+printf '%s\n' "$*" >>"${GH_STUB_LOG:?GH_STUB_LOG is not set}"
+
+case "${1:-} ${2:-}" in
+"label list")
+    cat "$stub_dir/labels.json"
+    exit 0
+    ;;
+"api "*) ;;
+*)
+    echo "stub gh: unsupported command: $*" >&2
+    exit 1
+    ;;
+esac
+
+shift
+method=GET
+endpoint=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+    -X | --method)
+        method=$2
+        shift 2
+        ;;
+    -f | -F | -H | --jq)
+        shift 2
+        ;;
+    --paginate)
+        shift
+        ;;
+    *)
+        endpoint=$1
+        shift
+        ;;
+    esac
+done
+
+if [ "$method" != "GET" ]; then
+    if [ -e "$stub_dir/fail-writes" ]; then
+        echo "gh: Validation Failed (HTTP 422)" >&2
+        exit 1
+    fi
+    echo "{}"
+    exit 0
+fi
+
+key=${endpoint%%\?*}
+key=$(printf '%s' "$key" | sed -e 's#^repos/[^/]*/[^/]*/##' -e 's#/#-#g')
+if [ -f "$stub_dir/$key.json" ]; then
+    cat "$stub_dir/$key.json"
+    exit 0
+fi
+echo "gh: Not Found (HTTP 404)" >&2
+exit 1

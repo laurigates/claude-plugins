@@ -1,0 +1,244 @@
+[
+ {
+  "number": 1065,
+  "title": "ci(balancebot): attach balancebot.uf2 to balancebot releases",
+  "labels": [
+   "enhancement",
+   "core:ci"
+  ],
+  "body": "`build-firmware.yml` runs on every published release and builds only the ESP-IDF projects, so balancebot releases ship without balancebot firmware. balancebot-v0.1.11 and balancebot-v0.1.12 both carry the same ESP-IDF asset set as the robocar releases (robocar-unified.bin, the thinkpack and camera binaries, their manifests) and no `.uf2` (`gh release view balancebot-v0.1.12 --json assets`).\n\nbalancebot is a Pico SDK project (XIAO RP2350); `just balancebot::build` produces `packages/robotics/balancebot/build/balancebot.uf2`, and CI already builds it per PR (`build.yml`, \"Pico SDK / Build balancebot\").\n\nWanted: on a `balancebot-v*` release, build balancebot with the same Pico SDK container and attach `balancebot.uf2` to that release. Then confirm by downloading the asset from the release page, not from the workflow's success.\n"
+ },
+ {
+  "number": 1064,
+  "title": "fix(kicad): close boardcheck's remaining malformed-input gaps after #1042",
+  "labels": [
+   "bug",
+   "area:carrier-pcb"
+  ],
+  "body": "#1042 made `tools/kicad/boardcheck.py` report malformed table shapes instead of crashing. Its implementer and verifier left these gaps:\n\n- **`[[net_classes]]` nets holding a non-string** gets the old message \"needs a name and a non-empty nets list\". The list is not empty, so the message does not say what is wrong.\n- **A nested `[fanout] nets` value** reports the root cause, then a follow-on error for every required pad (\"not a pad of a [fanout] net\"). Nothing crashes; the extra errors bury the real one.\n- **`[pour] layers` written as a string** (`\"F.Cu\"`) turns the region check `layer not in board_layers` into a substring test, which can pass wrongly, and raises `TypeError` if a region's layers hold a non-string. The later \"[pour] layers must be a non-empty list\" error still fires for the string case. Check the type before `_validate_pour`.\n- **Other readers of board.toml** (`kicad.boardinput`, the `pcb/` scripts, `panel.build` called directly) assume the shapes `validate_config` enforces. They are safe only when boardcheck runs first; either they call `validate_config` themselves or their docstrings say so.\n\nEach item needs a test with the malformed input, in the style of #1042's.\n"
+ },
+ {
+  "number": 1060,
+  "title": "[Bug] enclosure: balancebot J6 has no look-alike kind in modules.toml",
+  "labels": [
+   "bug",
+   "build:balancebot",
+   "area:cad"
+  ],
+  "body": "## What\n\n`just enclosure::test` fails on `main` at `e49ae12`:\n\n```\nFAILED tests/test_modules.py::test_every_estimated_part_has_a_look_alike[balancebot]\n>           assert kind in catalog[\"kinds\"], ref\nE           AssertionError: J6\nE           assert None in {'drv8825': {...}, ...}\n```\n\nThe balancebot carrier's part J6 is an estimated part (it has no 3D model), but no look-alike kind resolves for it in `tools/enclosure/modules.toml`, so `kind` is `None`.\n\n## Evidence\n\n- Reproduced on a clean `origin/main` worktree: 1 failed, 1 passed for that test.\n- It came in with main's balancebot changes, not with #1052. Before #1052 merged main into its branch, the same suite gave 48 passed, 2 skipped.\n- No CI workflow runs `just enclosure::test`, so CI has not caught it.\n\n## Fix\n\nEither map J6 to an existing kind in `modules.toml`, or add a kind for it. Then `just enclosure::test` should pass with 48 passed, 2 skipped."
+ },
+ {
+  "number": 1055,
+  "title": "[Bug] robocar-unified: OTA task waits 360 min before its first manifest check",
+  "labels": [
+   "bug",
+   "build:robocar",
+   "area:ota"
+  ],
+  "body": "## What\n\nThe OTA task's first manifest check runs `OTA_CHECK_INTERVAL_MIN` (360 min) after boot, not at start.\n\n`ota_task()` (`main/ota_manager.c:245-247`):\n\n```c\nfor (;;) {\n    ulTaskNotifyTake(pdTRUE, interval_ticks);\n    run_update_check();\n}\n```\n\nIt waits out the full interval (or a notify) before the first `run_update_check()`. Every reset restarts the 6 h countdown, and with the notify subscription dropped (see the MQTT client issue) nothing else wakes it. On 2026-11-09 Teuvo browned out 13 times; a robot in that state never checks for an update at all.\n\n## Why\n\n`docs/firmware/wifi-and-ota.md` describes OTA as starting on the first link-up of the boot. In practice an online robot learns of a new release only if it stays up for six hours.\n\n## How\n\n- Run one check shortly after the task starts (a short delay after link-up is enough; the rollback-confirm timer is separate), then wait the interval.\n- Keep the fail-closed version compare and the build-SHA rules unchanged.\n\n## Acceptance\n\n- [ ] On a boot with a newer version in the manifest, the robot publishes an OTA status within a minute of link-up.\n- [ ] The periodic check still runs every `OTA_CHECK_INTERVAL_MIN` after that.\n\nRelated: #846, #1005, #991 (brownouts reset the countdown).\n"
+ },
+ {
+  "number": 1051,
+  "title": "[Feature] mechanism: fail check on walls under a per-design floor",
+  "labels": [
+   "enhancement",
+   "area:cad"
+  ],
+  "body": "## What\n\nMake `mechanism.check` fail when a printed part's thinnest wall is under a floor, defaulting to `cadstd.MIN_WALL` (2.0 mm) and overridable per design (e.g. `design.py` `MIN_WALL = 1.0`, with the reason).\n\n## Why\n\n`tools/mechanism/mechanism/check.py` writes `thinnest_mm` per part to `check.json`, but `main()` returns 1 only on clashes (and, from ADR-035 / PR #1052, off-grid holes). A design can ship a wall under any floor and `just mechanism::check` still exits 0. `tools/enclosure` already fails cases under 2.0 mm.\n\nA flat 2.0 mm gate would fail the pan-tilt print, whose 1.0 mm MJF walls are deliberate and listed in its README (\"Walls\"). So the floor has to be per design. Recorded in ADR-035 under Open questions; also proposed as A2 in `docs/reference/jlc-blog/3dp-enclosure-mechanism.md`.\n\n## Acceptance criteria\n\n- [ ] `check.json` reports the floor used per design\n- [ ] `check` exits 1 when any printed part's `thinnest_mm` is under it\n- [ ] The pan-tilt print and the microscope still pass, the pan-tilt with a declared floor and its reason"
+ },
+ {
+  "number": 1050,
+  "title": "[Feature] cadstd: print the calibration coupons and record measured fits",
+  "labels": [
+   "enhancement",
+   "area:cad",
+   "needs:hardware"
+  ],
+  "body": "## What\n\nPrint the `tools/cadstd` calibration coupon on each process and replace the starting fit values with measured ones (ADR-035, decision 3; PR #1052).\n\n```sh\njust cadstd::coupon fdm   # also: sla, mjf; writes tools/cadstd/output/\n```\n\n## Why\n\nEvery fit in `cadstd/fits.py` (`close` 0.15, `slide` 0.3, `running` 0.5 per side) is the value an existing part was built with, the same on all three processes, and marked `measured=False`. Two open questions in ADR-035 are decided by the same measurement:\n\n- **MJF running gap**: JLC3DP gives 0.6 mm between moving parts in MJF; the pan-tilt and `running` use 0.5.\n- **M2 pilot in resin**: 1.6 mm is close to JLC3DP's 1.5 mm resin minimum hole, with about 0.3 mm shrink. The `sla` coupon has an M2 pilot.\n\nAlso: the `fdm` M3 insert hole (4.0) is an estimate.\n\n## Acceptance criteria\n\n- [ ] Coupon printed on each process in use (at least `fdm`; `sla`/`mjf` with the next JLC3DP order)\n- [ ] Each measured class written into `fits.PROCESSES` with `measured=True` and the date in `source`\n- [ ] Where a measured value differs from the old one, `test_cadstd.py`'s pin is updated and the PR lists which committed parts move (`just mechanism::check`, `just enclosure::gen`)"
+ },
+ {
+  "number": 1049,
+  "title": "feat(labels): let candidates check against every data file",
+  "labels": [
+   "enhancement",
+   "area:labels"
+  ],
+  "body": "`just labels::candidates` takes one data file and drafts a label for every parts-stock item that file doesn't name with `stock = \"<slug>\"`. Labels are now split across `drawers-2026-10.toml`, `inventory-2026-11.toml` and `inventory-2026-11-incoming.toml`. Running it against any one of them lists items the others already cover.\n\nDuring #1044, the only way to see what was still unlabelled was to concatenate all three files with their `schema`, `title` and `[colors]` lines stripped, then pass that file to `labels.py candidates`.\n\n**Proposal:** `candidates` accepts several data files, or defaults to every `tools/labels/data/*.toml`, and treats a slug as labelled if any of them names it. A unit test in `tools/labels/test_labels.py` should cover a slug labelled only in the second file."
+ },
+ {
+  "number": 1036,
+  "title": "chore(balancebot): GY-521 orientation follow-ups that need hardware or a toolchain decision",
+  "labels": [
+   "chore",
+   "build:balancebot",
+   "area:carrier-pcb",
+   "needs:hardware",
+   "needs:decision"
+  ],
+  "body": "The GY-521 orientation work (#1014, #1015, #1016, #1020, #1022) left four items that need hands on hardware or a local toolchain decision. None blocks merging the PRs.\n\n## 1. Measure the GY-521 hole positions and the Y arrow\n\n`GY521_Socket` (#1015) uses the measured board size, 21.00 × 15.88 mm. Two offsets inside it are assumptions:\n\n- End hole centre to the nearest short edge: assumed 1.61 mm (row centred on the 21 mm edge).\n- Hole-row centres to the long edge beside them: assumed 1.27 mm.\n\nThe pre-order review measured 1.2 mm between the module's nominal edge and a Dupont housing on J7:1, so a row off-centre by about 1 mm toward INT closes that gap.\n\nAlso confirm the module's Y arrow. `gy-521.md` § Sensor axes derives Y from X and Z instead of reading it off the module.\n\nAfter measuring: correct the `GY521_Socket` entry in `tools/kicad/lib/breakout-sockets/sockets.toml`, regenerate it (`just kicad::gen`), then run `just balancebot::carrier-silk` and `just balancebot::carrier-check` and commit the stamp. Tick the Outline and Orientation items in `docs/reference/boards/gy-521.md`.\n\n## 2. Bench-check the arm refusal (#1014) on a delivered board\n\nOn an 8d18cd8d board (module fitted component side down), with the robot still:\n\n- `mount up`, then `arm`: prints `ERR: IMU reads upside down …` and stays disarmed.\n- `mount down`, then `arm`: arms.\n- Paste `mount down` and `arm` as one input on a board set to `mount up`: arms on the first try, with no false ERR.\n\n## 3. robocar-unified's check stamp records KiCad 10.0.6\n\n`robocar-unified-carrier.check.json` records `kicad_cli_version` 10.0.6; this machine has 10.0.7. `carrier-check` rewrites the stamp, and with #1016 `carrier-fab` refuses to fab from a tree with uncommitted board inputs. So its next `carrier-fab` stops until the stamp is committed. Either re-stamp under 10.0.7 (run `just robocar-unified::carrier-check`, review the diff, commit) or install 10.0.6 before the next robocar order.\n\n## 4. `just enclosure::test` fails on main\n\n`test_every_estimated_part_has_a_look_alike[balancebot]` fails on J6. J7 and J8 are probably the same: `enclosure.toml` gives these rev3 headers heights, but `modules.toml` has no look-alike kind for their PinHeader footprints. Reproduced on `origin/main` during #1015's verification.\n\n## After the PRs merge\n\n- Merge #1015 first, then rebase #1020 and #1022 onto main.\n- After #1016 merges, run `just balancebot::carrier-fab` once and confirm the provenance text passes its DRC check beside J3's VCC and INT labels.\n"
+ },
+ {
+  "number": 1027,
+  "title": "[Test] robocar-unified: bench-verify the sound clips and the reflex horn (#1000)",
+  "labels": [
+   "chore",
+   "build:robocar",
+   "area:voice",
+   "needs:hardware"
+  ],
+  "body": "## What\n\nBench-verify the sound clips from #1000. Its hardware checklist lived in the PR body, which is closed now. Filed here so it does not get lost.\n\n- [ ] Driving into an obstacle honks once.\n  - **Seen 2026-11-09:** Teuvo stopped at a toy train and honked, and GlitchTip has the matching `reflex` planner note (`ROBOCAR-AI-1`, build `0513d691-dirty`).\n  - [ ] Still to check: a second trip within 20 s does not honk again.\n- [ ] `sound horn`, `sound aoogah`, `sound bell`, `sound boing` each play once, logging `sound: <name> (<ms> ms, alone)`.\n- [ ] `voice say [horn] Anteeksi.` plays the horn and runs straight into the sentence.\n- [ ] The clips sound right through the voice FX comb. If not, the player needs a bypass.\n\n## How\n\nFlash a build containing #1000 and run the commands over the serial console or `just robocar-unified::cmd \"<line>\"` (full MQTT access). For the 20 s cooldown, trip the reflex twice within 20 s with a hand in front of the sensor while a drive goal is active.\n\n## Done when\n\nEvery box is ticked, with the `sound:` log lines quoted in a comment.\n"
+ },
+ {
+  "number": 1008,
+  "title": "[Bench] robocar-unified: measure the MSM261D mic at its 1.024 MHz PDM clock vs 2.048 MHz (DSR_16S)",
+  "labels": [
+   "enhancement",
+   "build:robocar",
+   "area:voice",
+   "needs:hardware"
+  ],
+  "body": "## What\n\nThe robocar drives its MSM261D PDM microphone at a clock its datasheet doesn't cover. `mic_pdm.c` uses `I2S_PDM_RX_CLK_DEFAULT_CONFIG(16000)`, which selects `I2S_PDM_DSR_8S`, so GPIO42 carries 16 000 × 64 = **1.024 MHz**. The MSM261D3526H1CPM datasheet (V1.2) specifies two modes:\n\n| Mode | Clock | Sensitivity | SNR |\n|---|---|---|---|\n| Low-Power | 150–900 kHz | −25 dBFS | 62 dB(A) |\n| Standard Performance | 1.1–4.0 MHz | −26 dBFS | 64 dB(A) |\n\n1.024 MHz falls between the two, and the datasheet doesn't say what the part does there. The mic works on the robot, but it's unknown which mode it settles in. That matters because the VAD trigger and the ambient-audio gate both compare levels against thresholds that were tuned by ear at this clock.\n\nDetails and sources: `docs/reference/datasheets/sensor--msm261d.md` § \"PDM clock the firmware generates\".\n\n## Why\n\nSwitching to `I2S_PDM_DSR_16S` keeps the 16 kHz sample rate Gemini expects and doubles the clock to 2.048 MHz, inside the Standard Performance range. Whether that changes level, noise floor or VAD behaviour is a bench question. It shouldn't be changed blind, because `voice trigger`, `voice endpoint` and the adaptive floor were all set at the current clock.\n\n## How (bench)\n\n1. Fixed stimulus: a 1 kHz tone from a phone at a fixed distance and angle from the mic, in a quiet room, with the robot's own speaker silent.\n2. On the current firmware (DSR_8S, 1.024 MHz), record `mic dump <n>` and note the `mic` floor and level readings.\n3. Build with `.clk_cfg.dn_sample_mode = I2S_PDM_DSR_16S` in `mic_pdm.c` (2.048 MHz) and repeat.\n4. Compare the tone's RMS, the silent-room floor, and THD between the two dumps. Optionally scope GPIO42 to confirm the clock.\n5. Decide: keep DSR_8S and record the measured behaviour on the MSM261D page, or switch to DSR_16S and re-check `voice trigger` / `voice endpoint` and the ambient gate thresholds.\n\n## Acceptance\n\n- [ ] Both clocks measured with the same stimulus; numbers recorded on `sensor--msm261d.md` (its open check item)\n- [ ] The decision recorded in `pin_config.h`'s `MIC_SAMPLE_RATE_HZ` comment, and in the firmware if it changes\n"
+ },
+ {
+  "number": 969,
+  "title": "[Enhancement] robocar carriers: separate 3V3 and 5V on the J11 test header (1x5 order)",
+  "labels": [
+   "enhancement",
+   "build:robocar",
+   "area:carrier-pcb"
+  ],
+  "body": "## What\n\nAt the next robocar carrier revision, move the supply test header J11 from the 1×4 `testpoint-power-1x4` (3V3, 5V, GND, VBAT) to a 1×5 that puts GND between every pair of rails: 3V3, GND, 5V, GND, VBAT. This applies to `packages/robocar/unified` and `packages/robocar/unified-integrated`.\n\n## Why\n\nIn the 1×4 order, 3V3 and 5V are neighbours. A meter probe that slips across them drives the 5 V rail, which can source amps, into the 3V3 rail. On a XIAO that is IOVDD, rated 3.63 V absolute maximum on the RP2350 and similar on the ESP32-S3. VBAT already neighbours only GND.\n\nThe balancebot rev3 carrier makes this change for its J8 (feat/balancebot-carrier-rev3, new registry entry `testpoint-power-1x5`). The adversarial pre-fab review of rev3 found the hazard.\n\n## How\n\n- Use `docs/reference/parts/testpoint-power-1x5.toml` from the balancebot rev3 PR.\n- Check the 1×5 courtyard where J11 sits on each carrier.\n- Do it as part of a revision made for other reasons. On its own it is not worth a respin.\n"
+ },
+ {
+  "number": 922,
+  "title": "NotebookLM refresh: November 2026",
+  "labels": [
+   "chore",
+   "notebooks",
+   "core:docs"
+  ],
+  "body": "Scheduled monthly refresh of the curated NotebookLM knowledge base.\nSee `docs/reference/notebook-mapping.md` for the full mapping.\n\n**How to run:** `notebooklm login` (once), `just notebooks-status`\nto audit, then `just notebooks-refresh` to regenerate + download\nthe briefing docs. The CLI is not available in CI because auth\nlives on your machine.\n\n## Active notebooks — monthly checklist\n\nRegenerate a briefing-doc report on each, skim it, and add/remove\nsources where the answer drifted.\n\n- [ ] AI vision backends for embedded — `a755b5cd`\n- [ ] OTA updates & browser-based flashing — `c6868def`\n- [ ] WiFi provisioning, mDNS & MQTT — `ada2b18e`\n- [ ] USB gadget & HID on ESP32-S3 — `e91ebe8d`\n- [ ] I2S audio & synthesis on ESP32 — `8cbdd8bb`\n- [ ] ESP32-S3 hardware families — `3bb67ba2`\n- [ ] ESP32 classic boards (CAM, Heltec, TTGO) — `d2d63711`\n- [ ] Sensors & modules used in this lab — `c2d44a8c`\n- [ ] Motor drivers & power electronics — `197ef318`\n- [ ] ESP32 peripherals: I2C, UART, I2S, GPIO — `5601a768`\n- [ ] ESP-IDF v5.4+ core reference — `f5af16f1`\n- [ ] ESPHome platform & components — `2cb7153a`\n- [ ] Bluepad32 & BLE HID input — `f696b00a`\n- [ ] ChameleonUltra RFID/NFC — `4831062f`\n- [ ] Python simulation & robotics math — `28c00388`\n- [ ] Claude Code workflow & plugins — `ae5b0f8b`\n\n## New docs since last refresh\n\nCheck whether any ADRs / PRDs merged since last refresh have been\nseeded into the matching notebook:\n\n```\ngit log --since=\"1 month ago\" --name-only --pretty=format: \\\n  -- docs/decisions docs/requirements | sort -u\n```\n\n## Done?\n\nClose this issue when the checklist is complete. The next reminder\nwill open automatically on the 1st of next month.\n"
+ },
+ {
+  "number": 918,
+  "title": "[Chore] ci: review whether the ESP-IDF disk cleanup step is still needed",
+  "labels": [
+   "chore",
+   "core:ci"
+  ],
+  "body": "## What\n\nPR #914 (for #913) added a `Free runner disk space` step to `.github/workflows/_ci-build-esp32.yml`. It removes the Android SDK, .NET, GHC and CodeQL before the IDF image cache restore, and logs `df -h /` before and after the cleanup and after `docker load` / `docker pull`.\n\n## Why review it\n\nThe step takes 73 s per job (05:12:57 to 05:14:10 in [the #914 `esp32cam-llm-telegram` job](https://github.com/laurigates/mcu-tinkering-lab/actions/runs/41276043622/job/124758339387)), across 21 ESP-IDF jobs. Most of that is the Android SDK removal.\n\nOn that runner `/` was 145G with 86G free before the cleanup, 108G after, and 95G after `docker load`. A load needing about 13G could not have run out of space there without the cleanup. The #909 failure therefore probably ran on a runner with a much smaller root disk, which that run does not show.\n\n## Steps\n\n- Collect the `df -h /` lines from ESP-IDF job logs over a number of runs and note the smallest free space seen before the cleanup.\n- If every runner has ample headroom, drop the `rm -rf` and keep the `df` lines. If small-disk runners appear, keep the cleanup, or narrow it to the faster removals (.NET, GHC) if those free enough.\n\n## Acceptance\n\nA decision recorded here with the observed minimum free space, and the workflow changed to match it if needed."
+ },
+ {
+  "number": 896,
+  "title": "[Docs] PRD-016: roadmap from cost rules to per-unit pricing (to flesh out)",
+  "labels": [
+   "docs",
+   "area:sourcing",
+   "needs:decision"
+  ],
+  "body": "## Summary\n\nA speculative roadmap that extrapolates from PRD-016 (#890, build cost model and sourcing planner) and the PRDs that will use its figures. It is a draft to flesh out, not a plan anyone has agreed to. The follow-ups found while reviewing #890 are sub-issues of this one.\n\n## Draft phases\n\n1. **Data layer.** The `[[consumables]]` schema in `tools/hardware`, tariff codes in the parts registry, the tracked calibration fixtures, and R1–R10 as tested functions (FR-044–046, FR-050, FR-052). Done when the held-out fixture (the 15-line checkout, €138.55) passes.\n2. **Planner.** Grouping into parcels, JLCPCB PCBA against a bare PCB with hand assembly, and the plan CSV (FR-047, FR-049, FR-051). It connects to the `jlcpcb-order` and `aliexpress-parts` skills and gives PRD-013's \"prototype or order the fab\" decision a number.\n3. **Merge with PRD-014.** PRD-014's per-upgrade `cost.csv` (FR-029) is produced by the planner instead of by hand. PRD-014's `packages/robocar/upgrades/lead-times.csv` (FR-031) and FR-045's lead-time field overlap, so they should become one dataset.\n4. **Unit economics.** Cost per robot with labour (FR-048), which is the per-unit figure PRD-015 route C needs before any selling price.\n5. **Batches (N = 20).** Needs PRD-016 open question 2 answered (AliExpress parcels over €150) and real duty rates for JLCPCB parcels over €150. It also needs LCSC loose-part orders and JLC3DP case quotes from `tools/enclosure`.\n\n## To flesh out\n\n- [ ] Agree the phase order; phases 3 and 4 depend on 1 and 2\n- [ ] Decide whether the PRD-014 overlaps (`cost.csv`, `lead-times.csv`) are resolved in PRD-016 or in PRD-014\n- [ ] Turn each phase into FRs or a PRP once #890 merges\n- [ ] Decide whether N = 20 belongs in PRD-016 or in a later PRD\n\nRelated: #890, #880 (component labels from purchase history, same order-history source)."
+ },
+ {
+  "number": 830,
+  "title": "Check a printout of perfboard-print.svg against its 50 mm scale bar",
+  "labels": [
+   "enhancement",
+   "build:balancebot",
+   "area:carrier-pcb",
+   "needs:hardware"
+  ],
+  "body": "## What\n\nPrint `packages/robotics/balancebot/hardware/perfboard/perfboard-print.svg` at 100 % on the ET-3750 and measure the 50 mm bar and the corner-hole crosshairs against a real 50 × 70 mm proto board.\n\n## Why\n\nThe PR adding the print checks the geometry in SVG units, and a 300 dpi `rsvg-convert` render matches the document size. The printer's own scaling is unchecked: inkjets usually err along the paper-feed axis. PRD-013's acceptance criterion is 50.0 ± 0.5 mm.\n\n## How\n\n1. Print with \"fit to page\" off and measure the bar along both axes. Rotate the print 90° to check the paper-feed axis.\n2. Lay the cut-out component side on the board and check that the corner crosshairs land on A1, R1, A24 and R24.\n3. Record the result in PRD-013. If the scale is off, note the correction the print dialog needed.\n"
+ },
+ {
+  "number": 825,
+  "title": "test(kicad): pcbnew tests for the via gates; fanout diagonal candidates clip pad corners",
+  "labels": [
+   "bug",
+   "area:carrier-pcb"
+  ],
+  "body": "## What\n\nTwo gaps in `tools/kicad/pcb`, found by the Sonnet reviews of #819 and the work on #823:\n\n1. **The via logic in `route_board.py` has no test that can fail.** This covers `grow_vias`, `vias_in_pads` and fanout's \"clear every pad but your own\" check (`blocks(..., own)`). Reverting any of them leaves `just kicad::test` green.\n   - The only `route_board` coverage is `test_pcb_py39`, which checks that the file compiles under Python 3.9.\n   - The pcbnew tests in `test_build_board.py` skip on the installed KiCad 10.0.7, because the subset is pinned at 10.0.6.\n2. **`pcb/fanout.py` `candidates()` measures the via offset along the ray, not perpendicular to the pad edge.**\n   - Each candidate sits at `edge_distance + gap + via_r` from the pad centre along one of 16 rays. On a diagonal ray that leaves less than `gap` between the via ring and the pad's corner.\n   - On #823 the 1.0 mm fanout via for C3:2 came 0.01 mm over the pad corner. The via-in-pad gate failed the route, and the agent worked around it with `[fanout] exempt` and a fixed track.\n   - The fourth integrated-carrier review measured same-net ring-to-pad gaps of about 0.054 mm (from bounding boxes) at U6:1, U6:14, U10:1 and C3:2. That is probably the same cause.\n\n## How\n\n- For (2): place each candidate where the via's circle clears the pad's rectangle by `gap`, using the perpendicular or corner distance rather than the ray distance. Add a `test_fanout.py` case with a diagonal candidate beside a corner.\n- For (1): pcbnew tests on a small synthetic board.\n  - An undersized routed via grows to its class's size.\n  - A via whose ring overlaps a same-net SMD pad is reported, and an `in_pad` one is not.\n  - A fanout via does not land in a neighbouring same-net pad.\n  - They run when KiCad's Python is present. Check that they actually run on the pinned version, or decide whether to re-pin to 10.0.7.\n\n## Related\n\n#819, #822, #823; carrier-pcb skill traps 37 and 42.\n"
+ },
+ {
+  "number": 747,
+  "title": "balancebot: read the carrier's pack-voltage divider on D0",
+  "labels": [
+   "enhancement",
+   "build:balancebot"
+  ],
+  "body": "The carrier PCB has a 100 kΩ / 27 kΩ divider from the 3S pack into XIAO D0 (GPIO26, ADC0), with 100 nF to ground. Firmware does not read it yet, so the robot still cannot see the motor pack. `stat`'s battery figure is the XIAO's own divider on GPIO29, and the first sign of a flat pack is the BMS cutting power and the robot falling.\n\nScope:\n- Add `PIN_PACK_ADC 26` to `src/pin_config.h`, and add the role to `ROLE_NETS` in `hardware/carrier/scripts/check_pins.py` (net `PACK_SENSE`). Otherwise `carrier-check` fails because the role reaches the header with no carrier net, which is the intended tripwire.\n- Read it on core 0 alongside the existing battery reading. Scale is V_pack = V_adc × 127/27 (12.6 V full reads 2.68 V).\n- Report it in `stat` and the CSV (append-only column), and warn below about 10.5 V (3.5 V/cell), before a typical BMS cutoff near 2.5–2.8 V/cell.\n- On a hand-wired build without the carrier, D0 floats. The reading must say it is absent, not report 0 V.\n"
+ },
+ {
+  "number": 734,
+  "title": "[Build] ESP-IDF: migrate all firmware from v5.4 to v5.5",
+  "labels": [
+   "enhancement",
+   "core:build"
+  ],
+  "body": "Moving every ESP-IDF build from v5.4 to v5.5 was tried in #733 and backed out. The trial run found two compile breaks beyond the `led_strip` one that prompted it:\n\n- `packages/components/thinkpack-mesh/espnow_mesh.c:519`: `esp_now_register_send_cb()` takes a callback with a different signature on 5.5 (`-Wincompatible-pointer-types`). Fails in thinkpack-brainbox, thinkpack-chatterbox, thinkpack-finderbox, robocar-main, robocar-camera, robocar-unified and robocar-bringup. The last four build every `packages/components/*` through `EXTRA_COMPONENT_DIRS`, so they inherit it.\n- bluepad32 `release_v3.10.3`, `src/components/cmd_system/cmd_system.c:339`: implicit declaration of `gpio_wakeup_enable`. Fails in gamepad-synth and xbox-switch-bridge. Third-party code, cloned by `_ci-build-esp32.yml`.\n\nOther breakage may only show once these compile, and a green build does not prove a board boots (`.claude/rules/esp-idf-i2c-driver-generation-conflict.md`).\n\nPlaces that set the version: `IDF_VERSION` in `_ci-build-esp32.yml`, `build-firmware.yml` and `refresh-idf-locks.yml`; the `Dockerfile` base image; the `docker-compose.yml` image tag. The compose `esp-idf-tools` volume is mounted over `/opt/esp`, and Docker fills a named volume from the image only when the volume is created, so it needs a versioned name or local builds keep running the old IDF. #611 (Renovate) already moves the `Dockerfile` alone to v5.5.\n\nWhen this lands, lift the `espressif/led_strip` `<3.1.0` cap added in #733.\n\nAcceptance: CI builds every project on 5.5, and robocar-unified boots on the bench.\n"
+ },
+ {
+  "number": 729,
+  "title": "schematics: committed PNG typeface depends on the rasterising host",
+  "labels": [
+   "bug",
+   "area:schematics"
+  ],
+  "body": "## What\n\nThe committed PNGs under `docs/schematics/images/` depend on the rasterising host's fonts. The SVGs set `font-family=\"sans\"`. On macOS that resolves to Helvetica, and on the hosts that produced the other PNGs it resolves to DejaVu Sans. #726 committed a macOS-rasterised `gamepad_synth.png`, so the image `packages/audio/gamepad-synth/WIRING.md` embeds now uses a different typeface from `balancebot.png` and `robocar_unified.png`.\n\nA local render on macOS also rewrites `balancebot.png` and `gamepad_synth.png` bytes when their SVG is unchanged (see `.claude/rules/schematic-layout.md`). CI diffs only the SVGs (`schematics-check.yml`), so nothing notices.\n\n## Why\n\n`robocar_unified.png` is compiled into the build-guide PDF, so a typeface that varies by host also reaches the printed guide.\n\n## Done when\n\n- The rendered PNG's typeface does not depend on the host. Options: pin a bundled font in the SVG output, or rasterise only in CI and commit that output.\n- `just schematics::render` on macOS leaves PNGs byte-identical when their SVG is unchanged.\n"
+ },
+ {
+  "number": 710,
+  "title": "thinkpack-brainbox: just build accepts the CI-generated credentials.h stub",
+  "labels": [
+   "bug",
+   "build:thinkpack"
+  ],
+  "body": "## What\n\n#708 made `packages/thinkpack/brainbox/CMakeLists.txt` write a stub `main/credentials.h` (empty `WIFI_SSID`/`WIFI_PASSWORD`, no API key) when the file is missing, so CI can build without credentials. The stub stays in the source tree. The `credentials` recipe in `packages/thinkpack/brainbox/justfile` only tests `[ -f main/credentials.h ]`, so after one no-credential configure (`just thinkpack-brainbox::_idf-build`, or any direct `idf.py` run) `just build` prints \"main/credentials.h present\" and builds from the stub.\n\n## Impact\n\nLow. `validate_credentials()` rejects the empty SSID, so the firmware falls back to Improv provisioning and then runs offline without the LLM key. The developer intended a build with their own credentials and gets one without them. The only sign is the boot log. The file is gitignored (`.gitignore:54`), so it cannot be committed.\n\n## Suggested fix\n\nHave the `credentials` recipe also fail when the file contains the stub marker (`Auto-generated stub`), and tell the developer to replace it from `credentials.h.example`.\n\nFound while reviewing #708.\n"
+ },
+ {
+  "number": 704,
+  "title": "docs: xiao-esp32s3 GPIO43 note covers only the ROM log, not an ESP-IDF UART0 console",
+  "labels": [
+   "docs",
+   "core:docs"
+  ],
+  "body": "## What\n\nThe GPIO43 (D6) caution row in `docs/reference/boards/xiao-esp32s3.md` (added in #701) describes the ROM boot messages on UART0. It does not mention the ESP-IDF console. A project that keeps ESP-IDF's default console (`CONFIG_ESP_CONSOLE_UART_DEFAULT`, UART0) would also send its own log output to U0TXD, so D6 would carry traffic for as long as the firmware runs, not only at reset.\n\nThe robocar projects are not affected: `packages/robocar/unified/sdkconfig.defaults` and `packages/robocar/bringup/sdkconfig.defaults` both set `CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`. The board reference is shared, so a new XIAO ESP32-S3 project using the defaults would be.\n\n## Suggested change\n\nAdd one sentence to the GPIO43 row: an ESP-IDF project using the default UART0 console also logs on D6, and choosing `CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y` moves the app's console off it.\n\nBefore writing it, confirm two things against the ESP-IDF v5.4 docs or Kconfig: which console ESP-IDF picks by default on the ESP32-S3, and where the second-stage bootloader prints when the console is USB Serial/JTAG. I have not checked the second one, and the sentence should not claim it until someone has.\n\nFound while reviewing #701.\n"
+ },
+ {
+  "number": 693,
+  "title": "ci: run the drift-guard extraction-recipe check when the guard workflow or its rule changes",
+  "labels": [
+   "chore",
+   "core:ci"
+  ],
+  "body": "## What\n\n`tools/check-typst-docs.py` (pre-commit hook `check-typst-docs`) now includes a check that runs the drift-guard extraction recipe printed in `.claude/rules/build-guide-drift-guard.md` § 2 against `.github/workflows/build-guide-check.yml` (PR #692, issue #637). In CI, that hook runs only through `test.yml`'s `pre-commit run --all-files`. `test.yml` is path-filtered to `packages/**`, `tools/**`, `.pre-commit-config.yaml` and a few other paths, and it does not list:\n\n- `.github/workflows/build-guide-check.yml`, which is the file whose step rename broke the recipe in #637\n- `.claude/rules/build-guide-drift-guard.md`, which is where the recipe lives\n\nSo a PR that touches only those two files, which is the most likely way to break the recipe, gets the check from the author's local pre-commit hook and nothing in CI.\n\n## Options\n\n1. Add both paths to `test.yml`'s `push` and `pull_request` path filters. Simple, but it runs the full test job on workflow- and rule-only PRs.\n2. Add a `python3 tools/check-typst-docs.py` step to `build-guide-check.yml`, and add `tools/check-typst-docs.py` and the rule file to that workflow's trigger paths. That workflow already triggers on its own file, and the job already has Python.\n\nOption 2 keeps the check next to the guard it protects.\n\n## Acceptance\n\n- A PR that renames the `... check for drift` step without updating the rule's regex fails in CI.\n"
+ },
+ {
+  "number": 352,
+  "title": "hw(lego-boost-xbox-fw): Phase 1 (optional) — central-path confidence check with Powered Up handset",
+  "labels": [
+   "enhancement",
+   "build:lego-boost",
+   "needs:hardware"
+  ],
+  "body": "## Context\n\nFollow-up to #349. Optional, zero-build confidence check for the spike: confirm\nthe Move Hub's BLE central path (scan → connect → notify) works hands-on, using\nthe LEGO Powered Up handset that Pybricks already supports via\n`pupdevices.Remote`. This de-risks the central role independently of the Xbox\nwork. **Only do this if you own a Powered Up handset** — otherwise skip; Phase 3\n(#351) exercises the real target directly.\n\n## Scope\n\nRun a `pybricksdev` script against the **official Pybricks firmware already on the\nhub** (no custom build) and confirm live remote input.\n\n## Steps / Deliverables\n\n- [ ] `just boost-fw::run remote_test` — Move Hub scans for, connects to, and reads a `Remote`\n- [ ] Note the result in `docs/spike-log.md`\n\n## Acceptance (gate)\n\n- Remote button presses print live in the terminal, confirming the hub's central\n  scan/connect/notify path works on real hardware.\n\n## Dependencies\n\n- Tooling from #349 (merged). No custom build required.\n- Hardware: Move Hub + a LEGO Powered Up handset (optional — skip if unavailable).\n\n## References\n\n- `spike/remote_test.py`, options doc\n  (`packages/input-gaming/lego-boost-xbox-fw/docs/movehub-custom-firmware-options.md`),\n  spike plan Phase 1.\n- Related: #350 (Phase 2), #351 (Phase 3).\n"
+ },
+ {
+  "number": 346,
+  "title": "Dependency Dashboard",
+  "labels": [
+   "chore",
+   "core:ci"
+  ],
+  "body": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\n## Pending Approval\n\nThe following branches are pending approval. To create them, click on a checkbox below.\n\n - [ ] <!-- approve-branch=renovate/uv-0.x -->chore(deps): update dependency astral-sh/uv to v0.13.7\n - [ ] <!-- approve-branch=renovate/ruff-pre-commit-0.x -->chore(deps): update pre-commit hook astral-sh/ruff-pre-commit to v0.17.4\n - [ ] <!-- approve-branch=renovate/ruff-0.x -->fix(deps): update dependency ruff to v0.1",
+  "_note": "body cut to its first 600 characters; the live body is 14,647"
+ },
+ {
+  "number": 268,
+  "title": "gamepad-synth: reintroduce expression controls lost when LT/RT became pitch-bend",
+  "labels": [
+   "enhancement",
+   "needs:decision"
+  ],
+  "body": "## Context\n\nMapping LT/RT to pitch-bend across five pitched modes (Mono, Dual Osc, Delay Synth, Scale, Drone) unified the control convention but dropped three expression features:\n\n1. **Delay Synth**: trigger-driven filter sweep (LT = cutoff down, RT = cutoff up) — classic \"wah through the delay\" gesture is gone.\n2. **Mono**: continuous LFO rate/depth control and RT-threshold-to-enable behavior. The cutoff LFO is now always on at the settings-page rate/depth, losing the Monotron-style \"tap to engage\" feel.\n3. **Drone**: continuous LFO rate/depth. Drone used to be the primary place to sculpt slow evolving textures with the triggers; it now relies on settings-page edits.\n\n## Candidate remaps\n\nThe d-pad and shoulder buttons are underused across these modes. Some options:\n\n- **Delay Synth**: d-pad up/down = filter cutoff coarse steps; shoulders = delay-time nudge (paired with existing RY=delay time).\n- **Mono**: LB+LT held = \"engage LFO\" — hold to enable, depth via LFO_depth setting. Or d-pad up/down = LFO rate in 0.5 Hz steps with a brief value blip on release.\n- **Drone**: long-press LB or RB cycles LFO target (pitch / cutoff / both) with a ladder blip; d-pad up/down controls depth live.\n\n## Decision needed\n\nPick a single convention that works across the three modes rather than three one-off schemes. The current pitch-bend role on LT/RT must be preserved — that's the main win."
+ }
+]

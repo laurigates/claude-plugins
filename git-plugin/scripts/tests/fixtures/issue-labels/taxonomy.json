@@ -1,0 +1,86 @@
+{
+  "_comment": "Test fixture. Label names, colours and descriptions are laurigates/mcu-tinkering-lab's live build: and area: labels (gh label list --limit 500, 2026-11-10). paths and scopes are this fixture's reading of that repo's layout and issue titles, not a file the repo ships.",
+  "build": {
+    "thinkpack": {
+      "description": "ThinkPack mesh boxes and their shared components",
+      "color": "1d76db",
+      "paths": ["packages/thinkpack/**", "packages/components/thinkpack-*/**"],
+      "scopes": ["thinkpack-brainbox", "thinkpack-boombox", "thinkpack-glowbug", "thinkpack-mesh-demo"]
+    },
+    "balancebot": {
+      "description": "Self-balancing robot firmware and carrier",
+      "color": "1d76db",
+      "paths": ["packages/robotics/balancebot/**"]
+    },
+    "robocar": {
+      "description": "robocar-unified, unified-integrated, twin, simulation, Teuvo",
+      "color": "1d76db",
+      "paths": ["packages/robocar/**"],
+      "scopes": ["robocar-unified", "robocar-unified-integrated", "robocar-twin", "robocar carriers", "teuvo"]
+    },
+    "lego-boost": {
+      "description": "LEGO Boost Xbox bridge and hub firmware",
+      "color": "1d76db",
+      "paths": ["packages/input-gaming/lego-boost-xbox/**", "packages/input-gaming/lego-boost-xbox-fw/**"],
+      "scopes": ["lego-boost-xbox", "lego-boost-xbox-fw"]
+    },
+    "melody-detector": {
+      "description": "Melody detector firmware and ML training",
+      "color": "1d76db",
+      "paths": ["packages/audio/melody-detector/**"]
+    }
+  },
+  "area": {
+    "connectivity": {
+      "description": "WiFi, MQTT, provisioning, ESP-NOW",
+      "color": "0e8a16",
+      "paths": ["packages/components/improv-wifi/**"],
+      "scopes": ["improv-wifi"]
+    },
+    "cad": {
+      "description": "Printed parts: enclosure, mechanism, cadstd",
+      "color": "0e8a16",
+      "paths": ["tools/enclosure/**", "tools/mechanism/**", "tools/cadstd/**"],
+      "scopes": ["enclosure", "mechanism", "cadstd"]
+    },
+    "carrier-pcb": {
+      "description": "tools/kicad, hardware join, parts registry, perfboard",
+      "color": "0e8a16",
+      "paths": ["tools/kicad/**", "tools/kicad.just", "tools/hardware/**", "docs/reference/parts/**"],
+      "scopes": ["kicad", "carriers", "perfboard", "parts registry"]
+    },
+    "schematics": {
+      "description": "docs/schematics router, symbols and gates",
+      "color": "0e8a16",
+      "paths": ["docs/schematics/**"]
+    },
+    "sourcing": {
+      "description": "Part sourcing, cost rules, quotes, tariffs",
+      "color": "0e8a16",
+      "scopes": ["kicad.sourcing", "prd-016"]
+    },
+    "labels": {
+      "description": "tools/labels sticker sheets",
+      "color": "0e8a16",
+      "paths": ["tools/labels/**"]
+    },
+    "ota": {
+      "description": "OTA updates and the untethered dev loop",
+      "color": "0e8a16",
+      "paths": ["packages/components/ota-github/**"]
+    },
+    "voice": {
+      "description": "TTS, microphone, hands-free, Gemini Live",
+      "color": "0e8a16"
+    },
+    "motion": {
+      "description": "Motors, servos, reflexes, rangefinders, cliff sensors",
+      "color": "0e8a16"
+    }
+  },
+  "core": {
+    "components": {"paths": ["packages/components/**"]},
+    "docs": {"paths": ["docs/blueprint/**", "docs/decisions/**", "docs/requirements/**"]},
+    "quality": {"paths": [".pre-commit-config.yaml", "ruff.toml", ".clang-format"], "scopes": ["lint"]}
+  }
+}
