@@ -377,6 +377,13 @@ printf -- '---\nid: ADR-0001\nid: ADR-9999\nstatus: Accepted\n---\n# First headi
 printf -- '---\nid: WO-001\nstatus: open\ntitle:\n---\n# WO heading\n' > "$sb/docs/blueprint/work-orders/001-wo.md"
 printf -- '---\nstatus: Accepted\ntitle: No id\n---\n' > "$sb/docs/adrs/0002-noid.md"
 printf -- '# No frontmatter\nid: ADR-0003\n' > "$sb/docs/adrs/0003-nofm.md"
+# An index README with no frontmatter whose fenced format example opens with
+# `---`: the fence is body text, not frontmatter. Before the fix the sweep
+# took the first two `---` lines anywhere in the file and registered the
+# template as a junk ADR-NNNN entry (the write-time hook already required
+# frontmatter to open the file).
+# shellcheck disable=SC2016  # the backticks are a literal markdown fence
+printf -- '# ADR index\n\nTemplate:\n\n```markdown\n---\nid: ADR-NNNN\ntitle: "ADR-NNNN: Title"\nstatus: Proposed        # Draft | Proposed\ncreated: YYYY-MM-DD\n---\n```\n' > "$sb/docs/adrs/README.md"
 out=$(bash "$AUTORUN" --project-dir "$sb")
 assert_contains "L: sweep registered the six id-bearing docs" "STATE=ran DOCS=6 CHANGED=true" "$out"
 expected='{

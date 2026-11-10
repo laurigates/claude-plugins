@@ -184,8 +184,9 @@ run_sync_ids() (
     # field and one jq read-modify-write per document; at 88 documents that
     # took 6.3 s, past the probe's 5 s hook budget (#3169).
     #
-    # Per-document rules (unchanged): the frontmatter is the lines between the
-    # first two `---` lines; the first `<key>:` line wins, leading whitespace
+    # Per-document rules: the frontmatter is the lines between the first two
+    # `---` lines, and only when the file's first line is `---` (as the
+    # write-time hook requires); the first `<key>:` line wins, leading whitespace
     # stripped and CRs removed; an empty title falls back to the file's first
     # `# ` heading; a document without an id is skipped.
     local rows
@@ -208,6 +209,10 @@ run_sync_ids() (
             emit()
             doc = FILENAME; n = 0; id = status = title = created = heading = ""
             has_id = has_status = has_title = has_created = has_heading = 0
+            # Frontmatter opens the file. A file whose first line is not
+            # `---` has none, so a later `---` pair (a fenced format example
+            # in an index README) is body text and is never read as fields.
+            if ($0 != "---") n = 2
         }
         n < 2 && /^---$/ { n++; next }
         n == 1 {
