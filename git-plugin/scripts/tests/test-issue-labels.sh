@@ -24,8 +24,9 @@
 #
 # What the suite must catch: a model-proposed label outside the allowlist being
 # accepted, a needs label kept without a quote from the issue, a label added
-# over one a person already set, and a blocked label cleared while a blocker is
-# still open or when no dependency link exists.
+# over one a person already set, a blocked label cleared while a blocker is
+# still open or when no dependency link exists, and a word in an issue body
+# ("the docs") read as a repo path.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -130,6 +131,12 @@ expect 346 none "" "Dependency Dashboard"
 expect 830 none "build:balancebot" "Check a printout of perfboard-print.svg"
 expect 922 scope "core:docs" "NotebookLM refresh:"
 
+echo "=== a bracket followed by a conventional title ==="
+item "[Bug] fix(robocar-unified): wheel stalls" ""
+is "the parenthesised scope after a bracket still routes" "$(cls)" "bug,build:robocar"
+item "[Chore] ci(balancebot): cache the toolchain" ""
+is "and the conventional word is a scope there too" "$(cls)" "chore,build:balancebot,core:ci"
+
 echo "=== security is never derived from a title ==="
 for title in "[Security] auth: token printed in logs" "security(auth): token printed in logs" "security: token printed in logs"; do
     item "$title" ""
@@ -180,6 +187,27 @@ is "the taxonomy's core.docs paths replace the default" "$(core docs/reference/b
 is "the taxonomy's core.docs paths apply" "$(core docs/decisions/ADR-001.md "$FX/taxonomy.json")" "core:docs"
 is "a core entry the taxonomy adds" "$(core packages/components/improv-wifi/a.c "$FX/taxonomy.json")" "area:connectivity,core:components"
 is "an untouched default survives the override" "$(core .github/workflows/build.yml "$FX/taxonomy.json")" "core:ci"
+
+echo "=== body paths: a word is not a path ==="
+# With no taxonomy file only the built-in globs apply. A directory or file name
+# used as a word matched them: `docs` in a sentence gave core:docs.
+# bodycls <body> [taxonomy] — labels an unlabelled issue with no title scope takes from its body.
+bodycls() {
+    item "Sensor reads zero after reset" "$1"
+    python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "${2:-$TMP/empty.json}" \
+        --repo-labels "$FX/repo-labels.json" | jq -r '.add | join(",")'
+}
+is "the word docs in a sentence is not docs/**" "$(bodycls "According to the upstream docs the register clears on read.")" ""
+is "nor at the end of a sentence, in backticks or in brackets" "$(bodycls 'See the docs. The `docs` moved; (docs) too.')" ""
+is "the word justfile is not the root justfile" "$(bodycls "Add a justfile recipe for the sweep.")" ""
+# Controls: the same globs match once the token is written as a path, so the
+# cases above are empty because of the token's shape and nothing else.
+is "control: docs/ with its slash is the directory" "$(bodycls 'Everything under `docs/` is stale.')" "core:docs"
+is "control: a file under docs/" "$(bodycls "See docs/guide.md for the steps.")" "core:docs"
+is "control: ./justfile is the root justfile" "$(bodycls 'The recipe is in `./justfile`.')" "core:build"
+is "control: a dotted root file" "$(bodycls "Register the server in .mcp.json first.")" "core:agent"
+is "control: a directory cited without a trailing slash" \
+    "$(bodycls 'The fault is in `packages/robocar`.' "$FX/taxonomy.json")" "build:robocar"
 
 echo "=== additive only ==="
 # #1055 carries bug, build:robocar and area:ota by hand.
@@ -304,6 +332,12 @@ is "a second type is refused" "$(reason "$out" bug)" "prefix_present"
 is "a second area: label is refused" "$(reason "$out" area:ota)" "prefix_present"
 is "a second needs: label is refused, quote or not" "$(reason "$out" needs:decision)" "prefix_present"
 is "a label already on the issue is reported" "$(reason "$out" enhancement)" "already_set"
+echo '{"labels": ["bug", "enhancement", "bug", "area:cad", "area:ota"]}' >"$TMP/model.json"
+out=$(val "$TMP/model.json")
+is "of two types in one file the first is kept; routing labels may be several" \
+    "$(jq -r '.add | join(",")' <<<"$out")" "bug,area:cad,area:ota"
+is "the second type is reported, a repeated name is not" \
+    "$(jq -r '[.dropped[] | "\(.label)=\(.reason)"] | join(",")' <<<"$out")" "enhancement=second_type"
 echo '{"labels": [42, {"evidence": "x"}, "bug"]}' >"$TMP/model.json"
 out=$(val "$TMP/model.json")
 is "malformed entries are dropped, the rest kept" "$(jq -r '"\(.add | join(","))|\([.dropped[].reason] | join(","))"' <<<"$out")" "bug|malformed,malformed"
@@ -360,6 +394,16 @@ is "--dry-run writes nothing" "$(writes)" ""
 has "--dry-run still lists the actions" "$out" "OP=rename LABEL=build:lego FROM=project:lego"
 has "--dry-run reports APPLIED=0" "$out" "APPLIED=0"
 
+echo "=== provision: an entry with no description leaves the label's alone ==="
+stub_reset
+provision_labels
+echo '{"area": {"ota": {"color": "0e8a16"}, "cad": {"color": "ffffff"}, "new": {"color": "5319e7"}}}' >"$TMP/nodesc.json"
+out=$(python3 "$TOOL" provision --repo o/r --taxonomy "$TMP/nodesc.json")
+is "the colour is written; no description is sent" "$(writes)" \
+    "api -X PATCH repos/o/r/labels/area%3Acad -f color=ffffff
+api -X POST repos/o/r/labels -f name=area:new -f color=5319e7"
+has "a matching colour is unchanged whatever the label's description" "$out" "OP=unchanged LABEL=area:ota"
+
 echo "=== provision: refusals stop before any write ==="
 # refuse <description> <taxonomy json> <text the REASON must carry>
 refuse() {
@@ -382,6 +426,9 @@ refuse "a colour written as a number" '{"area": {"new": {"color": 123456}}}' "si
 refuse "a missing colour" '{"area": {"new": {"description": "x"}}}' "color is required"
 refuse "a misspelt field" '{"area": {"new": {"color": "0e8a16", "path": ["a/**"]}}}' "field 'path'"
 refuse "renaming a type label away" '{"build": {"x": {"color": "1d76db", "renamed_from": "bug"}}}' "cannot be renamed"
+refuse "two entries renaming one label" \
+    '{"build": {"a": {"color": "1d76db", "renamed_from": "project:lego"}, "b": {"color": "1d76db", "renamed_from": "Project:Lego"}}}' \
+    "already renamed by build.a"
 refuse "an empty taxonomy" '{}' "taxonomy_missing"
 
 stub_reset
@@ -454,6 +501,33 @@ stub_reset
 rc=0
 out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
 is "an unreadable issue is an ERROR" "$rc|$(grep -c '^STATUS=ERROR$' <<<"$out")|$(writes)" "1|1|"
+
+echo "=== unblock: a blocker with no state keeps the label ==="
+unblock_scenario closed
+echo '[{"number": 9}]' >"$STUB/issues-11-dependencies-blocked_by.json"
+out=$(python3 "$TOOL" unblock --repo o/r --issue 10)
+is "a blocker that does not say closed is not read as closed" "$(writes)" ""
+has "and is reported as open" "$out" "NUMBER=11 ACTION=keep REASON=open_blocker:#9"
+
+echo "=== unblock: a failed call still reports what was removed ==="
+unblock_scenario closed
+rm "$STUB/issues-12-dependencies-blocked_by.json" # #12's blockers cannot be read
+rc=0
+out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
+is "a failed read after one removal exits 1" "$rc" "1"
+for row in "NUMBER=11 ACTION=unblock REASON=all_blockers_closed" "NUMBER=12 ACTION=error REASON=gh_failed" \
+    "UNBLOCKED=1" "STATUS=ERROR" "TYPE=dependent_failed NUMBER=12 "; do
+    has "$row" "$out" "$row"
+done
+is "the removal made before the failure is the only write" "$(writes)" "api -X DELETE repos/o/r/issues/11/labels/blocked"
+hasnt "the run stops at the failure" "$out" "NUMBER=13 "
+unblock_scenario closed
+touch "$STUB/fail-writes"
+rc=0
+out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
+is "a failed removal exits 1 and counts nothing as removed" \
+    "$rc|$(grep -c '^UNBLOCKED=0$' <<<"$out")|$(grep -c '^STATUS=ERROR$' <<<"$out")" "1|1|1"
+has "and names the issue" "$out" "TYPE=dependent_failed NUMBER=11 "
 
 # ── audit ─────────────────────────────────────────────────────────────────────
 
@@ -564,9 +638,10 @@ m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 body = (
     "See `main/ota.c:245-247`, [the doc](docs/a/b.md) and tools/x.py.\n"
-    "Not https://example.com/tools/y.py, #12 or @someone. Again: `tools/x.py`."
+    "Not https://example.com/tools/y.py, #12 or @org/team. Again: `tools/x.py`.\n"
+    "The docs, a justfile and `Makefile` are words; docs/ and ./justfile and .mcp.json are paths."
 )
-print([p for p in m.path_candidates(body) if "/" in p])
+print(m.path_candidates(body))
 cases = [
     ("docs/**", "docs/a/b.md"), ("docs/**", "docs"), ("docs/**", "docsx/a"),
     ("*.just", "a.just"), ("*.just", "tools/a.just"), ("**/*.just", "tools/a.just"),
@@ -574,11 +649,18 @@ cases = [
     ("a/**/c.md", "a/c.md"), ("a/**/c.md", "a/b/b/c.md"), ("a/?.md", "a/b.md"), ("a/?.md", "a/bb.md"),
 ]
 print("".join("y" if m.path_matches(p, g) else "n" for g, p in cases))
+cfg = m.config_from(m.build_parser().parse_args(["audit"]))
+stateless = [{"number": 3}]
+print(m.blockers_verdict(stateless))
+blocked = {"number": 1, "labels": ["bug", "build:x", "blocked"]}
+print([f["type"] for f in m.audit_issue(blocked, stateless, {}, 0.0, 30, cfg)])
 PY
 )
-is "paths keep their order, lose line suffixes and duplicates; URLs are skipped" \
-    "$(sed -n 1p <<<"$out")" "['main/ota.c', 'docs/a/b.md', 'tools/x.py']"
+is "paths keep their order, lose line suffixes and duplicates; URLs, mentions and words are skipped" \
+    "$(sed -n 1p <<<"$out")" "['main/ota.c', 'docs/a/b.md', 'tools/x.py', 'docs/', 'justfile', '.mcp.json']"
 is "glob semantics: * stays in a segment, ** crosses, /** takes the directory" "$(sed -n 2p <<<"$out")" "yynynyynyyyn"
+is "a blocker with no state counts as open" "$(sed -n 3p <<<"$out")" "('keep', 'open_blocker:#3')"
+is "so audit does not report its blocked issue as resolved" "$(sed -n 4p <<<"$out")" "[]"
 
 # ── the skills that document this script ──────────────────────────────────────
 
@@ -593,6 +675,7 @@ done
 for needle in ".github/issue-labels.json" "gh label list --limit 500"; do
     has "github-issue-writing names $needle" "$writing_skill" "$needle"
 done
+has "github-labels says which body tokens are paths" "$labels_skill" 'A body token is a path only when it has a'
 hasnt "github-labels dropped the priority: vocabulary" "$labels_skill" "priority:"
 # The old body listed with --limit 50, under the label count of a large repo.
 grep -Eq -- '--limit [0-9]{1,2}([^0-9]|$)' <<<"$labels_skill$writing_skill" &&
