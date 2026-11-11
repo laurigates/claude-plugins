@@ -171,6 +171,59 @@ gh run view <run-id> --log | grep -i "out of memory\|disk space\|killed"
 # Fix: Clean up artifacts, reduce test data, increase runner size
 ```
 
+### Name resolution fails in a package install
+
+`Temporary failure resolving 'archive.ubuntu.com'` in an `apt-get` step reads as
+a runner network problem. It can also be the package host's own DNS, and the two
+call for different actions: a runner problem clears on a re-run, an upstream one
+fails every re-run until the host's nameservers answer.
+
+Ask two public resolvers, with a control name that must resolve:
+
+```bash
+curl -s "https://dns.google/resolve?name=archive.ubuntu.com&type=A" | jq '{Status, n: (.Answer // [] | length), Comment}'
+```
+
+```bash
+curl -s -H 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=archive.ubuntu.com&type=A" | jq '{Status, n: (.Answer // [] | length)}'
+```
+
+```bash
+curl -s "https://dns.google/resolve?name=github.com&type=A" | jq '{Status, n: (.Answer // [] | length)}'
+```
+
+- `Status` 0 with answers is a successful lookup. 2 is SERVFAIL and 5 is REFUSED.
+  Google's `Comment` field names the nameservers that did not respond.
+- The control passing while the package host fails places the fault at that
+  host's DNS.
+- One resolver answering does not clear the host. A resolver can serve a cached
+  record, or reach a nameserver the other cannot. Runners that use the failing
+  path keep failing.
+- A successful `curl` to the host from your own machine is not evidence either:
+  it tests your resolver, not the runner's.
+- In the job log, check whether other hosts resolved in the same step. Another
+  package source downloading normally beside the failing one rules out a
+  runner-wide DNS fault.
+
+While the lookup fails, do not re-run. Re-run once the name resolves through the
+resolver that failed. A retry option such as `-o Acquire::Retries=3` does not
+cover an outage that lasts hours.
+
+Read the step list before reporting what the red job means. A job that builds
+and then installs a package for a later test step is red with the build passed:
+
+```bash
+gh run view <run-id> --json jobs --jq '.jobs[] | select(.conclusion=="failure") | .steps[] | {name, conclusion}'
+```
+
+> Observed 2026-11-11 (laurigates/mcu-tinkering-lab#1112): three jobs failed in
+> `apt-get install` from 14:38Z to 16:49Z, across four attempts. The mirrors
+> answered over HTTP from the investigating session, so the failure was first
+> attributed to the runners. Google Public DNS returned SERVFAIL and REFUSED for
+> the Ubuntu names and reported Canonical's nameservers as not responding, while
+> Cloudflare still answered. The firmware build step had passed in the job that
+> showed red. The jobs passed on the first re-run after the names resolved again.
+
 ## Event-triggered runs: concurrency and re-run traps
 
 ### A concurrency group keeps one pending run
