@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-27
+modified: 2026-11-11
 reviewed: 2026-04-25
 name: github-actions-inspection
 description: "Failing step, stack trace, and test output from a completed GitHub Actions run; rerun failed jobs. Use when a CI check finished red and you need the error extracted from its log."
@@ -119,6 +119,12 @@ gh run rerun <run-id> --failed
 gh run rerun <run-id> --debug
 ```
 
+A re-run reuses the original event's `GITHUB_SHA` and `GITHUB_REF`, so
+`actions/checkout` fetches the commit the run first saw, not current `main`.
+To act on an event against current `main`, dispatch the workflow again
+(`gh workflow run <file> -f issue_number=<n>`) rather than re-running it. See
+[REFERENCE.md § Event-triggered runs](REFERENCE.md#event-triggered-runs-concurrency-and-re-run-traps).
+
 ### Cancel Workflows
 
 ```bash
@@ -216,6 +222,7 @@ gh run list --limit 50 --json conclusion \
 | Dependency install | "Could not find package", "Version conflict" | Lock versions, use cache |
 | Environment | "Command not found", "Module not found" | Verify setup steps, check runner version |
 | Resource constraints | "out of disk space", "Process killed" | Clean artifacts, increase runner size |
+| Burst of runs dropped | Many runs end `cancelled` with nobody cancelling them, after a burst of triggers into one `concurrency` group | The group keeps one pending run; see [REFERENCE.md § Event-triggered runs](REFERENCE.md#event-triggered-runs-concurrency-and-re-run-traps) |
 | Budget exhausted | Job `failure` with zero steps, `--log-failed` says `log not found`, every repo red at once | Read `gh api repos/<o>/<r>/check-runs/<job-id>/annotations`: "The job was not started because an Actions budget is preventing further use". Raise the budget; see `actions-billing-usage` § Budgets |
 
 ## Agentic Optimizations
