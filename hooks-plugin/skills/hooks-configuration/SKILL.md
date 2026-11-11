@@ -4,7 +4,7 @@ description: Claude Code hooks configuration and development. Use when the user 
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-11-11
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -44,10 +44,13 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 | **SessionStart**       | Session begins/resumes                     | Environment setup, context loading         |
 | **SessionEnd**         | Session terminates                         | Cleanup, state persistence                 |
 | **UserPromptSubmit**   | User submits prompt                        | Input validation, context injection        |
+| **UserPromptExpansion** | A typed skill/command/MCP prompt expands, before it reaches Claude | Block a command, inject skill-specific context, log invocations |
 | **PreToolUse**         | Before tool execution                      | Permission control, blocking dangerous ops |
 | **PostToolUse**        | After tool completes                       | Auto-formatting, logging, validation       |
 | **PostToolUseFailure** | After tool execution fails                 | Retry decisions, error handling            |
 | **PermissionRequest**  | Claude requests permission for a tool      | Auto approve/deny without user prompt      |
+| **PermissionDenied**   | Auto mode denies a tool call               | Audit denials, tell the model it may retry (`retry: true`) |
+| **PostToolBatch**      | A batch of parallel tool calls has resolved, before the next model call | Inject context once per batch, stop the loop |
 | **Stop**               | **Main agent** finishes responding         | Notifications, git reminders               |
 | **SubagentStart**      | Subagent (Task tool) is about to start     | Input modification, context injection      |
 | **SubagentStop**       | **Subagent** finishes                      | Per-task completion evaluation             |
