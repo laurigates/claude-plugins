@@ -1681,7 +1681,11 @@ if have jq && [ "$open_tasks" -gt 0 ] 2>/dev/null; then
             (((.tags // []) | index("ACTIVE")) != null),
             (.modified // ""),
             ((.annotations // []) | map(.description) | join(" | ") | gsub("[\t\r\n\u001f]";" ")),
-            (.ghid // ""),
+            # Taskwarrior exports a numeric UDA as `281.000000`, and jq >= 1.7
+            # echoes a number literal verbatim, so an integral id would print
+            # as a float (#3592). `floor` yields a computed number, which jq
+            # prints canonically; fractional numbers and strings pass through.
+            ((.ghid // "") | if type == "number" and . == floor then floor else . end),
             ((.bpid // "") | tostring | gsub("[\t\r\n\u001f]";" "))
           ] | join($us)' 2>/dev/null)
 fi

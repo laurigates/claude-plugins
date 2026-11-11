@@ -754,6 +754,32 @@ check "AA: an unprojected task keeps its description in DESC" \
 check_absent "AA: the description does not shift into PROJECT" \
   "$out" "RECENT_TASK_1_PROJECT=unprojected work"
 
+# --- TEST AA1: an integral numeric ghid prints as an integer (#3592) ---------
+# Taskwarrior exports a numeric UDA as `281.000000`, and jq >= 1.7 preserves a
+# number literal's original text, so the row printed TASK_1_GHID=281.000000.
+# `check` is a substring test that `=281.000000` would satisfy, so match the
+# whole line.
+cat > "$SANDBOX/ghid-float.json" <<EOF
+[{"uuid":"f1","project":"demo","description":"float ghid","modified":"$OLD10","ghid":281.000000}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/ghid-float.json"
+out=$(run)
+if grep -qx 'TASK_1_GHID=281' <<<"$out"; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1))
+  echo "FAIL: AA1: integral float ghid prints as an integer (got: $(grep '^TASK_1_GHID=' <<<"$out"))"
+fi
+# A non-integral number or a string id passes through unchanged.
+cat > "$SANDBOX/ghid-other.json" <<EOF
+[{"uuid":"o1","project":"demo","description":"fractional ghid","modified":"$OLD10","ghid":2.5},
+ {"uuid":"o2","project":"demo","description":"string ghid","modified":"$OLD10","ghid":"owner/repo#7"}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/ghid-other.json"
+out=$(run)
+check "AA1: a fractional ghid is not truncated" "$out" "_GHID=2.5"
+check "AA1: a string ghid passes through" "$out" "_GHID=owner/repo#7"
+
 # --- TEST AA2: a hazardous byte INSIDE a column must not shift later ones ---
 # AA covers an EMPTY column; this covers a POPULATED one carrying a byte that
 # breaks the row. Switching the delimiter from TAB to US fixed the empty-field
