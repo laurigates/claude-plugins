@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.1...hooks-plugin-v2.20.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** resolve worktree paths against a preceding cd in the guard ([#3600](https://github.com/laurigates/claude-plugins/issues/3600)) ([12dd6c8](https://github.com/laurigates/claude-plugins/commit/12dd6c8f4fc468ba9a03854346aae29c643d10d9)), closes [#3562](https://github.com/laurigates/claude-plugins/issues/3562)
+
 ## [2.20.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.0...hooks-plugin-v2.20.1) (2026-11-09)
 
 
