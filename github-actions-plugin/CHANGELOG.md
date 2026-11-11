@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.7](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.6...github-actions-plugin-v1.13.7) (2026-11-11)
+
+
+### Documentation
+
+* **github-actions-plugin:** tell an upstream DNS outage from a runner fault ([#3620](https://github.com/laurigates/claude-plugins/issues/3620)) ([32aa796](https://github.com/laurigates/claude-plugins/commit/32aa796202e1f74c63ae44206015b760e433ee98))
+
 ## [1.13.6](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.5...github-actions-plugin-v1.13.6) (2026-11-11)
 
 
