@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-11
 reviewed: 2026-06-01
 description: "Dockerfile standards: Alpine/slim base, non-root user, multi-stage builds. Use when creating a Dockerfile, hardening security, or auditing image size."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -227,6 +227,31 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
+
+### Trivy Gate Fails on a CVE Debian Already Fixed
+
+A Debian-based tag (`python:3.x-slim`) can lag a package fix Debian has
+already published, and a Trivy gate with `--ignore-unfixed` still fails on it.
+Upgrade packages in the runtime stage, before `USER` (it needs root):
+
+```dockerfile
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
+```
+
+Verify the rebuilt image with the gate's own scope:
+
+```bash
+trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 <image>
+```
+
+A bare `trivy image` also runs the secret scanner, which can flag strings
+inside installed packages (docstrings in the `anthropic` SDK read as GCP
+service-account keys). Those findings are outside a vuln-only gate.
+
+> Evidence (2026-11-10, telegram-ingest v0.1.1): `python:3.12-slim-trixie`
+> still had `zlib1g 1:1.3.dfsg+really1.3.1-1+b1` (CVE-2026-76844,
+> CVE-2026-85091); Debian's fix is `+deb13u1`. The upgrade step cleared the
+> gate (telegram-ingest#29).
 
 ## Agentic Optimizations
 

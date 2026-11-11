@@ -3,7 +3,7 @@ name: multirepo-ci-cd
 description: "Diagnose a CI failure or roll a workflow out across many repos. Use when debugging a red check in a multi-repo org, promoting a shared reusable-*.yml, or re-triggering a PR after a @main fix."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-10-09
+modified: 2026-11-11
 reviewed: 2026-09-12
 ---
 
@@ -141,7 +141,10 @@ clicked re-run**. A fresh event doesn't change the sender (still the bot), so
 the real fix is `allowed_bots` on the action, not re-triggering — but the same
 "re-run replays the original payload" mechanic is why clicking re-run yourself
 doesn't help. Both traps are the same root cause: a re-run is a replay, not a
-new dispatch.
+new dispatch. The same replay pins an `issues` or `push` re-run to the
+original `GITHUB_SHA`, so it checks out the old `main`; see
+`github-actions-plugin:github-actions-inspection` (REFERENCE.md § Event-triggered
+runs).
 
 The bot need not have opened the PR. A workflow that pushes to the PR branch
 with `github.token` makes the next run's `actor` `github-actions[bot]`; GitHub
