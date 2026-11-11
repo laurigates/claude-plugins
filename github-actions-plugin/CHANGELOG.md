@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.6](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.5...github-actions-plugin-v1.13.6) (2026-11-11)
+
+
+### Documentation
+
+* **github-actions-plugin:** document concurrency and re-run traps for event-triggered runs ([#3596](https://github.com/laurigates/claude-plugins/issues/3596)) ([1e32305](https://github.com/laurigates/claude-plugins/commit/1e32305e5ff7f67d3d4183cc49546934bd68e8b1))
+
 ## [1.13.5](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.4...github-actions-plugin-v1.13.5) (2026-10-29)
 
 

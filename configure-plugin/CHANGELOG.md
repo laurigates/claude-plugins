@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.4...configure-plugin-v1.43.5) (2026-11-11)
+
+
+### Documentation
+
+* **configure-plugin:** upgrade Debian packages when a Trivy gate flags a fixed CVE ([#3598](https://github.com/laurigates/claude-plugins/issues/3598)) ([1b58fda](https://github.com/laurigates/claude-plugins/commit/1b58fda8273815824e73e69dd4949dd1fbfd891a))
+
 ## [1.43.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.3...configure-plugin-v1.43.4) (2026-11-10)
 
 
