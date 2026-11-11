@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.17.1...session-plugin-v1.17.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* **session-plugin:** print session-survey GHID as an integer ([#3599](https://github.com/laurigates/claude-plugins/issues/3599)) ([21c8b3d](https://github.com/laurigates/claude-plugins/commit/21c8b3dd093e02200e66e61a017962a9672e486c)), closes [#3592](https://github.com/laurigates/claude-plugins/issues/3592)
+
 ## [1.17.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.17.0...session-plugin-v1.17.1) (2026-11-07)
 
 
