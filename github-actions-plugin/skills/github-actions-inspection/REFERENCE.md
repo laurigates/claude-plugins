@@ -171,6 +171,57 @@ gh run view <run-id> --log | grep -i "out of memory\|disk space\|killed"
 # Fix: Clean up artifacts, reduce test data, increase runner size
 ```
 
+## Event-triggered runs: concurrency and re-run traps
+
+### A concurrency group keeps one pending run
+
+With `concurrency: {group: X, cancel-in-progress: false}`, a group holds at
+most one running and one pending run. Each newly queued run cancels the
+pending one and takes its slot ([GitHub Docs, "Control the concurrency of
+workflows and jobs"](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)).
+`cancel-in-progress: false` protects the running run only; it does not queue
+the rest. A workflow that handles one event per run (one issue per
+`issues: opened` run, one push per run) therefore drops most of a burst, and
+the dropped runs show only as `cancelled`.
+
+Fixes, in order of preference:
+
+- **Make each run a sweep** over every unprocessed item (for example, all open
+  issues with the label and no "processed" marker), and add a `schedule`
+  trigger as a backstop. Any run that survives then covers the ones that were
+  cancelled.
+- **`queue: max`** under `concurrency:` allows up to 100 pending runs, served
+  first in first out (ordering is not guaranteed). It cannot be combined with
+  `cancel-in-progress: true`.
+- **Dispatch sequentially**: start the next run after the previous one
+  finishes.
+
+Diagnose by listing conclusions for the workflow:
+`gh run list --workflow <file> -L 50 --json conclusion,createdAt,event`.
+
+> Evidence (2026-11-10, laurigates/research `process-link.yml`): a Telegram bot
+> opened 17 link issues in about 7 minutes. The workflow's comment said it
+> would "queue rather than cancel", but most runs were cancelled; re-running
+> 18 runs at once ended with 14 cancelled (laurigates/research#50).
+
+### A re-run checks out the original commit
+
+A re-run uses the same `GITHUB_SHA` and `GITHUB_REF` as the event that first
+triggered the run ([GitHub Docs, "Re-running workflows and jobs"](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)).
+For an `issues` or `push` run, `actions/checkout` then checks out `main` as it
+was when the event fired. If `main` has moved and the job regenerates and
+pushes shared files, its rebase-and-retry step fails with
+`could not apply <sha>…`.
+
+Dispatch the workflow instead, with the item as an input:
+`gh workflow run <file> --ref main -f issue_number=<n>`. A `workflow_dispatch`
+run on `main` checks out current `main`. The workflow needs a
+`workflow_dispatch` trigger with that input.
+
+> Evidence (2026-11-10, laurigates/research): 3 of 18 re-runs of
+> `issues: opened` runs failed with `could not apply …` because `main` had
+> moved since the original events.
+
 ## Integration with jq (Advanced Parsing)
 
 ```bash
