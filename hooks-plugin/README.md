@@ -335,6 +335,7 @@ A PreToolUse hook that denies a hand-rolled `git worktree add` whose path lands 
 |--------|--------|
 | Tier | **Deny** (`permissionDecision: "deny"`) with the corrected command in the reason. The fix is the same command with a different path, so the agent is never dead-ended, and no permission prompt reaches the user |
 | Fires on | `git [-C <dir>] worktree add … <path>` |
+| Base directory | The hook input's `cwd`, moved by each literal `cd <dir>` earlier in the command, then by `git -C <dir>`. After a `cd` it cannot resolve (`$VAR`, `cd -`, a missing dir) it decides against the `cwd` as before but omits the `Retry with:` command |
 | Allowed | `<main-repo>/.claude/worktrees/<name>` (resolved from `--git-common-dir`, so a session inside a linked worktree targets the main repo), and scratch worktrees under `$TMPDIR`, `/tmp`, `/private/tmp`, `/var/folders` |
 | Denied | Any other path, including a path nested inside another linked worktree |
 | Silent | Unresolvable paths (`$VAR`, `$(…)`, globs), quoted mentions, other `worktree` subcommands, non-repo cwd, remote-exec |

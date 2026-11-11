@@ -17,10 +17,15 @@
 #   1. Fire on `git [-C <dir>] worktree add … <path>`. Quoted segments are
 #      scrubbed before the pre-filter so a commit message mentioning the command
 #      is inert.
-#   2. Resolve the base dir the path is relative to: `git -C <dir>` (resolved
-#      against the hook input's `.cwd`) > `.cwd` > the hook process's cwd. git
-#      chdirs into `-C` before reading the path, so a relative path resolves
-#      against it.
+#   2. Resolve the base dir the path is relative to: start from the hook
+#      input's `.cwd` (else the hook process's cwd), apply each literal
+#      `cd <dir>` statement that precedes the worktree statement in the chain
+#      (relative cds compose), then `git -C <dir>` on top. git chdirs into `-C`
+#      before reading the path, so a relative path resolves against it. When a
+#      preceding cd is not literal (`$VAR`, `$(…)`, a glob, `cd -`) or names a
+#      missing directory, the decision uses the session cwd as before but the
+#      deny omits its `Retry with:` command, which would name a guessed repo
+#      (issue #3562).
 #   3. Resolve the MAIN worktree root from `--git-common-dir`, so a session
 #      sitting inside a linked worktree still targets `<main>/.claude/worktrees/`
 #      rather than nesting under its own worktree.
@@ -216,10 +221,64 @@ under() {        # $1 path, $2 dir — true when $1 is $2 or inside it
     return 1
 }
 
+# A `cd <dir>` statement earlier in the chain moves the shell before git runs
+# (issue #3562). Track it: CD_BASE is the directory after the cds seen so far,
+# CD_UNRESOLVED=1 once a cd target cannot be known without running the shell
+# (`$VAR`, `$(…)`, a glob, `cd -`, a missing dir). Returns 1 when the statement
+# is not a cd.
+START="${HOOK_CWD:-$PWD}"
+CD_BASE="$START"; CD_SEEN=0; CD_UNRESOLVED=0
+apply_cd() {
+    local stmt="$1" t i n target="" extra=0 next
+    local -a raw=()
+    read -r -a raw <<<"$stmt"
+    n=${#raw[@]}
+    [ "$n" -gt 0 ] && [ "$(unquote "${raw[0]}")" = "cd" ] || return 1
+    CD_SEEN=1
+    i=1
+    while [ "$i" -lt "$n" ]; do
+        t="${raw[$i]}"
+        case "$(unquote "$t")" in
+            --) i=$((i + 1)); break ;;
+            -L|-P|-e|-@|-LP|-PL|-Pe|-eP) i=$((i + 1)); continue ;;
+        esac
+        break
+    done
+    if [ "$i" -lt "$n" ]; then
+        target="${raw[$i]}"
+        [ $((i + 1)) -lt "$n" ] && extra=1
+    else
+        target="~"   # bare `cd` goes to $HOME
+    fi
+    # Same exclusions as WT_PATH, plus an unbalanced quote (a path with spaces
+    # split by `read -a`), `cd -` and a second operand.
+    case "$target" in
+        *'$'*|*'`'*|*'*'*|*'?'*|*'['*|-) CD_UNRESOLVED=1; return 0 ;;
+    esac
+    [ "$extra" -eq 0 ] || { CD_UNRESOLVED=1; return 0; }
+    case "$target" in
+        \"*\"|\'*\') ;;
+        *\"*|*\'*) CD_UNRESOLVED=1; return 0 ;;
+    esac
+    target=$(unquote "$target")
+    case "$target" in
+        /*|\~|\~/*) ;;   # absolute: resolvable even after an unresolved cd
+        *) [ "$CD_UNRESOLVED" -eq 0 ] || return 0 ;;
+    esac
+    next=$(normalize "$(absolutize "$target" "$CD_BASE")")
+    if [ -d "$next" ]; then
+        CD_BASE="$next"; CD_UNRESOLVED=0
+    else
+        CD_UNRESOLVED=1
+    fi
+    return 0
+}
+
 # ── Find the `git worktree add` statement ────────────────────────────────────
 MATCHED=""
 while IFS= read -r stmt; do
     [ -n "$stmt" ] || continue
+    apply_cd "$stmt" && continue
     printf '%s' "$stmt" | scrub_quotes | grep -Eq "$TRIGGER_RE" || continue
     if parse_statement "$stmt"; then
         MATCHED="$stmt"
@@ -231,8 +290,14 @@ done < <(printf '%s' "$COMMAND" | split_statements)
 # Unresolvable without running the shell.
 case "$WT_PATH$GIT_C_PATH" in *'$'*|*'`'*|*'*'*|*'?'*|*'['*) exit 0 ;; esac
 
-BASE="${HOOK_CWD:-$PWD}"
+BASE="$START"
 [ -d "$BASE" ] || exit 0
+# A resolved preceding cd becomes the base. An unresolved one leaves today's
+# base (the session cwd) for the allow/deny decision, but the deny then omits
+# the `Retry with:` command, which would otherwise name a guessed repo.
+if [ "$CD_SEEN" -eq 1 ] && [ "$CD_UNRESOLVED" -eq 0 ]; then
+    BASE="$CD_BASE"
+fi
 if [ -n "$GIT_C_PATH" ]; then
     BASE=$(absolutize "$GIT_C_PATH" "$BASE")
 fi
@@ -329,11 +394,18 @@ ignore_note
 $IGNORE_NOTE
 "
 
+if [ "$CD_UNRESOLVED" -eq 1 ]; then
+    RETRY="A cd earlier in this command has a target the guard cannot resolve without running the shell (a variable, substitution, glob, 'cd -' or a missing directory), so '$WT_PATH' was resolved against the session cwd and no corrected command is suggested. Run the worktree add with 'git -C <target-repo>' and an absolute path under <target-repo>/.claude/worktrees/.
+"
+else
+    RETRY="Retry with:
+  $SUGGEST$SUGGEST_ARGS
+"
+fi
+
 deny "WORKTREE LOCATION: '$WT_PATH' resolves to $TARGET, outside $ALLOWED.
 
 Worktrees for $ROOT belong under its .claude/worktrees/, where Claude Code's own worktrees live and where 'just -g worktree-audit' finds them; a sibling directory has no cleanup and accumulates after its PR merges. This applies when working on a repo other than the session's own: create the worktree in the TARGET repo's .claude/worktrees/. An orchestrator briefing agents should name this location in the brief, since an agent that is redirected here reports a different path than the one it was given.
 
-Retry with:
-  $SUGGEST$SUGGEST_ARGS
-$IGNORE_NOTE
+$RETRY$IGNORE_NOTE
 Scratch worktrees under \$TMPDIR or /tmp are allowed. Silence this guard by exporting CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1 from your shell."

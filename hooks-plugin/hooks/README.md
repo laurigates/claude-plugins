@@ -800,6 +800,15 @@ fix the agent can make itself.
   PreToolUse hook that mutates the repo would act on a command that has not run
   yet. A `check-ignore` error says nothing.
 
+- **Base directory:** a relative path resolves against the hook input's `cwd`,
+  moved by every literal `cd <dir>` statement that precedes the worktree
+  statement in the same command (relative cds compose), then by `git -C <dir>`
+  on that statement. So `cd ~/other && git worktree add ../x` is checked, and
+  corrected, against `~/other`. A preceding cd the hook cannot resolve (`$VAR`,
+  `$(…)`, a glob, `cd -`, a missing directory) leaves the decision on the
+  session `cwd` as before, and the deny then omits its `Retry with:` command
+  rather than suggest a worktree of a guessed repo (issue #3562).
+
 Both sides are canonicalised (deepest existing ancestor through `pwd -P`) before
 comparison, so `..`, `~` and macOS's `/tmp` → `/private/tmp` symlink compare
 correctly.
@@ -813,7 +822,7 @@ correctly.
 ### Testing
 
 ```bash
-bash hooks-plugin/hooks/test-worktree-location-guard.sh   # 49 passed, 0 failed
+bash hooks-plugin/hooks/test-worktree-location-guard.sh   # 68 passed, 0 failed
 ```
 
 The suite builds its fixture repos under `$HOME/.cache`, not `mktemp -d`: the

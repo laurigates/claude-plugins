@@ -107,6 +107,31 @@ assert_reason_contains() { # $1 desc, $2 needle, $3 json
     esac
 }
 
+context_of() {
+    printf '%s' "$1" | bash "$HOOK" 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null
+}
+assert_context_contains() { # $1 desc, $2 needle, $3 json
+    case "$(context_of "$3")" in
+        *"$2"*) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
+        *) printf "  FAIL: %s (context lacks '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
+    esac
+}
+assert_reason_lacks() { # $1 desc, $2 needle, $3 json
+    case "$(reason_of "$3")" in
+        *"$2"*) printf "  FAIL: %s (reason has '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
+        *) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
+    esac
+}
+assert_silent() { # $1 desc, $2 json — no output at all
+    local out
+    out=$(printf '%s' "$2" | bash "$HOOK" 2>/dev/null)
+    if [ -z "$out" ]; then
+        printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (got output: %s)\n" "$1" "$out"; FAIL=$((FAIL + 1))
+    fi
+}
+
 echo "=== Denied: paths outside <repo>/.claude/worktrees ==="
 assert_decision "sibling ../infra-wt-x → deny" deny \
     "$(make_json "git worktree add -q -b feat/x ../infra-wt-x origin/main" "$REPO")"
@@ -131,6 +156,45 @@ assert_decision "relative -C resolved against cwd → allow" none \
 assert_reason_contains "cross-repo deny names the -C repo's .claude/worktrees" \
     "$REPO/.claude/worktrees" \
     "$(make_json "git -C $REPO worktree add ../infra-wt-x -b feat/x origin/main" "$OTHER")"
+
+echo "=== Preceding cd sets the base (issue #3562) ==="
+# A `cd <dir> &&` earlier in the chain moves the shell before git runs, so a
+# relative path resolves against <dir>, not the session cwd.
+J=$(make_json "cd $OTHER && git fetch -q origin && git worktree add -q -b docs/x ../app-wt-x origin/main" "$REPO")
+assert_decision "cd <other repo> && git worktree add ../x → deny" deny "$J"
+assert_reason_contains "cd deny: Retry names git -C <other repo>" "git -C $OTHER worktree add" "$J"
+assert_reason_contains "cd deny: Retry targets <other repo>/.claude/worktrees" "$OTHER/.claude/worktrees/x" "$J"
+assert_reason_lacks "cd deny: Retry does not name the session repo" "git -C $REPO " "$J"
+assert_reason_contains "cd deny: path resolved against the cd target" "resolves to $OTHER/wt-x" \
+    "$(make_json "cd $OTHER && git worktree add wt-x" "$REPO")"
+FIX=$(reason_of "$J" | sed -n 's/^  \(git -C .* worktree add .*\)$/\1/p' | head -1)
+if [ -n "$FIX" ]; then
+    assert_decision "cd deny: suggested fix (extracted) → allow" none "$(make_json "$FIX" "$REPO")"
+else
+    printf "  FAIL: could not extract suggested fix from cd deny message\n"; FAIL=$((FAIL + 1))
+fi
+assert_reason_contains "relative cds compose (cd .. && cd app)" "git -C $OTHER worktree add" \
+    "$(make_json "cd .. && cd app && git worktree add ../x" "$REPO")"
+assert_reason_contains "cd -P <dir> is honoured" "git -C $OTHER worktree add" \
+    "$(make_json "cd -P $OTHER && git worktree add ../x" "$REPO")"
+J=$(make_json "cd $OTHER && git worktree add -b feat/x .claude/worktrees/x origin/main" "$REPO")
+assert_decision "cd <other repo> && git worktree add .claude/worktrees/x → allow" none "$J"
+assert_context_contains "cd allow: context names the cd target's info/exclude" "$OTHER/.git/info/exclude" "$J"
+assert_reason_contains "cd <repo> then git -C <relative> resolves -C against the cd target" \
+    "git -C $OTHER worktree add" "$(make_json "cd $FIXBASE && git -C app worktree add ../x" "$REPO")"
+J=$(make_json "cd \"\$SOMEVAR\" && git worktree add ../x" "$REPO")
+assert_decision "cd \$VAR && git worktree add ../x → still denied as today" deny "$J"
+assert_reason_lacks "cd \$VAR: no Retry with line" "Retry with:" "$J"
+J=$(make_json "cd $FIXBASE/does-not-exist && git worktree add ../x" "$REPO")
+assert_decision "cd to a missing dir → still denied as today" deny "$J"
+assert_reason_lacks "cd to a missing dir: no Retry with line" "Retry with:" "$J"
+J=$(make_json "cd - && git worktree add ../x" "$REPO")
+assert_decision "cd - (previous dir) → still denied as today" deny "$J"
+assert_reason_lacks "cd - (previous dir): no Retry with line" "Retry with:" "$J"
+assert_reason_contains "no cd: Retry with line still present" "Retry with:" \
+    "$(make_json "git worktree add ../x" "$REPO")"
+assert_decision "cd <non-repo> && git worktree add ../x → silent" none \
+    "$(make_json "cd $NOTREPO && git worktree add ../x" "$REPO")"
 
 echo "=== Linked-worktree cwd targets the MAIN repo ==="
 assert_decision "from linked worktree, nested under its own .claude/worktrees → deny" deny \
@@ -191,31 +255,6 @@ echo "=== .claude/worktrees/ not git-ignored (issue #3436) ==="
 # A worktree under an un-ignored .claude/worktrees/ shows up as an untracked
 # directory in the main checkout, and an untracked-files Stop hook then asks to
 # commit it. The guard says so on the deny and as context on an allowed add.
-context_of() {
-    printf '%s' "$1" | bash "$HOOK" 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null
-}
-assert_context_contains() { # $1 desc, $2 needle, $3 json
-    case "$(context_of "$3")" in
-        *"$2"*) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
-        *) printf "  FAIL: %s (context lacks '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
-    esac
-}
-assert_reason_lacks() { # $1 desc, $2 needle, $3 json
-    case "$(reason_of "$3")" in
-        *"$2"*) printf "  FAIL: %s (reason has '%s')\n" "$1" "$2"; FAIL=$((FAIL + 1)) ;;
-        *) printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)) ;;
-    esac
-}
-assert_silent() { # $1 desc, $2 json — no output at all
-    local out
-    out=$(printf '%s' "$2" | bash "$HOOK" 2>/dev/null)
-    if [ -z "$out" ]; then
-        printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1))
-    else
-        printf "  FAIL: %s (got output: %s)\n" "$1" "$out"; FAIL=$((FAIL + 1))
-    fi
-}
-
 IGN="$FIXBASE/ignored"; setup_repo "$IGN"
 printf '.claude/worktrees/\n' >"$IGN/.gitignore"
 EXC="$FIXBASE/excluded"; setup_repo "$EXC"
