@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.6](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.5...health-plugin-v1.24.6) (2026-11-11)
+
+
+### Bug Fixes
+
+* **configure-plugin:** correct claude-security-settings hierarchy and Bash grant ([db54885](https://github.com/laurigates/claude-plugins/commit/db548852ea94764bbdde011155150b6c79ad0b94)), closes [#3572](https://github.com/laurigates/claude-plugins/issues/3572)
+
 ## [1.24.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.4...health-plugin-v1.24.5) (2026-11-10)
 
 
