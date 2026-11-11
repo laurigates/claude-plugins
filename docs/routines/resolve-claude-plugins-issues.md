@@ -1,6 +1,7 @@
 <!--
 Source of truth for the prompt of Routine trig_01Q4ScmAWZfGkCaTd43eLwg3
-("Resolve claude-plugins repo issues", daily 06:00Z).
+("Resolve claude-plugins repo issues", daily `CRON_TZ=Europe/Helsinki 0 9 * * *`:
+07:00 UTC in winter, 06:00 UTC in summer).
 
 The Routine itself is stored server-side and was created via the HTTP API, so
 agents cannot update it -- changes here must be pasted into the Routine by the

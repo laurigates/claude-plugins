@@ -5,7 +5,7 @@ are reviewable and diffable.
 
 | File | Routine | Schedule |
 |------|---------|----------|
-| [`resolve-claude-plugins-issues.md`](resolve-claude-plugins-issues.md) | `trig_01Q4ScmAWZfGkCaTd43eLwg3` — "Resolve claude-plugins repo issues" | daily `0 6 * * *` (UTC) |
+| [`resolve-claude-plugins-issues.md`](resolve-claude-plugins-issues.md) | `trig_01Q4ScmAWZfGkCaTd43eLwg3` — "Resolve claude-plugins repo issues" | daily `CRON_TZ=Europe/Helsinki 0 9 * * *` (07:00 UTC in winter, 06:00 UTC in summer) |
 
 ## Why these live in the repo
 
