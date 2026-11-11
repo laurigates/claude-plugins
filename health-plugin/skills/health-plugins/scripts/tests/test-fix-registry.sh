@@ -5,7 +5,8 @@
 
 set -uo pipefail
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The scripts under test live one level up, in the skill's scripts/ directory.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fix_script="${script_dir}/fix-registry.sh"
 health_check_skill="${script_dir}/../../health-check/SKILL.md"
 
