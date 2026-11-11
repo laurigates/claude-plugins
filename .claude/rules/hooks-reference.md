@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-11-05
+modified: 2026-11-11
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -35,8 +35,10 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | Event | When It Fires | Matcher Support |
 |-------|--------------|-----------------|
 | `SessionStart` | Session begins, resumes, or after `/clear` | matcher: `"startup"`, `"resume"`, `"clear"`, `"compact"`, `"fork"`, `""` (all) |
+| `Setup` | `claude --init-only`, `-p --init` or `-p --maintenance` only | matcher: `"init"`, `"maintenance"` |
 | `SessionEnd` | Session terminates | none |
 | `UserPromptSubmit` | User submits a prompt | none |
+| `UserPromptExpansion` | A typed command or MCP prompt expands, before it reaches Claude | `command_name` |
 | `PreCompact` | Before context compaction | none |
 | `PostCompact` | After context compaction completes (2.1.76+) | matcher: `"manual"`, `"auto"`, `""` (all) |
 
@@ -52,6 +54,8 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `PostToolUse` | After a tool completes | tool name (regex) |
 | `PostToolUseFailure` | After a tool execution fails | tool name (regex) |
 | `PermissionRequest` | Claude requests permission for a tool | tool name (regex) |
+| `PermissionDenied` | Auto mode denies a tool call (not a manual denial, `PreToolUse` block or `deny` rule) | tool name (regex) |
+| `PostToolBatch` | Once per resolved batch of tool calls, before the next model call | none |
 
 ### Agent Lifecycle Events
 
@@ -231,6 +235,14 @@ When another enabled plugin has the same name, a plugin's hooks are left out; `/
 
 As of 2.1.251, a `SessionStart` hook firing with matcher `"resume"` receives additional input describing the session's staleness and the estimated cost of re-warming the prompt cache. The changelog names these two signals but not their exact field names or shape — confirm against code.claude.com/docs before parsing them in a script.
 
+### Setup
+
+Event field: `trigger` (`"init"` or `"maintenance"`). Cannot block; its JSON output is discarded on every exit code.
+
+### UserPromptExpansion
+
+Event fields: `expansion_type` (`"slash_command"` for skills and custom commands, `"mcp_prompt"` for MCP prompts), `command_name`, `command_args`, `command_source`, `prompt`. Top-level `decision: "block"` stops the expansion and shows `reason` to the user; exit 2 does the same with stderr. `hookSpecificOutput.additionalContext` is added beside the expanded prompt.
+
 ### PreToolUse / PostToolUse / PostToolUseFailure
 
 ```json
@@ -257,6 +269,14 @@ As of 2.1.251, a `SessionStart` hook firing with matcher `"resume"` receives add
   "description": "Run shell command: rm -rf build/"
 }
 ```
+
+### PermissionDenied
+
+Event fields: `tool_name`, `tool_input`, `tool_use_id`, `reason` (the matched classifier rule in brackets, e.g. `[Irreversible Local Destruction]`; a no-verdict denial starts `Auto mode could not evaluate this action`; `Classifier unavailable` when the classifier is down). Exit code and stderr are ignored, since the denial already happened. `hookSpecificOutput.retry: true` tells the model it may retry; it is ignored for a no-verdict denial.
+
+### PostToolBatch
+
+Event field: `tool_calls`, an array of `{tool_name, tool_input, tool_use_id, tool_response}` for every call in the batch. `hookSpecificOutput.additionalContext` is injected once before the next model call. `decision: "block"` or `continue: false` stops the agentic loop before that call (message from `reason`/`stopReason`, or stderr on exit 2).
 
 ### SubagentStart
 
