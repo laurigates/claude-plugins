@@ -24,7 +24,7 @@
   "github-actions-plugin": "1.13.6",
   "health-plugin": "1.24.5",
   "home-assistant-plugin": "1.4.1",
-  "hooks-plugin": "2.20.1",
+  "hooks-plugin": "2.20.2",
   "kernel-plugin": "1.1.0",
   "kitty-plugin": "2.0.0",
   "kubernetes-plugin": "1.10.3",

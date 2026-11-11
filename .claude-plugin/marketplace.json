@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.20.1",
+      "version": "2.20.2",
       "author": {
         "name": "Lauri Gates"
       },
