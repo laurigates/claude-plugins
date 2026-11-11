@@ -223,6 +223,7 @@ gh run list --limit 50 --json conclusion \
 | Environment | "Command not found", "Module not found" | Verify setup steps, check runner version |
 | Resource constraints | "out of disk space", "Process killed" | Clean artifacts, increase runner size |
 | Burst of runs dropped | Many runs end `cancelled` with nobody cancelling them, after a burst of triggers into one `concurrency` group | The group keeps one pending run; see [REFERENCE.md § Event-triggered runs](REFERENCE.md#event-triggered-runs-concurrency-and-re-run-traps) |
+| Upstream DNS outage | `apt-get` (or another fetch) fails with `Temporary failure resolving '<host>'` on every job that installs a package, and again on re-run | Ask two public resolvers with a control name before blaming the runner; re-run only once the name resolves. See [REFERENCE.md § Name resolution fails in a package install](REFERENCE.md#name-resolution-fails-in-a-package-install) |
 | Budget exhausted | Job `failure` with zero steps, `--log-failed` says `log not found`, every repo red at once | Read `gh api repos/<o>/<r>/check-runs/<job-id>/annotations`: "The job was not started because an Actions budget is preventing further use". Raise the budget; see `actions-billing-usage` § Budgets |
 
 ## Agentic Optimizations
