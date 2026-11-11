@@ -4,7 +4,7 @@ description: "`gh run watch` — block until a GitHub Actions run finishes, no p
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-08-15
+modified: 2026-11-11
 reviewed: 2026-04-25
 ---
 
@@ -188,6 +188,33 @@ sleep 5  # Wait for GitHub to register the run
 RUN_ID=$(gh run list --branch $(git branch --show-current) -L 1 --json databaseId --jq '.[0].databaseId')
 gh run watch $RUN_ID --compact --exit-status
 ```
+
+### Waiting for a Run to Appear — Stop on API Errors
+
+Right after a push or `gh workflow run`, the run may not be listed yet, so the
+id lookup sometimes needs a retry loop. Check the command's exit status
+separately from an empty result, bound the iterations, and stop on the first
+API error:
+
+```bash
+for i in $(seq 1 20); do
+  id=$(gh run list --workflow "$WF" --branch "$BRANCH" -L 1 --json databaseId --jq '.[0].databaseId // empty') || { echo "gh run list failed; stopping" >&2; exit 1; }
+  [ -n "$id" ] && break
+  sleep 15
+done
+[ -n "$id" ] || { echo "no run listed after 20 tries" >&2; exit 1; }
+gh run watch "$id" --compact --exit-status
+```
+
+`until id=$(gh run list ...) && [ -n "$id" ]; do sleep 15; done` treats a
+failed call the same as "not listed yet". On `HTTP 403: API rate limit
+exceeded` it keeps polling, and each failed call still counts against the
+quota. Once the id is known, `gh run watch` does the waiting. `gh api
+rate_limit --jq .resources.core` shows what is left.
+
+> Evidence (2026-11-10): an `until` loop of that shape polled through
+> `HTTP 403: API rate limit exceeded` for about 25 minutes and used up the
+> account's 5,000/hour core REST limit.
 
 ## Agentic Optimizations
 
