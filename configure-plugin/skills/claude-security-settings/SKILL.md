@@ -2,11 +2,11 @@
 name: claude-security-settings
 description: "Claude Code security settings: permission wildcards, shell operator protections, project-level allowlists. Use when auditing or hardening .claude/settings.json permissions."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(jq *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-10-05
+modified: 2026-11-11
 compatibility: claude-code
-reviewed: 2026-09-02
+reviewed: 2026-11-11
 ---
 
 # Claude Code Security Settings
@@ -32,11 +32,17 @@ Claude Code provides multiple layers of security:
 
 ### Settings File Locations
 
-| File | Scope | Priority |
-|------|-------|----------|
-| `~/.claude/settings.json` | User-level (all projects) | Lowest |
-| `.claude/settings.json` | Project-level (committed) | Medium |
-| `.claude/settings.local.json` | Local project (gitignored) | Highest |
+Settings precedence, highest first ([settings docs](https://code.claude.com/docs/en/settings#settings-precedence)):
+
+| Rank | Level | Source |
+|------|-------|--------|
+| 1 | **Managed** | `managed-settings.json`, an MDM policy, or server-managed settings. No other level overrides it |
+| 2 | **Command line** | `--settings <file-or-json>`, for that session only |
+| 3 | **Project local** | `.claude/settings.local.json` (kept out of git) |
+| 4 | **Shared project** | `.claude/settings.json` (committed) |
+| 5 | **User** | `~/.claude/settings.json` (all projects) |
+
+What matters for hardening: `permissions.allow`/`deny` lists **merge** across levels rather than override, and a tool denied at any level cannot be allowed by any other level. A user-level deny blocks a project-level allow, and the reverse ([permissions docs](https://code.claude.com/docs/en/permissions#settings-precedence)). Put a guarantee in `deny` at the widest level you control; put an org-wide guarantee in managed settings. The full hierarchy, trust rules and per-key exceptions are in `health-plugin:settings-configuration`.
 
 ### Permission Structure
 
@@ -153,10 +159,10 @@ Claude Code 2.1.7+ includes built-in protections against dangerous shell operato
 
 ### Security Behavior
 
-When a command contains shell operators:
-1. Permission wildcards won't match
-2. User sees explicit approval prompt
-3. Warning explains the blocked operator
+Claude Code splits a compound command on `&&`, `||`, `;`, `|`, `|&`, `&` and newlines, and matches each subcommand separately ([permissions docs](https://code.claude.com/docs/en/permissions#compound-commands)):
+
+1. An allow rule such as `Bash(git status *)` approves `git status && rm -rf build` only if every subcommand is allowed (by a rule or as a built-in read-only command); otherwise the command prompts.
+2. A deny or ask rule applies when any subcommand matches it, including one inside a subshell, a command substitution or a `for` body.
 
 ### Auto mode (the default permission mode)
 
@@ -203,19 +209,16 @@ The four-step bootstrap (create `.claude/`, write project settings, gitignore th
 
 | Context | Command |
 |---------|---------|
-| View project settings | `cat .claude/settings.json \| jq '.permissions'` |
-| View user settings | `cat ~/.claude/settings.json \| jq '.permissions'` |
-| Check merged permissions | Review effective settings in Claude Code |
-| Validate JSON | `cat .claude/settings.json \| jq .` |
+| View project settings | `jq '.permissions' .claude/settings.json` |
+| View user settings | `jq '.permissions' ~/.claude/settings.json` |
+| Check loaded settings sources | `/status` (the `Setting sources` line) |
+| Validate JSON | `jq . .claude/settings.json` |
 
 ## Quick Reference
 
 ### Permission Priority
 
-Settings merge with this priority (highest wins):
-1. `.claude/settings.local.json` (local)
-2. `.claude/settings.json` (project)
-3. `~/.claude/settings.json` (user)
+See the [Settings File Locations](#settings-file-locations) table: managed, command line, project local, shared project, user. Permission lists merge across those levels, and a deny at any level wins.
 
 ### Wildcard Syntax
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # test-settings-configuration-skill.sh — semantic guard for
-# health-plugin/skills/settings-configuration (SKILL.md + REFERENCE.md).
+# health-plugin/skills/settings-configuration (SKILL.md + REFERENCE.md), and
+# for the correctness subset of it in configure-plugin/skills/
+# claude-security-settings (#3572).
 #
 # The skill went stale for nine months (reviewed 2026-02-04) and shipped false
 # claims about Claude Code's settings and permission system. This suite pins
@@ -32,9 +34,17 @@
 # that invariant, and an embedded copy of the pre-fix (2026-07-18) text must
 # trip the five defects it shipped with.
 #
+# The "core" scope (claude-security-settings) keeps every correctness
+# invariant and drops the completeness group a hardening skill defers to
+# settings-configuration for: ask_tier_missing, modes_missing,
+# auto_drop_missing, edit_covers_missing, param_rule_missing,
+# mcp_scope_missing. ask_tier_missing stays out until #3583 settles the
+# `:ask` suffix the hardening skill documents.
+#
 # Usage:
 #   test-settings-configuration-skill.sh                 run the suite
-#   test-settings-configuration-skill.sh --check <dir>   check one skill dir
+#   test-settings-configuration-skill.sh --check <dir> [core]
+#                                                        check one skill dir
 #                                                        (prints VIOLATION=…,
 #                                                        exit 1 if any)
 
@@ -46,6 +56,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 LIVE_DIR="${REPO_ROOT}/health-plugin/skills/settings-configuration"
+SECURITY_DIR="${REPO_ROOT}/configure-plugin/skills/claude-security-settings"
 
 # --- checker ---------------------------------------------------------------
 
@@ -81,10 +92,11 @@ bare_skill_exists() {
   [ -n "$found" ]
 }
 
-# check_skill <dir> — print one `VIOLATION=<type> DETAIL=<text>` line per
-# broken invariant; return the number of violations (0 = clean).
+# check_skill <dir> [full|core] — print one `VIOLATION=<type> DETAIL=<text>`
+# line per broken invariant; return the number of violations (0 = clean).
 check_skill() {
   local dir="$1" skill_md="$1/SKILL.md" ref_md="$1/REFERENCE.md"
+  local scope="${2:-full}"
   local fm body all count=0
 
   if [ ! -f "$skill_md" ]; then
@@ -135,8 +147,10 @@ check_skill() {
   done
 
   # ask_tier_missing
-  grep -qE '"ask"[[:space:]]*:' <<<"$body" || v ask_tier_missing "no \"ask\" rule example"
-  grep -qiE 'deny, then ask, then allow' <<<"$body" || v ask_tier_missing "deny -> ask -> allow order not stated"
+  if [ "$scope" = full ]; then
+    grep -qE '"ask"[[:space:]]*:' <<<"$body" || v ask_tier_missing "no \"ask\" rule example"
+    grep -qiE 'deny, then ask, then allow' <<<"$body" || v ask_tier_missing "deny -> ask -> allow order not stated"
+  fi
 
   # false_compound_claim (the pre-fix wording and close paraphrases)
   if grep -qiE "(permission )?wildcards? (won't|will not|do not|don't|never|cannot|can't) match" <<<"$all"; then
@@ -160,6 +174,7 @@ check_skill() {
   # subcommand_missing
   grep -qiE '(every|each) subcommand' <<<"$body" || v subcommand_missing "per-subcommand matching not stated"
 
+  if [ "$scope" = full ]; then
   # modes_missing
   local mode
   for mode in acceptEdits plan auto dontAsk bypassPermissions; do
@@ -180,6 +195,7 @@ check_skill() {
 
   # mcp_scope_missing
   grep -qE 'mcp__[A-Za-z0-9_<>-]+__\*' <<<"$body" || v mcp_scope_missing "no mcp__<server>__* form"
+  fi
 
   # unknown_skill_ref
   local ref
@@ -213,8 +229,8 @@ check_skill() {
 }
 
 if [ "${1:-}" = "--check" ]; then
-  [ -n "${2:-}" ] || { echo "usage: $0 --check <skill-dir>" >&2; exit 2; }
-  check_skill "$2"
+  [ -n "${2:-}" ] || { echo "usage: $0 --check <skill-dir> [core]" >&2; exit 2; }
+  check_skill "$2" "${3:-full}"
   exit $(( $? > 0 ? 1 : 0 ))
 fi
 
@@ -236,10 +252,10 @@ trap 'rm -rf "$SANDBOX"' EXIT
 export HOME="${SANDBOX}/home"
 mkdir -p "$HOME"
 
-# expect_clean <label> <dir>
+# expect_clean <label> <dir> [scope]
 expect_clean() {
   local out
-  out="$(check_skill "$2")"
+  out="$(check_skill "$2" "${3:-full}")"
   if [ -z "$out" ]; then
     pass "$1"
   else
@@ -247,10 +263,10 @@ expect_clean() {
   fi
 }
 
-# expect_violation <label> <dir> <type>
+# expect_violation <label> <dir> <type> [scope]
 expect_violation() {
   local out
-  out="$(check_skill "$2")"
+  out="$(check_skill "$2" "${4:-full}")"
   if grep -qE "^VIOLATION=$3( |$)" <<<"$out"; then
     pass "$1"
   else
@@ -420,6 +436,77 @@ if grep -qE 'VIOLATION=unknown_skill_ref DETAIL=\(use (plugin-registry|hooks-con
 else
   pass "existing bare skill names resolve (control)"
 fi
+
+# 4. claude-security-settings (#3572): the correctness subset, with teeth.
+expect_clean "claude-security-settings is clean (core scope)" "$SECURITY_DIR" core
+
+# make_security_mutant <name> — copy the hardening skill into the sandbox
+make_security_mutant() {
+  local d="${SANDBOX}/sec-$1"
+  mkdir -p "$d"
+  cp "${SECURITY_DIR}/SKILL.md" "$d/SKILL.md"
+  echo "$d"
+}
+
+d="$(make_security_mutant bare-bash)"
+awk '/^allowed-tools:/{print "allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite"; next} {print}' \
+  "$d/SKILL.md" > "$d/x" && mv "$d/x" "$d/SKILL.md"
+expect_violation "security skill: bare Bash grant is caught" "$d" bare_bash_grant core
+
+d="$(make_security_mutant reordered)"
+awk '/^\| 1 \| \*\*Managed\*\*/{held=$0; next} {print} /^\| 5 \| \*\*User\*\*/{print held}' \
+  "$d/SKILL.md" > "$d/x" && mv "$d/x" "$d/SKILL.md"
+expect_violation "security skill: managed listed lowest is caught" "$d" precedence_order core
+
+d="$(make_security_mutant no-managed)"
+delete_lines "$d/SKILL.md" 'managed-settings\.json'
+expect_violation "security skill: missing managed settings is caught" "$d" managed_missing core
+
+d="$(make_security_mutant no-subcommand)"
+delete_lines "$d/SKILL.md" '[Ee](very|ach) subcommand'
+expect_violation "security skill: missing per-subcommand matching is caught" "$d" subcommand_missing core
+
+# The completeness group stays out of the core scope.
+sec_core_out="$(check_skill "$SECURITY_DIR" core)"
+if grep -qE '^VIOLATION=(ask_tier_missing|modes_missing|auto_drop_missing|edit_covers_missing|param_rule_missing|mcp_scope_missing)( |$)' <<<"$sec_core_out"; then
+  fail "core scope reported a completeness-group violation"
+else
+  pass "core scope skips the completeness group (control)"
+fi
+
+# The pre-fix hardening skill (as shipped through 2026-10-05) trips its defects.
+sec_pre="${SANDBOX}/sec-pre-fix"
+mkdir -p "$sec_pre"
+cat > "$sec_pre/SKILL.md" <<'SECPREFIX'
+---
+name: claude-security-settings
+description: "Claude Code security settings: permission wildcards, shell operator protections, project-level allowlists. Use when auditing or hardening .claude/settings.json permissions."
+user-invocable: false
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+---
+
+### Settings File Locations
+
+| File | Scope | Priority |
+|------|-------|----------|
+| `~/.claude/settings.json` | User-level (all projects) | Lowest |
+| `.claude/settings.json` | Project-level (committed) | Medium |
+| `.claude/settings.local.json` | Local project (gitignored) | Highest |
+
+When a command contains shell operators:
+1. Permission wildcards won't match
+2. User sees explicit approval prompt
+
+| Validate JSON | `cat .claude/settings.json \| jq .` |
+SECPREFIX
+sec_pre_out="$(check_skill "$sec_pre" core)"
+for want in bare_bash_grant managed_missing precedence_order false_compound_claim subcommand_missing cat_pipe_jq; do
+  if grep -qE "^VIOLATION=${want}( |$)" <<<"$sec_pre_out"; then
+    pass "security pre-fix text trips ${want}"
+  else
+    fail "security pre-fix text should trip ${want}; got:"$'\n'"${sec_pre_out:-<none>}"
+  fi
+done
 
 echo "PASS=${PASS} FAIL=${FAIL}"
 [ "$FAIL" -eq 0 ]
