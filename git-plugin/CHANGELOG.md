@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.73.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.2...git-plugin-v2.73.3) (2026-11-11)
+
+
+### Documentation
+
+* **git-plugin:** stop a run-id wait loop on the first API error ([#3597](https://github.com/laurigates/claude-plugins/issues/3597)) ([10b8508](https://github.com/laurigates/claude-plugins/commit/10b8508af9a7fb60eedda4bda0205ba5b4488690))
+
 ## [2.73.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.1...git-plugin-v2.73.2) (2026-11-10)
 
 
