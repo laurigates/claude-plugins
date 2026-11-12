@@ -1,8 +1,9 @@
 # Tool Result Traps — A Rejected Flag Looks Like "No Results"
 
-Moved verbatim from [SKILL.md](../SKILL.md). Open when a `cmd … | jq/grep`
-pipeline returned nothing, or a mutating `gh`/`git` call printed nothing, and that
-is about to be reported as a result or as done.
+Moved verbatim from [SKILL.md](../SKILL.md), plus the abbreviated-SHA case.
+Open when a `cmd … | jq/grep` pipeline returned nothing, a mutating `gh`/`git`
+call printed nothing, or a filter given a short SHA matched nothing, and that is
+about to be reported as a result or as done.
 
 ## A rejected flag looks exactly like "no results"
 
@@ -53,6 +54,27 @@ empty bullet. Caught only when a human said the description looked wrong.
   user is complete — re-read the comment, the label, the pushed ref. For a body
   you authored, read it *back*: `gh pr view <n> --json body --jq '.body | length'`
   against a length you expect. A 1-char body is the tell.
+
+**An accepted flag with an abbreviated value: a short SHA matches nothing.**
+`gh run list --commit <sha>` passes the value to the Actions API's `head_sha`
+filter, which compares the full 40-character SHA exactly. A 7-character short
+SHA is accepted, matches no run, and exits 0 with an empty list. `gh run list
+--help` says only "Filter runs by the SHA of the commit". Observed 2026-11: a
+release-workflow poll on a short SHA came back empty 30 times while the run for
+that commit had already completed, and the empty list read as "the push
+triggered no workflow". Reproduced on gh 2.89.0 against one commit:
+
+```
+gh run list -R <owner>/<repo> --commit <40-char-sha> -L 100 --json databaseId --jq length   # 15
+gh run list -R <owner>/<repo> --commit <7-char-prefix> -L 100 --json databaseId --jq length # 0, exit 0
+```
+
+- **Resolve the full SHA first**: `sha=$(git rev-parse <ref>)`, then pass
+  `--commit "$sha"`. `git rev-parse HEAD` gives the full form, and so does
+  `gh pr view <n> --json headRefOid`.
+- The same holds for any API filter keyed on a SHA (`head_sha` on
+  `repos/{o}/{r}/actions/runs`). Git expands an abbreviated SHA; GitHub's
+  filter parameters compare the whole string.
 
 **Control-test every negative that gates an action.** Re-run the same command
 shape against a term you know is present; if the control also returns nothing,

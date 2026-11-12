@@ -1774,6 +1774,18 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#3618): `gh run list --commit <short-sha>` exits 0 with an
+      # empty list while a run for that commit exists — the flag is passed to
+      # the Actions API's head_sha filter, which matches the full 40-character
+      # SHA exactly, never a prefix (reproduced on gh 2.89.0: full SHA → 15
+      # runs, 7-char prefix → 0). The empty result read as "the push triggered
+      # no workflow". Pin the command and the fix (resolve with git rev-parse).
+      for token in 'gh run list --commit' 'git rev-parse'; do
+        if ! grep -qF "$token" "$(dirname "$skill_file")/references/rejected-flags.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/rejected-flags.md must retain token '${token}' (an exact-match SHA filter given a short SHA returns an empty list, exit 0 — issue #3618)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: ai-review-max-turns must cover the two gaps found triaging
