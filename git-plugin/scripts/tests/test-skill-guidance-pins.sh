@@ -68,6 +68,12 @@ echo "=== #3616 release-please: generic updater and release-workflow gotchas ===
 rpc="${SKILLS}/release-please-configuration"
 generic="${rpc}/references/generic-updater.md"
 has "release-please-configuration links the generic-updater reference" "$(cat "${rpc}/SKILL.md")" "](references/generic-updater.md)"
+# The GITHUB_TOKEN tag case is GitHub Actions behaviour; the summary must not
+# count it among the generic updater's failures (finding F3).
+gsum=$(section "${rpc}/SKILL.md" "### Generic Updater and Non-JS Repos")
+has "the summary counts two generic-updater failures" "$gsum" "fails silently in two"
+has "the summary attributes the tag case to GitHub Actions" "$gsum" "GitHub Actions behaviour"
+lacks "the summary no longer counts three updater failures" "$gsum" "fails silently in three"
 gtext=$(cat "$generic" 2>/dev/null)
 has "generic updater skips a version that is not major.minor.patch" "$gtext" "major.minor.patch"
 has "generic updater rewrites CRLF files as LF" "$gtext" "CRLF"

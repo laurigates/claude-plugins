@@ -236,10 +236,11 @@ package path.
 
 ### Generic Updater and Non-JS Repos
 
-A plain-path entry uses the generic updater, which fails silently in three
-ways: it skips a version that is not `major.minor.patch`, it rewrites a CRLF
-file as LF, and the tag a `GITHUB_TOKEN` run creates starts no
-`on: push: tags` build. See
+A plain-path entry uses the generic updater, which fails silently in two
+ways: it skips a version that is not `major.minor.patch`, and it rewrites a
+CRLF file as LF. Separately, a tag that a `GITHUB_TOKEN` run creates starts no
+`on: push: tags` workflow, which is GitHub Actions behaviour, not the
+updater's. See
 [references/generic-updater.md](references/generic-updater.md) for each cause
 and the `release_created`-gated build job.
 
