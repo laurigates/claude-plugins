@@ -105,7 +105,6 @@ testing-plugin/skills/vitest-testing/SKILL.md	1
 tools-plugin/skills/deps-install/SKILL.md	1
 tools-plugin/skills/hf-downloads/SKILL.md	1
 tools-plugin/skills/justfile-expert/SKILL.md	3
-tools-plugin/skills/zsh-gotchas/SKILL.md	1
 typescript-plugin/skills/bun-lockfile-update/SKILL.md	1
 typescript-plugin/skills/bun-publishing/SKILL.md	1
 typescript-plugin/skills/typescript-temporal/SKILL.md	2
