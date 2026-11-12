@@ -533,7 +533,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.20.2",
+      "version": "2.21.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -972,7 +972,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.15.1",
+      "version": "2.16.0",
       "author": {
         "name": "Lauri Gates"
       },

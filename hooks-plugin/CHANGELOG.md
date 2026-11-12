@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.2...hooks-plugin-v2.21.0) (2026-11-12)
+
+
+### Features
+
+* **hooks-plugin:** block declarations that can run bare in shell files ([993aa37](https://github.com/laurigates/claude-plugins/commit/993aa379880124cb262d0bc86cc69c05964be162))
+
 ## [2.20.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.1...hooks-plugin-v2.20.2) (2026-11-11)
 
 

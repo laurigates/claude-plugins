@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.15.1...tools-plugin-v2.16.0) (2026-11-12)
+
+
+### Features
+
+* **tools-plugin:** add the bare-declaration gotcha to zsh-gotchas ([0a18e5e](https://github.com/laurigates/claude-plugins/commit/0a18e5e27325ae8a244839366188233010b2e456))
+
 ## [2.15.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.15.0...tools-plugin-v2.15.1) (2026-11-03)
 
 
