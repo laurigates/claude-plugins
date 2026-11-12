@@ -81,6 +81,13 @@ fi
 case "$args" in
   "api user --jq .login")
       [ -n "${STUB_NO_ME:-}" ] && exit 1
+      # Real gh on an HTTP error skips --jq, prints the raw error body on
+      # STDOUT and exits 1 (issue #3602: that body was read as the login).
+      if [ -n "${STUB_ME_403:-}" ]; then
+          printf '{"message":"%s","status":"403"}\n' "${STUB_ME_403}"
+          echo "gh: ${STUB_ME_403} (HTTP 403)" >&2
+          exit 1
+      fi
       printf '%s\n' "${STUB_ME-laurigates}" ;;
   "repo view --json nameWithOwner"*)
       if [ -n "${STUB_REPO_AUTHORS:-}" ]; then [ -n "$STUB_RESOLVED" ] || exit 1; printf '%s\n' "$STUB_RESOLVED"
@@ -117,12 +124,25 @@ case "$args" in
       printf '%s\t%s\t%s\t%s\t%s\n' "${STUB_NUM-42}" "${STUB_AUTHOR-laurigates}" \
         "${STUB_ISBOT-false}" "${STUB_TITLE-a title}" "https://example.invalid/pr" ;;
   *"pulls/"*"--jq .author_association")
+      if [ -n "${STUB_ASSOC_403:-}" ]; then
+          printf '{"message":"API rate limit exceeded for user ID 1.","status":"403"}\n'; exit 1
+      fi
       printf '%s\n' "${STUB_ASSOC-FIRST_TIME_CONTRIBUTOR}" ;;
+  # `gh api rate_limit` (does not count against the limit). STUB_RATE_CORE and
+  # STUB_RATE_GRAPHQL are "remaining reset-epoch"; unset means plenty left.
+  "api rate_limit --jq "*)
+      [ -n "${STUB_RATE_FAIL:-}" ] && exit 1
+      read -r c_rem c_reset <<<"${STUB_RATE_CORE-5000 1800000000}"
+      read -r g_rem g_reset <<<"${STUB_RATE_GRAPHQL-5000 1800000000}"
+      printf '%s\t%s\t%s\t%s\n' "$c_rem" "$c_reset" "$g_rem" "$g_reset" ;;
   # REST fallback for the author (`gh api repos/O/R/pulls/N`). STUB_REST_LOGIN
   # and STUB_REST_TYPE model REST's rendering: a bot is "<name>[bot]" with
   # type "Bot", never the "app/<name>" form `gh pr view` prints.
   "api repos/"*"/pulls/"*"--jq "*".user.login"*)
       [ -n "${STUB_REST_FAIL:-}" ] && exit 1
+      if [ -n "${STUB_REST_403:-}" ]; then
+          printf '{"message":"API rate limit exceeded for user ID 1.","status":"403"}\n'; exit 1
+      fi
       [ "${STUB_REST_TYPE-User}" = "Bot" ] && isbot=true || isbot=false
       printf '%s\t%s\t%s\t%s\t%s\n' "${STUB_NUM-42}" "${STUB_REST_LOGIN-laurigates}" \
         "$isbot" "${STUB_TITLE-a title}" "https://example.invalid/pr" ;;
@@ -952,6 +972,45 @@ STUB_VIEW_FAIL=1 run "$(bash_json 'gh pr merge 2231 --squash')" >/dev/null
 ck "gh pr view fails"                      DENY "$LAST_VERDICT"
 ck_reason "explains the unverifiable case" "Cannot verify"
 ck "gh api user fails"     DENY "$(STUB_NO_ME=1 run "$(bash_json 'gh pr merge 2231 --squash')")"
+
+echo "== a failed lookup is not an authorship verdict (issue #3602) =="
+# gh prints an HTTP error body on stdout and exits 1. The hook used to take that
+# body as the viewer's login, then report the user's own PR as "written by
+# someone else" with the 403 text in the author and you fields.
+RL_MSG='API rate limit exceeded for user ID 13014001.'
+STUB_AUTHOR=laurigates STUB_ME_403="$RL_MSG" STUB_RATE_CORE='0 1800000000' \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "rate-limited viewer lookup still denies"       DENY "$LAST_VERDICT"
+ck_reason "names the rate limit"                   "rate limit is exhausted"
+ck_reason "gives the reset time"                   "2027-01-15 08:00:00 UTC"
+ck_reason "says to retry after the reset"          "retry the same command after"
+case "$LAST_REASON" in
+    *"written by someone else"*|*'"status"'*) printf '  FAIL rate-limit denial claims a foreign author or echoes the 403 body\n'; FAIL=$((FAIL + 1)) ;;
+    *) printf '  ok   rate-limit denial makes no authorship claim\n'; PASS=$((PASS + 1)) ;;
+esac
+# Another HTTP error (bad token): the gh message is named, not the rate limit.
+STUB_AUTHOR=laurigates STUB_ME_403='Bad credentials' \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "other viewer-lookup error still denies"        DENY "$LAST_VERDICT"
+ck_reason "names the gh error"                     "Bad credentials"
+case "$LAST_REASON" in
+    *"written by someone else"*|*"rate limit is exhausted"*) printf '  FAIL non-rate-limit failure misreported\n'; FAIL=$((FAIL + 1)) ;;
+    *) printf '  ok   non-rate-limit failure not reported as authorship or rate limit\n'; PASS=$((PASS + 1)) ;;
+esac
+# The rate_limit probe itself failing must not change the verdict.
+STUB_AUTHOR=laurigates STUB_ME_403="$RL_MSG" STUB_RATE_FAIL=1 \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "rate_limit probe fails too: denied"            DENY "$LAST_VERDICT"
+ck_reason "still names the gh error"               "rate limit exceeded"
+# Author-association lookup rate-limited on a real external PR: the denial
+# stands, but the 403 body is not printed as the association.
+STUB_AUTHOR=joshua-trustabl STUB_ASSOC_403=1 \
+  run "$(bash_json 'gh pr merge 2231 -R laurigates/claude-plugins --squash')" >/dev/null
+ck "external PR, association lookup 403: denied"   DENY "$LAST_VERDICT"
+case "$LAST_REASON" in
+    *'"status"'*|*"rate limit exceeded"*) printf '  FAIL 403 body printed in the author line\n'; FAIL=$((FAIL + 1)) ;;
+    *) printf '  ok   403 body not printed in the author line\n'; PASS=$((PASS + 1)) ;;
+esac
 # shellcheck disable=SC2016  # the literal $n must reach the hook unexpanded
 run "$(bash_json 'for n in 1 2; do gh pr merge $n --squash; done')" >/dev/null
 ck "shell-variable selector"         DENY "$LAST_VERDICT"
@@ -1081,6 +1140,13 @@ ck_reason "REST file list still flags executable paths" ".github/workflows/x.yml
 ck "no -R: no REST guess, denied"   DENY "$(STUB_REST_LOGIN=laurigates run "$(bash_json 'gh pr merge 42 --squash')")"
 ck "branch selector: no REST guess" DENY "$(STUB_REST_LOGIN=laurigates run "$(bash_json 'gh pr merge my-branch -R laurigates/claude-plugins --squash')")"
 ck "both lookups fail: denied"      DENY "$(STUB_REST_FAIL=1 run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')")"
+# REST fallback answering with an HTTP error body (exit 1, body on stdout):
+# the body must not be parsed as the PR record (issue #3602).
+STUB_REST_403=1 STUB_RATE_CORE='0 1800000000' \
+  run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')" >/dev/null
+ck "REST fallback 403 body: denied"                 DENY "$LAST_VERDICT"
+ck_reason "REST 403: says the author lookup failed" "could not read the PR's author"
+ck_reason "REST 403: names the rate limit"          "rate limit is exhausted"
 unset STUB_GRAPHQL_FAIL
 
 echo "== heredoc body lines are data, not command words (issue #3355) =="

@@ -16,7 +16,9 @@
 #   - Anyone else → denied, with the author, the association, and which touched
 #     paths execute, plus the human command to run instead.
 #   - Author cannot be determined (network, an unresolvable `$var` selector in a
-#     loop, a bad PR number) → denied. "Can't verify" is not "safe".
+#     loop, a bad PR number) → denied. "Can't verify" is not "safe". A failed
+#     lookup (rate limit, auth) is named as one, never as a foreign author
+#     (issue #3602).
 #   - Any command that is not a merge → allowed, immediately.
 #   - A command that merely MENTIONS `gh pr merge` — in prose, in a quoted
 #     argument, in a heredoc body — is not a merge. Detection is positional:
@@ -1149,7 +1151,53 @@ fi
 
 NOT_PERMITTED="Merges of PRs authored by anyone other than the repo owner or a bot are not permitted from an agent."
 ME=""
+ME_ERR=""
 ME_DONE=0
+
+# Issue #3602. On an HTTP error, `gh api` skips --jq, prints the raw error body
+# on STDOUT and exits 1. The hook once kept that body as the viewer's login, so
+# with the REST rate limit exhausted the user's own PR was refused as "written
+# by someone else", with the 403 text in the author and you fields. Every
+# lookup now keeps its output only on exit 0, and a failed one is explained by
+# this function instead of being compared as a login.
+#
+# lookup_failure_note <stdout of the failed gh call, may be empty>
+# Sets LF_CAUSE (a clause naming why, or empty when nothing is known) and
+# LF_REMEDY (what to do next). Asks `gh api rate_limit`, which does not count
+# against the limit; if that fails too, the error body's message is used.
+LF_CAUSE=""
+LF_REMEDY=""
+fmt_epoch() {
+  date -u -d "@$1" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null \
+    || date -u -r "$1" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null \
+    || printf 'Unix time %s' "$1"
+}
+lookup_failure_note() {
+  local body="$1" msg="" rl="" c_rem="" c_reset="" g_rem="" g_reset="" api="" reset=""
+  LF_CAUSE=""
+  LF_REMEDY=""
+  msg=$(printf '%s' "$body" | jq -r '.message // empty' 2>/dev/null) || msg=""
+  msg=${msg%%$'\n'*}
+  msg=${msg:0:200}
+  rl=$(gh api rate_limit --jq '[.resources.core.remaining, .resources.core.reset, .resources.graphql.remaining, .resources.graphql.reset] | @tsv' </dev/null 2>/dev/null) || rl=""
+  if [ -n "$rl" ]; then
+    IFS=$'\t' read -r c_rem c_reset g_rem g_reset <<<"$rl" || true
+    if [ "$c_rem" = "0" ]; then api="REST"; reset="$c_reset"
+    elif [ "$g_rem" = "0" ]; then api="GraphQL"; reset="$g_reset"
+    fi
+  fi
+  case "$reset" in ''|*[!0-9]*) reset="" ;; esac
+  if [ -n "$api" ]; then
+    LF_CAUSE="the GitHub ${api} API rate limit is exhausted${reset:+ (it resets at $(fmt_epoch "$reset"))}, so gh returned an error instead of an answer"
+    LF_REMEDY="This is not an authorship verdict: retry the same command after the reset."
+  elif [ -n "$msg" ]; then
+    LF_CAUSE="gh returned an error: ${msg}"
+    case "$msg" in
+      *[Rr]ate\ limit*) LF_REMEDY="This is not an authorship verdict: retry the same command after the limit resets (gh api rate_limit shows when)." ;;
+    esac
+  fi
+  return 0
+}
 
 # ---------------------------------------------------------------------------
 # check_record: deny (and exit) unless this one merge is provably of a PR by
@@ -1267,7 +1315,9 @@ check_record() {
   # Resolve the author and classify.
   # -------------------------------------------------------------------------
   if [ "$ME_DONE" = "0" ]; then
-    ME=$(gh api user --jq '.login' 2>/dev/null || true)
+    ME=$(gh api user --jq '.login' </dev/null 2>/dev/null) || { ME_ERR="$ME"; ME=""; }
+    # A GitHub login is letters, digits and hyphens; anything else is not one.
+    case "$ME" in *[!A-Za-z0-9-]*) ME_ERR="$ME"; ME="" ;; esac
     ME_DONE=1
   fi
 
@@ -1275,11 +1325,11 @@ check_record() {
   [ -n "$PR_SELECTOR" ] && VIEW_ARGS+=("$PR_SELECTOR")
   [ -n "$PR_REPO" ] && VIEW_ARGS+=(--repo "$PR_REPO")
 
-  local meta
+  local meta meta_err=""
   meta=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} \
           --json number,title,author,url \
           --jq '[(.number|tostring), .author.login, (.author.is_bot|tostring), .title, .url] | @tsv' \
-          </dev/null 2>/dev/null || true)
+          </dev/null 2>/dev/null) || meta=""
 
   # REST fallback. `gh pr view` goes through GraphQL, which some environments
   # refuse outright (Claude Code cloud sessions answer every GraphQL call with
@@ -1292,7 +1342,7 @@ check_record() {
   if [ -z "$meta" ] && [[ "$PR_REPO" =~ $rest_repo_re ]] && [[ "$PR_SELECTOR" =~ ^[0-9]+$ ]]; then
     meta=$(gh api "repos/$PR_REPO/pulls/$PR_SELECTOR" \
             --jq '[(.number|tostring), .user.login, (.user.type == "Bot"|tostring), .title, .html_url] | @tsv' \
-            </dev/null 2>/dev/null || true)
+            </dev/null 2>/dev/null) || { meta_err="$meta"; meta=""; }
   fi
 
   if [ -z "$meta" ]; then
@@ -1304,14 +1354,16 @@ check_record() {
       *'$'*|*'`'*)
         deny "Refusing to merge ${WHAT}: the PR selector or repo is a shell variable, so this hook cannot tell whose PR it is. ${NOT_PERMITTED} Resolve shell variables to their literal values first (gh pr list --json number,author to find PR numbers; check which repo you mean if --repo/-R was a variable), then merge with literal values one at a time — each will be checked individually." ;;
       *)
+        lookup_failure_note "$meta_err"
+        local why="${LF_CAUSE:+ Cause: ${LF_CAUSE}.}${LF_REMEDY:+ ${LF_REMEDY}}"
         if [ -z "$PR_REPO" ]; then
           # Issue #2872: the commonest cause is the repository, not the number
           # — with no --repo, gh resolves the repo from the directory below,
           # which is the session cwd unless the command began with a literal
           # `cd <dir> &&`. Say so, and name the unambiguous remedy.
-          deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing). No --repo/-R was given, so the PR was looked up in the repository of ${GH_DIR_SHOWN} — if the PR lives in another repository (for example one you cd into in a way this hook does not follow), that is the likely cause; otherwise check the PR number and the network. 'Cannot verify' is not 'safe', so this is denied rather than allowed. Retry naming the repository explicitly: gh pr merge ${PR_SELECTOR:-<number>} -R OWNER/REPO …"
+          deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing).${why} No --repo/-R was given, so the PR was looked up in the repository of ${GH_DIR_SHOWN} — if the PR lives in another repository (for example one you cd into in a way this hook does not follow), that is the likely cause; otherwise check the PR number and the network. 'Cannot verify' is not 'safe', so this is denied rather than allowed. Retry naming the repository explicitly: gh pr merge ${PR_SELECTOR:-<number>} -R OWNER/REPO …"
         fi
-        deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing — bad PR number, wrong repo, or no network). 'Cannot verify' is not 'safe', so this is denied rather than allowed. Check the PR exists and is reachable (gh pr view ${PR_SELECTOR:-} ${PR_REPO:+--repo $PR_REPO}), then retry." ;;
+        deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing — bad PR number, wrong repo, or no network).${why} 'Cannot verify' is not 'safe', so this is denied rather than allowed. Check the PR exists and is reachable (gh pr view ${PR_SELECTOR:-} ${PR_REPO:+--repo $PR_REPO}), then retry." ;;
     esac
   fi
 
@@ -1319,7 +1371,10 @@ check_record() {
   IFS=$'\t' read -r PR_NUM AUTHOR IS_BOT TITLE URL <<< "$meta"
 
   if [ -z "$ME" ]; then
-    deny "Refusing to merge ${PR_REPO:-this repo}#${PR_NUM} (\"${TITLE}\"): could not determine the authenticated GitHub user (gh api user failed), so authorship cannot be checked against you. Denied rather than guessed. Fix gh auth (gh auth status) and retry."
+    # Issue #3602: say why the lookup failed. A failed lookup is not an
+    # authorship verdict, so the denial must not read like one.
+    lookup_failure_note "$ME_ERR"
+    deny "Refusing to merge ${PR_REPO:-this repo}#${PR_NUM} (\"${TITLE}\"): could not determine the authenticated GitHub user (gh api user failed${LF_CAUSE:+: ${LF_CAUSE}}), so authorship was not checked against you. Denied rather than guessed. ${LF_REMEDY:-Fix gh auth (gh auth status) and retry.}"
   fi
 
   # A bot author renders differently depending on which gh subcommand produced
@@ -1339,10 +1394,12 @@ check_record() {
   # -------------------------------------------------------------------------
   local slug="$PR_REPO" assoc="" risky reason
   if [ -z "$slug" ]; then
-    slug=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
+    slug=$(gh repo view --json nameWithOwner -q .nameWithOwner </dev/null 2>/dev/null) || slug=""
   fi
   if [ -n "$slug" ]; then
-    assoc=$(gh api "repos/$slug/pulls/$PR_NUM" --jq '.author_association' </dev/null 2>/dev/null || true)
+    # An error body on stdout (issue #3602) is not an association.
+    assoc=$(gh api "repos/$slug/pulls/$PR_NUM" --jq '.author_association' </dev/null 2>/dev/null) || assoc=""
+    case "$assoc" in *[!A-Z_]*) assoc="" ;; esac
   fi
 
   # Which touched paths actually execute something? That is the difference
@@ -1351,9 +1408,9 @@ check_record() {
   # repository is known. The list only shapes the denial text; the PR is
   # denied either way.
   local files
-  files=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} --json files --jq '.files[].path' </dev/null 2>/dev/null || true)
+  files=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} --json files --jq '.files[].path' </dev/null 2>/dev/null) || files=""
   if [ -z "$files" ] && [ -n "$slug" ]; then
-    files=$(gh api --paginate "repos/$slug/pulls/$PR_NUM/files" --jq '.[].filename' </dev/null 2>/dev/null || true)
+    files=$(gh api --paginate "repos/$slug/pulls/$PR_NUM/files" --jq '.[].filename' </dev/null 2>/dev/null) || files=""
   fi
   risky=$(printf '%s\n' "$files" \
     | awk '

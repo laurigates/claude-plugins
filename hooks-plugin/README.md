@@ -387,6 +387,14 @@ hook falls back to `gh api repos/OWNER/REPO/pulls/N` and
 the repository from remotes and its default setting, which the hook does not
 guess, so the merge stays denied; name the repository and retry.
 
+A lookup that fails is reported as a failed lookup, not as an authorship
+verdict (issue #3602). On an HTTP error `gh api` prints the error body on
+stdout and exits 1, so the hook keeps a lookup's output only on exit 0. When
+the viewer or author lookup fails, the denial asks `gh api rate_limit` (which
+does not count against the limit) and, if the REST or GraphQL limit is
+exhausted, names it with the reset time and says to retry after the reset.
+Otherwise it quotes gh's error message.
+
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge` (and `curl`
 on the same route), GraphQL `mergePullRequest` / `enablePullRequestAutoMerge`
