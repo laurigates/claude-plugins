@@ -104,6 +104,9 @@ continue on a branch whose PR had merged found the remote branch deleted and ope
 Each row carries the author's report (`fix`, including `followups` and
 `decisions_for_user`) and every verdict, so a re-dispatch starts from the state
 packet rather than from memory (`.claude/rules/loop-integrity.md` Pillar 2).
+The implement brief keeps `followups` to defects worth an issue: one 7-unit run without that
+line returned 52, mostly pre-existing lint notes and restatements of the brief, and the next
+run with it returned about 12.
 
 Read every verdict's defect list before integrating, including on a `PASS`. A
 verifier can pass the code and still report a defect outside it, such as an open

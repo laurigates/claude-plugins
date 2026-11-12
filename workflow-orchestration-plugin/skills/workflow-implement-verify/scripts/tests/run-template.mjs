@@ -174,6 +174,13 @@ if (isImpl) {
   // 9. A single unit is below the floor.
   const one = await run(units(['a']), () => fix('a'))
   check('one unit aborts below floor', one.result.reason === 'below-floor' && one.calls.length === 0, one)
+  // The implement brief caps follow-up volume: 7 units returned 52 followups
+  // without it, about 12 with it (#3605).
+  {
+    const capped = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) => (k === 'implement' ? fix(u) : verdict(u, 'pass')))
+    const p = capped.sent['implement:a']?.prompt ?? ''
+    check('implement prompt caps followups', /put pre-existing problems in followups, not the diff\.[^\n]*Keep followups to defects worth an issue/.test(p), p)
+  }
   // 10. Units in two repositories: each unit's repo, root and gates reach its own
   // prompts, a foreign unit's agents make worktrees under its root, and the
   // landing plan names each unit's repository.

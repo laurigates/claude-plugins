@@ -376,7 +376,7 @@ ${ctx.trailer ? `   End every commit message with exactly these lines:\n${ctx.tr
 6. Run \`git switch --detach\` so a verifier can check the branch out next.
 
 Do not push, open PRs, or comment on issues — a later sequential stage does that.
-Change only what the unit needs; put pre-existing problems in followups, not the diff.
+Change only what the unit needs; put pre-existing problems in followups, not the diff. Keep followups to defects worth an issue.
 If it is already fixed at the base, return status "no-change" with evidence and commit nothing.
 Draft pr_title and pr_body for the finalise stage.`
 
