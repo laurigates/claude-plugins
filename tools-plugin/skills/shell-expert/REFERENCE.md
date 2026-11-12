@@ -478,14 +478,27 @@ set -euo pipefail
 # Wrong: intermittently false-negative
 printf '%s\n' "$section" | grep -Fq "$needle" || fail "not documented"
 some_command | grep -q "ready" || fail "not ready"
+exists() { gh label list --json name --jq '.[].name' | grep -Fxq "$1"; }
 
 # Right: no second process, so nothing can take SIGPIPE
 grep -Fq "$needle" <<<"$section" || fail "not documented"
-grep -q "ready" <<<"$(some_command)" || fail "not ready"
+
+# Right: capture into a variable first, then read it with a here-string
+output=$(some_command)
+grep -q "ready" <<<"$output" || fail "not ready"
+names=$(gh label list --json name --jq '.[].name')
+exists() { grep -Fxq "$1" <<<"$names"; }
 
 # Right: grep without -q reads to EOF, so the producer always finishes
 some_command | grep "ready" >/dev/null || fail "not ready"
 ```
+
+Capture with an assignment, not inline. `grep -q PAT <<<"$(some_command)"`
+also avoids `SIGPIPE`, but it loses the producer's exit status: if
+`some_command` fails, grep sees empty or partial input and reports a miss. In a
+membership test that decides whether to create, rename or delete something, a
+failed lookup then reads as "absent". The assignment `output=$(some_command)`
+returns the command's status, so `set -e` stops the script there.
 
 `| head` has the same mechanism. It is usually deliberate truncation, so drop
 `pipefail` for that script or add `|| true` to that line. Do not add `|| true`
