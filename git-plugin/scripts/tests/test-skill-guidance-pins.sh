@@ -140,13 +140,16 @@ squash_stack_predicts_child_tree() { # <sed edit for the child> -> exit 0 when s
 }
 if grep -qF -- '--write-tree' <<<"$(git merge-tree -h 2>&1)"; then
     squash_stack_predicts_child_tree 's/^50$/fifty-child/'
-    [ $? -eq 0 ] && ok "a child editing the shared file away from the base's hunk passes step 1" ||
+    sim_rc=$?
+    [ "$sim_rc" -eq 0 ] && ok "a child editing the shared file away from the base's hunk passes step 1" ||
         notok "a child editing line 50 (base edited line 10) did not get its own tree back"
     squash_stack_predicts_child_tree 's/^ten-base$/ten-child/'
-    [ $? -eq 1 ] && ok "a child editing the base's own line fails step 1" ||
+    sim_rc=$?
+    [ "$sim_rc" -eq 1 ] && ok "a child editing the base's own line fails step 1" ||
         notok "a child editing the base's line 10 got its own tree back, or setup failed"
     squash_stack_predicts_child_tree 's/^11$/eleven-child/'
-    [ $? -eq 1 ] && ok "a child editing the line next to the base's fails step 1" ||
+    sim_rc=$?
+    [ "$sim_rc" -eq 1 ] && ok "a child editing the line next to the base's fails step 1" ||
         notok "a child editing line 11 (base edited line 10) got its own tree back, or setup failed"
 else
     echo "  SKIP: git $(git --version | awk '{print $3}') lacks merge-tree --write-tree (needs 2.38+)"
