@@ -524,7 +524,9 @@ grep -q 'reconciled each session' "$SKILLS_DIR/blueprint-status/SKILL.md" \
 # ---- Test Q: no session-start writer of task_registry; no run counters (#3553) ----
 # Agent-task run state is written only after an explicit run; the run
 # counters stats.runs / stats.runs_total are no longer incremented anywhere.
-PLUGIN_ROOT="${SCRIPT_DIR}/../.."
+# Canonical: an uncanonicalised root keeps `/scripts/tests/../..` in every path
+# grep prints, and the `/tests/` exclusion below would then drop every hit.
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 assign_re='\.task_registry\[[^]]*\][.A-Za-z0-9_"]*[[:space:]]*[|+-]?=[^=]'
 # Control: the pattern matches an assignment and ignores a comparison.
 [ "$(printf '%s\n' '.task_registry[$t].last_result = $r' '.task_registry[$t].x == 1' | grep -cE "$assign_re")" = "1" ] \
@@ -536,10 +538,31 @@ session_writers=$(grep -nE "$assign_re" \
 [ -z "$session_writers" ] && ok "Q: SessionStart scripts assign no task_registry field" \
     || notok "Q: SessionStart scripts write task_registry: $session_writers"
 counter_re='stats\.runs(_total)? // 0\) \+ 1'
-[ "$(printf '%s\n' '((.task_registry[$t].stats.runs // 0) + 1)' | grep -cE "$counter_re")" = "1" ] \
+# The increment is assembled from two pieces so this file never holds it on one
+# line: #3553's acceptance command greps skills/ and scripts/ for it, tests
+# included, and must find nothing.
+counter_increment='((.task_registry[$t].stats.'"runs // 0) + 1)"
+[ "$(printf '%s\n' "$counter_increment" | grep -cE "$counter_re")" = "1" ] \
     && ok "Q: counter pattern control" || notok "Q: counter pattern does not match an increment"
-counters=$(grep -rnE --include='*.md' --include='*.sh' "$counter_re" "$PLUGIN_ROOT/skills" "$PLUGIN_ROOT/scripts" \
-    | grep -v '/tests/')
+find_counter_increments() {
+    # find_counter_increments <plugin-root> — increments in skills/ and
+    # scripts/, test files excluded. grep runs on paths relative to the root,
+    # so the `/tests/` filter sees only the plugin's own layout.
+    (cd "$1" && grep -rnE --include='*.md' --include='*.sh' "$counter_re" skills scripts) \
+        | grep -v '/tests/'
+}
+# Pipeline control: a planted increment in a skill is reported, one in a test
+# file is not.
+sb_q=$(make_sandbox)
+mkdir -p "$sb_q/skills/planted" "$sb_q/scripts/tests"
+printf 'x = %s\n' "$counter_increment" > "$sb_q/skills/planted/SKILL.md"
+printf 'x = %s\n' "$counter_increment" > "$sb_q/scripts/tests/test-planted.sh"
+planted=$(find_counter_increments "$sb_q")
+[ "$planted" = "skills/planted/SKILL.md:1:x = $counter_increment" ] \
+    && ok "Q: counter search reports a planted skill increment and skips tests/" \
+    || notok "Q: counter search control got: ${planted:-<nothing>}"
+rm -rf "$sb_q"
+counters=$(find_counter_increments "$PLUGIN_ROOT")
 [ -z "$counters" ] && ok "Q: no stats.runs / stats.runs_total increment in skills or scripts" \
     || notok "Q: run counter increments remain: $counters"
 
