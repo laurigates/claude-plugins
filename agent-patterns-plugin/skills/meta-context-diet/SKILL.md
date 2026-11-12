@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-10-10
+modified: 2026-11-12
 compatibility: claude-code
 reviewed: 2026-07-08
 allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -88,7 +88,8 @@ For each candidate, present:
 1. The file/section, its size (chars + est. tokens), and its Step 1 path consumers.
 2. The recommended disposition with a one-sentence justification.
 3. For promote-to-skill: the drafted skill home, name, and description.
-4. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
+4. The **estimated net saving**: chars leaving the always-loaded file minus the residual text drafted to stay behind (the kept invariant, the pointer line, the stub). Draft the residual before you estimate. The moved size alone overstates it: six Keep-but-lean and Consolidate candidates shown as ~8K chars measured ~3.7K net once their pointers stayed.
+5. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
 
 Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
 
@@ -120,7 +121,7 @@ After every write, run `git status` so the user sees what changed. **Commit poli
 
 ### 6. Report
 
-Emit the final table, net every-turn saving, and commit outcome per [report-format.md](references/report-format.md).
+Emit the final table, the measured net every-turn saving (re-measured after the edits, with the command named), and commit outcome per [report-format.md](references/report-format.md).
 
 ## Anti-patterns and notes
 

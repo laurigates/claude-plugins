@@ -1103,6 +1103,21 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: references/consumer-sweep.md must define the sweep for CLAUDE.md section candidates (PR #2978)")
         has_errors=true
       fi
+      # Regression (#3608): the Step 4 approval table showed the full size of
+      # the text being moved as the saving (~8K chars over six candidates) while
+      # the measured net was ~3.7K — the pointer and invariant lines that stay
+      # behind were never subtracted. Step 4 must estimate the NET, and the
+      # Step 6 report must state the measured net with the command behind it.
+      if ! grep -qF 'estimated net saving' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 4 must present an estimated net saving (moved minus residual), not the moved size (issue #3608)")
+        has_errors=true
+      fi
+      for token in 'measured net' 'wc -c'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (report the measured net saving and the command that produced it — issue #3608)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision
