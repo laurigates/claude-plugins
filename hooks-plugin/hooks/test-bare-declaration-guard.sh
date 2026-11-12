@@ -274,14 +274,143 @@ assert_allows "CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1 in the hook's envir
     "CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1"
 assert_allows "Read is not checked" \
     "$(jq -nc --arg p "$SH" '{tool_name:"Read",tool_input:{file_path:$p}}')"
-assert_allows "Bash is not checked" \
-    "$(jq -nc '{tool_name:"Bash",tool_input:{command:"export $names"}}')"
 assert_allows "Write with no content" \
     "$(jq -nc --arg p "$SH" '{tool_name:"Write",tool_input:{file_path:$p}}')"
 assert_allows "input that is not JSON" 'not json at all'
 assert_allows "tool_input that is not an object" '{"tool_name":"Write","tool_input":"export $names"}'
 assert_allows "empty input" ''
 
+# ---------------------------------------------------------------------------
 echo ""
-echo "Results: $PASS passed, $FAIL failed"
+echo "Shell inside non-shell files (issue #3629)"
+# ---------------------------------------------------------------------------
+# Only the lines a shell runs are checked: Makefile recipe lines (a leading
+# tab; `$$` is the shell's `$`), justfile recipe lines (indented; `{{x}}` is an
+# interpolation that can be empty) and workflow / composite-action `run:`
+# values. A top-level `export` in a Makefile or justfile is the tool's own
+# directive, not shell.
+TAB=$'\t'
+mk() { printf '%s\n' "$@"; }
+for name in Makefile makefile GNUmakefile rules.mk; do
+    assert_blocks "Makefile recipe: export \$\$names ($name)" \
+        "$(write_json "$WORK/$name" "$(mk 'all:' "${TAB}export \$\$names")")"
+done
+assert_blocks "Makefile recipe: export \$(ENV_VARS) (an empty make variable)" \
+    "$(write_json "$WORK/Makefile" "$(mk 'all:' "${TAB}export \$(ENV_VARS)")")"
+assert_blocks "Makefile recipe with a @ prefix" \
+    "$(write_json "$WORK/Makefile" "$(mk 'all:' "${TAB}@export \$\$names")")"
+assert_allows "Makefile top-level export directive" \
+    "$(write_json "$WORK/Makefile" "$(mk 'export $(ENV_VARS)' 'all:' "${TAB}@true")")"
+assert_allows "Makefile recipe: echo \$\$names" \
+    "$(write_json "$WORK/Makefile" "$(mk 'all:' "${TAB}echo \$\$names")")"
+assert_allows "Makefile recipe: export FOO=\$\$bar" \
+    "$(write_json "$WORK/Makefile" "$(mk 'all:' "${TAB}export FOO=\$\$bar")")"
+assert_allows "Makefile recipe with the allow comment" \
+    "$(write_json "$WORK/Makefile" "$(mk 'all:' "${TAB}export \$\$names # allow-bare-decl: set above")")"
+assert_blocks "Edit adds a recipe line to a Makefile" \
+    "$(edit_json "$WORK/Makefile" "${TAB}@true" "$(mk "${TAB}@true" "${TAB}export \$\$names")")"
+
+for name in justfile Justfile .justfile tasks.just; do
+    assert_blocks "justfile recipe: export {{vars}} ($name)" \
+        "$(write_json "$WORK/$name" "$(mk 'r:' '    export {{vars}}')")"
+done
+assert_blocks "justfile recipe: export \$names" \
+    "$(write_json "$WORK/justfile" "$(mk 'r:' '    names=$(cat list); export $names')")"
+assert_allows "justfile top-level export assignment" \
+    "$(write_json "$WORK/justfile" "$(mk 'export FOO := "bar"' 'r:' '    echo {{FOO}}')")"
+assert_allows "justfile recipe: echo {{vars}}" \
+    "$(write_json "$WORK/justfile" "$(mk 'r:' '    echo {{vars}}')")"
+
+WF="$WORK/repo/.github/workflows/ci.yml"
+mkdir -p "${WF%/*}"
+assert_blocks "workflow run: block" \
+    "$(write_json "$WF" "$(mk 'jobs:' '  t:' '    steps:' '      - run: |' '          export $(grep -v "^#" .env | xargs)' '          make')")"
+assert_blocks "workflow inline run:" \
+    "$(write_json "$WF" "$(mk 'jobs:' '  t:' '    steps:' '      - name: env' '        run: export ${{ inputs.vars }}')")"
+assert_blocks "workflow.yaml run: block with a chomping indicator" \
+    "$(write_json "${WF%.yml}.yaml" "$(mk 'steps:' '  - run: >-' '      export $names')")"
+assert_blocks "composite action.yml run: block" \
+    "$(write_json "$WORK/action.yml" "$(mk 'runs:' '  steps:' '    - run: |' '        export $names' '      shell: bash')")"
+assert_allows "workflow: the line after the run: block is not shell" \
+    "$(write_json "$WF" "$(mk 'steps:' '  - run: |' '      make' '  - name: export $names')")"
+assert_allows "workflow: a run: block with no bare declaration" \
+    "$(write_json "$WF" "$(mk 'steps:' '  - run: |' '      export FOO=$BAR' '      echo "$names"')")"
+assert_allows "YAML outside .github/workflows is not checked" \
+    "$(write_json "$WORK/config.yml" "$(mk 'steps:' '  - run: |' '      export $names')")"
+mk 'jobs:' '  t:' '    steps:' '      - run: |' '          echo start' > "$WF"
+assert_blocks "Edit adds a line inside a run: block on disk" \
+    "$(edit_json "$WF" '          echo start' "$(mk '          echo start' '          export $names')")"
+mk 'jobs:' '  t:' '    steps:' '      - run: |' '          export $names' '          echo start' > "$WF"
+assert_allows "Edit near a run: line the file already has" \
+    "$(edit_json "$WF" '          echo start' '          echo begin')"
+
+# The make and just forms, run for real: a line the hook blocks must print an
+# exported canary when its expansion is empty.
+echo ""
+echo "Non-shell files: what make and just do"
+tool_prints_canary() {   # <tool> <file name> <content>
+    local d out
+    d=$(mktemp -d "$WORK/tool.XXXXXX") || return 1
+    printf '%s\n' "$3" > "$d/$2"
+    case "$1" in
+        make) out=$(cd "$d" && GUARD_TEST_CANARY=canary-value-7f3a make -s 2>&1) ;;
+        just) out=$(cd "$d" && GUARD_TEST_CANARY=canary-value-7f3a just r 2>&1) ;;
+    esac
+    grep -qF canary-value-7f3a <<<"$out"
+}
+export GUARD_TEST_CANARY
+if command -v make >/dev/null 2>&1; then
+    if tool_prints_canary make Makefile "$(mk 'all:' "${TAB}export \$\$names")"; then ok "make: recipe export \$\$names lists parameters"; else bad "make: recipe export \$\$names lists parameters"; fi
+    if tool_prints_canary make Makefile "$(mk 'all:' "${TAB}export \$(ENV_VARS)")"; then ok "make: recipe export \$(ENV_VARS) lists parameters"; else bad "make: recipe export \$(ENV_VARS) lists parameters"; fi
+    if tool_prints_canary make Makefile "$(mk 'export $(ENV_VARS)' 'all:' "${TAB}@true")"; then bad "make: a top-level export directive prints no listing"; else ok "make: a top-level export directive prints no listing"; fi
+else
+    echo "  NOTE: make is not installed; the make rows are not run"
+fi
+if command -v just >/dev/null 2>&1; then
+    if tool_prints_canary just justfile "$(mk 'vars := ""' 'r:' '    export {{vars}}')"; then ok "just: recipe export {{vars}} lists parameters"; else bad "just: recipe export {{vars}} lists parameters"; fi
+    if tool_prints_canary just justfile "$(mk 'r:' '    names=""; export $names')"; then ok "just: recipe export \$names (empty) lists parameters"; else bad "just: recipe export \$names (empty) lists parameters"; fi
+else
+    echo "  NOTE: just is not installed; the just rows are not run"
+fi
+
+# ---------------------------------------------------------------------------
+echo ""
+echo "Bash commands get a nudge, not a block (issue #3629)"
+# ---------------------------------------------------------------------------
+# A Bash command that runs or writes such a line is not an Edit/Write, so the
+# block above never sees it. It gets a non-blocking additionalContext note:
+# exit 0, nothing on stderr, the JSON on stdout.
+bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
+assert_nudges() {   # $1 desc, $2 command
+    local out rc
+    out=$(bash "$HOOK" 2>/dev/null <<<"$(bash_json "$2")"); rc=$?
+    if [ "$rc" -eq 0 ] && jq -e '.hookSpecificOutput.additionalContext | test("allow-bare-decl")' >/dev/null 2>&1 <<<"$out" \
+        && ! jq -e '.hookSpecificOutput.permissionDecision' >/dev/null 2>&1 <<<"$out"; then
+        ok "$1"
+    else
+        bad "$1 (expected exit 0 with an additionalContext nudge, got exit $rc: ${out:0:120})"
+    fi
+}
+assert_silent() {   # $1 desc, $2 command
+    local out rc
+    out=$(bash "$HOOK" 2>&1 <<<"$(bash_json "$2")"); rc=$?
+    if [ "$rc" -eq 0 ] && [ -z "$out" ]; then ok "$1"; else bad "$1 (expected a silent exit 0, got exit $rc: ${out:0:120})"; fi
+}
+assert_nudges "Bash: export \$(grep … .env | xargs) run directly" 'export $(grep -v "^#" .env | xargs)'
+assert_nudges "Bash: a heredoc that writes local \$names into a script" \
+    "$(mk "cat > lib.sh <<'EOF'" 'f() { local $names; }' 'EOF')"  # allow-bare-decl: fixture text
+assert_nudges "Bash: a later statement in a chain" 'cd /tmp && export $vars'
+assert_silent "Bash: export FOO=\$BAR is silent" 'export FOO=$BAR'
+assert_silent "Bash: export \"\$name\" is silent" 'export "$name"'
+assert_silent "Bash: an unrelated command is silent" 'git status --short'
+assert_silent "Bash: the allow comment silences the nudge" 'export $names # allow-bare-decl: set above'
+out=$(CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1 bash "$HOOK" 2>&1 <<<"$(bash_json 'export $names')")
+if [ -z "$out" ]; then ok "Bash: the opt-out in the hook's environment silences the nudge"; else bad "Bash: the opt-out in the hook's environment silences the nudge"; fi
+
+echo ""
+if [ "$HAVE_ZSH" -eq 1 ]; then
+    echo "Results: $PASS passed, $FAIL failed"
+else
+    echo "Results: $PASS passed, $FAIL failed (zsh column not run: zsh is not installed)"
+fi
 [ "$FAIL" -eq 0 ]
