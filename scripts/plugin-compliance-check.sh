@@ -1426,6 +1426,19 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#3591): the placeholder-key and workspace-root facts were
+      # already in the mechanics table (c3e200edc, #2120), yet a consult two
+      # days later still fanned out on listmodels alone — OpenAI 401'd on an
+      # unexpanded ${OPENAI_API_KEY}, OpenCode Go 429'd on its monthly limit,
+      # and all three reviews went to one model with no disagreement to read.
+      # The probe must sit in the protocol's first step, before any fan-out,
+      # and files from another repo must be staged under the session repo.
+      for token in 'configuration, not reachability' 'from another repository'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (one-line chat probe per provider before the fan-out + stage other repos' files under PAL_WORKSPACE_ROOT — issue #3591)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression (#2409): hf-downloads must document that the FILENAMES
