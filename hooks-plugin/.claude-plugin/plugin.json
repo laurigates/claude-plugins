@@ -36,7 +36,8 @@
     "prose-style",
     "workflow-scale",
     "subagent-count",
-    "context-threshold"
+    "context-threshold",
+    "bare-declaration"
   ],
   "hooks": {
     "SessionStart": [
@@ -134,6 +135,16 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-protection.sh\"",
             "timeout": 5,
             "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bare-declaration-guard.sh\"",
+            "timeout": 5
           }
         ]
       },

@@ -345,6 +345,26 @@ A PreToolUse hook that denies a hand-rolled `git worktree add` whose path lands 
 
 **Tests:** `bash hooks-plugin/hooks/test-worktree-location-guard.sh` (fixture repos under `$HOME/.cache`, since the hook exempts temp dirs).
 
+### bare-declaration-guard.sh
+
+A PreToolUse hook that blocks an Edit or Write which adds, to a shell file, a declaration whose arguments are all expansions. `local`, `typeset`, `declare` and `export` list parameters when they run with no arguments, so `local $names` with `names` unset prints every parameter in scope to stdout, exported secrets included. The listing lands in whatever captures the output: an agent transcript, a CI log, a redirected file.
+
+| Aspect | Detail |
+|--------|--------|
+| Tier | **Block** (exit 2). The listing exposes secrets, and the fix is a rewrite of the same line, so the agent is never dead-ended |
+| Fires on | `Edit` and `Write` to a shell file: `*.sh`, `*.bash`, `*.zsh`, `*.ksh`, the rc files (`.zshrc`, `.bashrc`, `.profile`, …), the chezmoi source names for those (`dot_zshrc.tmpl`), or a file whose first line is a `sh`/`bash`/`zsh`/`ksh`/`dash` shebang |
+| Checked | Only the text the edit adds. A line that `old_string` or the file on disk already holds is not blocked |
+| Blocked | `local $names`, `export $(grep -v '^#' .env \| xargs)`, ``export `cmd` ``, `typeset -x $names`, `declare -p $name`, `typeset "${names[@]}"`, `export "$@"` — at the start of a line or after `;`, `&&`, `\|\|`, `{`, `(`, `then`, `do`, `else` |
+| Allowed | An assignment (`local name=$value`), a literal name among the arguments (`local first $rest`), a quoted single value (`export "$name"`: empty is an error), a non-empty default (`${names:-a b}`), an abort form (`"${names[@]:?names is empty}"`) |
+| Escape hatch | A `# allow-bare-decl` comment on the line, or alone on the line above. It is meant for the agent: it records in the source that the line cannot expand to nothing |
+| Not covered | Text written through Bash (a heredoc, `tee`), shell inside non-shell files (justfile and Makefile recipes, workflow `run:` blocks), and `readonly`/`integer`/`float`, whose bare forms list only their own kind of parameter. A match inside a string or a heredoc body is a false positive |
+
+Which shells print the listing was measured with an exported canary variable (bash 5.2, zsh 5.9): `typeset`, `declare` and `export` in both, `local` in zsh only. The hook checks `local` in every shell file because a `.sh` file can be sourced by zsh. The suite runs each fixture in the real shells, so the pattern and the behaviour cannot drift apart.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1` in your shell environment. An inline prefix does not reach the hook.
+
+**Tests:** `bash hooks-plugin/hooks/test-bare-declaration-guard.sh` (bash always; the zsh column when `zsh` is installed).
+
 ### external-pr-merge-guard.sh
 
 A PreToolUse hook that refuses to let an agent merge a pull request authored by anyone other than the authenticated user or a bot.
@@ -817,6 +837,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | repo-deletion-safety.sh | `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` | Enabled |
 | branch-base-guard.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD=1` | Enabled |
 | worktree-location-guard.sh | `CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1` | Enabled |
+| bare-declaration-guard.sh | `CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1` | Enabled |
 | external-pr-merge-guard.sh | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
