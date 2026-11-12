@@ -44,6 +44,8 @@ printf -- '---\nid: ADR-9007   \nstatus: Draft   \ntitle: Trailing   \t\ncreated
 printf -- '---\r\nid: ADR-9008\r\nstatus: Accepted\r\ntitle: CRLF document\r\nrelates-to:\r\n  - ADR-0001\r\n---\r\n\r\n# CRLF heading\r\n' > "$fx/05-crlf.md"
 # shellcheck disable=SC2016  # literal markdown fence
 printf -- '# ADR index\n\nTemplate:\n\n```markdown\n---\nid: ADR-NNNN\ntitle: "ADR-NNNN: Title"\nstatus: Proposed        # Draft | Proposed\n---\n```\n' > "$fx/06-README.md"
+# Zero bytes, sorted between two non-empty files: awk sees no record for it.
+: > "$fx/06b-empty.md"
 printf -- '---\n# a comment line, not a title\nid: ADR-9009\nstatus: Accepted\n---\n\n# Heading after a comment line\n' > "$fx/07-comment-line.md"
 printf -- '---\nid: PRD-9010\ntitle: Fix #123\nstatus: Draft\n---\n' > "$fx/08-hash-title.md"
 printf -- '---\nid: ADR-9011\nstatus: Accepted\nrelates-to:\n  - ADR-0019  # supersedes\n  - PRD-001\ngithub-issues:\n  - 42\n  - 7 # tracking\n---\n' > "$fx/09-list-comment.md"
@@ -85,6 +87,11 @@ field() { # field <row-path-suffix> <field-number>
 [ "$(field 01-inline-comment.md 3)" = "ADR-9004" ] && ok "inline comment is not part of the id" || notok "id=$(field 01-inline-comment.md 3)"
 [ "$(field 05-crlf.md 2)" = "1" ] && [ "$(field 05-crlf.md 3)" = "ADR-9008" ] && ok "CRLF document has frontmatter" || notok "CRLF row: $(field 05-crlf.md 2) $(field 05-crlf.md 3)"
 [ "$(field 06-README.md 2)" = "0" ] && [ -z "$(field 06-README.md 3)" ] && ok "fenced template in an index README is body text" || notok "README row read the fence"
+empty_rows=$(bash "$AUTORUN" --frontmatter-rows "$fx/07-comment-line.md" "$fx/06b-empty.md" "$fx/06-README.md" \
+    | awk -F'\037' '{ n = split($1, a, "/"); printf "%s:%s:%s%s%s%s%s%s\n", a[n], $2, $3, $4, $5, $6, $7, $8 }')
+[ "$empty_rows" = $'06-README.md:0:ADR index\n06b-empty.md:0:\n07-comment-line.md:1:ADR-9009AcceptedHeading after a comment line' ] \
+    && ok "a zero-byte file gets an empty row in its sorted position" \
+    || notok "zero-byte file rows: $empty_rows"
 [ "$(field 07-comment-line.md 5)" = "Heading after a comment line" ] && ok "frontmatter comment line is not the title" || notok "title=$(field 07-comment-line.md 5)"
 [ "$(field 12-fenced-heading.md 5)" = "Real heading" ] && ok "heading fallback skips fenced code" || notok "title=$(field 12-fenced-heading.md 5)"
 

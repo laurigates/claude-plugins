@@ -73,7 +73,9 @@ usage() {
 #   - relates-to and github-issues are read as block (`- x`) or flow (`[x, y]`)
 #     lists;
 #   - an empty title falls back to the first `# ` heading of the body (outside
-#     code fences), never to a line inside the frontmatter.
+#     code fences), never to a line inside the frontmatter;
+#   - a zero-byte file still gets its row: has_frontmatter 0, every other
+#     field empty.
 # Files are sorted with LC_ALL=C first, so the output order is the same on
 # every machine.
 frontmatter_rows() {
@@ -191,8 +193,20 @@ frontmatter_rows() {
             if (!any_fence && any_heading == "") any_heading = trim(substr(line, 3))
             if (state == 2 && !in_fence && body_heading == "") body_heading = trim(substr(line, 3))
         }
+        # A zero-byte file has no FNR == 1 record, so awk never visits it.
+        # Walk ARGV alongside the input and print an empty row for each file
+        # skipped that way, keeping one row per file in argument order.
+        function emit_empty_until(f) {
+            while (argi < ARGC && ARGV[argi] != f) {
+                printf "%s\0370\037\037\037\037\037\037\n", ARGV[argi]
+                argi++
+            }
+            argi++
+        }
+        BEGIN { argi = 1 }
         FNR == 1 {
             emit()
+            emit_empty_until(FILENAME)
             doc = FILENAME
             has_fm = 0; state = 2; in_fence = any_fence = 0; inlist = ""
             id = status = title = created = rel = gh = ""
@@ -240,7 +254,7 @@ frontmatter_rows() {
             }
             heading_scan(line)
         }
-        END { emit() }
+        END { emit(); emit_empty_until("") }
     ' "${fm_files[@]}"
 }
 
