@@ -1,11 +1,11 @@
 ---
 created: 2026-02-05
-modified: 2026-11-10
+modified: 2026-11-12
 compatibility: claude-code
-reviewed: 2026-11-10
+reviewed: 2026-11-12
 user-invocable: false
 description: "Plugin audit against detected stack (Python, Node, Rust, Go, Terraform, Docker, K8s). Use when cleaning up unused plugins or discovering stack-relevant ones for a project."
-allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/enabled-plugins.sh *), Bash(claude plugin list *), Bash(find *), Read, Glob, Grep, TodoWrite, AskUserQuestion
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/enabled-plugins.sh *), Bash(claude plugin list *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--verbose]"
 argument-hint: "[--fix] [--dry-run] [--verbose]"
 name: health-audit

@@ -42,9 +42,16 @@ recorded is whatever is current at that moment, and it does not follow later
 updates to the user-scope install, so the entry starts correct and drifts
 (§ Which install loads, and why a project can run an old version).
 
-The official plugin loading reference says instead that a plugin enabled only
-in project settings does not load at session start until it is installed on the
-machine, so treat this sync as observed behaviour, not documented behaviour.
+Re-measured 2026-11-12 on Claude Code 2.1.322, in an isolated
+`CLAUDE_CONFIG_DIR` with a local directory marketplace: a project whose
+committed settings enabled two plugins got a project row for the one already
+installed at user scope, with the same two debug lines, and none for the one installed
+nowhere (`Skipped auto-recording <plugin> — enabled only by repo-authored
+settings`). That second case agrees with the official plugin loading
+reference, which says a plugin enabled only in project settings does not load
+at session start until it is installed on the machine. The row for an
+already-installed plugin is observed behaviour the reference does not
+describe.
 
 ## Known issue #14202
 
@@ -68,7 +75,13 @@ Reported symptoms, in a project other than the one installed into:
 4. Plugin doesn't work in the current project
 
 Comments through 2026-10-30 say it still happens but name no version, so
-confirm each symptom on the installed release before relying on it. The
+confirm each symptom on the installed release before relying on it. Checked
+2026-11-12 on Claude Code 2.1.322 (isolated `CLAUDE_CONFIG_DIR`, local
+directory marketplace, CLI only): after a `--scope project` install in project
+A, a `--scope project` install in project B and a `--scope local` install in
+project C each exited 0 and added their own row, so symptom 2 did not
+reproduce. Symptoms 1, 3 and 4 were not checked: 1 and 3 are in the
+interactive `/plugin` view, and 4 needs a session in B before its own install. The
 report's own workaround is a hand-edited registry entry plus an
 `enabledPlugins` key in the target project; the skill keeps the registry edit
 only as its last resort ([SKILL.md](SKILL.md) § Last resort: edit the registry by hand).

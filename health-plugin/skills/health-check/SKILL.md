@@ -56,7 +56,7 @@ Parse these from `$ARGUMENTS`:
 
 Execute this diagnostic router. Default scope is `all` when `--scope` is not provided.
 
-Run every bundled script exactly as spelled in this file, path unquoted: each `allowed-tools` rule pre-approves only the command text it spells, and any other spelling goes through the normal permission flow.
+Run every bundled script exactly as spelled in this file, path unquoted: each `allowed-tools` rule pre-approves only the command text it spells, and any other spelling goes through the normal permission flow. Add no `$(…)` substitution: Claude Code does not pre-approve a command containing one, and every script already defaults `--project-dir` to the working directory.
 
 ### Step 1: Run environment checks (always)
 
@@ -65,13 +65,13 @@ These run regardless of `--scope`.
 #### 1a. Core environment scripts (including 1d permissions coverage and 1e marketplace enrollment)
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-settings.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-permissions-coverage.sh --home-dir "$HOME" --project-dir "$(pwd)"
-bash ${CLAUDE_SKILL_DIR}/scripts/check-marketplace-enrollment.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-plugin-scope-lag.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-settings.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-permissions-coverage.sh --home-dir "$HOME"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-marketplace-enrollment.sh --home-dir "$HOME"
 ```
 
 Parse `STATUS=`, `REASON=` (when present) and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`. Read each script's extra keys as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the file each finding came from: the settings or `.mcp.json` file, the plugin that declared a hook, the project path and both versions for `scope_lag`, the tool and task file for `missing_permission`.
@@ -85,7 +85,7 @@ Run each check as specified in [references/environment-checks.md](references/env
 For `--scope=registry` or `all`:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/check-registry.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/check-registry.sh --home-dir "$HOME"
 ```
 
 Parse `STATUS=`, `PLUGIN_COUNT=`, `ORPHANED_ENTRIES=`, `STALE_ENABLED_ENTRIES=`, and `ISSUES:`.
@@ -97,7 +97,7 @@ For `--scope=agentic` or `all`: invoke the `health-plugin:health-agentic-audit` 
 For `--scope=runtime` or `all`:
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh --home-dir "$HOME"
 ```
 
 Parse `STATUS=`, `ISSUES:`, `CLEANUP_SUGGESTED=` and the per-finding counts listed in [references/audit-scopes.md](references/audit-scopes.md#runtime-scope), which also documents `--history-warn-mb` and `--verbose`. The audit is **read-only**: it prints suggested cleanups (`claude purge <path> --dry-run` for dead projects, `jq` filters otherwise) for the operator.
@@ -107,7 +107,7 @@ Parse `STATUS=`, `ISSUES:`, `CLEANUP_SUGGESTED=` and the per-finding counts list
 For `--scope=usage` or `all`:
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/check-usage.sh --home-dir "$HOME" --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-usage.sh --home-dir "$HOME"
 ```
 
 Parse `STATUS=`, `REASON=` (when present), `ISSUES:` and the counts listed in [references/audit-scopes.md](references/audit-scopes.md#usage-scope), which also documents `--window-days` and `--verbose`. The audit is **read-only** and advisory (review candidates, not a delete list); it SKIPs on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it.
@@ -136,7 +136,7 @@ If `--fix` is set:
 
    | Scope | Delegate to |
    |-------|-------------|
-   | `registry` | `bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/fix-registry.sh --home-dir "$HOME" --project-dir "$(pwd)"` (append `--dry-run` when set) |
+   | `registry` | `bash ${CLAUDE_PLUGIN_ROOT}/skills/health-plugins/scripts/fix-registry.sh --home-dir "$HOME"` (append `--dry-run` when set) |
    | `stack` | Skill tool: `health-plugin:health-audit` with `--fix` (plus `--dry-run` when set); it runs its own Step 6 |
    | `agentic` | Skill tool: `health-plugin:health-agentic-audit` with `--fix`; it runs its own Step 6 |
 

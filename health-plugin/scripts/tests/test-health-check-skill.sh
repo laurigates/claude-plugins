@@ -8,9 +8,11 @@
 #      any `bash -c '<script>'` (.claude/rules/agentic-permissions.md).
 #   2. Every bundled script the body runs is pre-approved: each
 #      `bash ${CLAUDE_SKILL_DIR}/…sh` / `bash ${CLAUDE_PLUGIN_ROOT}/…sh`
-#      invocation is unquoted (a quoted path is different command text from the
-#      rule) and has a matching `Bash(bash <path> *)` rule; every such rule
-#      names a script that exists; every scripts/check-*.sh is run by the body.
+#      invocation is unquoted and has a matching `Bash(bash <path> *)` rule;
+#      every such rule names a script that exists; every scripts/check-*.sh is
+#      run by the body; no invocation carries a `$(…)` substitution. Measured on
+#      Claude Code 2.1.322 (#3577): a quoted path is pre-approved only while it
+#      holds no space, and a `$(…)` in the command voids the pre-approval.
 #   3. No `/health:<name>` command reference in ANY health-plugin skill's
 #      SKILL.md, REFERENCE.md or references/*.md, in any plugin's markdown, or
 #      in health-plugin's hook and skill scripts points at a skill that is
@@ -84,7 +86,7 @@ resolve_script() {
 body_text="$(awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' "$skill_md")"
 mapfile -t quoted_calls < <(grep -oE 'bash "\$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh"' <<<"$body_text" | sort -u)
 if [ "${#quoted_calls[@]}" -eq 0 ]; then
-  pass "no quoted bundled-script invocation (quoted text differs from the grant)"
+  pass "no quoted bundled-script invocation (a quoted path with a space is not pre-approved)"
 else
   fail "quoted bundled-script invocations: ${quoted_calls[*]}"
 fi
@@ -106,6 +108,19 @@ for call_path in "${script_calls[@]}"; do
   disk_path="$(resolve_script "$call_path")"
   [ -f "$disk_path" ] || fail "body runs ${call_path}, which does not exist at ${disk_path}"
 done
+
+# --- 2a'. no command substitution on a bundled-script invocation line (#3577)
+# Measured on Claude Code 2.1.322 (`claude -p`, default mode, no allow rules):
+# `bash <skill-dir>/scripts/check-plugins.sh --home-dir "$HOME" --project-dir
+# "$(pwd)"` was denied ("Quoted text in this command can't be checked before it
+# runs") although its anchored grant matched; the same command with a literal
+# path ran. The scripts default --project-dir to the working directory.
+mapfile -t subst_calls < <(grep -E 'bash \$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh[^`]*\$\(' <<<"$body_text")
+if [ "${#subst_calls[@]}" -eq 0 ]; then
+  pass "no bundled-script invocation carries a \$(…) substitution (it voids the pre-approval)"
+else
+  fail "bundled-script invocations with a command substitution (not pre-approved):\n  $(printf '%s\n  ' "${subst_calls[@]}")"
+fi
 
 # --- 2b. every script grant names an existing script
 for rule_text in "${grant_rules[@]}"; do
