@@ -1,22 +1,24 @@
 ---
 name: zsh-gotchas
-description: "Four zsh expansions that silently rewrite a command: $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner gives a wrong result or a tool seems missing."
+description: "Zsh expansions that rewrite a command: $VAR:word, leading =, no word splitting, `path` tied to PATH, bare `local`. Use when a zsh command gives a wrong result, dumps variables or a tool seems missing."
 allowed-tools: Bash, Read
 created: 2026-09-21
-modified: 2026-10-24
+modified: 2026-11-12
 reviewed: 2026-09-21
 ---
 
-# Zsh Gotchas — Four Expansions That Rewrite Your Command
+# Zsh Gotchas — Five Expansions That Rewrite Your Command
 
-Four zsh behaviours with no bash equivalent. Each one fires on **ordinary
-commands**, including the one-liners an agent runs through the Bash tool — not
-just on `.zsh` files — so a snippet lifted from a bash-tested doc breaks only
-here.
+Five zsh behaviours. The first four have no bash equivalent; the fifth is
+shared with bash for `typeset`, `declare` and `export`, and is zsh's own for
+`local`. Each one fires on **ordinary commands**, including the one-liners an
+agent runs through the Bash tool — not just on `.zsh` files — so a snippet
+lifted from a bash-tested doc breaks only here.
 
-What makes them expensive is that three of the four **fail silently or
+What makes them expensive is that three of the five **fail silently or
 misattribute**: the command runs, exits, and reports something that looks like a
-real answer about the world. Every one below was diagnosed the wrong way first.
+real answer about the world. The fifth is loud, and what it prints is the
+environment. The first four were each diagnosed the wrong way first.
 
 | Symptom | Mechanism | Section |
 |---|---|---|
@@ -24,6 +26,7 @@ real answer about the world. Every one below was diagnosed the wrong way first.
 | A later command in a `;` chain produced no output | a word starting with `=` is a command lookup | [2](#2-a-word-starting-with--is-a-command-lookup) |
 | `$2` empty after `set -- $spec`; tool prints its usage text | zsh does not word-split | [3](#3-zsh-does-not-word-split-an-unquoted-parameter) |
 | `command not found` for a tool that is installed | `path` is tied to `PATH` | [4](#4-path-is-not-a-free-variable-name) |
+| A function prints hundreds of `NAME=value` lines before its real output | `local $names` with `names` empty is a bare `local` | [5](#5-a-declaration-with-only-expansions-lists-every-parameter) |
 
 Out of scope: zsh-vs-POSIX pattern expansion and extended glob. Those bite when
 writing `.zsh` / `zshrc` files, not on every command, and are not covered here.
@@ -37,7 +40,7 @@ writing `.zsh` / `zshrc` files, not on every command, and are not covered here.
 | `command not found` names a tool you know is installed | Structuring error handling, `set` flags, or CLI argument parsing |
 | A bash-tested snippet behaves differently once run through the Bash tool | The question is shell *style* rather than a wrong runtime result |
 
-The split is runtime versus authoring: this skill covers four expansions that
+The split is runtime versus authoring: this skill covers five expansions that
 make a correct-looking zsh command do something else, three of them silently.
 
 ## 1. `$VAR:word` Is a Modifier, Not a Colon After a Variable
@@ -217,9 +220,57 @@ In the case above the answer was none, because `PATH` died on iteration one
 before `gh` was reached. Had it died later, some issues would exist and a blind
 retry would have double-filed them.
 
+## 5. A Declaration With Only Expansions Lists Every Parameter
+
+`local`, `typeset`, `declare` and `export` print parameters when they run with
+no arguments. An unquoted expansion that is empty contributes no word, so a
+declaration whose arguments are all expansions turns into the bare builtin:
+
+```zsh
+# Wrong — with `names` unset this is a bare `local`
+status_line() { local $names; set_colours; print "${green}ok${rst}"; }
+```
+
+Observed 2026-11-12 (dotfiles, a `gh` merge wrapper run through Claude Code's
+`!` prefix): that shell had the wrapper functions but not the global array they
+took their colour names from. One function printed about 92 KB of parameters,
+beginning `0=<function name>`, into the session transcript, and that included
+every exported API token. The merge then succeeded, so nothing pointed at the
+declaration.
+
+Bash's bare `local` prints nothing, so a function tested under bash shows no
+symptom; that part is zsh's own. `typeset`, `declare` and `export` list in both
+shells (measured in bash 5.2 and zsh 5.9 with an exported canary variable).
+
+### The fix
+
+Make the statement unable to run bare. Any of these:
+
+```zsh
+local green red yellow                  # write the names out
+export "$name"                          # one quoted name: empty is an error
+typeset "${names[@]:?names is empty}"   # an empty list aborts
+```
+
+Quoting does not rescue a list: `"${names[@]}"` of an empty array and `"$@"`
+with no arguments are zero words as well.
+
+### When it bites
+
+- A function that reads its variable names from a global, in a shell that has
+  the function but not the global: a copy made from `typeset -f` output, a
+  restored shell snapshot, a subshell after `unset`.
+- `export $(grep -v '^#' .env | xargs)` when `.env` is missing or empty.
+- `declare -p $name` with `name` unset prints every declaration.
+- The listing goes to stdout, so it lands in transcripts, CI logs and command
+  substitutions, not only on a terminal.
+
+Where `hooks-plugin` is installed, its `bare-declaration-guard.sh` blocks an
+Edit or Write that adds such a line to a shell file.
+
 ## Verifying a Suspected Hit
 
-All four are testable in one line against a pristine shell (`zsh -f` skips
+The first four are testable in one line against a pristine shell (`zsh -f` skips
 rc files, so the result is the language's behaviour and not this machine's):
 
 ```zsh
@@ -232,3 +283,10 @@ zsh -fc 'v="a b"; set -- $v; echo "bare: 1=[$1] 2=[$2]"; set -- ${=v}; echo "spl
 
 If the braced or `${=…}` form differs from the bare one, the expansion is the
 bug — not the tool you were calling.
+
+For the fifth, count the lines a bare declaration prints. Zsh prints a few
+hundred, bash prints `0`:
+
+```zsh
+zsh -fc 'f() { local $nothing; }; f | wc -l'; bash -c 'f() { local $nothing; }; f | wc -l'
+```
