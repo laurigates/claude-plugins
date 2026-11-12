@@ -34,11 +34,218 @@
 # Exit 0 on OK/WARN, 1 on ERROR (parallel-safe).
 #
 # Usage: blueprint-autorun.sh [--project-dir DIR] [--report]
+#        blueprint-autorun.sh --frontmatter-rows FILE...
+#
+# --frontmatter-rows is the one frontmatter parser the write-time hook
+# (hooks/auto-sync-id-registry.sh), the session-start sweep (run_sync_ids) and
+# the sync-ids audit share (ADR-0027 Q1, #3549). It prints one row per file and
+# nothing else; see frontmatter_rows below for the row shape. Level 3 vendors
+# this script as one file, so the parser lives here rather than in a library.
 
 # set -u only (no -e/pipefail): this is a run-every-section collector — a
 # single failing task must not abort the remaining tasks (see
 # .claude/rules/shell-scripting.md "Error Handling Flags").
 set -u
+
+usage() {
+    printf 'usage: blueprint-autorun.sh [--project-dir DIR] [--report]\n' >&2
+    printf '       blueprint-autorun.sh --frontmatter-rows FILE...\n' >&2
+}
+
+# frontmatter_rows FILE... — print one row per file, fields separated by \037:
+#   path, has_frontmatter (1|0), id, status, title, created, relates_to,
+#   github_issues
+# relates_to and github_issues are lists, items separated by \036.
+#
+# Semantics follow check-schema.py split_frontmatter plus the YAML scalar
+# subset blueprint documents use, so the hook, the sweep and the audit cannot
+# read one file three ways:
+#   - CRs are stripped before every test;
+#   - frontmatter exists only when line 1 is `---` and a later line closes it
+#     (a fenced `---` example further down an index README is body text);
+#   - the first top-level `key:` wins; `# comment` lines are skipped;
+#   - an unquoted ` #` starts a comment; matching quotes are removed (`''`
+#     inside single quotes is one quote, `\"` inside double quotes is a quote);
+#     trailing whitespace is trimmed;
+#   - relates-to and github-issues are read as block (`- x`) or flow (`[x, y]`)
+#     lists;
+#   - an empty title falls back to the first `# ` heading of the body (outside
+#     code fences), never to a line inside the frontmatter.
+# Files are sorted with LC_ALL=C first, so the output order is the same on
+# every machine.
+frontmatter_rows() {
+    [ $# -gt 0 ] || return 0
+    local -a fm_files=()
+    local fm_file
+    while IFS= read -r -d '' fm_file; do
+        fm_files+=("$fm_file")
+    done < <(printf '%s\0' "$@" | LC_ALL=C sort -z)
+    # SQ carries a single quote into the program: hex escapes are not POSIX awk.
+    awk -v SQ="'" '
+        function ltrim(s) { sub(/^[ \t]+/, "", s); return s }
+        function rtrim(s) { sub(/[ \t]+$/, "", s); return s }
+        function trim(s) { return rtrim(ltrim(s)) }
+        # Parse one YAML scalar (the text after `key:` or `- `). Sets SC_REST
+        # to whatever follows a quoted scalar, for the flow-list reader.
+        function scalar(s,    c, i, n, out, ch, nx) {
+            s = ltrim(s)
+            SC_REST = ""
+            if (s == "") return ""
+            c = substr(s, 1, 1)
+            n = length(s)
+            if (c == "\"") {
+                out = ""
+                for (i = 2; i <= n; i++) {
+                    ch = substr(s, i, 1)
+                    if (ch == "\\" && i < n) {
+                        nx = substr(s, i + 1, 1)
+                        if (nx == "t") out = out "\t"
+                        else if (nx == "n") out = out " "
+                        else out = out nx
+                        i++
+                    } else if (ch == "\"") {
+                        SC_REST = substr(s, i + 1)
+                        return out
+                    } else out = out ch
+                }
+                return out
+            }
+            if (c == SQ) {
+                out = ""
+                for (i = 2; i <= n; i++) {
+                    ch = substr(s, i, 1)
+                    if (ch == SQ) {
+                        if (substr(s, i + 1, 1) == SQ) { out = out SQ; i++; continue }
+                        SC_REST = substr(s, i + 1)
+                        return out
+                    }
+                    out = out ch
+                }
+                return out
+            }
+            if (c == "#") return ""
+            if (match(s, /[ \t]#/)) s = substr(s, 1, RSTART - 1)
+            return rtrim(s)
+        }
+        # Items of a flow list `[a, "b, c", d]`, joined with \036.
+        function flow_list(s,    n, i, ch, q, item, out, items) {
+            s = substr(ltrim(s), 2)
+            n = length(s); q = ""; item = ""; out = ""; items = 0
+            for (i = 1; i <= n; i++) {
+                ch = substr(s, i, 1)
+                if (q != "") {
+                    item = item ch
+                    if (ch == q) q = ""
+                    continue
+                }
+                if (ch == "\"" || ch == SQ) { q = ch; item = item ch; continue }
+                if (ch == "," || ch == "]") {
+                    item = scalar(item)
+                    if (item != "") { out = out (items++ ? "\036" : "") item }
+                    item = ""
+                    if (ch == "]") break
+                    continue
+                }
+                item = item ch
+            }
+            return out
+        }
+        function list_value(s,    v) {
+            s = ltrim(s)
+            if (substr(s, 1, 1) == "[") return flow_list(s)
+            return scalar(s)
+        }
+        function add_item(key, v) {
+            if (v == "") return
+            if (key == "relates-to") rel = rel (rel == "" ? "" : "\036") v
+            else gh = gh (gh == "" ? "" : "\036") v
+        }
+        function emit(    t) {
+            if (doc == "") return
+            if (state != 2) {
+                # Line 1 opened frontmatter but nothing closed it: no
+                # frontmatter (split_frontmatter returns None), the whole
+                # file is body.
+                has_fm = 0; id = status = title = created = rel = gh = ""
+                body_heading = any_heading
+            }
+            t = title
+            if (t == "") t = body_heading
+            gsub(/[\036\037\n]/, " ", t)
+            printf "%s\037%d\037%s\037%s\037%s\037%s\037%s\037%s\n", \
+                doc, has_fm, id, status, t, created, rel, gh
+        }
+        # any_heading: first heading of the whole file (the fallback when an
+        # opened frontmatter never closes); body_heading: first heading after
+        # the frontmatter. Each tracks its own fence state.
+        function heading_scan(line) {
+            if (line ~ /^[ \t]*(```|~~~)/) {
+                any_fence = !any_fence
+                if (state == 2) in_fence = !in_fence
+                return
+            }
+            if (line !~ /^# /) return
+            if (!any_fence && any_heading == "") any_heading = trim(substr(line, 3))
+            if (state == 2 && !in_fence && body_heading == "") body_heading = trim(substr(line, 3))
+        }
+        FNR == 1 {
+            emit()
+            doc = FILENAME
+            has_fm = 0; state = 2; in_fence = any_fence = 0; inlist = ""
+            id = status = title = created = rel = gh = ""
+            body_heading = any_heading = ""
+            split("", seen)
+            line = $0; gsub(/\r/, "", line)
+            if (trim(line) == "---") { has_fm = 1; state = 1; next }
+            heading_scan(line)
+            next
+        }
+        {
+            line = $0
+            gsub(/\r/, "", line)
+            if (state == 1) {
+                heading_scan(line)
+                if (trim(line) == "---") { state = 2; inlist = ""; next }
+                if (inlist != "") {
+                    if (line ~ /^[ \t]*-([ \t]|$)/) {
+                        v = line; sub(/^[ \t]*-/, "", v)
+                        add_item(inlist, scalar(v))
+                        next
+                    }
+                    if (line ~ /^[ \t]*$/ || line ~ /^[ \t]*#/) next
+                    inlist = ""
+                }
+                if (line ~ /^[ \t]*#/) next
+                if (line !~ /^[A-Za-z_][A-Za-z0-9_-]*:([ \t]|$)/) next
+                key = line; sub(/:.*/, "", key)
+                rest = substr(line, length(key) + 2)
+                if (key in seen) next
+                seen[key] = 1
+                if (key == "id") id = scalar(rest)
+                else if (key == "status") status = scalar(rest)
+                else if (key == "title") title = scalar(rest)
+                else if (key == "created") created = scalar(rest)
+                else if (key == "relates-to" || key == "github-issues") {
+                    v = ltrim(rest)
+                    if (v == "" || substr(v, 1, 1) == "#") inlist = key
+                    else if (substr(v, 1, 1) == "[") {
+                        if (key == "relates-to") rel = flow_list(v)
+                        else gh = flow_list(v)
+                    } else add_item(key, scalar(v))
+                }
+                next
+            }
+            heading_scan(line)
+        }
+        END { emit() }
+    ' "${fm_files[@]}"
+}
+
+if [ "${1:-}" = "--frontmatter-rows" ]; then
+    shift
+    frontmatter_rows "$@"
+    exit $?
+fi
 
 project_dir="."
 run_mode="apply"
@@ -46,7 +253,11 @@ run_mode="apply"
 while [ $# -gt 0 ]; do
     case "$1" in
         --project-dir)
-            project_dir="${2:-.}"
+            if [ $# -lt 2 ]; then
+                usage
+                exit 2
+            fi
+            project_dir="$2"
             shift 2
             ;;
         --report)
@@ -54,7 +265,9 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         *)
-            shift
+            printf 'blueprint-autorun.sh: unknown argument: %s\n' "$1" >&2
+            usage
+            exit 2
             ;;
     esac
 done
@@ -177,53 +390,20 @@ run_sync_ids() (
         fi
     fi
 
-    # One awk pass over every document emits one row per document carrying an
-    # id: path, id, status, title, created, separated by \037 (US) so tabs,
-    # quotes and backslashes in values survive. One jq call then registers all
-    # rows. The per-document loop this replaces forked awk, grep/sed/tr per
-    # field and one jq read-modify-write per document; at 88 documents that
-    # took 6.3 s, past the probe's 5 s hook budget (#3169).
-    #
-    # Per-document rules: the frontmatter is the lines between the first two
-    # `---` lines, and only when the file's first line is `---` (as the
-    # write-time hook requires); the first `<key>:` line wins, leading whitespace
-    # stripped and CRs removed; an empty title falls back to the file's first
-    # `# ` heading; a document without an id is skipped.
+    # One frontmatter_rows pass (one awk process) reads every document; one jq
+    # call then registers every row carrying an id. The per-document loop this
+    # replaced forked awk, grep/sed/tr per field and one jq read-modify-write
+    # per document; at 88 documents that took 6.3 s, past the probe's 5 s hook
+    # budget (#3169). Row fields: see frontmatter_rows.
     local rows
-    rows=$(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
-                "${project_dir}/docs/blueprint/work-orders" \
-                -maxdepth 1 -type f -name '*.md' -exec awk '
-        function field(line, key,    v) {
-            v = substr(line, length(key) + 2)
-            sub(/^[[:space:]]+/, "", v)
-            gsub(/\r/, "", v)
-            return v
-        }
-        function emit() {
-            if (doc != "" && id != "") {
-                if (title == "") title = heading
-                printf "%s\037%s\037%s\037%s\037%s\n", doc, id, status, title, created
-            }
-        }
-        FNR == 1 {
-            emit()
-            doc = FILENAME; n = 0; id = status = title = created = heading = ""
-            has_id = has_status = has_title = has_created = has_heading = 0
-            # Frontmatter opens the file. A file whose first line is not
-            # `---` has none, so a later `---` pair (a fenced format example
-            # in an index README) is body text and is never read as fields.
-            if ($0 != "---") n = 2
-        }
-        n < 2 && /^---$/ { n++; next }
-        n == 1 {
-            if (!has_id && /^id:/) { id = field($0, "id"); has_id = 1 }
-            if (!has_status && /^status:/) { status = field($0, "status"); has_status = 1 }
-            if (!has_title && /^title:/) { title = field($0, "title"); has_title = 1 }
-            if (!has_created && /^created:/) { created = field($0, "created"); has_created = 1 }
-        }
-        !has_heading && /^# / { heading = substr($0, 3); gsub(/\r/, "", heading); has_heading = 1 }
-        END { emit() }
-    ' {} + 2>/dev/null)
+    local -a scan_files=()
+    local scan_file
+    while IFS= read -r -d '' scan_file; do
+        scan_files+=("$scan_file")
+    done < <(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
+                  "${project_dir}/docs/blueprint/work-orders" \
+                  -maxdepth 1 -type f -name '*.md' -print0 2>/dev/null)
+    rows=$(frontmatter_rows "${scan_files[@]}" | awk -F'\037' '$3 != ""')
 
     if [ -n "$rows" ]; then
         docs_seen=$(printf '%s\n' "$rows" | wc -l | tr -d ' ')
@@ -237,13 +417,13 @@ run_sync_ids() (
               def counter($prefix): ltrimstr($prefix) | tonumber? // 0;
               [split("\n")[] | select(length > 0) | split("\u001f")] as $rows
               | reduce $rows[] as $r ($manifest_doc[0];
-                  ($r[1]) as $id
+                  ($r[2]) as $id
                   | .id_registry.documents[$id] =
                       ((.id_registry.documents[$id]
-                        // {"created": ($r[4] | or_default($now)), "relates_to": [], "github_issues": []})
+                        // {"created": ($r[5] | or_default($now)), "relates_to": [], "github_issues": []})
                        + {path: ($r[0] | ltrimstr($pfx)),
-                          status: ($r[2] | or_default("unknown")),
-                          title: ($r[3] | or_default("untitled"))})
+                          status: ($r[3] | or_default("unknown")),
+                          title: ($r[4] | or_default("untitled"))})
                   | if ($id | startswith("PRD-")) then
                       .id_registry.last_prd = ([.id_registry.last_prd // 0, ($id | counter("PRD-"))] | max)
                     elif ($id | startswith("PRP-")) then

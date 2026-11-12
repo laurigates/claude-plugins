@@ -325,7 +325,11 @@ schedule interval has elapsed since `last_completed_at` (written back with
 reconciled on every run, because the on-change signal misses edits made outside
 Claude Code and Bash edits outside the recorded change list. A reconcile that
 changes nothing leaves the manifest byte-identical. The sweep reads all
-frontmatter in one `awk` pass and registers it in one `jq` call, so it fits the
+frontmatter in one `awk` pass and registers it in one `jq` call. That pass is
+`blueprint-autorun.sh --frontmatter-rows`, the one frontmatter parser the
+write-time hook, the sweep and the `/blueprint:sync-ids` audit share: it reads
+inline comments, quotes, CRLF files and `relates-to`/`github-issues` lists the
+way `yaml.safe_load` does. The sweep fits the
 probe's 5 s SessionStart hook timeout; a run the timeout kills is reported in
 the next session as an `autorun_incomplete` finding (remediation
 `/blueprint:sync-ids`). `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
@@ -337,6 +341,10 @@ ask the agent to create a work order or execute a PRP directly.
 ```bash
 # Dry-run the due-ness computation (no execution, no writeback)
 bash <plugin-root>/scripts/blueprint-autorun.sh --report
+
+# One \037-separated row per file: path, has_frontmatter, id, status, title,
+# created, relates_to, github_issues
+bash <plugin-root>/scripts/blueprint-autorun.sh --frontmatter-rows docs/adrs/*.md
 
 # Kill levels 1-2 locally regardless of manifest
 export BLUEPRINT_AUTORUN_DISABLE=1

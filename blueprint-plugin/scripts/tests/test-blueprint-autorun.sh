@@ -447,6 +447,52 @@ calls_large=$(jq_calls_for 40)
     || notok "M: jq calls grow with doc count (2 docs: $calls_small, 40 docs: $calls_large)"
 rm -rf "$count_dir"
 
+# ---- Test N: hook and sweep read frontmatter one way (#3549) ----
+# The write-time hook and the session-start sweep call one parser
+# (--frontmatter-rows). Before, both stored an inline comment verbatim
+# (`id: ADR-9004  # c` registered under that whole string), both skipped a
+# CRLF document, and a frontmatter `# comment` line could become the title.
+HOOK="${SCRIPT_DIR}/../../hooks/auto-sync-id-registry.sh"
+write_fixture_docs() {
+    # write_fixture_docs <dir>
+    local d="$1"
+    mkdir -p "$d/docs/adrs" "$d/docs/prds" "$d/docs/prps"
+    printf -- '---\nid: ADR-9004  # c\nstatus: Accepted # was Proposed\ntitle: "ADR-9004: Quoted: title"\ncreated: 2026-07-01\n---\n' > "$d/docs/adrs/9004-comment.md"
+    printf -- '---\r\nid: ADR-9008\r\nstatus: Accepted\r\ntitle: CRLF document\r\ncreated: 2026-07-02\r\n---\r\n' > "$d/docs/adrs/9008-crlf.md"
+    printf -- '---\n# a comment line\nid: ADR-9009\nstatus: Draft   \ncreated: 2026-07-03\n---\n\n# Heading title\n' > "$d/docs/adrs/9009-comment-line.md"
+    printf -- "---\nid: PRD-0012\ntitle: 'It''s quoted'\nstatus: Draft\ncreated: 2026-07-04\n---\n" > "$d/docs/prds/0012-quoted.md"
+    printf -- '---\nid: PRP-0003\ntitle: Fix #123\nstatus: Ready\ncreated: 2026-07-05\n---\n' > "$d/docs/prps/0003-hash.md"
+}
+registry_view() {
+    "$real_jq" -S '.id_registry.documents | map_values({path, status, title, created})' "$1"
+}
+sb_sweep=$(make_sandbox)
+write_manifest "$sb_sweep" 1 true daily null
+write_fixture_docs "$sb_sweep"
+bash "$AUTORUN" --project-dir "$sb_sweep" >/dev/null
+sb_hook=$(make_sandbox)
+write_manifest "$sb_hook" 1 true daily null
+write_fixture_docs "$sb_hook"
+for f in "$sb_hook"/docs/*/*.md; do
+    printf '{"tool_input": {"file_path": "%s"}}' "$f" \
+        | (cd "$sb_hook" && CLAUDE_PROJECT_DIR="$sb_hook" bash "$HOOK" 2>/dev/null)
+done
+sweep_view=$(registry_view "$sb_sweep/docs/blueprint/manifest.json")
+hook_view=$(registry_view "$sb_hook/docs/blueprint/manifest.json")
+[ "$sweep_view" = "$hook_view" ] && ok "N: hook and sweep register the same path/status/title/created" \
+    || notok "N: hook and sweep differ: $(diff <(printf '%s\n' "$sweep_view") <(printf '%s\n' "$hook_view") | head -10)"
+for view_label in sweep hook; do
+    view=$sweep_view
+    [ "$view_label" = "hook" ] && view=$hook_view
+    [ "$(printf '%s' "$view" | "$real_jq" -r '.["ADR-9004"].status // "MISSING"')" = "Accepted" ] \
+        && ok "N($view_label): \`id: ADR-9004  # c\` registers as ADR-9004" || notok "N($view_label): ADR-9004 not registered cleanly"
+    [ "$(printf '%s' "$view" | "$real_jq" -r '.["ADR-9008"].path // "MISSING"')" = "docs/adrs/9008-crlf.md" ] \
+        && ok "N($view_label): CRLF document registered" || notok "N($view_label): CRLF document not registered"
+    [ "$(printf '%s' "$view" | "$real_jq" -r '.["ADR-9009"].title // "MISSING"')" = "Heading title" ] \
+        && ok "N($view_label): frontmatter comment line is not the title" || notok "N($view_label): ADR-9009 title wrong"
+done
+rm -rf "$sb_sweep" "$sb_hook"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
 exit 0
