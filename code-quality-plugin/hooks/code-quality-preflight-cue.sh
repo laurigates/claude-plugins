@@ -197,9 +197,19 @@ cq_payload="${cq_new_string}
 ${cq_content}"
 cq_is_structural=0
 
-# Signal 1: key manifest basenames.
+# Signal 1: key manifest basenames — except a version-only Edit (issue #3627).
+# An Edit whose old and new strings are identical once version digits and dots
+# are removed only bumped a version or pin (`=1.1.5` -> `=1.1.6`): not
+# structural, and code-lint has no manifest linter to run on it. A Write, or an
+# Edit with no old_string, still fires — there is nothing to compare against.
 case "$cq_base_name" in
-    plugin.json|marketplace.json|package.json|Cargo.toml|pyproject.toml) cq_is_structural=1 ;;
+    plugin.json|marketplace.json|package.json|Cargo.toml|pyproject.toml)
+        cq_old_string=$(printf '%s' "$cq_input" | jq -r '.tool_input.old_string // empty' 2>/dev/null || echo "")
+        if [ "$cq_tool_name" != "Edit" ] || [ -z "$cq_old_string" ] \
+            || [ "${cq_old_string//[0-9.]/}" != "${cq_new_string//[0-9.]/}" ]; then
+            cq_is_structural=1
+        fi
+        ;;
 esac
 
 # Signal 2: a public-symbol / export line in the edit payload.

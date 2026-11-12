@@ -74,6 +74,53 @@ else
   cq_fail "(b) plugin.json edit did not fire; got: $CQ_OUT_B"
 fi
 
+# --- (b) a version-only Edit of a manifest is silent (issue #3627) ---
+# A one-token pin bump (`=1.1.5` -> `=1.1.6`) drew the "Large/structural edit"
+# cue because Signal 1 fired on the manifest name alone. An Edit whose old and
+# new strings differ only in version digits and dots no longer counts; any other
+# manifest edit (a new key, a renamed dependency) still fires.
+cq_edit_payload() {
+  jq -n --arg file_path "$1" --arg old_string "$2" --arg new_string "$3" --arg session_id "$4" \
+    '{tool_name: "Edit", tool_input: {file_path: $file_path, old_string: $old_string, new_string: $new_string}, session_id: $session_id}'
+}
+cq_b2_idx=0
+for cq_b2_case in \
+  'Cargo.toml|rustix = { version = "=1.1.5"|rustix = { version = "=1.1.6"' \
+  'package.json|"version": "1.2.3",|"version": "1.10.0",' \
+  'pyproject.toml|version = "0.9.1"|version = "0.9.2"' \
+  'plugin.json|"version": "2.0.0-rc.1"|"version": "2.0.0-rc.2"' \
+  'marketplace.json|"version": "1.28.2"|"version": "1.28.3"'; do
+  cq_b2_idx=$((cq_b2_idx + 1))
+  IFS='|' read -r cq_b2_name cq_b2_old cq_b2_new <<< "$cq_b2_case"
+  echo "--- Test (b): version-only ${cq_b2_name} edit is silent (#3627) ---"
+  CQ_OUT_B2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" \
+    <<< "$(cq_edit_payload "/repo/${cq_b2_name}" "$cq_b2_old" "$cq_b2_new" "test-sid-b2-${cq_b2_idx}-$(date +%s%N)")")"
+  if [ -z "$CQ_OUT_B2" ]; then
+    cq_pass "(b) version-only ${cq_b2_name} edit is silent"
+  else
+    cq_fail "(b) version-only ${cq_b2_name} edit should be silent; got: $CQ_OUT_B2"
+  fi
+done
+
+# Controls for #3627: a manifest edit that changes more than a version still fires.
+cq_b3_idx=0
+for cq_b3_case in \
+  'Cargo.toml|rustix = "1.1.5"|nix = "1.1.5"' \
+  'Cargo.toml|[dependencies]|[dependencies]\ntokio = "1"' \
+  'package.json|"version": "1.2.3"|"version": "1.2.3",\n  "type": "module"'; do
+  cq_b3_idx=$((cq_b3_idx + 1))
+  IFS='|' read -r cq_b3_name cq_b3_old cq_b3_new <<< "$cq_b3_case"
+  cq_b3_new="${cq_b3_new//\\n/$'\n'}"
+  echo "--- Test (b): non-version ${cq_b3_name} edit still fires (#3627 control ${cq_b3_idx}) ---"
+  CQ_OUT_B3="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" \
+    <<< "$(cq_edit_payload "/repo/${cq_b3_name}" "$cq_b3_old" "$cq_b3_new" "test-sid-b3-${cq_b3_idx}-$(date +%s%N)")")"
+  if jq -e '.decision == "block"' > /dev/null 2>&1 <<< "$CQ_OUT_B3"; then
+    cq_pass "(b) non-version ${cq_b3_name} edit fires (control ${cq_b3_idx})"
+  else
+    cq_fail "(b) non-version ${cq_b3_name} edit should fire (control ${cq_b3_idx}); got: $CQ_OUT_B3"
+  fi
+done
+
 # --- (c) >=50 lines fires, <50 lines trivial edit is silent ---
 # Fixtures use a lintable source extension (.py) — Signal 3 only fires for file
 # types /code-quality:code-lint can act on (issue #1825). The payload is plain
