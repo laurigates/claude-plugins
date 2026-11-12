@@ -503,10 +503,17 @@ ${OVERRIDE_NOTE}"
   # match is still a read (`cat .env > /tmp/x`, `cat > /tmp/x .env`,
   # `cat < .env`), and a remote READ (`ssh host 'cat /srv/app/.env'`) still
   # blocks: it prints the remote secret into the transcript.
-  sp_redir_re='[0-9&]?>>?[|]?[[:space:]]*[^[:space:]|;&<>]+'
+  #
+  # `<>` is not an output redirect: it opens the file read-write on fd 0, so
+  # `cat <>.env` prints it. It is rewritten to `< ` first, which the redirect
+  # pattern never strips. The target word also stops at a command substitution
+  # (`$(`, a backtick) and at `(`, so `cat >/tmp/a$(cat .env)` and the process
+  # substitution `cat >(cat .env)` keep the inner read; a parameter expansion
+  # (`> "$HOME/.env"`, `> ${D}/.env`) stays part of the target.
+  sp_redir_re='[0-9&]?>>?[|]?[[:space:]]*([^[:space:]|;&<>$`(]|\$[^[:space:]|;&<>`(])+'
   match_is_secret() {
     local env_tokens non_template m
-    m=$(printf '%s\n' "$2" | sed -E "s/${sp_redir_re}//g")
+    m=$(printf '%s\n' "$2" | sed -E "s/<>/< /g; s/${sp_redir_re}//g")
     grep -Eq "$1" <<<"$m" || return 1
     if [ "$1" = '\.env\b' ]; then
       env_tokens=$(echo "$m" | grep -oE "${1}${sp_env_tok_class}" | sed 's/\.*$//' || true)
