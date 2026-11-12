@@ -216,6 +216,15 @@ that the child already holds, so `-X ours` changes nothing the child lacks. Both
 Case A chains start with `[ "$route" = A ]`, so they refuse when `route` is `B` or
 unset.
 
+When the child changes files the base also changed, which is the usual shape of
+a stack, expect step 1's prediction to fail after a squash-merge and go to
+step 2 directly. The squash commit is not an ancestor of the child, so the
+child and `main` share only the old `main` as merge base. `merge-tree` then
+sees both sides changing the same files, reports conflicts, and prints a tree
+that is not the child's, even when Classify gave `route=A` and the squash tree
+equals the pre-squash tree. That mismatch is expected for this shape and says
+nothing is wrong with the stack.
+
 1. Try the plain fast-forward first. The prediction runs locally before anything
    is published: `git merge-tree --write-tree` must report a clean merge whose
    tree is the child's own tree, so the merge adds nothing and conflicts with
@@ -239,7 +248,8 @@ unset.
    ```
 
    When the prediction fails, `gh pr update-branch` is never called, and the
-   route moves to step 2. If the chain got as far as `gh pr update-branch` and
+   route moves to step 2. A child that edits its base's files is expected to
+   fail here after a squash-merge, so step 2 is its normal path. If the chain got as far as `gh pr update-branch` and
    then failed, read `origin/<child>` before doing anything else. A moved branch
    means the update is already on the child. Stop there and report it, because
    undoing it takes a revert commit, which is for a person to decide. Expect

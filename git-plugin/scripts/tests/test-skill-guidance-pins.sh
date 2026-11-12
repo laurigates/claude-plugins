@@ -70,6 +70,12 @@ rppw=$(cat "${SKILLS}/release-please-pr-workflow/SKILL.md")
 has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
 has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
 
+echo "=== #3614 no-force stack: Case A step 1 is expected to fail for a child that edits the base's files ==="
+nofp="${NOFORCE_STACK_FILE:-${SKILLS}/git-merge-hazards/references/no-force-push-stack.md}"
+case_a=$(section "$nofp" "## Case A")
+before "the Case A intro sends such a stack to step 2 before step 1 runs" "$case_a" "expect step 1's prediction to fail" "1. Try the plain fast-forward first"
+has "step 1 calls the failure expected for this shape" "$case_a" "step 2 is its normal path"
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
