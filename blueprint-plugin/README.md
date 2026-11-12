@@ -256,6 +256,11 @@ IDs are automatically generated when:
 - Running `/blueprint:sync-ids` to batch-assign IDs to existing documents
 - Accessing documents without IDs (auto-assigned on first access)
 
+A new PRD, PRP or TRP number is max(`id_registry.last_<kind>`, highest id of
+that kind on disk) + 1, from `scripts/blueprint-next-id.sh --kind PRD|PRP|TRP`.
+The counter alone could reissue the id of a document that arrived through
+`git pull` before the registry saw it.
+
 ### Cross-Linking
 
 Documents link to each other via frontmatter:

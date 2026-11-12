@@ -118,9 +118,10 @@ filtering, narrow the git scope with the commands in
 TRPs live at the **top level** under `docs/trps/` — not `docs/blueprint/trps/`. This matches the sibling derive-* skills' top-level layout. Never write TRPs under `docs/blueprint/`; that path is reserved for blueprint machinery.
 
 1. Create output directory: `mkdir -p docs/trps`
-2. Determine TRP ID:
-   - If manifest exists, read `id_registry.last_trp`, increment by 1
-   - Otherwise start at `TRP-001`
+2. Determine the TRP ID with
+   `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind TRP`:
+   max(`id_registry.last_trp`, highest TRP id on disk) + 1, `TRP-001` when
+   neither exists
 3. Generate slug from scope or date range (e.g., `regression-gaps-2024-q3`)
 4. Write TRP document to `docs/trps/{slug}.md` using template from [REFERENCE.md](REFERENCE.md#trp-document-template)
 

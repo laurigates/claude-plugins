@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-05-09
+modified: 2026-11-12
 reviewed: 2026-04-25
 name: document-linking
 description: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking docs, finding orphans, auto-assigning IDs, or validating cross-doc references.
@@ -97,22 +97,16 @@ IDs are automatically generated when:
 
 ### Generation Algorithm
 
-```bash
-# Get next PRD ID
-get_next_prd_id() {
-  local manifest="docs/blueprint/manifest.json"
-  local last=$(jq -r '.id_registry.last_prd // 0' "$manifest")
-  local next=$((last + 1))
-  printf "PRD-%03d" "$next"
-}
+PRD, PRP and TRP ids come from one helper: max(`id_registry.last_<kind>`,
+highest id of that kind on disk) + 1. The counter alone can hand out an id a
+pulled or merged document already carries, because such a document may reach
+neither the write-time hook nor the session-start sweep first.
 
-# Get next PRP ID
-get_next_prp_id() {
-  local manifest="docs/blueprint/manifest.json"
-  local last=$(jq -r '.id_registry.last_prp // 0' "$manifest")
-  local next=$((last + 1))
-  printf "PRP-%03d" "$next"
-}
+```bash
+# Next PRD / PRP / TRP id, e.g. PRD-004
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRD
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRP
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind TRP
 
 # ADR IDs use existing 4-digit number from filename
 get_adr_id() {
