@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2015   # file-level: `cond && ok … || notok …` is the
-# deliberate assertion idiom (ok/notok both exit 0) — see test-check-schema.sh.
+# shellcheck disable=SC2015,SC2016   # file-level: `cond && ok … || notok …` is the
+# deliberate assertion idiom (ok/notok both exit 0) — see test-check-schema.sh;
+# single-quoted `$t`/backticks are literal fixture text, not expansions.
 # Regression tests for blueprint-autorun.sh (ADR-0020 level-1 runner).
 #
 # Pins the semantic contract:
 #   - no manifest / disabled env / jq path are silent no-ops (exit 0)
-#   - level 0 never executes (due deterministic tasks report STATE=due)
-#   - level 1 executes a due deterministic task (sync-ids sweep), registers
-#     documents in id_registry, and writes back last_completed_at/stats
+#   - level 0 never executes (deterministic tasks report STATE=reconcile)
+#   - level 1 executes a deterministic task (sync-ids sweep) on every run,
+#     registers documents in id_registry, and writes no task_registry run
+#     state (#3548): a no-change run, a registry-changing run and a failed run
+#     leave everything but id_registry byte-identical
 #   - --report never writes back
 #   - agent-judgment due tasks are surfaced in DUE_AGENT_TASKS, never executed
 #   - enabled:false always wins over auto_run:true
@@ -45,11 +48,8 @@ assert_not_contains() {
 
 make_sandbox() {
     local sb
-    sb=$(mktemp -d)
-    if [ -z "$sb" ] || [ ! -d "$sb" ]; then
-        echo "FATAL: mktemp failed" >&2
-        exit 1
-    fi
+    sb=$(mktemp -d) || { echo 'FATAL: mktemp failed' >&2; exit 1; }
+    [ -n "$sb" ] && [ -d "$sb" ] || { echo 'FATAL: bad sandbox dir' >&2; exit 1; }
     printf '%s' "$sb"
 }
 
@@ -133,7 +133,7 @@ sb=$(make_sandbox)
 write_manifest "$sb" 0 true daily null
 write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
 out=$(bash "$AUTORUN" --project-dir "$sb")
-assert_contains "B: level 0 reports due, does not run" "TASK=sync-ids KIND=deterministic SCHEDULE=daily STATE=due" "$out"
+assert_contains "B: level 0 reports the reconcile, does not run" "TASK=sync-ids KIND=deterministic SCHEDULE=daily STATE=reconcile" "$out"
 last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
 [ "$last" = "null" ] && ok "B: no writeback at level 0" || notok "B: writeback happened at level 0 ($last)"
 rm -rf "$sb"
@@ -150,14 +150,15 @@ reg_path=$(jq -r '.id_registry.documents["ADR-0001"].path' "$sb/docs/blueprint/m
 [ "$reg_path" = "docs/adrs/0001-test.md" ] && ok "C: ADR registered with relative path" || notok "C: ADR registration ($reg_path)"
 last_prd=$(jq -r '.id_registry.last_prd' "$sb/docs/blueprint/manifest.json")
 [ "$last_prd" = "2" ] && ok "C: last_prd counter updated" || notok "C: last_prd counter ($last_prd)"
-last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
-[ "$last" != "null" ] && ok "C: last_completed_at written" || notok "C: last_completed_at not written"
-runs=$(jq -r '.task_registry["sync-ids"].stats.runs' "$sb/docs/blueprint/manifest.json")
-[ "$runs" = "1" ] && ok "C: stats.runs incremented" || notok "C: stats.runs ($runs)"
+tr_after=$(jq -S '.task_registry' "$sb/docs/blueprint/manifest.json")
+tr_fresh=$(sb2=$(make_sandbox); write_manifest "$sb2" 1 true daily null; jq -S '.task_registry' "$sb2/docs/blueprint/manifest.json"; rm -rf "$sb2")
+[ "$tr_after" = "$tr_fresh" ] && ok "C: no task_registry run state written (#3548)" || notok "C: task_registry changed by the run"
 
-# ---- Test D: fresh last_completed_at -> not due ----
+# ---- Test D: a second run reconciles again and changes nothing ----
+before=$(cat "$sb/docs/blueprint/manifest.json")
 out=$(bash "$AUTORUN" --project-dir "$sb")
-assert_contains "D: fresh task not due" "TASK=sync-ids SCHEDULE=daily STATE=not_due" "$out"
+assert_contains "D: daily deterministic task reconciles every run" "TASK=sync-ids KIND=deterministic SCHEDULE=daily STATE=ran DOCS=2 CHANGED=false" "$out"
+[ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] && ok "D: no-change run leaves the manifest byte-identical" || notok "D: no-change run rewrote the manifest"
 rm -rf "$sb"
 
 # ---- Test E: --report never writes back ----
@@ -165,7 +166,7 @@ sb=$(make_sandbox)
 write_manifest "$sb" 1 true daily null
 write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
 out=$(bash "$AUTORUN" --project-dir "$sb" --report)
-assert_contains "E: report mode reports due" "TASK=sync-ids KIND=deterministic SCHEDULE=daily STATE=due" "$out"
+assert_contains "E: report mode reports the reconcile" "TASK=sync-ids KIND=deterministic SCHEDULE=daily STATE=reconcile" "$out"
 last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
 [ "$last" = "null" ] && ok "E: report mode no writeback" || notok "E: report mode wrote back"
 if jq -e '.id_registry' "$sb/docs/blueprint/manifest.json" >/dev/null 2>&1; then
@@ -218,7 +219,7 @@ assert_contains "I: on-change sync-ids reconciles and reports a change" \
 reg=$(jq -r '.id_registry.documents["ADR-0001"].path // "NONE"' "$sb/docs/blueprint/manifest.json")
 [ "$reg" = "docs/adrs/0001-test.md" ] && ok "I: missed ADR registered" || notok "I: missed ADR not registered (got $reg)"
 last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
-[ "$last" != "null" ] && ok "I: a reconcile that changed the registry records its run" || notok "I: changed reconcile did not record"
+[ "$last" = "null" ] && ok "I: a reconcile that changed the registry records no run state (#3548)" || notok "I: changed reconcile wrote last_completed_at ($last)"
 
 # Hand-format the manifest (4-space indent — any layout jq would not produce).
 python3 -c '
@@ -446,6 +447,79 @@ calls_large=$(jq_calls_for 40)
     && ok "M: jq calls independent of doc count ($calls_small for 2 and 40 docs)" \
     || notok "M: jq calls grow with doc count (2 docs: $calls_small, 40 docs: $calls_large)"
 rm -rf "$count_dir"
+
+# ---- Test O: deterministic tasks keep no run state (#3548) ----
+# record_task_result ran on a due run even when nothing changed, so a fresh
+# clone with a weekly sync-ids went dirty (last_completed_at, stats.runs).
+mf_of() { printf '%s/docs/blueprint/manifest.json' "$1"; }
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true weekly "2020-01-01T00:00:00Z"
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+bash "$AUTORUN" --project-dir "$sb" >/dev/null
+cp "$(mf_of "$sb")" "$sb/before.json"
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "O: overdue weekly sync-ids reconciles with no change" "SCHEDULE=weekly STATE=ran DOCS=1 CHANGED=false" "$out"
+cmp -s "$sb/before.json" "$(mf_of "$sb")" && ok "O: no-change run leaves manifest.json byte-identical (cmp)" || notok "O: no-change run modified manifest.json"
+
+write_doc "$sb" "docs/adrs/0002-new.md" "ADR-0002"
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "O: new document registered" "STATE=ran DOCS=2 CHANGED=true" "$out"
+[ "$("$real_jq" -S 'del(.id_registry)' "$sb/before.json")" = "$("$real_jq" -S 'del(.id_registry)' "$(mf_of "$sb")")" ] \
+    && ok "O: a registering run changes only .id_registry" || notok "O: a registering run changed more than .id_registry"
+
+# Forced sweep failure: the registration jq call (the one carrying --arg pfx) fails.
+fail_dir=$(make_sandbox)
+cat > "$fail_dir/jq" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do [ "$a" = "pfx" ] && exit 5; done
+exec "$REAL_JQ" "$@"
+EOF
+chmod +x "$fail_dir/jq"
+write_doc "$sb" "docs/adrs/0003-newer.md" "ADR-0003"
+cp "$(mf_of "$sb")" "$sb/before.json"
+out=$(PATH="$fail_dir:$PATH" REAL_JQ="$real_jq" bash "$AUTORUN" --project-dir "$sb")
+assert_contains "O: a failed sweep prints STATE=error" "TASK=sync-ids KIND=deterministic SCHEDULE=weekly STATE=error" "$out"
+cmp -s "$sb/before.json" "$(mf_of "$sb")" && ok "O: a failed sweep leaves manifest.json byte-identical" || notok "O: a failed sweep modified manifest.json"
+rm -rf "$fail_dir" "$sb"
+
+# No id_registry and no id-bearing document: never create an empty registry.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true weekly null
+mkdir -p "$sb/docs/adrs"
+printf '# Notes without frontmatter\n' > "$sb/docs/adrs/README.md"
+cp "$(mf_of "$sb")" "$sb/before.json"
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "O: no documents, nothing changed" "STATE=ran DOCS=0 CHANGED=false" "$out"
+cmp -s "$sb/before.json" "$(mf_of "$sb")" && ok "O: no id_registry is created without id-bearing documents" || notok "O: an empty id_registry was written"
+rm -rf "$sb"
+
+# Fresh clone with a weekly config: commit a reconciled tree, run, tree is clean.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true weekly null
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+bash "$AUTORUN" --project-dir "$sb" >/dev/null
+git -C "$sb" init -q
+git -C "$sb" add -- docs
+git -C "$sb" -c user.name=t -c user.email=t@example.invalid commit -q -m fixture
+bash "$AUTORUN" --project-dir "$sb" >/dev/null
+porcelain=$(git -C "$sb" status --porcelain)
+[ -z "$porcelain" ] && ok "O: a fresh clone stays clean after a session-start run" || notok "O: fresh clone dirty: $porcelain"
+rm -rf "$sb"
+
+# ---- Test P: the skills agree that deterministic tasks keep no run state ----
+# The runner change alone is not enough: /blueprint:sync-ids wrote the
+# sync-ids run state itself, and /blueprint:execute saw a weekly sync-ids with
+# no last_completed_at as due on every run (#3548).
+SKILLS_DIR="${SCRIPT_DIR}/../../skills"
+grep -q 'task_registry\["sync-ids"\]\.last_completed_at *=' "$SKILLS_DIR/blueprint-sync-ids/SKILL.md" \
+    && notok "P: blueprint-sync-ids still writes sync-ids run state" \
+    || ok "P: blueprint-sync-ids has no task_registry writeback"
+grep -q 'deterministic task (`sync-ids`) is never due' "$SKILLS_DIR/blueprint-execute/SKILL.md" \
+    && ok "P: blueprint-execute states deterministic tasks are never due" \
+    || notok "P: blueprint-execute does not exempt deterministic tasks from due-ness"
+grep -q 'reconciled each session' "$SKILLS_DIR/blueprint-status/SKILL.md" \
+    && ok "P: blueprint-status reports a deterministic task as reconciled each session" \
+    || notok "P: blueprint-status lacks the deterministic-task state"
 
 # ---- Test N: hook and sweep read frontmatter one way (#3549) ----
 # The write-time hook and the session-start sweep call one parser

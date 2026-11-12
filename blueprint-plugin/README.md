@@ -318,13 +318,14 @@ the manifest `automation` block (format 3.4.0, ADR-0020 in claude-plugins):
 | 3 | scheduled pipeline | Reserved (out-of-band scheduled runs + approved work-order execution; not yet implemented) |
 
 The runner implements the `task_registry` `auto_run`/`schedule` contract:
-a task runs only when `enabled: true` **and** `auto_run: true` **and** its
-schedule interval has elapsed since `last_completed_at` (written back with
-`last_result` and `stats.runs`). `on-change` tasks are event-driven
-(PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
-reconciled on every run, because the on-change signal misses edits made outside
-Claude Code and Bash edits outside the recorded change list. A reconcile that
-changes nothing leaves the manifest byte-identical. The sweep reads all
+an agent-judgment task is due only when `enabled: true` **and** `auto_run:
+true` **and** its schedule interval has elapsed since `last_completed_at`.
+`on-change` tasks are event-driven (PostToolUse hooks). A deterministic task
+(`sync-ids`) is reconciled on every run whatever its schedule, because the
+on-change signal misses edits made outside Claude Code and Bash edits outside
+the recorded change list. The runner writes no `task_registry` run state
+(ADR-0027): a reconcile that changes nothing leaves the manifest
+byte-identical, and one that registers a document changes only `id_registry`. The sweep reads all
 frontmatter in one `awk` pass and registers it in one `jq` call. That pass is
 `blueprint-autorun.sh --frontmatter-rows`, the one frontmatter parser the
 write-time hook, the sweep and the `/blueprint:sync-ids` audit share: it reads

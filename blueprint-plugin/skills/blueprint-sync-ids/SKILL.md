@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-10-09
+modified: 2026-11-12
 reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
@@ -217,23 +217,12 @@ gh issue create \
 
 Update document frontmatter and manifest with new issue number.
 
-### Step 11: Update task registry
+`sync-ids` is a deterministic task and keeps no run state in the tracked
+manifest (ADR-0027, #3548): do not write `task_registry["sync-ids"]`
+`last_completed_at`, `last_result` or `stats`. The only manifest changes are
+the `id_registry` edits made in Steps 1–10.
 
-Update the task registry entry in `docs/blueprint/manifest.json`:
-
-```bash
-jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson processed "${DOCS_CHECKED:-0}" \
-  --argjson created "${IDS_ASSIGNED:-0}" \
-  '.task_registry["sync-ids"].last_completed_at = $now |
-   .task_registry["sync-ids"].last_result = "success" |
-   .task_registry["sync-ids"].stats.runs_total = ((.task_registry["sync-ids"].stats.runs_total // 0) + 1) |
-   .task_registry["sync-ids"].stats.items_processed = $processed |
-   .task_registry["sync-ids"].stats.items_created = $created' \
-  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
-```
-
-### Step 12: Final Report
+### Step 11: Final Report
 
 ```
 ID Sync Complete

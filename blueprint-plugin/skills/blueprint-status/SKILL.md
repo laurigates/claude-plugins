@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-11-07
+modified: 2026-11-12
 reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
@@ -67,6 +67,10 @@ Execute this status workflow. Step numbers are stable: the reference files cite 
   - `overdue`: Past due by more than 1 schedule period (e.g., daily task not run in 2+ days)
   - `disabled`: `enabled: false`
   - `never`: `last_completed_at` is null (never tracked)
+  - `reconciled each session`: a deterministic task (`sync-ids`) with
+    `auto_run: true`. It keeps no run state (ADR-0027), so never report it as
+    `never`, `due` or `overdue`; the SessionStart runner reconciles it on every
+    run at autonomy ≥ 1
 
 ### Step 2a: Validate the manifest against its schema (issue #2136)
 

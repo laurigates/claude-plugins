@@ -1,6 +1,6 @@
 ---
 created: 2026-01-14
-modified: 2026-07-05
+modified: 2026-11-12
 reviewed: 2026-04-25
 description: "Blueprint meta command: determine and execute the next logical action. Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."
 allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
@@ -89,7 +89,11 @@ If manifest has `task_registry`:
 jq -r '.task_registry | to_entries[] | select(.value.enabled == true) | select(.value.auto_run == true) | .key' docs/blueprint/manifest.json
 ```
 
-For each enabled auto_run task, check if due based on schedule:
+A deterministic task (`sync-ids`) is never due here, whatever its schedule:
+it keeps no run state and the SessionStart runner (`blueprint-autorun.sh`)
+reconciles it on every run (ADR-0027). Skip it in this check.
+
+For each other enabled auto_run task, check if due based on schedule:
 - `daily`: Due if `last_completed_at` is null or > 24h ago
 - `weekly`: Due if `last_completed_at` is null or > 7d ago
 - `on-change`: Due if source inputs changed (checked by individual task)
@@ -181,7 +185,7 @@ Run `/blueprint:status` to display full blueprint status with available next act
 
 ## Registry Updates
 
-After executing any task action, update the corresponding `task_registry` entry in manifest.json:
+After executing an agent-judgment task, update the corresponding `task_registry` entry in manifest.json. A deterministic task (`sync-ids`) gets no writeback: it keeps no run state in the tracked manifest (ADR-0027).
 
 ```bash
 jq --arg task "$TASK_NAME" --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg result "$RESULT" \

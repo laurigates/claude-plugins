@@ -15,19 +15,22 @@
 #                   story-audit, ...) — surfaced as due, never executed here.
 #
 # Schedule semantics:
-#   daily/weekly : due when last_completed_at is null/unparseable or older
-#                  than the interval
+#   daily/weekly : an agent-judgment task is due when last_completed_at is
+#                  null/unparseable or older than the interval. A
+#                  DETERMINISTIC task keeps no run state, so it reconciles on
+#                  every run (STATE=reconcile), as for on-change.
 #   on-change    : event-driven (PostToolUse hooks). An agent-judgment task is
 #                  never runner-due. A DETERMINISTIC task is also reconciled on
 #                  every run (STATE=reconcile): the on-change signal is
 #                  best-effort — a Bash edit's change list can miss files, and
 #                  edits by people or other tools fire no hook at all.
-#                  Reconciling writes the manifest only when the result
-#                  differs, so a clean tree stays clean.
 #   on-demand    : never due
 #
+# Nothing here writes task_registry (ADR-0027 Q3, #3548): the only manifest
+# write is a reconcile that changed id_registry, so a clean tree stays clean.
+#
 # Execution is gated on automation.autonomy_level >= 1 (missing block = 0).
-# --report computes due-ness only: no execution, no writeback.
+# --report computes due-ness only: no execution, no manifest write.
 # BLUEPRINT_AUTORUN_DISABLE=1 makes the whole script a no-op.
 #
 # Output follows .claude/rules/structured-script-output.md.
@@ -382,14 +385,6 @@ run_sync_ids() (
 
     cp "$manifest" "$work" || return 1
 
-    if ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
-        if ! { jq '. + {"id_registry": {"last_prd": 0, "last_prp": 0, "documents": {}, "github_issues": {}}}' \
-                   "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
-            rm -f "$work" "${work}.tmp"
-            return 1
-        fi
-    fi
-
     # One frontmatter_rows pass (one awk process) reads every document; one jq
     # call then registers every row carrying an id. The per-document loop this
     # replaced forked awk, grep/sed/tr per field and one jq read-modify-write
@@ -407,6 +402,20 @@ run_sync_ids() (
 
     if [ -n "$rows" ]; then
         docs_seen=$(printf '%s\n' "$rows" | wc -l | tr -d ' ')
+    elif ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
+        # No document carries an id and there is no registry: creating an
+        # empty one would dirty every fresh clone of such a consumer (#3548).
+        rm -f "$work"
+        printf '0 false'
+        return 0
+    fi
+
+    if ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
+        if ! { jq '. + {"id_registry": {"last_prd": 0, "last_prp": 0, "documents": {}, "github_issues": {}}}' \
+                   "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
+            rm -f "$work" "${work}.tmp"
+            return 1
+        fi
     fi
 
     if ! { printf '%s\n' "$rows" | jq -R -s \
@@ -446,15 +455,11 @@ run_sync_ids() (
     return 0
 )
 
-record_task_result() {
-    # record_task_result <task> <result>
-    jq --arg task "$1" --arg result "$2" --arg ts "$now_iso" \
-       '.task_registry[$task].last_completed_at = $ts |
-        .task_registry[$task].last_result = $result |
-        .task_registry[$task].stats.runs = ((.task_registry[$task].stats.runs // 0) + 1)' \
-       "$manifest" > "${manifest}.tmp" && mv "${manifest}.tmp" "$manifest"
-}
-
+# Run state is never written here (ADR-0027 Q3, #3548). A deterministic task
+# keeps none: the tracked manifest changes only when id_registry does, so a
+# session start on a clean tree leaves it clean. An agent-judgment task's
+# last_completed_at/last_result are written only after an explicit run (the
+# skill itself, or /blueprint:autopilot after running it).
 due_agent_tasks=""
 ran_count=0
 issue_count=0
@@ -482,14 +487,20 @@ while IFS=$'\t' read -r task_name task_enabled task_auto task_schedule task_last
             fi
             ;;
         daily|weekly)
-            interval=86400
-            [ "$task_schedule" = "weekly" ] && interval=604800
-            if [ -z "$task_last" ] || [ "$task_last" = "null" ]; then
-                task_state="due"
+            # A deterministic task keeps no last_completed_at to measure an
+            # interval from, so it reconciles on every run like on-change.
+            if is_deterministic "$task_name"; then
+                task_state="reconcile"
             else
-                last_epoch=$(iso_to_epoch "$task_last")
-                if [ -z "$last_epoch" ] || [ $((now_epoch - last_epoch)) -ge "$interval" ]; then
+                interval=86400
+                [ "$task_schedule" = "weekly" ] && interval=604800
+                if [ -z "$task_last" ] || [ "$task_last" = "null" ]; then
                     task_state="due"
+                else
+                    last_epoch=$(iso_to_epoch "$task_last")
+                    if [ -z "$last_epoch" ] || [ $((now_epoch - last_epoch)) -ge "$interval" ]; then
+                        task_state="due"
+                    fi
                 fi
             fi
             ;;
@@ -515,16 +526,10 @@ while IFS=$'\t' read -r task_name task_enabled task_auto task_schedule task_last
                 docs_count=${sync_out%% *}
                 sync_changed=${sync_out##* }
                 if [ "$sync_rc" -eq 0 ]; then
-                    # A reconcile that changed nothing leaves the manifest
-                    # alone, last_completed_at included: it runs every session.
-                    if [ "$task_state" = "due" ] || [ "$sync_changed" = "true" ]; then
-                        record_task_result "$task_name" "ok"
-                    fi
                     printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=ran DOCS=%s CHANGED=%s\n' \
                         "$task_name" "$task_schedule" "$docs_count" "$sync_changed"
                     ran_count=$((ran_count + 1))
                 else
-                    record_task_result "$task_name" "error: sync-ids sweep failed"
                     printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=error\n' \
                         "$task_name" "$task_schedule"
                     issue_count=$((issue_count + 1))
