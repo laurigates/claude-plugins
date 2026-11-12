@@ -997,6 +997,11 @@ case "$LAST_REASON" in
     *"written by someone else"*|*"rate limit is exhausted"*) printf '  FAIL non-rate-limit failure misreported\n'; FAIL=$((FAIL + 1)) ;;
     *) printf '  ok   non-rate-limit failure not reported as authorship or rate limit\n'; PASS=$((PASS + 1)) ;;
 esac
+# REST has quota left but GraphQL is exhausted: the GraphQL limit is named.
+STUB_AUTHOR=laurigates STUB_ME_403="$RL_MSG" STUB_RATE_GRAPHQL='0 1800000000' \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "GraphQL-exhausted viewer lookup still denies"  DENY "$LAST_VERDICT"
+ck_reason "names the GraphQL rate limit"           "GraphQL API rate limit is exhausted"
 # The rate_limit probe itself failing must not change the verdict.
 STUB_AUTHOR=laurigates STUB_ME_403="$RL_MSG" STUB_RATE_FAIL=1 \
   run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
