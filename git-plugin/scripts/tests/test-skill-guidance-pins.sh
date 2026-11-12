@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2015   # `cond && ok … || notok …` is this repo's assertion idiom
+#
+# Content pins for git-plugin skill guidance added from session-feedback issues.
+# Each case asserts the semantic invariant a feedback issue asked for, so a later
+# bulk "tighten the prose" edit that drops it fails here instead of silently
+# re-opening the gap.
+#
+# Auto-discovered by scripts/run-skill-script-tests.sh via
+# *-plugin/scripts/tests/test-*.sh.
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS="${SCRIPT_DIR}/../../skills"
+PASS=0
+FAIL=0
+
+ok() { PASS=$((PASS + 1)); printf '  PASS: %s\n' "$1"; }
+notok() { FAIL=$((FAIL + 1)); printf '  FAIL: %s\n' "$1"; }
+
+# section <file> <heading-prefix> — print the lines from the first heading that
+# starts with <heading-prefix> up to (not including) the next heading of the
+# same or higher level.
+section() {
+    awk -v want="$2" '
+        /^#+ / {
+            n = index($0, " ") - 1
+            if (inside && n <= lvl) exit
+            if (!inside && index($0, want) == 1) { inside = 1; lvl = n }
+        }
+        inside { print }
+    ' "$1"
+}
+
+# has <label> <text> <fixed-string> — <text> contains <fixed-string>.
+has() {
+    grep -qF -- "$3" <<<"$2" && ok "$1" || notok "$1: missing '$3'"
+}
+
+# before <label> <text> <first> <second> — <first> appears on an earlier line
+# than <second>, and both appear.
+before() {
+    local a b
+    a=$(grep -nF -m1 -- "$3" <<<"$2" | cut -d: -f1)
+    b=$(grep -nF -m1 -- "$4" <<<"$2" | cut -d: -f1)
+    [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] && ok "$1" ||
+        notok "$1: '$3' (line ${a:-none}) must precede '$4' (line ${b:-none})"
+}
+
+echo "=== #3628 git-issue --auto: already-implemented check before scoring ==="
+modes="${SKILLS}/git-issue/references/selection-modes.md"
+auto=$(section "$modes" "### Auto Mode")
+has "auto mode searches merged PRs" "$auto" "--state merged"
+has "auto mode searches the default branch log" "$auto" "origin/main"
+has "auto mode routes a hit to the verification-only flow" "$auto" "verification-only.md"
+before "the merged-work check runs before scoring" "$auto" "--state merged" "Score and prioritize"
+has "interactive 'Claude decides priority' runs the same check" "$(section "$modes" "### No Arguments")" "already-implemented check"
+has "SKILL.md names the check on the --auto route" "$(cat "${SKILLS}/git-issue/SKILL.md")" "already-implemented check"
+
+echo
+echo "PASS=$PASS FAIL=$FAIL"
+[ "$FAIL" -eq 0 ]

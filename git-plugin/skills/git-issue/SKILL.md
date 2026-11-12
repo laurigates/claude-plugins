@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-27
+modified: 2026-11-12
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(gh workflow *), Bash(gh run *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -81,7 +81,7 @@ Rules:
 4. After normalization, dedupe and count refs: 0 → No-Arguments interactive;
    1 → Single; ≥2 → Multiple.
 
-With no issue refs, prompt via `AskUserQuestion`; with two or more, analyse and group them before processing; with `--auto`, score, recommend, and wait for approval. See [references/selection-modes.md](references/selection-modes.md) for the question options and each mode's steps.
+With no issue refs, prompt via `AskUserQuestion`; with two or more, analyse and group them before processing; with `--auto`, run the already-implemented check against merged work, then score, recommend, and wait for approval. See [references/selection-modes.md](references/selection-modes.md) for the question options and each mode's steps.
 
 ### Single Issue (`/git:issue 123`)
 
