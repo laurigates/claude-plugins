@@ -333,7 +333,10 @@ inline comments, quotes, CRLF files and `relates-to`/`github-issues` lists the
 way `yaml.safe_load` does. The sweep fits the
 probe's 5 s SessionStart hook timeout; a run the timeout kills is reported in
 the next session as an `autorun_incomplete` finding (remediation
-`/blueprint:sync-ids`). `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
+`/blueprint:sync-ids`). The session whose run wrote the manifest gets a
+`registry_reconciled` finding (remediation: commit
+`docs/blueprint/manifest.json`), and a failed task gets `autorun_task_error`;
+both come only from the run itself, never from the probe's TTL cache. `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
 proposals (GitHub issues labeled `work-order-draft`); promotion is a separate,
 reviewed `/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
 `/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
