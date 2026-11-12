@@ -216,14 +216,21 @@ that the child already holds, so `-X ours` changes nothing the child lacks. Both
 Case A chains start with `[ "$route" = A ]`, so they refuse when `route` is `B` or
 unset.
 
-When the child changes files the base also changed, which is the usual shape of
-a stack, expect step 1's prediction to fail after a squash-merge and go to
-step 2 directly. The squash commit is not an ancestor of the child, so the
-child and `main` share only the old `main` as merge base. `merge-tree` then
-sees both sides changing the same files, reports conflicts, and prints a tree
-that is not the child's, even when Classify gave `route=A` and the squash tree
-equals the pre-squash tree. That mismatch is expected for this shape and says
-nothing is wrong with the stack.
+When the child changes lines at or next to the lines the base changed,
+expect step 1's prediction to fail after a squash-merge and go to step 2
+directly. The squash commit is not an ancestor of the child, so the child and `main`
+share only the old `main` as merge base. Relative to that base, the squashed
+`main` and the child then make different changes to one region of the file,
+so `merge-tree` reports a conflict for that hunk and prints a tree that is not
+the child's, even when Classify gave `route=A` and the squash tree equals the
+pre-squash tree. That mismatch is expected for this shape and says nothing is
+wrong with the stack. A 3-way merge conflicts per hunk, not per file: a child
+whose edits to a shared file sit away from the base's hunks merges cleanly, and
+step 1 passes for it. Both outcomes were reproduced on a synthetic two-PR stack
+with git 2.43 (one file, base editing line 10; a child edit to line 50 passed,
+an edit to line 10 or 11 failed). How close is close enough to conflict depends
+on git's merge algorithm, so for an edit a few lines away, run step 1 rather
+than predicting it.
 
 1. Try the plain fast-forward first. The prediction runs locally before anything
    is published: `git merge-tree --write-tree` must report a clean merge whose
@@ -248,8 +255,9 @@ nothing is wrong with the stack.
    ```
 
    When the prediction fails, `gh pr update-branch` is never called, and the
-   route moves to step 2. A child that edits its base's files is expected to
-   fail here after a squash-merge, so step 2 is its normal path. If the chain got as far as `gh pr update-branch` and
+   route moves to step 2. A child that edits lines at or next to its base's
+   changed lines is expected to fail here after a squash-merge, so
+   step 2 is its normal path. If the chain got as far as `gh pr update-branch` and
    then failed, read `origin/<child>` before doing anything else. A moved branch
    means the update is already on the child. Stop there and report it, because
    undoing it takes a revert commit, which is for a person to decide. Expect

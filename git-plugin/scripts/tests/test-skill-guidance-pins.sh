@@ -39,6 +39,11 @@ has() {
     grep -qF -- "$3" <<<"$2" && ok "$1" || notok "$1: missing '$3'"
 }
 
+# lacks <label> <text> <fixed-string> — <text> does not contain <fixed-string>.
+lacks() {
+    grep -qF -- "$3" <<<"$2" && notok "$1: still contains '$3'" || ok "$1"
+}
+
 # before <label> <text> <first> <second> — <first> appears on an earlier line
 # than <second>, and both appear.
 before() {
@@ -72,11 +77,67 @@ rppw=$(cat "${SKILLS}/release-please-pr-workflow/SKILL.md")
 has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
 has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
 
-echo "=== #3614 no-force stack: Case A step 1 is expected to fail for a child that edits the base's files ==="
+echo "=== #3614 no-force stack: Case A step 1 is expected to fail for a child that edits lines at or next to the base's ==="
 nofp="${NOFORCE_STACK_FILE:-${SKILLS}/git-merge-hazards/references/no-force-push-stack.md}"
 case_a=$(section "$nofp" "## Case A")
 before "the Case A intro sends such a stack to step 2 before step 1 runs" "$case_a" "expect step 1's prediction to fail" "1. Try the plain fast-forward first"
 has "step 1 calls the failure expected for this shape" "$case_a" "step 2 is its normal path"
+# The condition is per hunk, not per file: a child editing a shared file away
+# from the base's hunks merges cleanly and passes step 1 (verifier finding F1).
+has "the intro states the condition at line level" "$case_a" "lines at or next to the lines the base changed"
+has "the intro says a 3-way merge conflicts per hunk" "$case_a" "conflicts per hunk, not per file"
+has "step 1 states the condition at line level" "$case_a" "edits lines at or next to its base's"
+lacks "the file-level diagnosis is gone" "$case_a" "both sides changing the same files"
+lacks "step 1 no longer sends every shared-file child to step 2" "$case_a" "edits its base's files"
+
+echo "=== #3614 mechanism: merge-tree after a squash-merge, per hunk ==="
+# The text above claims git behaviour; check it against git itself. A base PR
+# edits line 10 of one file, a stacked child edits another line, the base is
+# squash-merged into main, and `merge-tree --write-tree child main` must return
+# the child's own tree only when the child's edit is away from line 10.
+squash_stack_predicts_child_tree() { # <sed edit for the child> -> exit 0 when step 1 would pass
+    local repo out child_tree
+    repo=$(mktemp -d) || return 2
+    [ -n "$repo" ] && [ -d "$repo" ] || return 2
+    (
+        unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+        git -C "$repo" init -q -b main &&
+            git -C "$repo" config user.email t@example.com &&
+            git -C "$repo" config user.name t &&
+            seq 1 60 >"$repo/f.txt" &&
+            git -C "$repo" add f.txt &&
+            git -C "$repo" commit -qm "old main" &&
+            git -C "$repo" switch -qc base &&
+            sed -i.bak 's/^10$/ten-base/' "$repo/f.txt" && rm -f "$repo/f.txt.bak" &&
+            git -C "$repo" commit -qam "base" &&
+            git -C "$repo" switch -qc child &&
+            sed -i.bak "$1" "$repo/f.txt" && rm -f "$repo/f.txt.bak" &&
+            git -C "$repo" commit -qam "child" &&
+            git -C "$repo" switch -q main &&
+            git -C "$repo" merge -q --squash base >/dev/null &&
+            git -C "$repo" commit -qm "squash base" || exit 2
+        out=$(git -C "$repo" merge-tree --write-tree child main 2>/dev/null)
+        out=${out%%$'\n'*}
+        child_tree=$(git -C "$repo" rev-parse 'child^{tree}')
+        [ "$out" = "$child_tree" ]
+    )
+    local rc=$?
+    rm -rf "$repo"
+    return "$rc"
+}
+if grep -qF -- '--write-tree' <<<"$(git merge-tree -h 2>&1)"; then
+    squash_stack_predicts_child_tree 's/^50$/fifty-child/'
+    [ $? -eq 0 ] && ok "a child editing the shared file away from the base's hunk passes step 1" ||
+        notok "a child editing line 50 (base edited line 10) did not get its own tree back"
+    squash_stack_predicts_child_tree 's/^ten-base$/ten-child/'
+    [ $? -eq 1 ] && ok "a child editing the base's own line fails step 1" ||
+        notok "a child editing the base's line 10 got its own tree back, or setup failed"
+    squash_stack_predicts_child_tree 's/^11$/eleven-child/'
+    [ $? -eq 1 ] && ok "a child editing the line next to the base's fails step 1" ||
+        notok "a child editing line 11 (base edited line 10) got its own tree back, or setup failed"
+else
+    echo "  SKIP: git $(git --version | awk '{print $3}') lacks merge-tree --write-tree (needs 2.38+)"
+fi
 
 echo "=== #3606 upstream-pr-contribution: gate a behaviour fix on its observed outcome ==="
 upr=$(cat "${SKILLS}/upstream-pr-contribution/SKILL.md")
