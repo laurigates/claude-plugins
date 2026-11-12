@@ -1,6 +1,6 @@
 ---
 created: 2026-02-22
-modified: 2026-06-18
+modified: 2026-11-12
 reviewed: 2026-06-10
 description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
@@ -155,7 +155,6 @@ If Blueprint is initialized:
      --argjson gaps "{gaps_found}" \
      '.task_registry["derive-tests"].last_completed_at = $now |
       .task_registry["derive-tests"].last_result = "success" |
-      .task_registry["derive-tests"].stats.runs_total = ((.task_registry["derive-tests"].stats.runs_total // 0) + 1) |
       .task_registry["derive-tests"].stats.items_processed = $analyzed |
       .task_registry["derive-tests"].stats.items_created = $gaps |
       .task_registry["derive-tests"].context.commits_analyzed_up_to = $sha' \

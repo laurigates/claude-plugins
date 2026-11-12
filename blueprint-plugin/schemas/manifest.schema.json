@@ -229,10 +229,19 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "auto_run": { "type": "boolean" },
-        "last_completed_at": { "type": ["string", "null"] },
-        "last_result": { "type": ["string", "null"] },
+        "last_completed_at": {
+          "type": ["string", "null"],
+          "description": "UTC timestamp of the last explicit run of an agent-judgment task, written only by the skill itself or by /blueprint:autopilot after running the task; never at session start. A deterministic task (sync-ids) keeps none: the SessionStart runner reconciles it on every run (ADR-0027)."
+        },
+        "last_result": {
+          "type": ["string", "null"],
+          "description": "Outcome of that explicit run, written together with last_completed_at by the same writers. Deterministic tasks keep none (ADR-0027)."
+        },
         "schedule": { "type": "string" },
-        "stats": { "type": "object" },
+        "stats": {
+          "type": "object",
+          "description": "Optional per-run figures a skill records (items_processed, ...). The run counters stats.runs / stats.runs_total are no longer incremented; existing values are left in place (ADR-0027)."
+        },
         "context": { "type": "object" }
       }
     },

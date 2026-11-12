@@ -189,7 +189,7 @@ After executing an agent-judgment task, update the corresponding `task_registry`
 
 ```bash
 jq --arg task "$TASK_NAME" --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg result "$RESULT" \
-  '.task_registry[$task].last_completed_at = $now | .task_registry[$task].last_result = $result | .task_registry[$task].stats.runs_total = ((.task_registry[$task].stats.runs_total // 0) + 1)' \
+  '.task_registry[$task].last_completed_at = $now | .task_registry[$task].last_result = $result' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
 ```
 

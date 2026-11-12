@@ -521,6 +521,28 @@ grep -q 'reconciled each session' "$SKILLS_DIR/blueprint-status/SKILL.md" \
     && ok "P: blueprint-status reports a deterministic task as reconciled each session" \
     || notok "P: blueprint-status lacks the deterministic-task state"
 
+# ---- Test Q: no session-start writer of task_registry; no run counters (#3553) ----
+# Agent-task run state is written only after an explicit run; the run
+# counters stats.runs / stats.runs_total are no longer incremented anywhere.
+PLUGIN_ROOT="${SCRIPT_DIR}/../.."
+assign_re='\.task_registry\[[^]]*\][.A-Za-z0-9_"]*[[:space:]]*[|+-]?=[^=]'
+# Control: the pattern matches an assignment and ignores a comparison.
+[ "$(printf '%s\n' '.task_registry[$t].last_result = $r' '.task_registry[$t].x == 1' | grep -cE "$assign_re")" = "1" ] \
+    && ok "Q: assignment pattern control" || notok "Q: assignment pattern does not discriminate"
+session_writers=$(grep -nE "$assign_re" \
+    "$PLUGIN_ROOT/hooks/blueprint-autorun-probe.sh" \
+    "$PLUGIN_ROOT/hooks/blueprint-drift-probe.sh" \
+    "$PLUGIN_ROOT/scripts/blueprint-autorun.sh")
+[ -z "$session_writers" ] && ok "Q: SessionStart scripts assign no task_registry field" \
+    || notok "Q: SessionStart scripts write task_registry: $session_writers"
+counter_re='stats\.runs(_total)? // 0\) \+ 1'
+[ "$(printf '%s\n' '((.task_registry[$t].stats.runs // 0) + 1)' | grep -cE "$counter_re")" = "1" ] \
+    && ok "Q: counter pattern control" || notok "Q: counter pattern does not match an increment"
+counters=$(grep -rnE --include='*.md' --include='*.sh' "$counter_re" "$PLUGIN_ROOT/skills" "$PLUGIN_ROOT/scripts" \
+    | grep -v '/tests/')
+[ -z "$counters" ] && ok "Q: no stats.runs / stats.runs_total increment in skills or scripts" \
+    || notok "Q: run counter increments remain: $counters"
+
 # ---- Test N: hook and sweep read frontmatter one way (#3549) ----
 # The write-time hook and the session-start sweep call one parser
 # (--frontmatter-rows). Before, both stored an inline comment verbatim
