@@ -79,9 +79,16 @@ has "generic updater skips a version that is not major.minor.patch" "$gtext" "ma
 has "generic updater rewrites CRLF files as LF" "$gtext" "CRLF"
 has "a GITHUB_TOKEN tag triggers no on: push: tags workflow" "$gtext" "GITHUB_TOKEN"
 has "the build job gates on the release_created output" "$gtext" "release_created"
-rppw=$(cat "${SKILLS}/release-please-pr-workflow/SKILL.md")
+# The stuck-PR guidance lives in a sidecar so the SKILL.md body stays under the
+# size WARN; the body links it from § Why Conflicts Occur (finding F4).
+rppw_dir="${SKILLS}/release-please-pr-workflow"
+has "Why Conflicts Occur links the stuck-PR reference" "$(section "${rppw_dir}/SKILL.md" "### Why Conflicts Occur")" "](references/stuck-conflicting.md)"
+rppw=$(cat "${rppw_dir}/references/stuck-conflicting.md" 2>/dev/null)
 has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
 has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
+rppw_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${rppw_dir}/SKILL.md")
+[ "$rppw_chars" -le 10000 ] && ok "release-please-pr-workflow SKILL.md is within the 10,000-char WARN line" ||
+    notok "release-please-pr-workflow SKILL.md is ${rppw_chars} chars, over the 10,000-char WARN line"
 
 echo "=== #3614 no-force stack: Case A step 1 is expected to fail for a child that edits lines at or next to the base's ==="
 nofp="${NOFORCE_STACK_FILE:-${SKILLS}/git-merge-hazards/references/no-force-push-stack.md}"

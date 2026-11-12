@@ -97,16 +97,7 @@ Release-please PRs modify `.release-please-manifest.json` which tracks all compo
 - Other PRs become out of date
 - GitHub marks them as conflicting
 
-A release PR can also go `CONFLICTING` and stay there when a non-releasable
-commit (`chore:`, `docs:`, `ci:`) lands on the base and changes a file the PR
-also changes. That commit gives release-please no new release to compute, so
-the next run does not update the PR branch. Close the PR with its branch and
-re-run the workflow, which opens a clean PR:
-
-```bash
-gh pr close <N> --delete-branch --comment "Closing for recreation: conflicted with a non-releasable commit on main"
-gh run rerun <release-please-run-id>   # or: gh workflow run release-please.yml
-```
+A PR left `CONFLICTING` by a `chore:`/`docs:`/`ci:` commit is not updated by the next run: close it and re-run ([references/stuck-conflicting.md](references/stuck-conflicting.md)).
 
 ### Resolution Flow
 
