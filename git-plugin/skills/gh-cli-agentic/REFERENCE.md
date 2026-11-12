@@ -35,6 +35,30 @@ gh issue develop {N} --checkout
 gh issue develop {N} --name {branch-name}
 ```
 
+## Bot Authors
+
+The account that opens an issue or PR with `GITHUB_TOKEN` is spelled
+differently depending on the command that reports it:
+
+| Command | Author spelling |
+|---|---|
+| `gh issue list --json author` / `gh pr list --json author` | `{"is_bot": true, "login": "app/github-actions"}` |
+| `gh search issues` | `github-actions[bot]` |
+| `gh issue list --author "app/github-actions"` | Returned `[]` in a repository that had such issues |
+
+So do not filter on `--author` to find what a workflow opened. Fetch the list
+and filter on `.author.login` with jq, which matches the JSON spelling:
+
+```bash
+gh issue list --state open --limit 100 --json number,title,author \
+  --jq '[.[] | select(.author.is_bot and .author.login == "app/github-actions")]'
+```
+
+Observed 2026-11-10 by an agent writing a workflow lookup; the three commands
+were not re-run when this section was written, and the spellings may differ
+across gh versions. Check `--json author` output once before relying on the
+exact string.
+
 ## GitHub URL Resolution
 
 Translate GitHub URLs into `gh` API commands for programmatic access.

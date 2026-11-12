@@ -20,10 +20,12 @@ notok() { FAIL=$((FAIL + 1)); printf '  FAIL: %s\n' "$1"; }
 
 # section <file> <heading-prefix> — print the lines from the first heading that
 # starts with <heading-prefix> up to (not including) the next heading of the
-# same or higher level.
+# same or higher level. Lines inside ``` fences are never headings, so a shell
+# comment in a code block does not end the section.
 section() {
     awk -v want="$2" '
-        /^#+ / {
+        /^[[:space:]]*```/ { fence = !fence }
+        !fence && /^#+ / {
             n = index($0, " ") - 1
             if (inside && n <= lvl) exit
             if (!inside && index($0, want) == 1) { inside = 1; lvl = n }
@@ -82,6 +84,15 @@ before "the outcome gate comes before the description is written" "$upr" "## Che
 outcome=$(section "${SKILLS}/upstream-pr-contribution/SKILL.md" "## Check the outcome")
 has "a reaction is not the outcome observable" "$outcome" "reaction"
 has "an unobservable outcome opens the PR as a draft" "$outcome" "--draft"
+
+echo "=== #3593 gh-cli-agentic: the github-actions bot's three spellings ==="
+gca="${SKILLS}/gh-cli-agentic"
+bots=$(section "${gca}/REFERENCE.md" "## Bot Authors")
+has "JSON output spelling" "$bots" "app/github-actions"
+has "search output spelling" "$bots" "github-actions[bot]"
+has "the --author filter is named as unreliable for the bot" "$bots" "--author"
+has "the working form filters author.login with jq" "$bots" ".author.login"
+has "SKILL.md List Issues points at the Bot Authors section" "$(section "${gca}/SKILL.md" "### List Issues")" "REFERENCE.md#bot-authors"
 
 echo
 echo "PASS=$PASS FAIL=$FAIL"

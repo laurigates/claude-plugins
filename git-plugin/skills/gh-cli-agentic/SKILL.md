@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agents. Use when querying PRs,
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-11-04
+modified: 2026-11-12
 reviewed: 2026-04-25
 ---
 
@@ -167,6 +167,8 @@ gh issue list --label "bug" --json number,title
 # Assigned to me
 gh issue list --assignee @me --json number,title,state
 ```
+
+Bot-opened issues: jq on `.author.login`, not `--author` ([REFERENCE.md § Bot Authors](REFERENCE.md#bot-authors)).
 
 ### Issue Types
 
