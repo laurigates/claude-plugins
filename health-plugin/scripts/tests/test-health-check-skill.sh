@@ -192,9 +192,23 @@ if [ -f "$env_md" ]; then
   grep -qF 'Bash(<prefix> *)' <<<"$env_text" && grep -qF 'Bash(<prefix>:*)' <<<"$env_text" \
     && pass "1d reference documents both Bash(<prefix> *) and Bash(<prefix>:*)" \
     || fail "1d reference must document both Bash(<prefix> *) and Bash(<prefix>:*) forms"
+  # 1e is a script (#3579): the inline jq snippet had no grant, so it prompted.
+  grep -qF 'check-marketplace-enrollment.sh' <<<"$env_text" \
+    && pass "environment-checks.md routes 1e to check-marketplace-enrollment.sh" \
+    || fail "environment-checks.md 1e does not name check-marketplace-enrollment.sh"
+  grep -qE 'MP_KEY=\$\(jq' <<<"$env_text" \
+    && fail "environment-checks.md still carries the inline 1e jq snippet (no grant covers it)" \
+    || pass "environment-checks.md carries no inline 1e jq snippet"
 else
   fail "references/environment-checks.md missing"
 fi
+
+# --- 4b. SKILL.md stays under the skill-quality WARN band (#3579)
+# #3570 grew the file past 10,000 chars with per-script output-key lists; those
+# live in references/ now. Counted as check_skill_size() counts: decoded chars.
+skill_chars="$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "$skill_md")"
+[ "$skill_chars" -le 10000 ] && pass "SKILL.md is ${skill_chars} chars (<= 10,000)" \
+  || fail "SKILL.md is ${skill_chars} chars, over the 10,000-char WARN band; move output-key detail to references/"
 
 # --- 5. stack/agentic audits are loaded through the Skill tool
 # health-check used to tell the agent to "follow the steps" in
