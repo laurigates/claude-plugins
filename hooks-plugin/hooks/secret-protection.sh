@@ -510,6 +510,7 @@ ${OVERRIDE_NOTE}"
   # (`$(`, a backtick) and at `(`, so `cat >/tmp/a$(cat .env)` and the process
   # substitution `cat >(cat .env)` keep the inner read; a parameter expansion
   # (`> "$HOME/.env"`, `> ${D}/.env`) stays part of the target.
+  # shellcheck disable=SC2016  # `$` and the backtick are regex literals
   sp_redir_re='[0-9&]?>>?[|]?[[:space:]]*([^[:space:]|;&<>$`(]|\$[^[:space:]|;&<>`(])+'
   match_is_secret() {
     local env_tokens non_template m
