@@ -153,6 +153,12 @@ has "JSON output spelling" "$bots" "app/github-actions"
 has "search output spelling" "$bots" "github-actions[bot]"
 has "the --author filter is named as unreliable for the bot" "$bots" "--author"
 has "the working form filters author.login with jq" "$bots" ".author.login"
+# gh's own app-author filter comes first, the capped jq filter is the fallback,
+# and the section says the jq route drops items past --limit (finding F2).
+before "the --app filter is offered before the jq fallback" "$bots" "gh issue list --app github-actions" ".author.is_bot and"
+has "the --app form is marked unverified" "$bots" "This form is unverified"
+has "the jq fallback names its list cap" "$bots" "past that cap"
+has "SKILL.md List Issues names the --app filter" "$(section "${gca}/SKILL.md" "### List Issues")" "--app github-actions"
 has "SKILL.md List Issues points at the Bot Authors section" "$(section "${gca}/SKILL.md" "### List Issues")" "REFERENCE.md#bot-authors"
 
 echo

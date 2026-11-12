@@ -168,7 +168,7 @@ gh issue list --label "bug" --json number,title
 gh issue list --assignee @me --json number,title,state
 ```
 
-Bot-opened issues: jq on `.author.login`, not `--author` ([REFERENCE.md § Bot Authors](REFERENCE.md#bot-authors)).
+Bot-opened issues: try `--app github-actions`, else jq on `.author.login`; not `--author` ([REFERENCE.md § Bot Authors](REFERENCE.md#bot-authors)).
 
 ### Issue Types
 
