@@ -76,6 +76,13 @@ case_a=$(section "$nofp" "## Case A")
 before "the Case A intro sends such a stack to step 2 before step 1 runs" "$case_a" "expect step 1's prediction to fail" "1. Try the plain fast-forward first"
 has "step 1 calls the failure expected for this shape" "$case_a" "step 2 is its normal path"
 
+echo "=== #3606 upstream-pr-contribution: gate a behaviour fix on its observed outcome ==="
+upr=$(cat "${SKILLS}/upstream-pr-contribution/SKILL.md")
+before "the outcome gate comes before the description is written" "$upr" "## Check the outcome" "## Writing the description"
+outcome=$(section "${SKILLS}/upstream-pr-contribution/SKILL.md" "## Check the outcome")
+has "a reaction is not the outcome observable" "$outcome" "reaction"
+has "an unobservable outcome opens the PR as a draft" "$outcome" "--draft"
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
