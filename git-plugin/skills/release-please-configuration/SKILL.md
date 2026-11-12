@@ -1,6 +1,6 @@
 ---
 created: 2025-12-28
-modified: 2026-11-10
+modified: 2026-11-12
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
@@ -232,7 +232,16 @@ package path.
 | YAML | `{"type": "yaml", "path": "...", "jsonpath": "$.version"}` |
 | TOML | `{"type": "toml", "path": "...", "jsonpath": "$.version"}`; `uv.lock`, stale PR: [uv-lock.md](references/uv-lock.md) |
 | XML | `{"type": "xml", "path": "...", "xpath": "//version"}` |
-| Plain text | `"path/to/version.txt"` (string is fine) |
+| Plain text | `"path/to/version.txt"` (string is fine; see [Generic Updater and Non-JS Repos](#generic-updater-and-non-js-repos)) |
+
+### Generic Updater and Non-JS Repos
+
+A plain-path entry uses the generic updater, which fails silently in three
+ways: it skips a version that is not `major.minor.patch`, it rewrites a CRLF
+file as LF, and the tag a `GITHUB_TOKEN` run creates starts no
+`on: push: tags` build. See
+[references/generic-updater.md](references/generic-updater.md) for each cause
+and the `release_created`-gated build job.
 
 ## Adding a New Package to a Monorepo
 

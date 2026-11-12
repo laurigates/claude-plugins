@@ -57,6 +57,19 @@ before "the merged-work check runs before scoring" "$auto" "--state merged" "Sco
 has "interactive 'Claude decides priority' runs the same check" "$(section "$modes" "### No Arguments")" "already-implemented check"
 has "SKILL.md names the check on the --auto route" "$(cat "${SKILLS}/git-issue/SKILL.md")" "already-implemented check"
 
+echo "=== #3616 release-please: generic updater and release-workflow gotchas ==="
+rpc="${SKILLS}/release-please-configuration"
+generic="${rpc}/references/generic-updater.md"
+has "release-please-configuration links the generic-updater reference" "$(cat "${rpc}/SKILL.md")" "](references/generic-updater.md)"
+gtext=$(cat "$generic" 2>/dev/null)
+has "generic updater skips a version that is not major.minor.patch" "$gtext" "major.minor.patch"
+has "generic updater rewrites CRLF files as LF" "$gtext" "CRLF"
+has "a GITHUB_TOKEN tag triggers no on: push: tags workflow" "$gtext" "GITHUB_TOKEN"
+has "the build job gates on the release_created output" "$gtext" "release_created"
+rppw=$(cat "${SKILLS}/release-please-pr-workflow/SKILL.md")
+has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
+has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

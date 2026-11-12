@@ -1,6 +1,6 @@
 ---
 created: 2026-01-09
-modified: 2026-11-06
+modified: 2026-11-12
 reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
@@ -96,6 +96,17 @@ Release-please PRs modify `.release-please-manifest.json` which tracks all compo
 - The manifest changes
 - Other PRs become out of date
 - GitHub marks them as conflicting
+
+A release PR can also go `CONFLICTING` and stay there when a non-releasable
+commit (`chore:`, `docs:`, `ci:`) lands on the base and changes a file the PR
+also changes. That commit gives release-please no new release to compute, so
+the next run does not update the PR branch. Close the PR with its branch and
+re-run the workflow, which opens a clean PR:
+
+```bash
+gh pr close <N> --delete-branch --comment "Closing for recreation: conflicted with a non-releasable commit on main"
+gh run rerun <release-please-run-id>   # or: gh workflow run release-please.yml
+```
 
 ### Resolution Flow
 
