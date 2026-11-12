@@ -260,6 +260,12 @@ const FIX_PROMPT = (ctx, u, findings) => `You repair unit ${u.id} on the EXISTIN
 
 ${common(ctx)}
 
+Before any other work, read the branch's PR state (a PR can merge while its verifier runs):
+  gh pr list -R ${ctx.repo} --head ${u.branch} --state all --json number,state
+MERGED or CLOSED → stop: commit nothing and return status "blocked" with the PR number and state in blockers.
+The orchestrator decides whether the findings become a new unit cut from ${ctx.base}; do not open a PR or push.
+OPEN, or no PR yet → continue.
+
 Work in your own worktree:
   ${ctx.worktrees ? worktreeAdd(ctx, `repair-${u.id}`, `<path> ${u.branch}`) : `git fetch origin -q; git switch ${u.branch}`}
   (If git says the branch is already used by another worktree, a finished agent forgot to detach:
@@ -343,6 +349,9 @@ const repairThenReverify = (ctxOf, rounds) => async (r) => {
   const rep = await repairStage(ctx)(u, verdict)
   if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
   const merged = mergeRepair(fix, rep)
+  // A repairer that found the PR merged or closed stops without committing:
+  // the row is BLOCKED, and re-verifying an unchanged branch spends an agent.
+  if (rep.status === 'blocked') return { ...r, merged, repaired: true, final: null }
   const final = await verifyStage(ctx, 'Repair')(u, merged, `reverify:${u.id}`)
   return { ...r, merged, repaired: true, final }
 }

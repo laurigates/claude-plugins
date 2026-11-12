@@ -6,6 +6,9 @@
 #      verifier returned null (three ad-hoc repair runs read a dead verifier as
 #      approval: `if (!v || v.approved)`), repairs at most once, never repairs a
 #      `reject`, and aborts over its unit cap before spawning an agent.
+#   3. Every repair brief reads the branch's PR state before any work, and a
+#      repairer that stops on a merged or closed PR is BLOCKED and never
+#      re-verified (#3589: a repairer opened a second PR for a merged branch).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

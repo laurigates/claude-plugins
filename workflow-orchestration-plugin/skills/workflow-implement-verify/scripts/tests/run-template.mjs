@@ -146,6 +146,26 @@ const units = (ids) =>
   const r = await run(base, () => fix('x'))
   check('shared branch aborts', r.result.reason === 'shared-branch' && r.calls.length === 0, r.result)
 }
+// 14. The repair brief reads the branch's PR state before any other work, and
+// a merged or closed PR means stop and report, never a new PR (#3589).
+{
+  const r = await run({ ...units(['a', 'b']), repo: 'o/r', land: 'local' }, (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u) : verdict(u, 'pass'))
+  const p = r.sent['repair:a']?.prompt ?? ''
+  const at = p.indexOf('gh pr list -R o/r --head fix/a --state all --json number,state')
+  check('repair prompt reads PR state first', at !== -1 && at < p.indexOf('Work in your own worktree'), p)
+  check('repair prompt: MERGED or CLOSED → blocked, no new PR', /MERGED or CLOSED[^\n]*commit nothing[^\n]*"blocked"/.test(p) && /do not open a PR/.test(p), p)
+}
+// 15. A repairer that stopped on a merged PR (blocked) is BLOCKED, not re-verified, not landed.
+{
+  const r = await run(units(['a', 'b']), (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed')
+      : k === 'repair' ? fix(u, { status: 'blocked', blockers: ['PR #7 is MERGED'] })
+      : k === 'reverify' ? verdict(u, 'pass') : { prs: [], pushed: [] })
+  check('blocked repair → BLOCKED', statuses(r).a === 'BLOCKED', statuses(r))
+  check('blocked repair → no re-verify', !r.calls.some((c) => c.startsWith('reverify')), r.calls)
+  check('blocked repair → not landed', r.result.finalisePlan.length === 0 && !r.calls.includes('finalise'), r.result.finalisePlan)
+}
 if (isImpl) {
   // 8. no-change is its own outcome and skips the verifier.
   const r = await run(units(['a', 'b']), (k, u) => (k === 'implement' ? fix(u, { status: 'no-change' }) : verdict(u, 'pass')))
@@ -201,6 +221,10 @@ if (isImpl) {
   // 8. A unit without findings aborts the run.
   const r = await run({ units: [{ id: 'a', branch: 'fix/a', findings: [] }] }, () => fix('a'))
   check('unit without findings aborts', r.result.reason === 'incomplete-units' && r.calls.length === 0, r)
+  // 9. A first-stage fixer that found the PR merged (blocked, tip unchanged) gets no verifier (#3589).
+  const m = await run(units(['a', 'b']), (k, u) =>
+    k === 'fix' ? (u === 'a' ? fix(u, { status: 'blocked', commits: [] }) : fix(u)) : k === 'verify' ? verdict(u, 'pass') : { pushed: [] })
+  check('blocked fixer → BLOCKED, unverified', statuses(m).a === 'BLOCKED' && !m.calls.includes('verify:a'), m.calls)
 }
 
 process.exit(failed ? 1 : 0)
