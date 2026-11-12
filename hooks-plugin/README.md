@@ -184,7 +184,7 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
 | Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
 | Credential files | `credentials.json`, `secrets.json`, `.api_tokens` (e.g. `~/.api_tokens`), `*.keystore`, `*.key` |
-| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints) |
+| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints). A protected path that is only an output-redirect target is a write and passes (`cat > .env`, `… \| ssh host 'cat > /srv/app/.env'`); one read anywhere in the command (`cat .env > /tmp/x`, `ssh host 'cat /srv/app/.env'`) still blocks (#3594) |
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD`; the verb (`echo`/`printf`/`cat`/`env`/`printenv`/`export`) must be a command word, so `source .env && tool --token=$X_TOKEN` and `dotenv run -- …` pass |
 | Full env dump | Bare `printenv` or `env` commands |
 
