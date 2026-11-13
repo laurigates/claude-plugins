@@ -33,7 +33,8 @@
 #   J. a skill dir with no markdown at the base is ERROR skill_not_found
 #   K. failing and passing output satisfy the structured-output contract
 #   L. the workflow runs the pre-split revision's copy of the check, isolated
-#      (python3 -I), against $PRE_SHA, before it publishes
+#      (python3 -I), against $PRE_SHA, before it publishes; and the required
+#      compliance job lists this test in its always-on --only set
 #   M. a missing --base or skill dir is a usage error (exit 2)
 #   N. a content change in a line with a direction word is ERROR, including a
 #      change that also adds a link (number, negation, adjective, dropped or
@@ -45,7 +46,8 @@
 #   R. a pointer dropped with no link in its place is ERROR
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L can be shown
-# red against the pre-#3016 file.
+# red against the pre-#3016 file. PLUGIN_PR_CHECKS_WORKFLOW does the same for
+# the always-on compliance list that must run this test.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,6 +55,7 @@ repo_root="$(cd "$script_dir/../.." && pwd)"
 check="$repo_root/scripts/check-split-content-preservation.py"
 contract="$repo_root/scripts/check-structured-output-contract.sh"
 workflow="${SKILL_SPLITTER_WORKFLOW:-$repo_root/.github/workflows/skill-splitter.yml}"
+pr_checks="${PLUGIN_PR_CHECKS_WORKFLOW:-$repo_root/.github/workflows/plugin-pr-checks.yml}"
 
 # A sandbox repo must not inherit a parent git's location (#1745).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
@@ -337,6 +340,11 @@ assert_has "L the check compares against the pre-split HEAD" "$publish" '--base 
 assert_has "L the checker is the pre-split revision's copy" "$publish" 'git show "$PRE_SHA:scripts/check-split-content-preservation.py" > "$checker"'
 assert_has "L the extracted checker runs isolated" "$publish" 'python3 -I "$checker" --base "$PRE_SHA"'
 if grep -qE 'python3( -[A-Za-z]+)* (\./)?scripts/check-split-content-preservation\.py' <<<"$publish"; then ko "L the working-tree checker is not run"; else ok "L the working-tree checker is not run"; fi
+# Case L is the only guard on that wiring, and "Test: Skill scripts" has no
+# .github/workflows/** path, so a PR editing only skill-splitter.yml would never
+# run it unless the always-on compliance job lists it (as it does for the
+# sibling test-select-split-candidates.sh).
+assert_has "L the always-on compliance job runs this test" "$(cat "$pr_checks")" "--only 'scripts/tests/test-check-split-content-preservation.sh'"
 
 # --- M: usage errors ---------------------------------------------------------
 run "$r" "$SKILL" >/dev/null; rc=$?
