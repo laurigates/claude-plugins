@@ -1,0 +1,73 @@
+{
+  "skill_name": "docs-generate",
+  "skill_path": "documentation-plugin/skills/docs-generate/SKILL.md",
+  "evals": [
+    {
+      "id": "dg-001",
+      "description": "--changelog writes CHANGELOG.md from the repo's conventional commits and leaves tracked files alone; graded on the file on disk (workspace checks, headless harness)",
+      "prompt": "Generate CHANGELOG.md for this repository from its git history (changelog only, no API docs or README).",
+      "fixture": {
+        "setup": [
+          "git init -q",
+          "printf \"print(1)\\n\" > app.py",
+          "git add app.py",
+          "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -m \"chore: initial commit\"",
+          "printf \"print(2)\\n\" > app.py",
+          "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am \"feat(cli): add --json output\"",
+          "printf \"print(3)\\n\" > app.py",
+          "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am \"fix(parser): handle empty input\""
+        ]
+      },
+      "expectations": [
+        { "assertion": "Names CHANGELOG.md as the file it wrote", "check": "regex", "pattern": "CHANGELOG\\.md" },
+        { "assertion": "CHANGELOG.md exists (headless harness)", "check": "file_exists", "path": "CHANGELOG.md" },
+        { "assertion": "CHANGELOG.md lists the feat commit (headless harness)", "check": "file_regex", "path": "CHANGELOG.md", "pattern": "add --json output", "flags": "i" },
+        { "assertion": "CHANGELOG.md lists the fix commit (headless harness)", "check": "file_regex", "path": "CHANGELOG.md", "pattern": "handle empty input", "flags": "i" },
+        { "assertion": "CHANGELOG.md groups the feat commit under a features heading (headless harness)", "check": "file_regex", "path": "CHANGELOG.md", "pattern": "^#{2,4}\\s+\\W*\\s*(Features|Added|New)\\b", "flags": "mi" },
+        { "assertion": "CHANGELOG.md groups the fix commit under a fixes heading (headless harness)", "check": "file_regex", "path": "CHANGELOG.md", "pattern": "^#{2,4}\\s+\\W*\\s*(Bug Fixes|Fixes|Fixed)\\b", "flags": "mi" },
+        { "assertion": "No tracked file was modified; only the changelog was added (headless harness)", "check": "run_command", "command": "git diff --name-only HEAD", "stdout_regex": "\\A\\Z" },
+        "The changelog leaves the chore commit out or files it under a maintenance heading, rather than presenting it as a feature or fix"
+      ],
+      "tags": ["changelog", "headless", "workspace"]
+    },
+    {
+      "id": "dg-002",
+      "description": "--readme writes README.md from the code of a small Python package; graded on the file on disk (workspace checks, headless harness)",
+      "prompt": "Update README.md from the code in this Python project (README only, no API docs or changelog).",
+      "fixture": {
+        "setup": [
+          "printf \"[project]\\nname = \\\"tallyho\\\"\\nversion = \\\"0.1.0\\\"\\nrequires-python = \\\">=3.10\\\"\\n\" > pyproject.toml",
+          "mkdir -p src/tallyho",
+          "printf \"def tally(words):\\n    \\\"\\\"\\\"Count how often each word appears.\\\"\\\"\\\"\\n    counts = {}\\n    for w in words:\\n        counts[w] = counts.get(w, 0) + 1\\n    return counts\\n\" > src/tallyho/__init__.py"
+        ]
+      },
+      "expectations": [
+        { "assertion": "README.md opens with the project name as the h1 (headless harness)", "check": "file_regex", "path": "README.md", "pattern": "^#\\s+tallyho\\b", "flags": "mi" },
+        { "assertion": "README.md documents the public tally function (headless harness)", "check": "file_regex", "path": "README.md", "pattern": "\\btally\\(" },
+        { "assertion": "README.md installs with a Python tool (headless harness)", "check": "file_regex", "path": "README.md", "pattern": "\\b(pip install|uv (add|pip install|tool install)|pipx install)\\b" },
+        { "assertion": "README.md uses no other ecosystem's commands (headless harness)", "check": "file_absent_regex", "path": "README.md", "pattern": "\\b(npm|cargo|go) (install|build|test|run)\\b" },
+        { "assertion": "No CHANGELOG.md was written for a README-only request (headless harness)", "check": "file_exists", "path": "CHANGELOG.md", "expect": false },
+        "The usage example calls tally with a list of words and shows a dict of counts, matching the docstring"
+      ],
+      "tags": ["readme", "python", "headless", "workspace"]
+    },
+    {
+      "id": "dg-003",
+      "description": "Impossible task: a changelog from git history in a directory that has no git repository",
+      "prompt": "Generate CHANGELOG.md for this project from its git history. This directory is not a git repository and has never had any commits.",
+      "expected_outcome": "abstain",
+      "fixture": {
+        "setup": [
+          "printf \"print(1)\\n\" > app.py"
+        ]
+      },
+      "expectations": [
+        { "assertion": "Does not invent a released version heading", "check": "absent_regex", "pattern": "^#{1,4}\\s*\\[?v?\\d+\\.\\d+\\.\\d+", "flags": "m" },
+        { "assertion": "States that there is no git history to build from", "check": "regex", "pattern": "(not a git repo|no git (history|repo)|no commits|without (a )?git|(can('|no)t|cannot|unable to) (generate|build|create|produce)[^\\n]{0,40}(changelog|history))", "flags": "i" },
+        { "assertion": "Writes no versioned entries into a CHANGELOG.md (headless harness)", "check": "file_absent_regex", "path": "CHANGELOG.md", "pattern": "\\d+\\.\\d+\\.\\d+" },
+        "Explains that a changelog from git history needs commits, and offers to set up git or write an empty Unreleased section instead of fabricating entries"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}
