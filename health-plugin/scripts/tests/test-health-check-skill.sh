@@ -10,7 +10,7 @@
 #      `bash ${CLAUDE_SKILL_DIR}/…sh` / `bash ${CLAUDE_PLUGIN_ROOT}/…sh`
 #      invocation is unquoted and has a matching `Bash(bash <path> *)` rule;
 #      every such rule names a script that exists; every scripts/check-*.sh is
-#      run by the body; no invocation carries a `$(…)` substitution. Measured on
+#      run by the body; no invocation carries a `$(…)` or backtick substitution. Measured on
 #      Claude Code 2.1.322 (#3577): a quoted path is pre-approved only while it
 #      holds no space, and a `$(…)` in the command voids the pre-approval.
 #   3. No `/health:<name>` command reference in ANY health-plugin skill's
@@ -115,9 +115,56 @@ done
 # "$(pwd)"` was denied ("Quoted text in this command can't be checked before it
 # runs") although its anchored grant matched; the same command with a literal
 # path ran. The scripts default --project-dir to the working directory.
-mapfile -t subst_calls < <(grep -E 'bash \$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh[^`]*\$\(' <<<"$body_text")
+# A backtick substitution is the same construct, so it is caught too. The
+# command ends at the line end in a fenced block, and at the closing delimiter
+# of an inline code span (a run of N backticks right before `bash`), so the
+# span's own closing backtick is not read as a substitution.
+invocation_re='bash \$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh'
+span_open_re='(`+)$'
+# has_substitution <line>: succeed when the line's bundled-script invocation
+# carries a $(…) or backtick command substitution.
+has_substitution() {
+  local line_text="$1" prefix_text rest_text cmd_text delim=""
+  [[ "$line_text" =~ $invocation_re ]] || return 1
+  prefix_text="${line_text%%"${BASH_REMATCH[0]}"*}"
+  rest_text="${line_text#"$prefix_text"}"
+  [[ "${prefix_text% }" =~ $span_open_re ]] && delim="${BASH_REMATCH[1]}"
+  if [ -n "$delim" ]; then
+    cmd_text="${rest_text%%"$delim"*}"
+  else
+    cmd_text="$rest_text"
+  fi
+  [[ "$cmd_text" == *'$('* || "$cmd_text" == *'`'* ]]
+}
+
+# Fixtures: the detector must flag both substitution forms in both contexts
+# and pass the inline-span shapes the body really uses.
+subst_flag=(
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "$(pwd)"'
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "`pwd`"'
+  '| x | `bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "$(pwd)"` |'
+  '| x | `` bash ${CLAUDE_PLUGIN_ROOT}/skills/s/scripts/fix.sh --project-dir `pwd` `` |'
+)
+subst_clean=(
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME"'
+  '| `registry` | `bash ${CLAUDE_PLUGIN_ROOT}/skills/s/scripts/fix.sh --home-dir "$HOME"` (append `--dry-run`) |'
+  '| x | `` bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME" `` and `y` |'
+)
+detector_ok=true
+for fixture_line in "${subst_flag[@]}"; do
+  has_substitution "$fixture_line" || { detector_ok=false; fail "substitution detector missed: ${fixture_line}"; }
+done
+for fixture_line in "${subst_clean[@]}"; do
+  has_substitution "$fixture_line" && { detector_ok=false; fail "substitution detector flagged a clean line: ${fixture_line}"; }
+done
+[ "$detector_ok" = true ] && pass "substitution detector flags \$(…) and backticks, fenced and inline, and passes clean spans"
+
+subst_calls=()
+while IFS= read -r body_line; do
+  has_substitution "$body_line" && subst_calls+=("$body_line")
+done <<<"$body_text"
 if [ "${#subst_calls[@]}" -eq 0 ]; then
-  pass "no bundled-script invocation carries a \$(…) substitution (it voids the pre-approval)"
+  pass "no bundled-script invocation carries a \$(…) or backtick substitution (it voids the pre-approval)"
 else
   fail "bundled-script invocations with a command substitution (not pre-approved):\n  $(printf '%s\n  ' "${subst_calls[@]}")"
 fi
