@@ -253,7 +253,6 @@ tools-plugin/skills/deps-install/SKILL.md	bare_bash	Bash
 tools-plugin/skills/fd-file-finding/SKILL.md	bare_bash	Bash
 tools-plugin/skills/generate-image/SKILL.md	bare_bash	Bash
 tools-plugin/skills/hf-downloads/SKILL.md	bare_bash	Bash
-tools-plugin/skills/imagemagick-conversion/SKILL.md	bare_bash	Bash
 tools-plugin/skills/justfile-expert/SKILL.md	bare_bash	Bash
 tools-plugin/skills/mermaid-diagrams/SKILL.md	bare_bash	Bash
 tools-plugin/skills/shell-expert/SKILL.md	bare_bash	Bash
