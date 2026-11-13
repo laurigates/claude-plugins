@@ -4,7 +4,7 @@ description: "One-pass GitHub Actions cost report for an org or repo: billing, p
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2026-11-06
+modified: 2026-11-13
 reviewed: 2026-06-10
 ---
 
@@ -48,7 +48,7 @@ against the red-flag thresholds, and emits a static fix suggestion per flagged
 pattern:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/github-actions-finops.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/github-actions-finops.sh" --home-dir "$HOME"
 ```
 
 Pass `--repo $OWNER/$REPO` (and `--org $GITHUB_ORG`) when the script can't infer
