@@ -138,8 +138,7 @@ ensure_document_id() {
   if [ -z "$existing_id" ]; then
     # Generate and assign new ID
     case "$type" in
-      PRD) new_id=$(get_next_prd_id) ;;
-      PRP) new_id=$(get_next_prp_id) ;;
+      PRD|PRP) new_id=$(bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind "$type") ;;
       ADR) new_id=$(get_adr_id "$file") ;;
     esac
 

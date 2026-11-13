@@ -11,8 +11,9 @@
 #   - next id = max(last_<kind>, highest id of that kind on disk) + 1
 #   - ids are read with the shared frontmatter parser (an inline comment or a
 #     fenced template does not count)
-#   - the three assigning skills call the helper and none reads last_prd /
+#   - the assigning skills call the helper and none reads last_prd /
 #     last_prp / last_trp to assign
+#   - no skill snippet calls a shell helper the skill does not define
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -74,6 +75,27 @@ for skill in document-linking blueprint-prp-create blueprint-derive-tests; do
         ok "$skill does not assign from a last_* counter"
     fi
 done
+
+# A skill snippet that calls a shell helper must define it in the same skill.
+# a08dd479d removed get_next_prd_id/get_next_prp_id but left document-linking's
+# ensure_document_id calling them. Calls are `$(name` with an underscore in
+# the name, which excludes plain commands such as `$(git` or `$(jq`.
+undefined_calls=""
+while IFS= read -r skill_dir; do
+    md_files=()
+    while IFS= read -r md; do md_files+=("$md"); done \
+        < <(find "$skill_dir" -name '*.md' -not -path '*/tests/*' | sort)
+    [ "${#md_files[@]}" -gt 0 ] || continue
+    while IFS= read -r helper; do
+        grep -qE "(^|[[:space:]])${helper}\(\)" "${md_files[@]}" \
+            || undefined_calls+="${skill_dir#"${PLUGIN_DIR}"/}:${helper} "
+    done < <(grep -ohE '\$\([a-z][a-z0-9]*_[a-z0-9_]*' "${md_files[@]}" | cut -c3- | sort -u)
+done < <(find "${PLUGIN_DIR}/skills" -mindepth 1 -maxdepth 1 -type d | sort)
+if [ -z "$undefined_calls" ]; then
+    ok "every helper a skill snippet calls is defined in that skill"
+else
+    notok "skill snippets call undefined helpers: ${undefined_calls}"
+fi
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
