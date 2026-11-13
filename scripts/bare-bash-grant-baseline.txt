@@ -130,7 +130,6 @@ finops-plugin/skills/finops-workflows/SKILL.md	broad_shell_grant	Bash(bash *)
 finops-plugin/skills/github-actions-finops/SKILL.md	broad_shell_grant	Bash(bash *)
 foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	bare_bash	Bash
 foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	bare_bash	Bash
-git-plugin/skills/git-branch-naming/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-branch-pr-workflow/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-commit-push-pr/SKILL.md	broad_shell_grant	Bash(python3 *)
 git-plugin/skills/git-commit-workflow/SKILL.md	bare_bash	Bash
