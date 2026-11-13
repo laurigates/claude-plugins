@@ -3,8 +3,6 @@
 # for the per-plugin sweep (#3308). Counts may only go down; rewrite with
 # --update-baseline, which never raises an entry.
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
-github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
-github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
 hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1
 hooks-plugin/hooks/test-bash-antipatterns.sh	~/repos/	2
 project-plugin/skills/changelog-review/SKILL.md	laurigates/.github	2
