@@ -1,13 +1,13 @@
 ---
 created: 2026-06-05
-modified: 2026-06-05
+modified: 2026-11-13
 reviewed: 2026-06-05
 name: comfyui-screenshot-pipeline
 description: >-
   Containerized README-screenshot pipeline (Docker + Playwright) for ComfyUI
   custom-node packs. Use when generating pack screenshots, adding `just
   screenshots`, or capturing modal/gesture node UI.
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/add_screenshots.py *), Bash(docker build *), Bash(just screenshots *), Bash(biome check *), Bash(ruff check *), Bash(ruff format *), Read, Write, Edit, Grep, Glob, TodoWrite
 ---
 
 # comfyui-screenshot-pipeline

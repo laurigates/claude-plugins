@@ -63,7 +63,6 @@ comfyui-plugin/skills/comfy-workflow-layout/SKILL.md	bare_bash	Bash
 comfyui-plugin/skills/comfyui-node-authoring/SKILL.md	bare_bash	Bash
 comfyui-plugin/skills/comfyui-node-scaffold/SKILL.md	bare_bash	Bash
 comfyui-plugin/skills/comfyui-pack-live-smoke/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfyui-screenshot-pipeline/SKILL.md	bare_bash	Bash
 communication-plugin/skills/google-chat-formatting/SKILL.md	bare_bash	Bash
 component-patterns-plugin/skills/components-version-badge/SKILL.md	bare_bash	Bash
 component-patterns-plugin/skills/version-badge-pattern/SKILL.md	bare_bash	Bash
