@@ -68,10 +68,12 @@ if ! jq -e . "$settings_file" >/dev/null 2>&1; then
 fi
 echo "PROJECT_SETTINGS=OK"
 
-# tr -d '\r' strips CR line endings jq emits on Windows.
+# tr -d '\r' strips CR line endings jq emits on Windows. `objects` skips an
+# entry whose value (or source) is not an object: indexing a string errors, and
+# that error used to hide a valid entry naming the repo (not_enrolled).
 mp_key=$(jq -r --arg repo "$marketplace_repo" '
   (.extraKnownMarketplaces // {}) | to_entries
-  | map(select(.value.source.repo? == $repo)) | .[0].key // empty
+  | map(select((.value | objects | .source | objects | .repo) == $repo)) | .[0].key // empty
 ' "$settings_file" 2>/dev/null | tr -d '\r')
 
 if [ -z "$mp_key" ]; then

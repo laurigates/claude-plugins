@@ -126,6 +126,24 @@ grep -q '^MARKETPLACE_REPO=someone/claude-plugins$' <<<"$out_f" || fail "case F 
 grep -q '^STATUS=OK$' <<<"$out_f" || fail "case F expected STATUS=OK under --repo:\n$out_f"
 pass "--repo selects another marketplace"
 
+# --- Case G: a non-object entry beside a valid one is skipped, not fatal.
+# Indexing a string value errored the whole jq filter; the error was discarded
+# and the script reported not_enrolled although "good" names the repo.
+proj_g="${tmp_root}/g"
+write_settings "$proj_g" '{
+  "extraKnownMarketplaces": {
+    "stale": "laurigates/claude-plugins",
+    "nosource": {"source": "github"},
+    "good": {"source": {"source": "github", "repo": "laurigates/claude-plugins"}}
+  },
+  "enabledPlugins": {"git-plugin@good": true}
+}'
+out_g="$(run_check "$proj_g")"; rc_g=$?
+[ "$rc_g" -eq 0 ] || fail "case G exit $rc_g, expected 0:\n$out_g"
+grep -q '^STATUS=OK$' <<<"$out_g" || fail "case G expected STATUS=OK (non-object entries skipped):\n$out_g"
+grep -q '^MARKETPLACE_KEY=good$' <<<"$out_g" || fail "case G expected MARKETPLACE_KEY=good:\n$out_g"
+pass "non-object extraKnownMarketplaces entries are skipped"
+
 # --- Structured-output contract (.claude/rules/structured-script-output.md)
 contract="${script_dir}/../../../../../scripts/check-structured-output-contract.sh"
 if [ -f "$contract" ]; then
