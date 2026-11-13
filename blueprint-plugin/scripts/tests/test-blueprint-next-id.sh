@@ -60,7 +60,7 @@ rc=$?
 [ "$rc" -eq 2 ] && ok "an unsupported kind exits 2" || notok "--kind ADR exited $rc"
 
 # The assigning skills call the helper instead of reading the counter.
-for skill in document-linking blueprint-prp-create blueprint-derive-tests; do
+for skill in document-linking blueprint-prp-create blueprint-derive-tests blueprint-sync-ids; do
     body="${PLUGIN_DIR}/skills/${skill}/SKILL.md"
     grep -q 'blueprint-next-id.sh' "$body" && ok "$skill references blueprint-next-id.sh" \
         || notok "$skill does not reference blueprint-next-id.sh"

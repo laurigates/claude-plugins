@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
@@ -120,14 +120,23 @@ report and proceed to the mutating steps.
 
 For each document needing an ID:
 
+PRD and PRP ids come from the shared helper, which prints max(`id_registry.last_<kind>`,
+highest id of that kind on disk) + 1. The counter alone can repeat an id that a
+pulled or merged document already carries (#3554). Call the helper once per
+document, after the previous document's `id:` is written, so each call sees it:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRD
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRP
+```
+
 **PRDs**:
-1. Get next PRD number: `jq '.id_registry.last_prd' manifest.json` + 1
-2. Generate ID: `PRD-NNN` (zero-padded)
-3. Insert into frontmatter after first `---`:
+1. Get the next ID from `blueprint-next-id.sh --kind PRD` (prints `PRD-NNN`)
+2. Insert into frontmatter after first `---`:
    ```yaml
    id: PRD-001
    ```
-4. Update manifest: increment `last_prd`, add to `documents`
+3. Update manifest: set `last_prd` to the assigned number, add to `documents`
 
 **ADRs**:
 1. Derive ID from filename: `0003-title.md` → `ADR-0003`, `ADR-003-title.md` → `ADR-003`
@@ -135,10 +144,9 @@ For each document needing an ID:
 3. Add to manifest `documents`
 
 **PRPs**:
-1. Get next PRP number: `jq '.id_registry.last_prp' manifest.json` + 1
-2. Generate ID: `PRP-NNN`
-3. Insert into frontmatter
-4. Update manifest: increment `last_prp`, add to `documents`
+1. Get the next ID from `blueprint-next-id.sh --kind PRP` (prints `PRP-NNN`)
+2. Insert into frontmatter
+3. Update manifest: set `last_prp` to the assigned number, add to `documents`
 
 **Work-Orders**:
 1. Derive ID from filename: `003-task.md` → `WO-003`
