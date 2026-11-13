@@ -9,7 +9,8 @@
 #   - differential: every row equals check-schema.py split_frontmatter +
 #     yaml.safe_load for id, status, title, created, relates-to and
 #     github-issues, over the #3549 fixtures and every docs/{adrs,prds,prps}
-#     document in this repo (needs uv; prints SKIP otherwise)
+#     document in this repo (needs uv; prints SKIP otherwise), including
+#     multi-line plain scalars folded onto one line (#3642)
 #   - the parser gives byte-identical output under every awk on PATH variants
 #     present (mawk, gawk, BWK awk, busybox) — macOS ships BWK awk; a missing
 #     original-awk prints SKIP locally and FAILs under CI=true / GITHUB_ACTIONS
@@ -56,6 +57,12 @@ printf -- '---\nid: PRP-9013\nstatus: Ready\n\n# Never closed: no frontmatter\n'
 # shellcheck disable=SC2016  # literal markdown fence
 printf -- '---\nid: PRP-9014\nstatus: Ready\n---\n\n```bash\n# shell comment, not a heading\n```\n\n# Real heading\n' > "$fx/12-fenced-heading.md"
 
+# Multi-line plain scalars: YAML folds each indented continuation line into the
+# value with one space (#3642).
+printf -- '---\nid: ADR-9015\ntitle: A title wrapped\n  over two lines\nstatus: Accepted\n---\n' > "$fx/13-folded-title.md"
+printf -- '---\nid: ADR-9016\ntitle:\n  Starts on the next line\nstatus:\n  Draft\nrelates-to:\n  - ADR-0001\n---\n' > "$fx/14-next-line-scalar.md"
+printf -- '---\nid: ADR-9017\ntitle: Wrapped then\n  cut by a comment # not title\nstatus: Accepted\n---\n' > "$fx/15-folded-comment.md"
+
 fixture_files=("$fx"/*.md)
 repo_docs=()
 for d in docs/adrs docs/prds docs/prps; do
@@ -96,6 +103,13 @@ empty_rows=$(bash "$AUTORUN" --frontmatter-rows "$fx/07-comment-line.md" "$fx/06
     || notok "zero-byte file rows: $empty_rows"
 [ "$(field 07-comment-line.md 5)" = "Heading after a comment line" ] && ok "frontmatter comment line is not the title" || notok "title=$(field 07-comment-line.md 5)"
 [ "$(field 12-fenced-heading.md 5)" = "Real heading" ] && ok "heading fallback skips fenced code" || notok "title=$(field 12-fenced-heading.md 5)"
+[ "$(field 13-folded-title.md 5)" = "A title wrapped over two lines" ] && [ "$(field 13-folded-title.md 4)" = "Accepted" ] \
+    && ok "a plain title continued on an indented line is folded" || notok "folded title=$(field 13-folded-title.md 5) status=$(field 13-folded-title.md 4)"
+[ "$(field 14-next-line-scalar.md 5)" = "Starts on the next line" ] && [ "$(field 14-next-line-scalar.md 4)" = "Draft" ] \
+    && [ "$(field 14-next-line-scalar.md 7)" = "ADR-0001" ] \
+    && ok "a plain scalar starting on the next line is read" || notok "next-line title=$(field 14-next-line-scalar.md 5) status=$(field 14-next-line-scalar.md 4)"
+[ "$(field 15-folded-comment.md 5)" = "Wrapped then cut by a comment" ] \
+    && ok "a comment ends a folded plain scalar" || notok "folded comment title=$(field 15-folded-comment.md 5)"
 
 # ---- Sorted output whatever the argument order ----
 shuffled=$(bash "$AUTORUN" --frontmatter-rows "$fx/12-fenced-heading.md" "$fx/03-single-quoted.md" "$fx/01-inline-comment.md")
