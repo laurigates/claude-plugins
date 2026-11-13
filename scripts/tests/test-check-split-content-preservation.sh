@@ -32,7 +32,8 @@
 #   I. an empty range is OK and still reports the lines it checked
 #   J. a skill dir with no markdown at the base is ERROR skill_not_found
 #   K. failing and passing output satisfy the structured-output contract
-#   L. the workflow runs the check before it publishes, against $PRE_SHA
+#   L. the workflow runs the pre-split revision's copy of the check, isolated
+#      (python3 -I), against $PRE_SHA, before it publishes
 #   M. a missing --base or skill dir is a usage error (exit 2)
 #   N. a content change in a line with a direction word is ERROR, including a
 #      change that also adds a link (number, negation, adjective, dropped or
@@ -330,6 +331,12 @@ push_line=$(grep -n 'HEAD:refs/heads/' <<<"$publish" | head -1 | cut -d: -f1)
 if [ -n "$check_line" ]; then ok "L the publish step runs the check"; else ko "L the publish step runs the check"; fi
 if [ -n "$check_line" ] && [ -n "$push_line" ] && [ "$check_line" -lt "$push_line" ]; then ok "L the check runs before the branch is published"; else ko "L the check runs before the branch is published" "check line=$check_line push line=$push_line"; fi
 assert_has "L the check compares against the pre-split HEAD" "$publish" '--base "$PRE_SHA"'
+# The split step can Write/Edit without committing, and the scope check reads
+# only commits, so the working-tree checker is not trustworthy: run the copy
+# from the pre-split revision, isolated from the working tree.
+assert_has "L the checker is the pre-split revision's copy" "$publish" 'git show "$PRE_SHA:scripts/check-split-content-preservation.py" > "$checker"'
+assert_has "L the extracted checker runs isolated" "$publish" 'python3 -I "$checker" --base "$PRE_SHA"'
+if grep -qE 'python3( -[A-Za-z]+)* (\./)?scripts/check-split-content-preservation\.py' <<<"$publish"; then ko "L the working-tree checker is not run"; else ok "L the working-tree checker is not run"; fi
 
 # --- M: usage errors ---------------------------------------------------------
 run "$r" "$SKILL" >/dev/null; rc=$?
