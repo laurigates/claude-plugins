@@ -455,13 +455,14 @@ Both producers therefore call one writer:
 ```bash
 bash <plugin-root>/scripts/register-generated-rules.sh \
   --source blueprint-init \
-  --plugin-version "$(jq -r .version <plugin-root>/.claude-plugin/plugin.json)" \
   development.md testing.md
 ```
 
-`--plugin-version`, like the manifest's `created_by.blueprint_plugin`, is the
-plugin version from `plugin.json`, read at run time — not the blueprint format
-version (#2950).
+The recorded `plugin_version`, like the manifest's `created_by.blueprint_plugin`,
+is the plugin version from `plugin.json`, read at run time — not the blueprint
+format version (#2950). Without `--plugin-version` the script reads its own
+`plugin.json`, so a skill's call carries no `$(…)`, which would void the skill's
+pre-approved grant for the script (#3640).
 
 The contract every site must agree on:
 

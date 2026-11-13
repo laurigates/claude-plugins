@@ -93,6 +93,7 @@ manifest=""
 rec_source="blueprint-init"
 rec_source_hash=""
 rec_plugin_version=""
+plugin_version_given=0
 rec_status="current"
 rules=()
 
@@ -106,8 +107,8 @@ while [ $# -gt 0 ]; do
         --source=*)         rec_source="${1#*=}"; shift ;;
         --source-hash)      rec_source_hash="${2:-}"; shift 2 ;;
         --source-hash=*)    rec_source_hash="${1#*=}"; shift ;;
-        --plugin-version)   rec_plugin_version="${2:-}"; shift 2 ;;
-        --plugin-version=*) rec_plugin_version="${1#*=}"; shift ;;
+        --plugin-version)   rec_plugin_version="${2:-}"; plugin_version_given=1; shift 2 ;;
+        --plugin-version=*) rec_plugin_version="${1#*=}"; plugin_version_given=1; shift ;;
         --status)           rec_status="${2:-}"; shift 2 ;;
         --status=*)         rec_status="${1#*=}"; shift ;;
         -h|--help)          usage; exit 0 ;;
@@ -120,6 +121,16 @@ while [ $# -gt 0 ]; do
         *)                  rules+=("$1"); shift ;;
     esac
 done
+
+# Without --plugin-version, record this plugin's own version. Callers used to
+# pass "$(jq -r .version …/plugin.json)", and a $(…) on a bundled-script line
+# voids the skill's pre-approved grant for the script (#3640).
+if [ "$plugin_version_given" -eq 0 ]; then
+    own_plugin_json="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.claude-plugin/plugin.json"
+    if [ -f "$own_plugin_json" ] && command -v jq >/dev/null 2>&1; then
+        rec_plugin_version="$(jq -r '.version // empty' "$own_plugin_json" 2>/dev/null)"
+    fi
+fi
 
 emit_fatal() { # <message>
     printf '=== %s ===\n' "$SECTION"

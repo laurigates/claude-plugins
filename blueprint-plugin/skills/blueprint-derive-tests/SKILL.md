@@ -1,6 +1,6 @@
 ---
 created: 2026-02-22
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-06-10
 description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
@@ -96,7 +96,7 @@ MEDIUM; any commit shipping a test → COVERED). Pass `--limit` to cap the scan
 (default 200; pass `--limit 50` for `--quick`):
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-derive-tests.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-derive-tests.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. `FIX_COMMITS`/`FEAT_COMMITS` are

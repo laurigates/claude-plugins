@@ -82,7 +82,7 @@ from `docs/adrs/`, else `docs/adr/`, named `NNNN-title.md` or `ADR-NNN-title.md`
 (else the frontmatter `id:` alone):
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-sync-ids.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-sync-ids.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output:

@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-10-09
+modified: 2026-11-13
 reviewed: 2026-07-27
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
@@ -70,7 +70,7 @@ For a sample of the rendered output, see [REFERENCE.md](REFERENCE.md#work-overvi
 Run the helper ([what it owns](references/sync-core.md)); it writes the backfilled tracker in place:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. `STATUS=ERROR` means the tracker
@@ -139,7 +139,7 @@ detects a tracker that drifted by any other route, so the drift compounds
 silently:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh"
 ```
 
 Parse `STATUS=` and the `ISSUES:` rows. `statistics` is a **cache** of the
