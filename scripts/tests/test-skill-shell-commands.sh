@@ -107,18 +107,18 @@ scr="$(stage scripts-skill)"
 run "$scr"
 assert "C1 an interpreter-run bundled script is a SCRIPT row" \
   "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/check.sh INTERP=bash QUOTED=0 COUNT=1 SOURCES=SKILL.md')"
-assert "C2 a quoted invocation is flagged QUOTED=1" \
-  "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/report.py INTERP=python3 QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
+assert "C2 a quoted invocation is flagged QUOTED=1 and keeps its quotes" \
+  "$(has 'SCRIPT="${CLAUDE_SKILL_DIR}/scripts/report.py" INTERP=python3 QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
 assert "C3 a directly executed bundled script has no INTERP" \
   "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/direct.sh INTERP= QUOTED=0 COUNT=1 SOURCES=SKILL.md')"
 assert "C3b a quoted, directly executed bundled script is recognised" \
-  "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh INTERP= QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
+  "$(has 'SCRIPT="${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh" INTERP= QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
 assert "C4 a command only in REFERENCE.md is listed with that source" \
   "$(has 'HEAD=git SUB=status SUB2= COUNT=1 SOURCES=REFERENCE.md')"
 assert "C5 an inline command in references/** is listed with that source" \
   "$(has 'HEAD=git SUB=log SUB2= COUNT=1 SOURCES=references/deep.md')"
-assert "C6 anchored candidates spell the script path" \
-  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/report.py *)')" = true ] && [ "$(has 'CANDIDATE=Bash(${CLAUDE_SKILL_DIR}/scripts/direct.sh *)')" = true ] && echo true || echo false)"
+assert "C6 anchored candidates spell the script path as the body does" \
+  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/report.py" *)')" = true ] && [ "$(has 'CANDIDATE=Bash(${CLAUDE_SKILL_DIR}/scripts/direct.sh *)')" = true ] && echo true || echo false)"
 assert "C7 never an interpreter wildcard candidate" "$(lacks '^CANDIDATE=Bash\((bash|sh|python3?|node) \*\)$')"
 assert "C8 a git subcommand candidate is narrowed to the subcommand" \
   "$( [ "$(has 'CANDIDATE=Bash(git status *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git log *)')" = true ] && echo true || echo false)"
@@ -192,6 +192,56 @@ assert "E13 the colon form Bash(git status:*) is matched like the space form" "$
 set_grants "$scr" 'Read, Grep'
 run "$scr" --check
 assert "E14 a skill with no Bash grant passes --check" "$( [ "$RC" = 0 ] && [ "$(field GRANTS)" = 0 ] && echo true || echo false)"
+# A quoted script grant is matched by its unquoted words (#3464 F4).
+set_grants "$scr" 'Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/report.py" *), Bash("${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh" *), Read'
+run "$scr" --check
+assert "E15 a grant in the body's quoted spelling passes --check" "$(is "$RC" 0)"
+
+# A grant the drop table rejects fails --check even when the body runs it
+# (#3464 F3). The git-workflow fixture shows every one of these commands.
+for g in 'Bash(git push *)' 'Bash(git push --force *)' 'Bash(git reset:*)' 'Bash(rm *)' 'Bash(python3 -c *)' \
+         'Bash(xargs *)' 'Bash(docker run *)' 'Bash(sudo apt-get install *)'; do
+  set_grants "$gw" "$g, Read"
+  run "$gw" --check
+  assert "E16 $g is TYPE=dropped_grant, exit 1" \
+    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=dropped_grant MSG=')" = true ] && echo true || echo false)"
+done
+set_grants "$gw" 'Bash(git push *), Read'
+run "$gw" --check
+assert "E17 a dropped grant the body runs is not also grant_not_in_body" "$(lacks 'TYPE=grant_not_in_body')"
+assert "E18 dropped_grant output satisfies the contract" "$(validates "$OUT")"
+# Positive control on the same skill: narrow grants for commands it runs pass.
+set_grants "$gw" 'Bash(git status *), Bash(git commit *), Bash(git branch *), Bash(gh pr create *), Read'
+run "$gw" --check
+assert "E19 narrow grants on the same skill still pass (control)" "$(is "$RC" 0)"
+
+##########
+# G. A lone prose mention never contradicts a candidate (#3464 F1)
+##########
+echo "=== G: lone words ==="
+ec="$(stage edge-cases)"
+run "$ec"
+assert "G1 mention before arguments: the command is a candidate" "$(has 'CANDIDATE=Bash(magick *)')"
+assert "G2 ... and not also DROPPED" "$(lacks '^DROPPED=Bash\(magick \*\)')"
+assert "G3 arguments before mention: the command is a candidate" "$(has 'CANDIDATE=Bash(identify *)')"
+assert "G4 ... and not also DROPPED" "$(lacks '^DROPPED=Bash\(identify \*\)')"
+assert "G5 a command only ever named alone is still DROPPED (control)" \
+  "$( [ "$(hasre '^DROPPED=Bash\(convert \*\) WHY=named alone')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(convert')" = true ] && echo true || echo false)"
+dup="$(sed -n 's/^CANDIDATE=//p; s/^DROPPED=\(.*\) WHY=.*/\1/p' <<<"$OUT" | sort | uniq -d)"
+assert "G6 no pattern is printed as both CANDIDATE and DROPPED" "$(is "$dup" "")"
+
+##########
+# H. A script grant keeps the body's spelling (#3464 F4)
+##########
+echo "=== H: quoted scripts ==="
+assert "H1 a double-quoted invocation keeps its quotes in the candidate" \
+  "$(has 'CANDIDATE=Bash(bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" *)')"
+assert "H2 the unquoted spelling of the same script is its own candidate" \
+  "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/run.sh *)')"
+assert "H3 a single-quoted invocation keeps its quotes" \
+  "$(has "CANDIDATE=Bash(python3 '\${CLAUDE_SKILL_DIR}/scripts/single.py' *)")"
+assert "H4 each spelling has its own SCRIPT row" "$(is "$(grep -cE '^SCRIPT=.*scripts/run\.sh"? ' <<<"$OUT")" 2)"
+assert "H5 edge-case listing satisfies the contract" "$(validates "$OUT")"
 
 ##########
 # F. A missing shared library is exit 2, never a clean or a findings result

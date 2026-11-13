@@ -25,9 +25,14 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
   SCRIPT=<path as spelled> INTERP=<runner or empty> QUOTED=<0|1> COUNT=<n> SOURCES=<files>
       a bundled-script invocation: a path anchored on ${CLAUDE_SKILL_DIR} or
       ${CLAUDE_PLUGIN_ROOT}, run directly or through bash/sh/python3/node/
-      uv run/bun. QUOTED=1 when the body wraps the path in quotes.
+      uv run/bun. QUOTED=1 when the body quotes the path; SCRIPT= then
+      carries the quotes, and a body using both spellings gets two rows.
   CANDIDATE=<pattern>          a suggested grant, e.g. Bash(git status *) or
-                               Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *)
+                               Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *);
+                               a script grant keeps the body's quotes,
+                               Bash(bash "${CLAUDE_SKILL_DIR}/scripts/x.sh" *),
+                               because the matcher's quote handling was not
+                               measured (see raw_word)
   DROPPED=<pattern> WHY=<why>  a command the skill shows that should keep
                                prompting: destructive or outward (rm, git push,
                                git reset, publish/deploy verbs), sudo, inline
@@ -37,7 +42,10 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
                                before the subcommand (git -C <dir> ...), a
                                multi-level CLI with no subcommand shown (a lone
                                `gh`), a <placeholder> path, or a command only
-                               named alone in a prose span (`type` in a table)
+                               named alone in a prose span (`type` in a table).
+                               A pattern is never both CANDIDATE and DROPPED:
+                               a lone prose mention of a command the skill
+                               also shows with arguments is not a drop.
   Never a bare interpreter wildcard such as Bash(bash *). A lone dot-dir path in
   a prose span (`.claude/settings.json`) is not listed as a command.
   The candidates are a starting point for an editor, not a verdict: they
@@ -50,6 +58,17 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
   grant_not_in_body  a Bash(<words> ...) grant's words are not a token prefix
                      of any command the skill or its sidecars show (covers the
                      head, the subcommand, and an anchored script path)
+  dropped_grant      a grant whose words begin with a hazard from the drop
+                     table: destructive or outward (rm, git push, git reset,
+                     publish/deploy verbs), sudo, inline interpreter code
+                     (python3 -c), a command runner (xargs, env, timeout), or
+                     docker/podman run|exec. Reported even when the body runs
+                     the command: the migration rule is that these keep
+                     prompting. The listing-only drop reasons (a lone word, a
+                     placeholder, a missing subcommand, a global option) are
+                     not --check findings.
+  A quoted script grant, Bash(bash "${CLAUDE_SKILL_DIR}/x.sh" *), is matched
+  by its unquoted words, so either spelling passes --check.
 
 Usage:
   python3 scripts/skill-shell-commands.py <skill-dir> [--check]
@@ -441,7 +460,31 @@ def grant_words(toks: list[str]) -> tuple[list[str], str | None]:
     return [head], None
 
 
+def raw_word(text: str, unquoted: str) -> str:
+    """The word of `text` that shell-unquotes to `unquoted`, as the body spells it.
+
+    A grant is written in the body's spelling (#3464 F4): Claude Code's prefix
+    matcher was not measured on quoted words. If it compares raw strings only
+    the body's spelling matches; if it unquotes, it unquotes the rule too, so
+    the body's spelling matches either way, and an unquoted rule for a quoted
+    invocation does not.
+    """
+    for word in re.findall(r"(?:[^\s\"']+|\"[^\"]*\"|'[^']*')+", text):
+        if word == unquoted:
+            return word
+        try:
+            if shlex.split(word, posix=True) == [unquoted]:
+                return word
+        except ValueError:
+            continue
+    return unquoted
+
+
 def drop_reason(words: list[str]) -> str | None:
+    if words[0] == "sudo":
+        return "sudo: keep it prompting"
+    if words[0] in INTERPRETERS and len(words) > 1 and words[1] in INLINE_FLAGS:
+        return "inline code: a prefix grant on it admits arbitrary code"
     if words[0] in DROP_HEADS:
         return DROP_HEADS[words[0]]
     if len(words) >= 3 and tuple(words[:3]) in DROP_SUBS3:
@@ -504,15 +547,26 @@ class Inventory:
             why = PLACEHOLDER
         if not why and src_type == "inline_code" and len(toks) == 1:
             why = LONE_WORD
+        # LONE_WORD only means "never seen with arguments"; once the same
+        # pattern is shown with arguments anywhere it is a candidate, whatever
+        # order the two spans appear in (#3464 F1).
+        if why == LONE_WORD and pattern in self.candidates:
+            return
         if why:
             self.dropped.setdefault(pattern, why)
         else:
-            self.candidates.add(pattern)
+            self._candidate(pattern)
+
+    def _candidate(self, pattern: str) -> None:
+        self.candidates.add(pattern)
+        if self.dropped.get(pattern) == LONE_WORD:
+            del self.dropped[pattern]
 
     def _script(self, path: str, interp: str, stripped: str, source: str) -> None:
-        quoted = 1 if re.search(r"[\"']" + re.escape(path), stripped) else 0
-        self._bump(self.scripts, (path, interp, quoted), source)
-        self.candidates.add("Bash(%s *)" % " ".join(x for x in (interp, path) if x))
+        spelled = raw_word(stripped, path)
+        quoted = 0 if spelled == path else 1
+        self._bump(self.scripts, (spelled, interp, quoted), source)
+        self._candidate("Bash(%s *)" % " ".join(x for x in (interp, spelled) if x))
 
 
 # --- extraction ----------------------------------------------------------------
@@ -631,6 +685,15 @@ def grant_findings(skill_dir: str, inv: Inventory) -> tuple[int, list[tuple[str,
         words = tokens_of(pattern)
         if not words:
             continue
+        hazard = drop_reason(words)
+        if hazard:
+            findings.append(
+                (
+                    "dropped_grant",
+                    "%s pre-approves a command that should keep prompting (%s)"
+                    % (token, hazard),
+                )
+            )
 
         def matches(toks: list[str]) -> bool:
             return len(toks) >= len(words) and all(
