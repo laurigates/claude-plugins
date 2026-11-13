@@ -3,7 +3,7 @@ name: workflow-scale-budget
 description: Size a Workflow script's agent count before running it, or tally a finished run's agents and tokens. Use when authoring or proposing a Workflow fan-out, or asking what a run used.
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-29
-modified: 2026-10-17
+modified: 2026-11-12
 reviewed: 2026-09-29
 ---
 
@@ -64,7 +64,17 @@ workflow again, at any scale.
    rounds up front, triage the new issues between rounds, and carry the
    low-value ones as backlog. "Clear the plate" is not a stopping condition
    for a loop that refills the plate.
-8. **After a run finishes:** `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <run-id>`
+8. **Agents share one GitHub REST rate limit.** Every agent and the
+   orchestrating session draw on the same token's 5,000 REST calls an hour, so
+   the limit is a cost of agent count beside tokens. 2026-11-10, a 26-agent
+   run exhausted it: for about 20 minutes `gh run list`, `gh run view --log`
+   and `gh api` returned HTTP 403, while `gh pr` and `gh issue` (GraphQL, a
+   separate budget) kept working. The orchestrator could not read CI logs, or
+   merge through a hook that does a REST lookup. One line in the next
+   run's agent briefs, "use git for anything git can answer, read each issue
+   once, do not poll gh", kept a 19-agent run under the limit. Check the
+   remaining budget with `gh api rate_limit --jq .resources.core`.
+9. **After a run finishes:** `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <run-id>`
    tallies its realised agents and tokens from the transcripts. A session id tallies
    every run in that session, then prints one `WORKFLOW SESSION TALLY` block with the
    agents and tokens summed across the runs and the worst run status. A WARN with
@@ -79,4 +89,5 @@ workflow again, at any scale.
 |---------|---------|
 | Tally one finished run | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <wf_run_id>` |
 | Tally every run in a session | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <session_id>` |
+| Remaining shared GitHub REST budget | `gh api rate_limit --jq .resources.core` |
 | Transcripts outside `~/.claude/projects` | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <id> --projects-dir <dir>` |
