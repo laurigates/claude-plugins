@@ -1118,6 +1118,22 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Review of the #3608 fix: (a) a rule given a `paths:` glob stays in the
+      # measured glob at the same size, so the procedure must take it out of
+      # the after-sum or a Path-scope saving measures as 0; (b) the worked
+      # example must split the ~8K-vs-3.7K gap into approved-but-never-deleted
+      # text and added residual text; (c) `wc -c` counts bytes, so the text
+      # must not convert its output with chars/4.
+      for token in 'out of the after-sum' 'never deleted' 'counts bytes'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (path-scoped rules leave the after-sum; both components of the overstatement; wc -c counts bytes — issue #3608)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'chars/4' "$mcd_dir/references/report-format.md" 2>/dev/null; then
+        issues+=("❌ ${plugin}/${skill_name}: references/report-format.md converts wc -c output with chars/4 — wc -c counts bytes (issue #3608)")
+        has_errors=true
+      fi
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision
