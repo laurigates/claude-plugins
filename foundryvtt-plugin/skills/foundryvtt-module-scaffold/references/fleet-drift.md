@@ -11,7 +11,8 @@ python3 scripts/check-fleet-drift.py --fleet-root <dir-of-module-repos>
 ```
 
 A module is a `foundryvtt-*` directory with a `module.json` directly under the
-fleet root (default `~/repos/laurigates/foundryvtt-dev`). `--module <name>`
+fleet root (`--fleet-root`, else `$FOUNDRYVTT_FLEET_ROOT`, else the current
+directory). `--module <name>`
 scopes the run (repeatable). `--issue-body` prints a markdown issue body for a
 scheduled sweep, and prints nothing for a clean fleet. Output follows the
 `STATUS=OK|WARN|ERROR` / `REASON=` / `ISSUE_COUNT=` / `ISSUES:` contract; exit 1

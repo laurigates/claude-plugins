@@ -10,9 +10,6 @@ configure-plugin/skills/claude-security-settings/SKILL.md	laurigates/loractl	1
 configure-plugin/skills/configure-completions/REFERENCE.md	laurigates/shore-recon	1
 configure-plugin/skills/configure-reusable-workflows/REFERENCE.md	laurigates/.github	9
 configure-plugin/skills/configure-reusable-workflows/SKILL.md	laurigates/.github	1
-foundryvtt-plugin/skills/foundryvtt-module-scaffold/references/fleet-drift.md	~/repos/	1
-foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/check-fleet-drift.py	~/repos/	2
-foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	gitops repo	1
 github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
 github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
 hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1

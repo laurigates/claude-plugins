@@ -1,6 +1,6 @@
 ---
 created: 2026-06-26
-modified: 2026-11-07
+modified: 2026-11-13
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
@@ -63,8 +63,8 @@ start from the closest one and add the rest by hand.
 
 ## How to run
 
-`scaffold.py` is stdlib-only. Run from the workspace where the module should
-land (e.g. `repos/laurigates/foundryvtt-dev/`).
+`scaffold.py` is stdlib-only. Run from the directory where the module should
+land (the one holding the user's other module clones), or pass `--dir`.
 
 Basic settings+hooks module:
 
