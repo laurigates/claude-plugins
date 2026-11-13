@@ -109,7 +109,16 @@ assert "C4: section says <<<\"\$(cmd)\" loses the producer's exit status" \
 # No code line inside a fence may read from an inline substitution; prose that
 # names the form to warn against it is outside the fences and not scanned.
 section_code=$(awk '/^```/ { in_fence = !in_fence; next } in_fence { print }' <<<"$section")
-inline_right=$(grep -E '^[^#]*grep -[A-Za-z]*q[A-Za-z]* [^#]*<<<"\$\(' <<<"$section_code" || true)
+# Whitespace after <<< and the quotes are both optional in bash, and every
+# spelling loses the producer's status, so the pattern accepts all of them.
+inline_re='^[^#]*grep -[A-Za-z]*q[A-Za-z]* [^#]*<<<[[:space:]]*"?\$\('
+inline_fixtures='grep -q ready <<<"$(cmd)"
+grep -Fxq "$1" <<< "$(cmd)"
+grep -q ready <<<$(cmd)'
+inline_hits=$(grep -Ec "$inline_re" <<<"$inline_fixtures" || true)
+assert "C5a: the inline-substitution pattern detects every spelling (matched $inline_hits of 3)" \
+  "$([ "$inline_hits" -eq 3 ] && echo true || echo false)"
+inline_right=$(grep -E "$inline_re" <<<"$section_code" || true)
 assert "C5: section offers no grep -q <<<\"\$(cmd)\" form as code (found: ${inline_right:-none})" \
   "$([ -z "$inline_right" ] && echo true || echo false)"
 # shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution
