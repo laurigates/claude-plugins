@@ -37,7 +37,7 @@ fi
 if [ -f ".eslintrc" ] || [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ] || [ -f "eslint.config.mjs" ]; then
   DETECTED_LINTERS+=("eslint")
   FIX_COMMANDS+=("npx eslint --fix .")
-  CHECK_COMMANDS+=("npx eslint --format=unix --max-warnings=0 .")
+  CHECK_COMMANDS+=("npx eslint --format=stylish --max-warnings=0 .")
 fi
 
 # JavaScript/TypeScript: Prettier (formatter only)
