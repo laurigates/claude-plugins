@@ -51,20 +51,16 @@ what you do in Phase 2 below:
 
 ## Preconditions
 
-- Work from the directory that holds the user's other FoundryVTT module clones,
-  so the new checkout lands beside them.
-- Resolve `<owner>`, `<iac-repo>` and `<iac-dir>` the way the owner skill's
-  *Values from context* section does, with two FoundryVTT substitutions:
-  `<owner>` comes from a sibling module's `git remote get-url origin`, else
-  `gh api user --jq .login`; `iac_repo:` / `iac_dir:` are read from
-  `.claude/foundryvtt-plugin.local.md`. When they are unset, ask once how this
-  user manages repo settings and secrets, and offer to save the answer there.
-- `<owner>` is also the scaffold's `--publisher`, which writes the
-  `module.json` `url`, `manifest` and `download` addresses. Leave it out and
-  the scaffold's built-in default owner lands in them, so the module would
-  install from a repo that does not exist. `<author>` (the scaffold's
-  `--author`) is a sibling module's `module.json` `authors[0].name`, else
-  `git config user.name`.
+- Work from the directory holding the user's other FoundryVTT module clones.
+- Resolve `<owner>`, `<iac-repo>` and `<iac-dir>` as the owner skill's *Values
+  from context* section does, except: `<owner>` comes from a
+  sibling module's `git remote get-url origin`, else `gh api user --jq .login`;
+  `iac_repo:` / `iac_dir:` come from `.claude/foundryvtt-plugin.local.md` (when
+  unset, ask once and offer to save it).
+- `<owner>` is also the scaffold's `--publisher`, which writes the `module.json`
+  `url`, `manifest` and `download`; without it the scaffold's default owner
+  lands there. `<author>` (`--author`) is a sibling module's
+  `authors[0].name`, else `git config user.name`.
 - The remaining preconditions (a **personal** `gh auth` that may create repos, and
   an uncommitted-change-free gitops clone) are stated once in the owner skill —
   satisfy them before Phase 3.
@@ -103,8 +99,7 @@ grep -q '"foundryvtt-initiative-tweaks"' <iac-dir>/repositories.tf && echo "gito
 gh repo view <owner>/foundryvtt-initiative-tweaks >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
 ```
 
-(Skip the `<iac-dir>` lookup when the user manages repo settings some other
-way.)
+(With no `<iac-dir>`, skip that lookup.)
 
 ## Phase 2 — Scaffold, init, and get to green
 
@@ -145,7 +140,7 @@ Everything the owner skill states that is not listed in this table applies verba
 | Owner's step | FoundryVTT value |
 |---|---|
 | Repo name | `foundryvtt-initiative-tweaks` |
-| `<iac-dir>` | The clone resolved in [Preconditions](#preconditions) — `git -C <iac-dir> …` throughout |
+| `<iac-dir>` | From [Preconditions](#preconditions); `git -C <iac-dir> …` throughout |
 | Seed commit subject | `feat: scaffold foundryvtt-initiative-tweaks (basic module)` |
 | `repositories.tf` entry | `release_please = true` and **no registry flag** — see below |
 | PR title | `feat: adopt foundryvtt-initiative-tweaks` |
