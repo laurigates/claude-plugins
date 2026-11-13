@@ -127,8 +127,9 @@ can conflict in a registration file every unit legitimately edits (`.pre-commit-
 unit's new check calls a helper another unit removed. Observed 2026-11-10: four of seven landable branches conflicted
 with each other, and two more merged cleanly and then failed tests. In a throwaway worktree
 (`git worktree add --detach <tmp> origin/main`), merge each landable branch in landing order with
-`git -C <tmp> merge --no-ff --no-edit <branch>`, stop at the first conflict, run the run's `gates`
-on the result, then `git worktree remove <tmp>`.
+`git -C <tmp> merge --no-ff --no-edit <branch>`, and stop at the first conflict with
+`git -C <tmp> merge --abort`: a conflicted merge leaves modified files that the final remove
+refuses without `--force`. Run the run's `gates` on the result, then `git worktree remove <tmp>`.
 
 **When branches conflict or break together, stack them.** Merge the base into the first branch,
 the first into the second, and so on, pushing each, so every PR's CI runs on the cumulative

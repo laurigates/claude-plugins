@@ -29,6 +29,21 @@ if [[ "$a" != "$b" ]]; then
 fi
 echo "PASS shared region identical ($(printf '%s\n' "$a" | wc -l | tr -d ' ') lines)"
 
+# 4. The trial-integration recipe aborts a conflicted merge before removing the
+#    throwaway worktree: `git worktree remove` refuses a tree holding a
+#    conflicted merge's modified files unless forced.
+skill="$here/../../SKILL.md"
+recipe="$(awk '/^\*\*Trial-integrate/,/^$/' "$skill")"
+abort='git -C <tmp> merge --abort'
+remove='git worktree remove <tmp>'
+# Offset of the first abort and of the last remove, by string slicing (no pipes under pipefail).
+before_abort="${recipe%%"$abort"*}"
+before_remove="${recipe%"$remove"*}"
+if [[ "$recipe" != *"$abort"* || "$recipe" != *"$remove"* ]] || (( ${#before_abort} > ${#before_remove} )); then
+  echo "FAIL trial-integration recipe lacks \`git -C <tmp> merge --abort\` before its final \`git worktree remove <tmp>\`"; exit 1
+fi
+echo "PASS trial-integration recipe aborts a conflicted merge before removing the worktree"
+
 status=0
 for t in implement-verify repair-round; do
   node "$here/run-template.mjs" "$wf/$t.workflow.js" || status=1
