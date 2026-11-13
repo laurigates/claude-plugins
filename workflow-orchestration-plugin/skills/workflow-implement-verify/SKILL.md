@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-10-26
 ---
 
@@ -95,8 +95,10 @@ that unit's `repo` and `root` as the run-level values.
 | `BLOCKED` / `FAILED` | the author could not proceed (including a repairer that found the branch's PR already merged or closed), or returned nothing | no |
 
 Every repair brief reads the branch's PR state first (`gh pr list --head <branch> --state all`),
-because a PR can merge while its verifier runs. On `MERGED` or `CLOSED` the repairer commits
-nothing and returns `blocked` with the PR in `blockers`, and the template skips the re-verify.
+because a PR can merge while its verifier runs. The list holds every PR ever opened from that
+branch name, so an `OPEN` entry wins over older ones on a reused name. Only when no entry is `OPEN`
+and one is `MERGED` or `CLOSED` does the repairer commit
+nothing and return `blocked` with the PR in `blockers`, and the template skips the re-verify.
 The template stops and reports rather than opening a follow-up PR: to carry the findings forward,
 pass them to the next run as a new unit cut from `base`. Observed 2026-11-10: a repairer told to
 continue on a branch whose PR had merged found the remote branch deleted and opened a second PR.

@@ -155,6 +155,11 @@ const units = (ids) =>
   const at = p.indexOf('gh pr list -R o/r --head fix/a --state all --json number,state')
   check('repair prompt reads PR state first', at !== -1 && at < p.indexOf('Work in your own worktree'), p)
   check('repair prompt: MERGED or CLOSED → blocked, no new PR', /MERGED or CLOSED[^\n]*commit nothing[^\n]*"blocked"/.test(p) && /do not open a PR/.test(p), p)
+  // --state all returns every PR ever opened from the branch name, so a reused
+  // name can list an old MERGED PR beside the OPEN one: the OPEN entry wins.
+  check('repair prompt: an OPEN entry wins over older MERGED/CLOSED ones',
+    /an OPEN entry wins/.test(p) && /no entry is OPEN and one is MERGED or CLOSED → stop/.test(p)
+      && !/^MERGED or CLOSED → stop/m.test(p), p)
 }
 // 15. A repairer that stopped on a merged PR (blocked) is BLOCKED, not re-verified, not landed.
 {
