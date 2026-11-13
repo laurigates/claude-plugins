@@ -6,7 +6,16 @@
       "id": "rdm-001",
       "description": "--check-only reports slim-shape status and changes nothing",
       "prompt": "/configure:readme --check-only — here is my entire README.md:\n\n# widget-cli\n\nA small CLI.\n\n## Installation\n\nnpm install -g widget-cli\n\nReport which parts of the slim README shape pass and which are missing. Do not change any file.",
+      "fixture": {
+        "setup": [
+          "printf \"# widget-cli\\n\\nA small CLI.\\n\\n## Installation\\n\\nnpm install -g widget-cli\\n\" > README.md"
+        ]
+      },
       "expectations": [
+        { "assertion": "Never calls Write in check-only mode (headless harness)", "check": "tool_called", "tool": "Write", "max": 0 },
+        { "assertion": "Never calls Edit in check-only mode (headless harness)", "check": "tool_called", "tool": "Edit", "max": 0 },
+        { "assertion": "README.md on disk is byte-for-byte the fixture's (headless harness)", "check": "file_regex", "path": "README.md", "pattern": "\\A# widget-cli\\n\\nA small CLI\\.\\n\\n## Installation\\n\\nnpm install -g widget-cli\\n\\Z" },
+        { "assertion": "No docs/ directory was created (headless harness)", "check": "file_exists", "path": "docs", "expect": false },
         { "assertion": "Reports the License section as missing", "check": "regex", "pattern": "(License[^\\n]{0,80}(missing|absent|not found|❌)|(missing|❌)[^\\n]{0,80}License)", "flags": "i" },
         { "assertion": "Reports the badges row as missing", "check": "regex", "pattern": "(badge[^\\n]{0,80}(missing|absent|not found|❌)|(missing|❌)[^\\n]{0,80}badge)", "flags": "i" },
         { "assertion": "Does not report the Installation section as missing", "check": "absent_regex", "pattern": "(install[^\\n]{0,40}(missing|absent|not found)|(missing|absent)[^\\n]{0,40}install)", "flags": "i" },
@@ -35,13 +44,45 @@
       "id": "rdm-004",
       "description": "--check-only flags long detail sections for moving into docs/ pages",
       "prompt": "/configure:readme --check-only — here is my entire README.md:\n\n# tool\n\nA tool.\n\n## Features\n\n- Fast\n\n## Tech Stack\n\n| Runtime | Rust |\n\n## Installation\n\ncargo install tool\n\n## Project Structure\n\nsrc/\n\n## Development\n\ncargo test\n\n## License\n\nMIT\n\nReport compliance. Do not change any file.",
+      "fixture": {
+        "setup": [
+          "printf \"# tool\\n\\nA tool.\\n\\n## Features\\n\\n- Fast\\n\\n## Tech Stack\\n\\n| Runtime | Rust |\\n\\n## Installation\\n\\ncargo install tool\\n\\n## Project Structure\\n\\nsrc/\\n\\n## Development\\n\\ncargo test\\n\\n## License\\n\\nMIT\\n\" > README.md"
+        ]
+      },
       "expectations": [
+        { "assertion": "README.md on disk still carries every detail section (headless harness)", "check": "file_regex", "path": "README.md", "pattern": "## Features\\n(.|\\n)*## Tech Stack\\n(.|\\n)*## Project Structure\\n(.|\\n)*## Development\\n" },
+        { "assertion": "No docs/ page was written in check-only mode (headless harness)", "check": "file_exists", "path": "docs", "expect": false },
         { "assertion": "Flags Features or Tech Stack for moving into a docs/ page", "check": "regex", "pattern": "(Features|Tech Stack)[^\\n]{0,120}docs/", "flags": "i" },
         { "assertion": "Names at least one destination docs/ page", "check": "regex", "pattern": "docs/(usage|architecture|development)\\.md" },
         { "assertion": "Does not claim to have written a file in check-only mode", "check": "absent_regex", "pattern": "\\bI('ve| have)? (created|wrote|written|updated|generated|rewrote|moved)\\b[^\\n]{0,40}(README|docs/)", "flags": "i" },
         "Treats the detail sections as non-compliant with the slim shape rather than reporting them as passing"
       ],
       "tags": ["check-only", "audit", "slim"]
+    },
+    {
+      "id": "rdm-005",
+      "description": "--fix writes a slim README for the detected Rust stack to disk; graded on the file the agent leaves behind (workspace checks, headless harness)",
+      "prompt": "/configure:readme --fix — write the README.md for this project.",
+      "fixture": {
+        "setup": [
+          "git init -q",
+          "git remote add origin https://github.com/acme/ferrite.git",
+          "printf \"[package]\\nname = \\\"ferrite\\\"\\nversion = \\\"0.1.0\\\"\\nedition = \\\"2021\\\"\\nlicense = \\\"MIT\\\"\\n\" > Cargo.toml",
+          "mkdir -p src",
+          "printf \"fn main() {\\n    println!(\\\"ferrite\\\");\\n}\\n\" > src/main.rs",
+          "printf \"MIT License\\n\" > LICENSE"
+        ]
+      },
+      "expectations": [
+        { "assertion": "README.md opens with the project title as the h1", "check": "file_regex", "path": "README.md", "pattern": "^#\\s+ferrite\\b", "flags": "mi" },
+        { "assertion": "README.md carries a shields.io badge row", "check": "file_regex", "path": "README.md", "pattern": "img\\.shields\\.io" },
+        { "assertion": "README.md quick start installs with cargo", "check": "file_regex", "path": "README.md", "pattern": "\\bcargo install\\b" },
+        { "assertion": "README.md has a License section", "check": "file_regex", "path": "README.md", "pattern": "^##\\s+\\W*\\s*Licen[sc]e\\b", "flags": "mi" },
+        { "assertion": "README.md uses no other ecosystem's commands", "check": "file_absent_regex", "path": "README.md", "pattern": "\\b(npm|pip|poetry|go) (install|test|build|run)\\b" },
+        { "assertion": "README.md keeps detail sections out of the slim shape", "check": "file_absent_regex", "path": "README.md", "pattern": "^##\\s+\\W*\\s*(Features|Tech Stack|Project Structure|Development|Contributing)\\b", "flags": "mi" },
+        "The README stays slim (header, short description, quick start, documentation index, licence) and any docs/ page it creates holds content rather than placeholders"
+      ],
+      "tags": ["generate", "rust", "headless", "workspace"]
     },
     {
       "id": "rdm-003",

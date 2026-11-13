@@ -37,15 +37,18 @@ assert "A STATUS=OK" "$(has "$out" 'STATUS=OK')"
 ready="$(val "$out" CANARIES_EVAL_READY)"
 # The ratchet (#2144): seven suites landed beside git-commit's. Lowering the
 # floor or deleting a suite must turn this red, not just the monthly sweep.
-assert "A at least 8 canaries are eval-ready" "$(ge "$ready" 8)"
-assert "A the declared floor is at least 8" "$(ge "$(val "$out" COVERAGE_FLOOR)" 8)"
+# docs-generate's suite made it ten (#2917).
+assert "A at least 10 canaries are eval-ready" "$(ge "$ready" 10)"
+assert "A the declared floor is at least 10" "$(ge "$(val "$out" COVERAGE_FLOOR)" 10)"
 # Non-vacuity: every ready suite validated, and probes actually ran.
 assert "A every ready suite validated" "$([ "$(val "$out" SUITES_VALID)" = "$ready" ] && echo true || echo false)"
 assert "A ran at least two probes per suite" "$(ge "$(val "$out" PROBES_RUN)" $((ready * 2)))"
 assert "A carries at least 7 abstention cases" "$(ge "$(val "$out" ABSTAIN_CASES)" 7)"
 # The headless-harness cases (gc-006's command_ran, gc-007's trace/workspace
-# checks) are probed with real inputs, so they are graded, not deferred.
-assert "A at least 2 cases carry trace/workspace checks" "$(ge "$(val "$out" HEADLESS_CASES)" 2)"
+# checks, and the file generators' workspace checks: configure-readme rdm-001,
+# rdm-004, rdm-005 and docs-generate dg-001..dg-003, #2917) are probed with
+# real inputs, so they are graded, not deferred.
+assert "A at least 8 cases carry trace/workspace checks" "$(ge "$(val "$out" HEADLESS_CASES)" 8)"
 # git-commit's abstention case is probed now: nothing is exempt any more.
 assert "A no suite is exempt from the abstention probe" "$([ -z "$(val "$out" ABSTAIN_PROBE_EXEMPT)" ] && echo true || echo false)"
 

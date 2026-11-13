@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "harness": "claude-code",
+  "harness_version": "2.1.289",
+  "model_id": "claude-haiku-4-5-20251001",
+  "session_id": "00000000-0000-4000-8000-000000000502",
+  "cwd": "/tmp/eval-wd.F1x7q",
+  "permission_mode": "bypassPermissions",
+  "plugins_loaded": [
+    {
+      "name": "configure-plugin",
+      "path": "/home/user/claude-plugins/configure-plugin",
+      "source": "configure-plugin@inline",
+      "version": "0.0.0"
+    }
+  ],
+  "skills_available": [
+    "configure-plugin:configure-readme"
+  ],
+  "skills_invoked": [
+    {
+      "skill": "configure-plugin:configure-readme",
+      "args": "--check-only",
+      "turn": 1,
+      "tool_use_id": "toolu_r1_skill",
+      "denied": false,
+      "is_error": false
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 1,
+      "tool_use_id": "toolu_r1_skill",
+      "name": "Skill",
+      "input_summary": "configure-plugin:configure-readme",
+      "input": {
+        "skill": "configure-plugin:configure-readme",
+        "args": "--check-only"
+      },
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "toolu_r1_read",
+      "name": "Read",
+      "input_summary": "README.md",
+      "input": {
+        "file_path": "README.md"
+      },
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "toolu_r1_find",
+      "name": "Bash",
+      "input_summary": "find . -maxdepth 2 -path ./docs/*.md",
+      "input": {
+        "command": "find . -maxdepth 2 -path './docs/*.md'",
+        "description": "List docs pages"
+      },
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "toolu_r1_write",
+      "name": "Write",
+      "input_summary": "README.md",
+      "input": {
+        "file_path": "README.md",
+        "content": "# widget-cli\n\nA small CLI.\n\n## License\n\nMIT\n"
+      },
+      "is_error": false,
+      "denied": false
+    }
+  ],
+  "bash_commands": [
+    {
+      "turn": 3,
+      "command": "find . -maxdepth 2 -path './docs/*.md'",
+      "is_error": false,
+      "denied": false
+    }
+  ],
+  "files_written": [
+    "README.md"
+  ],
+  "permission_denied": [],
+  "hooks_fired": [],
+  "num_turns": 5,
+  "cost_usd": 0.02,
+  "usage": {
+    "input_tokens": 1200,
+    "output_tokens": 340,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "duration_ms": 9100,
+  "duration_api_ms": 8200,
+  "final_text": "I've updated README.md with the missing sections.",
+  "stop_reason": "completed",
+  "is_error": false,
+  "parse_warnings": {
+    "malformed_lines": 0,
+    "missing_init": false,
+    "missing_result": false
+  }
+}

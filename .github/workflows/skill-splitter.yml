@@ -340,6 +340,25 @@ jobs:
             echo "::error::Split commits touched paths outside the selected skills: $out_of_scope"
             exit 1
           fi
+          # Nothing may be lost in the move (#3016): across each selected skill
+          # directory's markdown, every line of the pre-split revision must
+          # survive at HEAD, every heading text must survive as a heading, and
+          # the only tolerated rewrite is a direction pointer turned into a link.
+          # The scope check above reads only committed changes, and the split
+          # step holds unrestricted Write/Edit, so the working-tree copy of the
+          # checker may have been edited without a commit. Run the pre-split
+          # revision's copy instead, from outside the checkout, with python3 -I
+          # so nothing in the working tree is imported.
+          checker="$RUNNER_TEMP/check-split-content-preservation.py"
+          git show "$PRE_SHA:scripts/check-split-content-preservation.py" > "$checker"
+          dir_args=()
+          while IFS= read -r d; do
+            [ -n "$d" ] && dir_args+=("$d")
+          done <<<"$dirs"
+          if ! python3 -I "$checker" --base "$PRE_SHA" --head HEAD "${dir_args[@]}"; then
+            echo "::error::Split commits lost content from the skills they split; the ISSUES rows above name each missing line"
+            exit 1
+          fi
 
           git push origin "HEAD:refs/heads/${SPLIT_BRANCH}"
           echo "split_branch=${SPLIT_BRANCH}" >> "$GITHUB_OUTPUT"
