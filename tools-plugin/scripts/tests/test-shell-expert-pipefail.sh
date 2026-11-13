@@ -112,6 +112,7 @@ section_code=$(awk '/^```/ { in_fence = !in_fence; next } in_fence { print }' <<
 # Whitespace after <<< and the quotes are both optional in bash, and every
 # spelling loses the producer's status, so the pattern accepts all of them.
 inline_re='^[^#]*grep -[A-Za-z]*q[A-Za-z]* [^#]*<<<[[:space:]]*"?\$\('
+# shellcheck disable=SC2016  # the fixtures are literal shell text, not expanded here
 inline_fixtures='grep -q ready <<<"$(cmd)"
 grep -Fxq "$1" <<< "$(cmd)"
 grep -q ready <<<$(cmd)'

@@ -509,8 +509,8 @@ returns the command's status, so at top level `set -e` stops the script there.
 That stop only happens where errexit is active. Bash suspends `set -e` inside
 a function called from `if`, `while`, `until`, `!`, or the left side of `&&` or
 `||`, so a failed capture in `exists()` falls through to the grep and still
-reads as "absent". Check the status on the assignment itself, as `exists()`
-does in the block above, and declare the variable with `local` on its own line:
+reads as "absent". Check the status on the assignment itself, as the
+`exists()` example in this section does, and declare the variable with `local` on its own line:
 `local names=$(cmd)` returns the status of `local`, which is 0. Capture inside
 the function rather than once at the top of the script: a script that creates,
 renames or deletes the things it tests for would otherwise test against a list
