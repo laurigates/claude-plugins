@@ -12,10 +12,12 @@
 # Guards:
 #   A. the mechanism the skill documents still holds in this bash: the pipe
 #      form reads a present value as absent, the capture form reads it present
-#   B. `<<<"$(cmd)"` loses cmd's status; `out=$(cmd)` keeps it
+#   B. `<<<"$(cmd)"` loses cmd's status; `out=$(cmd)` keeps it; set -e does
+#      not act on it inside a function called from `if`, an explicit check does
 #   C. REFERENCE.md's pipefail section prescribes the assignment capture form,
-#      says the inline substitution loses the producer's status, and no longer
-#      offers `<<<"$(...)"` as a right form
+#      says the inline substitution loses the producer's status, no longer
+#      offers `<<<"$(...)"` as a right form, states the errexit-suspension
+#      limit, and shows a capture with an explicit status check
 #   D. SKILL.md's pipefail guideline names the assignment capture form
 set -uo pipefail
 
@@ -70,6 +72,22 @@ assign_status=$?
 assert "B2: out=\$(cmd) keeps cmd's status (got $assign_status, output '$captured')" \
   "$([ "$assign_status" -eq 3 ] && echo true || echo false)"
 
+# A function called from `if` runs with set -e suspended, so a failed capture
+# inside it does not stop the script; an explicit check on the assignment does.
+# shellcheck disable=SC2016  # the scripts are run by the child bash, not expanded here
+suspended=$(bash -c 'set -euo pipefail
+  f() { local out; out=$(echo partial; exit 3); echo continued; grep -q x <<<"$out"; }
+  if f; then echo present; else echo absent; fi' 2>/dev/null)
+assert "B3: set -e is suspended in a function called from if (got '$(tr '\n' ' ' <<<"$suspended")')" \
+  "$([ "$suspended" = "$(printf 'continued\nabsent')" ] && echo true || echo false)"
+# shellcheck disable=SC2016
+checked=$(bash -c 'set -euo pipefail
+  f() { local out; out=$(echo partial; exit 3) || exit 1; grep -q x <<<"$out"; }
+  if f; then echo present; else echo absent; fi' 2>/dev/null)
+checked_status=$?
+assert "B4: an explicit check on the capture stops the script (got status $checked_status, output '$checked')" \
+  "$([ "$checked_status" -eq 1 ] && [ -z "$checked" ] && echo true || echo false)"
+
 # --- C. REFERENCE.md -------------------------------------------------------
 section=$(awk '
   /^### `pipefail` and readers that exit early/ { in_section = 1; print; next }
@@ -94,6 +112,11 @@ section_code=$(awk '/^```/ { in_fence = !in_fence; next } in_fence { print }' <<
 inline_right=$(grep -E '^[^#]*grep -[A-Za-z]*q[A-Za-z]* [^#]*<<<"\$\(' <<<"$section_code" || true)
 assert "C5: section offers no grep -q <<<\"\$(cmd)\" form as code (found: ${inline_right:-none})" \
   "$([ -z "$inline_right" ] && echo true || echo false)"
+# shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution
+assert "C6: section says set -e is suspended in a function called from if/||" \
+  "$(grep -qi 'suspends `set -e` inside a function' <<<"$(tr '\n' ' ' <<<"$section")" && echo true || echo false)"
+assert "C7: a code example checks the capture's status on the assignment (VAR=\$(cmd) || ...)" \
+  "$(grep -Eq '^[^#]*[A-Za-z_][A-Za-z0-9_]*=\$\(.*\)[[:space:]]*\|\|' <<<"$section_code" && echo true || echo false)"
 
 # --- D. SKILL.md -----------------------------------------------------------
 # shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution
