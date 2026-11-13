@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-23
+modified: 2026-11-13
 reviewed: 2026-07-04
 ---
 
@@ -53,6 +53,11 @@ Cheap mechanical exit conditions (a green test suite, a clean `tsc`, exit code
 The independent-verifier requirement bites when "done" is a judgement
 ("the class is now single-purpose", "the docs are accurate"): that judgement
 must come from outside the worker.
+
+A reciprocal pair (A verifies B, B verifies A, round after round) is not this
+independence: in arXiv 2609.24967, such pairs drifted off the verification
+protocol in 94% of trajectories across 10 models once compliance conflicted with
+reward. Start a fresh verifier for each iteration instead of reusing one.
 
 ## Pillar 2 — every iteration leaves a compact state packet
 

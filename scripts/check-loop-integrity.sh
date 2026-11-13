@@ -63,7 +63,9 @@ require "$RULE" "compact state packet" "Pillar 2 (state packet) dropped from the
 require "$RULE" "Verifier result" "state-packet field list dropped from the rule"
 require "$RULE" "Ordering / preconditions" "state packet lost the ordering field (successor acts out of order) (#2693)"
 require "$RULE" "Next target" "state packet lost the next-target field (successor re-derives target selection) (#2693)"
-
+# Research radar W39 (#2767): a reciprocal verifier pair drifts off the protocol
+# over repeated rounds, so mutual checking is not Pillar 1 independence.
+require "$RULE" "reciprocal" "Pillar 1 lost the reciprocal-verifier caveat (re-instantiate the verifier per iteration) (#2767)"
 # Checkpoint skill — the plan file IS the state packet; gate stays independent.
 require "$CHECKPOINT" "Verifier result" "checkpoint plan format lost the Verifier-result field (reverts to self-judged done)"
 require "$CHECKPOINT" "Changed since last run" "checkpoint plan format lost the changed-since field (resume redoes/undoes work)"
