@@ -43,8 +43,11 @@ In one 2026-11 diet the approval table summed to about 8K, and the diff counted
 `git diff | rg '^-[^-]' | wc -c` and `git diff | rg '^\+[^+]' | wc -c`, so they
 include one diff-marker byte per line and skip blank lines. The removal pattern
 also skips every removed line that starts with `-`, such as a Markdown bullet,
-while the addition pattern counts added bullets, so 6,162 is a lower bound on
-the bytes removed. The gap therefore splits only as an estimate: up to about
+while the addition pattern counts added bullets. The marker bytes push the
+removal count up and the skipped lines push it down, so 6,162 is a lower bound
+on the bytes removed only if the skipped bullet and blank lines outweigh one
+byte per counted line; that diff was not re-read to check. The gap therefore
+splits only as an estimate: up to about
 1.8K of the approved size was never deleted, and the 2,483 added bytes were
 residual pointer and invariant text that the estimate did not subtract.
 
