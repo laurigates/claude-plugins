@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.30.0...code-quality-plugin-v1.30.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** skip preflight cue on version-only manifest edits ([#3636](https://github.com/laurigates/claude-plugins/issues/3636)) ([b3d7454](https://github.com/laurigates/claude-plugins/commit/b3d7454bc1f5f7b6a74132fc0fdff7e26af47ca6))
+
 ## [1.30.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.29.0...code-quality-plugin-v1.30.0) (2026-11-07)
 
 

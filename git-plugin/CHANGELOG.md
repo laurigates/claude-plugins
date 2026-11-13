@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.74.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.3...git-plugin-v2.74.0) (2026-11-13)
+
+
+### Features
+
+* **git-plugin:** apply five session-feedback fixes to git-plugin skills ([#3632](https://github.com/laurigates/claude-plugins/issues/3632)) ([532637e](https://github.com/laurigates/claude-plugins/commit/532637e0077e593716a617dd616e51b85f745896))
+
 ## [2.73.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.2...git-plugin-v2.73.3) (2026-11-11)
 
 

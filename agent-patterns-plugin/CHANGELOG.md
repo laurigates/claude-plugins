@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.4...agent-patterns-plugin-v2.57.5) (2026-11-13)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** session-feedback fixes for tool-result-traps, meta-context-diet and multi-model-delegation ([#3637](https://github.com/laurigates/claude-plugins/issues/3637)) ([9c9031f](https://github.com/laurigates/claude-plugins/commit/9c9031fe97654c5caaa4f02ed88b852f2757e37e))
+
 ## [2.57.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.3...agent-patterns-plugin-v2.57.4) (2026-11-10)
 
 

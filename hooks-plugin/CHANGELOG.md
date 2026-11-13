@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.21.0...hooks-plugin-v2.22.0) (2026-11-13)
+
+
+### Features
+
+* **hooks-plugin:** fix merge-guard lookup errors and extend secret-protection and bare-declaration coverage ([#3633](https://github.com/laurigates/claude-plugins/issues/3633)) ([3981535](https://github.com/laurigates/claude-plugins/commit/398153527619bcb6b2f197bf6363d66ba3d8c94c))
+
 ## [2.21.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.20.2...hooks-plugin-v2.21.0) (2026-11-12)
 
 
