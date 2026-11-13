@@ -199,16 +199,32 @@ cq_is_structural=0
 
 # Signal 1: key manifest basenames — except a version-only Edit (issue #3627).
 # An Edit is version-only when old and new strings are identical after each
-# version token is replaced by `V`. A version token is a dotted number with an
-# optional `-prerelease` tail (`1.1.5`, `2.0.0-rc.1`), or a bare number right
-# after `"`, `^`, `~`, `<`, `>` or `=` (`"1"`, `^2`, `>=3`). So a pin or
-# constraint bump (`=1.1.5` -> `=1.1.6`, `>=3.9` -> `>=3.12`) is silent; a bare
-# number such as `"port": 3000`, or a dot removed from a non-version token
-# (`index.js` -> `indexjs`), still fires. code-lint has no manifest linter, so
-# a version-only edit has nothing to pre-flight. A Write, or an Edit with no
-# old_string, still fires — there is nothing to compare against.
+# version token is replaced by `V`. A version token is:
+#   - a two- or three-part dotted number with an optional `-prerelease` tail
+#     (`1.1`, `1.1.5`, `2.0.0-rc.1`); a run of four or more parts is an
+#     address such as `127.0.0.1`, so it is protected first and never masked;
+#   - a bare number after `^`, `~`, `<`, `>`, or a two-character operator
+#     ending in `=` (`==`, `>=`, `<=`, `!=`, `~=`), or after `"=` (`"=1"`);
+#     a lone `=` after a word (`--port=3000`, `--maxWorkers=2`) is not one;
+#   - a quoted string that is a number of at most three digits (`"1"`, `"20"`);
+#     a longer one (`"3000"`) reads as a port or a count, not a major version.
+# So a pin or constraint bump (`=1.1.5` -> `=1.1.6`, `>=3.9` -> `>=3.12`,
+# `serde = "1"` -> `"2"`) is silent; `"port": 3000` or `"3000"`, a CLI flag
+# value, an IP address, or a dot removed from a non-version token
+# (`index.js` -> `indexjs`) still fires (#3642). Residual: a quoted number of
+# up to three digits outside a version field (`"80"` -> `"81"`) stays silent.
+# code-lint has no manifest linter, so a version-only edit has nothing to
+# pre-flight. A Write, or an Edit with no old_string, still fires — there is
+# nothing to compare against.
 cq_mask_versions() {
-    printf '%s' "$1" | sed -E 's/[0-9]+(\.[0-9]+)+(-[0-9A-Za-z.]+)?/V/g; s/(["^~<>=])[0-9]+/\1V/g'
+    # Protect each dot of a 4+-part run as `@@` (the first rule takes four
+    # parts, the loop the rest), then mask.
+    printf '%s' "$1" | sed -E \
+        -e 's/([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)/\1@@\2@@\3@@\4/g' \
+        -e ':a' -e 's/(@@[0-9]+)\.([0-9])/\1@@\2/' -e 'ta' \
+        -e 's/[0-9]+(\.[0-9]+){1,2}(-[0-9A-Za-z.]+)?/V/g' \
+        -e 's/([~^<>]|[=<>!~]=|"=)[0-9]+/\1V/g' \
+        -e 's/"[0-9]{1,3}"/"V"/g'
 }
 case "$cq_base_name" in
     plugin.json|marketplace.json|package.json|Cargo.toml|pyproject.toml)

@@ -49,6 +49,11 @@ before() {
         notok "$1: '$3' (line ${a:-none}) must precede '$4' (line ${b:-none})"
 }
 
+# lacks <label> <text> <fixed-string> — <text> does not contain <fixed-string>.
+lacks() {
+    grep -qF -- "$3" <<<"$2" && notok "$1: still contains '$3'" || ok "$1"
+}
+
 echo "=== #3628 git-issue --auto: already-implemented check before scoring ==="
 modes="${SKILLS}/git-issue/references/selection-modes.md"
 auto=$(section "$modes" "### Auto Mode")
@@ -80,10 +85,15 @@ has "Why Conflicts Occur links the stuck-PR reference" "$(section "${rppw_dir}/S
 rppw=$(cat "${rppw_dir}/references/stuck-conflicting.md" 2>/dev/null)
 has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
 has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
-# The Recovery section moved verbatim to troubleshooting.md to make room for the
+# The Recovery section moved to troubleshooting.md to make room for the
 # generic-updater link (finding G2); the body still points at it.
 has "the untagged-PR failure links the moved Recovery section" "$(section "${rpc}/SKILL.md" "### Common Failure: Merged Release PR Never Tagged")" "troubleshooting.md#recovery-unwedge-an-already-merged-untagged-pr"
 has "troubleshooting.md carries the Recovery section" "$(section "${rpc}/references/troubleshooting.md" "### Recovery: Unwedge")" '--add-label "autorelease: tagged" --remove-label "autorelease: pending"'
+# The moved Recovery section opens with a new paragraph pointing back at the
+# cause, so the header must not call the move verbatim (#3642).
+ts_intro=$(head -5 "${rpc}/references/troubleshooting.md")
+lacks "troubleshooting.md does not call the moved text verbatim" "$ts_intro" "verbatim"
+has "troubleshooting.md says the Recovery section gained a pointer" "$ts_intro" "pointer to the cause"
 rppw_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${rppw_dir}/SKILL.md")
 [ "$rppw_chars" -le 10000 ] && ok "release-please-pr-workflow SKILL.md is within the 10,000-char WARN line" ||
     notok "release-please-pr-workflow SKILL.md is ${rppw_chars} chars, over the 10,000-char WARN line"
@@ -174,6 +184,16 @@ has "the working form filters author.login with jq" "$bots" ".author.login"
 before "the jq filter is prescribed before --app is mentioned" "$bots" ".author.is_bot and" "--app"
 has "--app is named as the same filter as --author" "$bots" "it is the same filter"
 has "the --app claim cites gh's source" "$bots" "pkg/cmd/issue/list/list.go"
+# The createdBy path is gh's plain listing only: with --search, --label or
+# --milestone, issueList() calls searchIssues() and the author becomes an
+# `author:` search qualifier (list.go, v2.89.0). The text must scope the
+# createdBy claim to that path and say the search path was not tested (#3642).
+has "the createdBy claim names the flags that leave the plain path" "$bots" "--label"
+has "the createdBy claim names the search-API path" "$bots" "author:\` search qualifier"
+has "the search path is marked as not tested" "$bots" "was not tested"
+# No gh command in the section was run against a repository when it was
+# written; the jq filter is one of them (#3642).
+has "the jq filter is marked as not run" "$bots" "nor was the jq filter"
 has "the jq filter names its list cap" "$bots" "past that cap"
 gli=$(section "${gca}/SKILL.md" "### List Issues")
 has "SKILL.md List Issues prescribes the jq filter" "$gli" ".author.login"

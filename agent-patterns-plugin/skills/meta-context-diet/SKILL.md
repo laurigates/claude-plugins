@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-11-12
+modified: 2026-11-13
 compatibility: claude-code
 reviewed: 2026-07-08
 allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -91,7 +91,7 @@ For each candidate, present:
 4. The **estimated net saving**: bytes leaving the always-loaded file minus the residual text drafted to stay behind (the kept invariant, the pointer line, the stub). Draft the residual before you estimate. The moved size alone overstates it; [report-format.md](references/report-format.md#6-report) has a worked example.
 5. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
 
-Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
+Only proceed on explicit approval. Order the prompts by impact (largest always-loaded byte count first) so the biggest wins surface early.
 
 The confirmation shape depends on **how lossy the disposition is** (why: [batch-approval.md](references/batch-approval.md#why-the-tiers-confirm-differently)):
 

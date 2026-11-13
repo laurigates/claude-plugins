@@ -1154,6 +1154,28 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Verifier findings left on #3637 (#3642): (a) the rg count also adds one
+      # marker byte per counted line, so 6,162 is a lower bound only if the
+      # skipped bullet and blank lines outweigh those bytes, which depends on a
+      # diff that was not re-read — the text must state the condition, not the
+      # bound; (b) the split must stay labelled an estimate and the counts
+      # bytes; (c) SKILL.md orders prompts by a byte count, since Step 1
+      # measures with wc -c, not a char count.
+      mcd_report_flat=$(tr '\n' ' ' < "$mcd_dir/references/report-format.md" 2>/dev/null)
+      for token in 'only if' 'was not re-read' 'only as an estimate' '6,162 bytes removed'; do
+        if ! grep -qF "$token" <<<"$mcd_report_flat"; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (the lower bound is conditional on a diff not re-read; the split is an estimate; the counts are bytes — issue #3642)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'is a lower bound on the bytes removed.' <<<"$mcd_report_flat"; then
+        issues+=("❌ ${plugin}/${skill_name}: references/report-format.md asserts 6,162 is a lower bound; the marker bytes the rg count adds make that conditional (issue #3642)")
+        has_errors=true
+      fi
+      if grep -qF 'char count' "$skill_file" || ! grep -qF 'byte count' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must order prompts by the always-loaded byte count that wc -c measures, not a char count (issue #3642)")
+        has_errors=true
+      fi
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision
