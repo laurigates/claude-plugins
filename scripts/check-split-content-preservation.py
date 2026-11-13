@@ -23,10 +23,18 @@ at --base with the same directory at --head:
     the move either way.
   * One tolerated rewrite: the splitter prompt tells the model to replace
     direction pointers ("see the table above") with a named anchor or a file
-    link. A missing base line that contains a direction word is accepted when
-    some line added at the head is at least REWRITE_MIN_RATIO similar to it
-    (difflib ratio); each added line can account for one rewrite. Such lines
-    are counted in LINES_REWRITTEN. Any other changed line is an error.
+    link, changing only the pointer words. A missing base line that contains a
+    direction word is accepted when some line added at the head differs from
+    it only in the pointer (is_pointer_rewrite):
+      - the added line carries at least one markdown link the base line lacks;
+      - with those new links masked, a token diff of the two lines removes only
+        POINTER_WORDS, words that appear in a new link's text, and
+        POINTER_PUNCT, and adds only new links, POINTER_WORDS and POINTER_PUNCT.
+    So "Requires Node 18 or later" -> "Requires Node 16 or later" and "The
+    following flags are mandatory" -> "... optional" are errors even though
+    each line contains a direction word. Each added line can account for one
+    rewrite. Such lines are counted in LINES_REWRITTEN. Any other changed line
+    is an error.
 
 New lines at the head (the link lines, the reference-file title) are allowed.
 
@@ -56,7 +64,27 @@ DIRECTION_RE = re.compile(
     r"\b(above|below|earlier|previous(?:ly)?|preceding|following|later|inline|here|this page)\b",
     re.IGNORECASE,
 )
-REWRITE_MIN_RATIO = 0.5
+# Words a pointer rewrite may remove or add outside a link: the direction words
+# themselves and the nouns and articles that phrase a pointer ("see the table
+# above", "the preceding section", "the [X](#x) table").
+POINTER_WORDS = frozenset(
+    {
+        # direction words
+        "above", "below", "earlier", "previous", "previously", "preceding",
+        "following", "later", "inline", "here", "this", "page",
+        # how a pointer is phrased
+        "see", "the", "a", "an", "that", "these", "those", "in", "at", "of", "on",
+        # what a pointer names
+        "table", "tables", "section", "sections", "list", "step", "steps",
+        "example", "examples", "file", "files", "reference", "references",
+        "block", "snippet", "heading", "code", "fence",
+    }
+)  # fmt: skip
+# Punctuation a pointer rewrite may drop or add around the link ("(see above)").
+POINTER_PUNCT = frozenset(",.;:()-—–")
+LINK_RE = re.compile(r"\[([^\]\n]*)\]\(([^)\s]*)\)")
+TOKEN_RE = re.compile(r"\x00|[\w`'#/*-]+(?:[.:][\w`'#/*-]+)*|\S")
+LINK_TOKEN = "\x00"
 MSG_MAX = 160
 REASON_MAX = 180
 SECTION = "SPLIT CONTENT PRESERVATION"
@@ -111,6 +139,46 @@ def collect(rev: str, skill_dir: str) -> tuple[Counter, dict, int]:
     return counts, where, len(files)
 
 
+def tokens(text: str) -> list[str]:
+    return TOKEN_RE.findall(text)
+
+
+def is_pointer_rewrite(base_line: str, added_line: str) -> bool:
+    """True when added_line is base_line with only its pointer changed.
+
+    The added line must carry a markdown link that base_line lacks. With each
+    such link masked to one placeholder token, the token diff may remove only
+    pointer words, words of a new link's text, and pointer punctuation, and add
+    only placeholders, pointer words, and pointer punctuation. Anything else,
+    such as a changed number, a negation, or a swapped adjective, is content.
+    """
+    base_links = {m.group(0) for m in LINK_RE.finditer(base_line)}
+    new_links = [
+        m for m in LINK_RE.finditer(added_line) if m.group(0) not in base_links
+    ]
+    if not new_links:
+        return False
+    link_words = {t.lower() for m in new_links for t in tokens(m.group(1))}
+    masked = LINK_RE.sub(
+        lambda m: m.group(0) if m.group(0) in base_links else LINK_TOKEN, added_line
+    )
+    old, new = tokens(base_line), tokens(masked)
+    matcher = difflib.SequenceMatcher(None, old, new, autojunk=False)
+    for op, i1, i2, j1, j2 in matcher.get_opcodes():
+        if op == "equal":
+            continue
+        for t in old[i1:i2]:
+            low = t.lower()
+            if not (low in POINTER_WORDS or low in link_words or t in POINTER_PUNCT):
+                return False
+        for t in new[j1:j2]:
+            if not (
+                t == LINK_TOKEN or t.lower() in POINTER_WORDS or t in POINTER_PUNCT
+            ):
+                return False
+    return True
+
+
 def one_line(text: str, limit: int) -> str:
     text = " ".join(text.split())
     return text if len(text) <= limit else text[: limit - 3] + "..."
@@ -141,16 +209,11 @@ def check_skill(base: str, head: str, skill_dir: str) -> tuple[list[dict], dict]
         kind, text = k
         count = missing[k]
         if kind == "l" and DIRECTION_RE.search(text):
-            while count and added:
-                best = max(
-                    added, key=lambda a: difflib.SequenceMatcher(None, text, a).ratio()
-                )
-                if (
-                    difflib.SequenceMatcher(None, text, best).ratio()
-                    < REWRITE_MIN_RATIO
-                ):
+            while count:
+                match = next((a for a in added if is_pointer_rewrite(text, a)), None)
+                if match is None:
                     break
-                added.remove(best)
+                added.remove(match)
                 stats["rewritten"] += 1
                 count -= 1
         if count == 0:

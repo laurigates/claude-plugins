@@ -15,8 +15,10 @@
 # non-blank line of the base revision is still present at the head (as a
 # multiset), and every heading text survives as a heading at some level. The
 # one tolerated change is a line that carried a direction word ("see the table
-# above") and was rewritten into a near-identical line, which is what the
-# splitter prompt tells the model to do.
+# above") and whose pointer, and nothing else, was replaced by a new markdown
+# link, which is what the splitter prompt tells the model to do. A line that
+# merely contains a direction word ("Requires Node 18 or later") gets no
+# tolerance for a change of content, however textually close the new line is.
 #
 # Guards:
 #   A. a faithful split (section moved to references/, link line added) is OK
@@ -32,6 +34,14 @@
 #   K. failing and passing output satisfy the structured-output contract
 #   L. the workflow runs the check before it publishes, against $PRE_SHA
 #   M. a missing --base or skill dir is a usage error (exit 2)
+#   N. a content change in a line with a direction word is ERROR, including a
+#      change that also adds a link (number, negation, adjective, dropped or
+#      added qualifier)
+#   O. a direction-word line replaced by a dissimilar line is ERROR
+#   P. one added line cannot account for two rewrites (COUNT=1 left over)
+#   Q. the pointer rewrites the prompt asks for (anchor, file link, link text
+#      reusing the line's own words) are OK and counted
+#   R. a pointer dropped with no link in its place is ERROR
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L can be shown
 # red against the pre-#3016 file.
@@ -228,6 +238,86 @@ if [ -n "$lines_checked" ] && [ "$lines_checked" -gt 10 ] 2>/dev/null; then ok "
 out=$(run "$r" --base "$base" "a-plugin/skills/nope"); rc=$?
 assert_eq "J unknown skill exits 1" "$rc" "1"
 assert_has "J names skill_not_found" "$out" "TYPE=skill_not_found"
+
+# rewrite_probe <name> <base line> <head line> [<head line 2>]: a repo whose
+# base SKILL.md ends with <base line>, then a head where that appended line is
+# replaced by the head line(s). Literal replacement, so no sed escaping is
+# involved. PROBE_DROP_EARLIER=1 also deletes earlier copies of <base line>.
+rewrite_probe() {
+  local r base_line="$2"
+  r=$(new_repo "$1")
+  printf '\n%s\n' "$base_line" >> "$r/$SKILL/SKILL.md"
+  git -C "$r" add -A && git -C "$r" commit -q -m "probe base"
+  shift 2
+  python3 - "$r/$SKILL/SKILL.md" "$base_line" "$@" <<'PY'
+import os, sys
+p, old, *new = sys.argv[1:]
+text = open(p, encoding="utf-8").read()
+head, sep, tail = text.rpartition("\n" + old + "\n")
+assert sep, old
+if os.environ.get("PROBE_DROP_EARLIER") == "1":
+    head = "\n".join(l for l in head.split("\n") if l != old)
+open(p, "w", encoding="utf-8").write(head + "\n" + "".join(n + "\n" for n in new) + tail)
+PY
+  commit "$r"
+  printf '%s\n' "$r"
+}
+
+# --- N: a content change inside a line that carries a direction word ---------
+# DIRECTION_RE matches common words (later, here, following). The rewrite
+# tolerance must not let a change of meaning through just because the changed
+# line contains one of them and the new line is textually close.
+n=0
+while IFS='|' read -r before after; do
+  n=$((n + 1))
+  r=$(rewrite_probe "n$n" "$before" "$after")
+  out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
+  assert_eq "N$n content change exits 1: $before" "$rc" "1"
+  assert_has "N$n names the original line" "$out" "MSG=$before"
+  assert_eq "N$n nothing counted as rewritten" "$(val "$out" LINES_REWRITTEN)" "0"
+done <<'CASES'
+Requires Node 18 or later.|Requires Node 16 or later.
+Never run `deploy --force` here in production.|Always run `deploy --force` here in production.
+The following flags are mandatory.|The following flags are optional.
+Requires Node 18 or later.|Requires Node 16 or [later](#later).
+Use the flags below only on a scratch tree.|Use the [flags](#flags) on a scratch tree.
+Pin the version shown above before you deploy.|Pin the version shown in [Versions](#versions) only before you deploy.
+CASES
+
+# --- O: a direction-word line replaced by a dissimilar line ------------------
+r=$(rewrite_probe o "Pin the version shown above before you deploy." "Deploying is optional.")
+out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
+assert_eq "O dissimilar replacement exits 1" "$rc" "1"
+assert_has "O names the original line" "$out" "MSG=Pin the version shown above before you deploy."
+
+# --- P: one added line cannot account for two rewrites -----------------------
+# The base carries the pointer line twice (once from new_repo, once appended);
+# the head rewrites it once and drops the other copy.
+r=$(PROBE_DROP_EARLIER=1 rewrite_probe p "See the table above for every flag." "See the [Full flag reference](#full-flag-reference) table for every flag.")
+out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
+assert_eq "P two rewrites into one added line exits 1" "$rc" "1"
+assert_has "P reports the unabsorbed copy" "$out" "COUNT=1 MSG=See the table above for every flag."
+assert_eq "P exactly one rewrite counted" "$(val "$out" LINES_REWRITTEN)" "1"
+
+# --- Q: pointer rewrites the splitter prompt asks for stay tolerated ---------
+q=0
+while IFS='|' read -r before after; do
+  q=$((q + 1))
+  r=$(rewrite_probe "q$q" "$before" "$after")
+  out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
+  assert_eq "Q$q pointer rewrite exits 0: $after" "$rc" "0"
+  assert_eq "Q$q counted as rewritten" "$(val "$out" LINES_REWRITTEN)" "1"
+done <<'CASES'
+See the Kill switches table above.|See the [Kill switches](#kill-switches) table.
+The table below lists every exit code.|[references/exit-codes.md](references/exit-codes.md) lists every exit code.
+Use the preceding section's flags (see above).|Use the [Flags](#flags) section's flags (see [Flags](#flags)).
+The following flags are mandatory.|The [flags](#flags) are mandatory.
+CASES
+
+# --- R: a pointer dropped without a link in its place ------------------------
+r=$(rewrite_probe r "Pin the version shown above before you deploy." "Pin the version shown before you deploy.")
+out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
+assert_eq "R pointer dropped with no link exits 1" "$rc" "1"
 
 # --- K: structured-output contract -------------------------------------------
 if printf '%s\n' "$fail_out" | bash "$contract" --validate - >/dev/null 2>&1; then ok "K failing output meets the contract"; else ko "K failing output meets the contract" "$(printf '%s\n' "$fail_out" | bash "$contract" --validate - 2>&1)"; fi
