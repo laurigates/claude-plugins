@@ -303,6 +303,38 @@ m_case letters '0e8a16' clean
 m_case alldigits '123456' clean
 m_case garbage 'zzzzzz' flagged
 
+# --- TEST N: the agent-issue publisher is an attach site (#2769) --------------
+# Once a Claude step writes its body to a file, the labels are attached by the
+# bash step running scripts/publish-agent-issue.sh. Its `--label` has the same
+# shape as gh's, and the guard must keep pairing it with provisioning, or every
+# converted workflow drops out of this check.
+echo "=== TEST N: publish-agent-issue.sh --label is an attach site ==="
+d="$(mkwf n 'on: push
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          bash scripts/publish-agent-issue.sh --repo "$GITHUB_REPOSITORY" \
+            --title x --body-file b.md \
+            --label "agentic-audit,maintenance"')"
+out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+assert "N unprovisioned publisher label exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "N names the label" "$(contains "$out" 'LABEL=agentic-audit')"
+d="$(mkwf n2 'on: push
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh label create agentic-audit --color d93f0b --force
+      - run: |
+          bash scripts/publish-agent-issue.sh --repo "$GITHUB_REPOSITORY" \
+            --title x --body-file b.md \
+            --label "agentic-audit,maintenance"')"
+out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+assert "N provisioned publisher label exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "N counts the publisher as an attach site" "$(contains "$out" '^ATTACH_SITES=1$')"
+
 echo ""
 echo "=== RESULTS ==="
 echo "PASSED=$pass_count"

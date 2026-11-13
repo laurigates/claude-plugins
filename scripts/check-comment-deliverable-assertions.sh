@@ -31,6 +31,21 @@
 #   missing_issue_assertion      a LATER step in the same job that runs
 #                                scripts/assert-issue-filed.sh
 #
+# A Claude step whose issue is published by a LATER step running
+# scripts/publish-agent-issue.sh is an issue-filer by the same rule (#2769):
+# the agent writes the body to a file, the bash step files it, and a run in
+# which the agent wrote nothing still has to fail. Such a step must not also
+# grant the create:
+#
+#   agent_publishes_directly     the step grants `Bash(gh issue create` while a
+#                                later step publishes its body, so the agent can
+#                                still file the issue itself, which is the
+#                                retry-after-partial-success shape of #2720
+#   body_file_unwritable         the publish step's --body-file is not named in
+#                                the step's prompt, or no grant lets the step
+#                                write it (Write, Edit, or Edit(./<file>)), so
+#                                every run would publish nothing
+#
 # The match is on the literal grant. Until #2769 three steps reached
 # `gh issue create` only through a `Bash(gh issue *)` wildcard and so fell
 # outside this sweep; narrowing them to verbs brought them in. Their issue (and,
@@ -42,7 +57,9 @@
 # carried while it was out of scope, so the narrowing changes no verdict.
 # Each entry must keep firing: an exempted type that no longer fires for its
 # workflow is a `stale_exemption`, so the list shrinks as the #2769 per-workflow
-# PRs (write a file, publish from bash) land. research-radar's liveness is also
+# changes add the missing id, upload or assertion. Moving a workflow to the
+# write-then-publish split keeps it in scope (above), so the split alone does
+# not stale an entry. research-radar's liveness is also
 # scripts/check-audit-liveness.sh's concern.
 #
 # Out of scope, and counted rather than silently dropped: TAG mode (no
@@ -116,6 +133,8 @@ CLAUDE_ACTION = "anthropics/claude-code-action"
 ASSERT_SCRIPT = "scripts/assert-pr-comment-delivered.sh"
 ISSUE_ASSERT_SCRIPT = "scripts/assert-issue-filed.sh"
 ISSUE_GRANTS = ("Bash(gh issue create",)
+PUBLISH_SCRIPT = "scripts/publish-agent-issue.sh"
+BODY_FILE_RE = re.compile(r"--body-file[=\s]+[\"']?([A-Za-z0-9_./-]+)")
 UPLOAD_ACTION = "actions/upload-artifact"
 COMMENT_GRANTS = (
     "Bash(gh pr comment",
@@ -215,8 +234,11 @@ for path in workflow_files():
             if tools is None:
                 skipped_no_allowlist += 1
                 continue
+            later = [s for s in steps[idx + 1:] if isinstance(s, dict)]
             posts_comment = any(t.startswith(g) for t in tools for g in COMMENT_GRANTS)
-            files_issue = any(t.startswith(g) for t in tools for g in ISSUE_GRANTS)
+            grants_create = any(t.startswith(g) for t in tools for g in ISSUE_GRANTS)
+            publishes_later = any(PUBLISH_SCRIPT in str(s.get("run", "")) for s in later)
+            files_issue = grants_create or publishes_later
             if not (posts_comment or files_issue):
                 continue
             if posts_comment:
@@ -226,7 +248,23 @@ for path in workflow_files():
             step_id = step.get("id")
             label = step_id if isinstance(step_id, str) else f"#{idx}"
             where = f"FILE={rel} JOB={job_id} STEP={label}"
-            later = [s for s in steps[idx + 1:] if isinstance(s, dict)]
+            if grants_create and publishes_later:
+                issues.append(
+                    f"SEVERITY=ERROR TYPE=agent_publishes_directly {where} "
+                    f"MSG=a later step publishes this step's issue body with {PUBLISH_SCRIPT}, but the step still grants gh issue create, so the agent can file it too (#2769)"
+                )
+            prompt_text = str(with_map.get("prompt", ""))
+            for s in later:
+                run_text = str(s.get("run", ""))
+                if PUBLISH_SCRIPT not in run_text:
+                    continue
+                for body in BODY_FILE_RE.findall(run_text):
+                    writable = {"Write", "Edit", f"Edit({body})", f"Edit(./{body})", f"Edit(/{body})"}
+                    if body not in prompt_text or not writable.intersection(tools):
+                        issues.append(
+                            f"SEVERITY=ERROR TYPE=body_file_unwritable {where} "
+                            f"MSG=the publish step reads {body}, which this step's prompt must name and its --allowedTools must let it write (Write, Edit or Edit(./{body}))"
+                        )
             if not isinstance(step_id, str):
                 issues.append(
                     f"SEVERITY=ERROR TYPE=missing_step_id {where} "

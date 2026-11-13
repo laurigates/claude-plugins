@@ -14,6 +14,9 @@
 #   - a step whose `with.prompt` asks Claude to run `gh issue create` must carry
 #     `## Processing` in that prompt (the body template lives there)
 #   - a `run:` step that runs `gh issue create` must write `## Processing`
+#   - a `run:` step that runs scripts/publish-agent-issue.sh (the bash half of a
+#     Claude step that writes its issue body to a file, #2769) must carry
+#     `## Processing` in its script or env, where its `--processing` value lives
 # plus:
 #   - feedback-plugin/skills/feedback-session/references/issue-format.md, the
 #     feedback issue template, must contain `## Processing`
@@ -78,6 +81,11 @@ HEADING = re.compile(r"^\s*(?:echo\s+[\"']?)?## Processing\b", re.M)
 # `gh issue create`" in prose files issues as surely as a code block does.
 CREATE = re.compile(r"^\s*[\"']?\s*gh issue create\b", re.M)
 CREATE_IN_PROMPT = re.compile(r"\bgh issue create\b")
+# A step that publishes a body a Claude step wrote (#2769). The prompt no longer
+# names `gh issue create`, so without this the check would lose sight of every
+# converted workflow. The publisher appends its `--processing` value, which the
+# step passes from its env, so the env values count as the step's text.
+PUBLISH = re.compile(r"\bscripts/publish-agent-issue\.sh\b")
 
 issues = []  # (severity, type, msg)
 sites_checked = 0
@@ -120,6 +128,10 @@ for name in workflow_files:
                 kind, text = "processing input", str(with_.get("processing", ""))
             elif CREATE_IN_PROMPT.search(str(with_.get("prompt", ""))):
                 kind, text = "prompt", str(with_.get("prompt", ""))
+            elif PUBLISH.search(str(step.get("run", ""))):
+                env = step.get("env") or {}
+                env_text = "\n".join(str(v) for v in env.values()) if isinstance(env, dict) else ""
+                kind, text = "publish step", str(step.get("run", "")) + "\n" + env_text
             elif CREATE.search(str(step.get("run", ""))):
                 kind, text = "run script", str(step.get("run", ""))
             if kind is None:

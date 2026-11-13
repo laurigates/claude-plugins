@@ -11,7 +11,8 @@
 #
 # It EXTRACTS the shipped `run:` body with PyYAML and runs it against a stub
 # `gh` that applies the step's own `--jq` program to an issue-list fixture. It
-# also pins the prefix to the title the sweep prompt files its report under.
+# also pins the prefix to the title the sweep files its report under, which
+# since #2769 is the `--title` of the step running scripts/publish-agent-issue.sh.
 #
 # Supersede (#3346, docs/issue-lifecycle.md): only THIS month's report skips the
 # sweep. Last month's open report no longer blocks it; the guard reports it as
@@ -41,27 +42,31 @@ fail() { fail_count=$((fail_count + 1)); echo "FAIL: $1"; }
 
 echo "=== GOLDEN-SET SWEEP GUARD ==="
 
-python3 - "$WORKFLOW" "$GUARD_STEP" "$work/guard.sh" "$work/prompt.txt" <<'PY'
+python3 - "$WORKFLOW" "$GUARD_STEP" "$work/guard.sh" "$work/publish.txt" <<'PY'
 import sys, yaml
-path, name, out, prompt_out = sys.argv[1:5]
+path, name, out, publish_out = sys.argv[1:5]
 jobs = yaml.safe_load(open(path, encoding="utf-8"))["jobs"]
 steps = [s for job in jobs.values() for s in job.get("steps", [])]
 guard = [s for s in steps if s.get("name") == name]
 if len(guard) != 1:
     sys.exit(f"expected one '{name}' step, found {len(guard)}")
 open(out, "w", encoding="utf-8").write(guard[0]["run"])
-prompts = [s.get("with", {}).get("prompt", "") for s in steps if s.get("with", {}).get("prompt")]
-open(prompt_out, "w", encoding="utf-8").write("\n".join(prompts))
+# The report title lives in the step that files it: since #2769 that is the
+# bash step running scripts/publish-agent-issue.sh, not the Claude prompt.
+publish = [s["run"] for s in steps if "scripts/publish-agent-issue.sh" in str(s.get("run", ""))]
+if len(publish) != 1:
+    sys.exit(f"expected one publish-agent-issue.sh step, found {len(publish)}")
+open(publish_out, "w", encoding="utf-8").write("\n".join(publish))
 PY
 
-# The prefix the guard filters on must be the prefix of the title the sweep
-# prompt files its report under, or the guard can never see the report.
+# The prefix the guard filters on must be the prefix of the title the sweep's
+# publish step files its report under, or the guard can never see the report.
 prefix="$(sed -n 's/.*startswith("\([^"]*\)").*/\1/p' "$work/guard.sh" | head -1)"
-title="$(sed -n 's/.*--title "\([^"]*\)".*/\1/p' "$work/prompt.txt" | head -1)"
+title="$(sed -n 's/.*--title "\([^"]*\)".*/\1/p' "$work/publish.txt" | head -1)"
 if [ -n "$prefix" ] && [ "${title#"$prefix"}" != "$title" ]; then
-  pass "the guard's title prefix ('$prefix') matches the report title the prompt files ('$title')"
+  pass "the guard's title prefix ('$prefix') matches the report title the publish step files ('$title')"
 else
-  fail "guard prefix '$prefix' does not start the prompt's report title '$title'"
+  fail "guard prefix '$prefix' does not start the publish step's report title '$title'"
 fi
 
 mkdir -p "$work/bin"

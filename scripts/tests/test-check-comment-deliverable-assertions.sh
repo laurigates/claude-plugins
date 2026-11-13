@@ -27,6 +27,12 @@
 #   M. an exemption covers only its listed types: obsidian-cli-changelog.yml is
 #      exempt from missing_issue_assertion, never from a missing upload
 #   N. an exemption whose finding no longer fires is a stale_exemption
+#   O. a Claude step that writes its body for a later scripts/publish-agent-issue.sh
+#      step is an issue-filer too, so it still needs the assertion and upload (#2769)
+#   P. a Claude step that keeps `Bash(gh issue create` beside a publish step is
+#      agent_publishes_directly: the agent can still file the issue itself
+#   Q. the publish step's --body-file must be named in the prompt and writable
+#      under the step's grants, or body_file_unwritable
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -268,6 +274,91 @@ run "$work/n"
 assert "N: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "N: stale_exemption reported" "$(has "$OUT" 'TYPE=stale_exemption FILE=.github/workflows/obsidian-cli-changelog.yml EXEMPT=missing_issue_assertion')"
 assert "N: REASON names it" "$(has "$OUT" 'REASON=stale_exemption: ')"
+
+# The split shape (#2769): the Claude step writes its body to a file and grants
+# no publishing verb; a later bash step publishes it.
+WRITE_STEP='      - name: Claude audit
+        id: audit
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --model opus
+            --effort low
+            --allowedTools "Read,Edit(./audit-issue-body.md)"
+          prompt: |
+            Write the issue body to audit-issue-body.md.'
+PUBLISH_STEP='      - name: Publish the audit issue
+        id: publish
+        if: always() && steps.audit.outcome != '"'"'skipped'"'"'
+        run: bash scripts/publish-agent-issue.sh --repo "$GITHUB_REPOSITORY" --title x --body-file audit-issue-body.md --label audit'
+
+echo "=== TEST O: a write-then-publish step stays in the issue-filer scope ==="
+fixture "$work/o" "$HEAD
+$WRITE_STEP
+$PUBLISH_STEP"
+run "$work/o"
+assert "O: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "O: in issue scope via its publish step" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=1')"
+assert "O: missing_issue_assertion reported" "$(has "$OUT" 'TYPE=missing_issue_assertion')"
+assert "O: missing_transcript_upload reported" "$(has "$OUT" 'TYPE=missing_transcript_upload')"
+fixture "$work/o2" "$HEAD
+$WRITE_STEP
+$PUBLISH_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/o2"
+assert "O: with assertion and upload exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "O: with assertion and upload is still in scope" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=1')"
+# A publish step BEFORE the Claude step publishes nothing it wrote.
+fixture "$work/o3" "$HEAD
+$PUBLISH_STEP
+$WRITE_STEP"
+run "$work/o3"
+assert "O: a publish step before the Claude step does not bring it in scope" "$(has_line "$OUT" 'ISSUE_DELIVERABLE_STEPS=0')"
+
+echo "=== TEST P: a Claude step that still grants the create beside a publish step ==="
+fixture "$work/p" "$HEAD
+$ISSUE_STEP
+$PUBLISH_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/p"
+assert "P: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "P: agent_publishes_directly reported" "$(has "$OUT" 'TYPE=agent_publishes_directly FILE=.github/workflows/audit.yml JOB=audit STEP=audit')"
+assert "P: REASON names it" "$(has "$OUT" 'REASON=agent_publishes_directly: ')"
+
+echo "=== TEST Q: the publish step's body file must be one the Claude step can write ==="
+# A mismatch between the file the prompt names, the file the grant allows and
+# the file the publish step reads fails every run, and only at run time.
+BODY_GRANT='Edit(./audit-issue-body.md)'
+fixture "$work/q" "$HEAD
+${WRITE_STEP//"$BODY_GRANT"/Edit(./other.md)}
+$PUBLISH_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/q"
+assert "Q: an ungranted body file exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "Q: body_file_unwritable reported" "$(has "$OUT" 'TYPE=body_file_unwritable')"
+fixture "$work/q2" "$HEAD
+${WRITE_STEP//"Write the issue body to audit-issue-body.md."/Write the issue body to a file.}
+$PUBLISH_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/q2"
+assert "Q: a body file the prompt never names exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "Q: body_file_unwritable reported for the unnamed file" "$(has "$OUT" 'TYPE=body_file_unwritable')"
+fixture "$work/q3" "$HEAD
+${WRITE_STEP//"$BODY_GRANT"/Write}
+$PUBLISH_STEP
+$REDACT_STEP
+$UPLOAD_STEP
+$ISSUE_ASSERT_STEP"
+run "$work/q3"
+assert "Q: an unscoped Write grant is accepted" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"
