@@ -46,30 +46,23 @@ differently depending on the command that reports it:
 | `gh search issues` | `github-actions[bot]` |
 | `gh issue list --author "app/github-actions"` | Returned `[]` in a repository that had such issues |
 
-So do not filter on `--author` to find what a workflow opened. Try gh's own
-app-author filter first. `gh issue list`, `gh pr list` and `gh search issues`
-each list `--app string  Filter by GitHub App author` in `--help` (gh 2.89.0).
-When gh filters by author, `--limit` counts only matching items, so a busy
-repository cannot push the bot's issues past the cap:
-
-```bash
-gh issue list --app github-actions --state open --limit 100 --json number,title,author
-```
-
-This form is unverified: it was read from `--help` and not run against a
-repository. gh may build it into the same `app/github-actions` author filter
-that returned `[]`. If it returns nothing in a repository that has such issues,
-fall back to fetching the list and filtering on `.author.login` with jq, which
-matches the JSON spelling:
+To find what a workflow opened, fetch the list and filter on `.author.login`
+with jq, which matches the JSON spelling:
 
 ```bash
 gh issue list --state open --limit 100 --json number,title,author \
   --jq '[.[] | select(.author.is_bot and .author.login == "app/github-actions")]'
 ```
 
-The fallback sees only the `--limit` items gh fetches, so on a busy repository
+The jq filter sees only the `--limit` items gh fetches, so on a busy repository
 it silently drops the bot's issues past that cap. Raise `--limit` above the
 repository's open-issue count.
+
+`gh issue list --app github-actions` is not a way around the failing `--author`
+form: it is the same filter. In gh's source (`pkg/cmd/issue/list/list.go`, read
+at the v2.89.0 tag), `--app <name>` sets the author option to `app/<name>`, and
+`http.go` sends that value as the GraphQL `createdBy` filter, the same path
+`--author "app/github-actions"` takes.
 
 Observed 2026-11-10 by an agent writing a workflow lookup; the three commands
 were not re-run when this section was written, and the spellings may differ

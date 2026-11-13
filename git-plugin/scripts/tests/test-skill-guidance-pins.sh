@@ -168,13 +168,20 @@ has "JSON output spelling" "$bots" "app/github-actions"
 has "search output spelling" "$bots" "github-actions[bot]"
 has "the --author filter is named as unreliable for the bot" "$bots" "--author"
 has "the working form filters author.login with jq" "$bots" ".author.login"
-# gh's own app-author filter comes first, the capped jq filter is the fallback,
-# and the section says the jq route drops items past --limit (finding F2).
-before "the --app filter is offered before the jq fallback" "$bots" "gh issue list --app github-actions" ".author.is_bot and"
-has "the --app form is marked unverified" "$bots" "This form is unverified"
-has "the jq fallback names its list cap" "$bots" "past that cap"
-has "SKILL.md List Issues names the --app filter" "$(section "${gca}/SKILL.md" "### List Issues")" "--app github-actions"
-has "SKILL.md List Issues points at the Bot Authors section" "$(section "${gca}/SKILL.md" "### List Issues")" "REFERENCE.md#bot-authors"
+# The jq filter is the prescribed form. gh issue list maps --app <name> to the
+# author filter app/<name>, the same createdBy path as the failing --author form,
+# so --app is named as equivalent, never offered first (finding G1).
+before "the jq filter is prescribed before --app is mentioned" "$bots" ".author.is_bot and" "--app"
+has "--app is named as the same filter as --author" "$bots" "it is the same filter"
+has "the --app claim cites gh's source" "$bots" "pkg/cmd/issue/list/list.go"
+has "the jq filter names its list cap" "$bots" "past that cap"
+gli=$(section "${gca}/SKILL.md" "### List Issues")
+has "SKILL.md List Issues prescribes the jq filter" "$gli" ".author.login"
+has "SKILL.md List Issues rules out --app" "$gli" "not \`--author\` or \`--app\`"
+has "SKILL.md List Issues points at the Bot Authors section" "$gli" "REFERENCE.md#bot-authors"
+gca_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${gca}/SKILL.md")
+[ "$gca_chars" -le 10000 ] && ok "gh-cli-agentic SKILL.md is within the 10,000-char WARN line" ||
+    notok "gh-cli-agentic SKILL.md is ${gca_chars} chars, over the 10,000-char WARN line"
 
 echo
 echo "PASS=$PASS FAIL=$FAIL"
