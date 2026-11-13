@@ -51,6 +51,13 @@
   },
   {
    "kind": "review_staleness",
+   "path": "codebase-attributes-plugin/skills/attributes-dashboard/SKILL.md",
+   "hash": "a45fc1c13bb18c44",
+   "reason": "Body unchanged since the review on 2026-03-15; only frontmatter changed (`description`, `effort`). The reviewed content is intact.",
+   "finding": "review_staleness: attributes-dashboard changed 209d after its declared reviewed:2026-03-15"
+  },
+  {
+   "kind": "review_staleness",
    "path": "configure-plugin/skills/multi-repo-discipline/SKILL.md",
    "hash": "b4711da6d560cc34",
    "reason": "Body changed by 2 line(s) since the review on 2026-04-24, all of it mechanical: one cross-reference repointed to `git-plugin:git-coworker-check` by the citation-resolution sweep (#2627). The reviewed content is otherwise intact.",
@@ -72,10 +79,38 @@
   },
   {
    "kind": "review_staleness",
+   "path": "finops-plugin/skills/finops-compare/SKILL.md",
+   "hash": "0751218a5e26f621",
+   "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`description`, `effort`, `model`). The reviewed content is intact.",
+   "finding": "review_staleness: finops-compare changed 168d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "git-plugin/skills/git-branch-naming/SKILL.md",
+   "hash": "2231b1dbb6477377",
+   "reason": "Body unchanged since the review on 2026-01-30; only frontmatter changed (`description`, `model`, `user-invocable`). The reviewed content is intact.",
+   "finding": "review_staleness: git-branch-naming changed 281d after its declared reviewed:2026-01-30"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "git-plugin/skills/git-commit-trailers/SKILL.md",
+   "hash": "3f19168847acf238",
+   "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`description`). The reviewed content is intact.",
+   "finding": "review_staleness: git-commit-trailers changed 196d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
    "path": "git-plugin/skills/git-rebase-patterns/SKILL.md",
    "hash": "121938d63a704814",
    "reason": "Body changed by 5 line(s) since the review on 2026-01-30, all of it mechanical: a four-line pointer to `git-plugin:git-stacked-prs` added (#2585). The reviewed content is otherwise intact.",
    "finding": "review_staleness: git-rebase-patterns changed 217d after its declared reviewed:2026-01-30"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "git-plugin/skills/github-issue-autodetect/SKILL.md",
+   "hash": "00e99e61724f70b9",
+   "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`description`). The reviewed content is intact.",
+   "finding": "review_staleness: github-issue-autodetect changed 196d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
@@ -111,6 +146,13 @@
    "hash": "c383c0b797d4a7ea",
    "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
    "finding": "review_staleness: uv-run changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "rust-plugin/skills/mockito-http-mocking/SKILL.md",
+   "hash": "d34b5058b95e0f4a",
+   "reason": "Body unchanged since the review on 2026-07-03; only frontmatter changed (`description`, `reviewed`). The reviewed content is intact.",
+   "finding": "review_staleness: mockito-http-mocking changed 126d after its declared reviewed:2026-07-03"
   },
   {
    "kind": "review_staleness",
@@ -192,9 +234,9 @@
   {
    "kind": "review_staleness",
    "path": "typescript-plugin/skills/bun-debug/SKILL.md",
-   "hash": "d67dfe551b78ac1e",
-   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
-   "finding": "review_staleness: bun-debug changed 131d after its declared reviewed:2026-04-25"
+   "hash": "ff3f348c4120e1e4",
+   "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`allowed-tools`, `description`, `effort`, `model`). The reviewed content is intact.",
+   "finding": "review_staleness: bun-debug changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
@@ -202,6 +244,13 @@
    "hash": "5b555113a77468f4",
    "reason": "Body changed by 13 line(s) since the review on 2025-12-20, all of it mechanical: a When to Use table added by the typescript-plugin standardisation sweep. The reviewed content is otherwise intact.",
    "finding": "review_staleness: bun-development changed 257d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-outdated/SKILL.md",
+   "hash": "ac120fe8cba3b02c",
+   "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`description`, `effort`, `model`). The reviewed content is intact.",
+   "finding": "review_staleness: bun-outdated changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
