@@ -11,7 +11,9 @@
 #     github-issues, over the #3549 fixtures and every docs/{adrs,prds,prps}
 #     document in this repo (needs uv; prints SKIP otherwise)
 #   - the parser gives byte-identical output under every awk on PATH variants
-#     present (mawk, gawk, BWK awk, busybox) — macOS ships BWK awk
+#     present (mawk, gawk, BWK awk, busybox) — macOS ships BWK awk; a missing
+#     original-awk prints SKIP locally and FAILs under CI=true / GITHUB_ACTIONS
+#     (pinned by test-frontmatter-rows-bwk-floor.sh)
 #   - the file list is sorted (LC_ALL=C) whatever order it is passed in
 #   - an unknown flag exits 2 with a usage line
 set -u
@@ -101,10 +103,16 @@ order=$(printf '%s\n' "$shuffled" | awk -F'\037' '{ n = split($1, a, "/"); print
 [ "$order" = "01-inline-comment.md 03-single-quoted.md 12-fenced-heading.md " ] && ok "file list is sorted before parsing" || notok "order: $order"
 
 # ---- Every awk variant present gives the same bytes ----
+# FRONTMATTER_ROWS_AWK_VARIANTS ('|'-separated) replaces the candidate list, so
+# test-frontmatter-rows-bwk-floor.sh can simulate a host without original-awk.
+awk_candidates="${FRONTMATTER_ROWS_AWK_VARIANTS:-mawk|gawk|original-awk|nawk|bwk-awk|/usr/bin/awk|busybox awk}"
+IFS='|' read -r -a awk_list <<<"$awk_candidates"
 variants=0
-for awk_bin in mawk gawk original-awk nawk bwk-awk /usr/bin/awk "busybox awk"; do
+bwk_ran=0
+for awk_bin in "${awk_list[@]}"; do
     # shellcheck disable=SC2086  # word-split "busybox awk" into command + arg
     set -- $awk_bin
+    case "$awk_bin" in original-awk) is_bwk=1 ;; *) is_bwk=0 ;; esac
     command -v "$1" >/dev/null 2>&1 || continue
     shim="$work/shim-$variants"
     mkdir -p "$shim"
@@ -116,9 +124,16 @@ for awk_bin in mawk gawk original-awk nawk bwk-awk /usr/bin/awk "busybox awk"; d
     chmod +x "$shim/awk"
     variant_rows=$(PATH="$shim:$PATH" bash "$AUTORUN" --frontmatter-rows "${fixture_files[@]}" "${repo_docs[@]}")
     variants=$((variants + 1))
+    [ "$is_bwk" -eq 1 ] && bwk_ran=1
     [ "$variant_rows" = "$rows_default" ] && ok "awk variant '$awk_bin' matches" || notok "awk variant '$awk_bin' differs: $(diff <(printf '%s\n' "$rows_default") <(printf '%s\n' "$variant_rows") | head -6)"
 done
 [ "$variants" -gt 0 ] && ok "$variants awk variant(s) exercised" || notok "no awk variant found"
+[ "$bwk_ran" -eq 1 ] || printf 'SKIP - original-awk (BWK awk, macOS /usr/bin/awk) not installed; BWK row not run\n'
+# CI installs original-awk (test-skill-scripts.yml); there a missing BWK row is
+# a failure, not a skip, so the macOS-parser coverage cannot drop out silently.
+if [ "${CI:-}" = "true" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    [ "$bwk_ran" -eq 1 ] && ok "BWK awk variant ran in CI" || notok "BWK awk variant (original-awk) did not run in CI"
+fi
 
 # ---- Unknown flags exit 2 ----
 bash "$AUTORUN" --bogus >/dev/null 2>"$work/err"
