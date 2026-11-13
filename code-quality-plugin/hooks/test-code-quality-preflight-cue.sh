@@ -148,6 +148,41 @@ for cq_bun_lockfile in bun.lock bun.lockb; do
   fi
 done
 
+# A `tests/` directory with `test-<name>` / `test_<name>` files was not
+# recognised as a test layout: writing `tests/test-gh-wrappers.zsh` drew the
+# cue (#3615). Both absolute and relative paths must be silent. The payload is
+# a `def` line, a public-symbol signal for every extension (`export` is not one
+# for shell files), so a pass here means the path was skipped.
+cq_d5_idx=0
+for cq_test_path in /x/repo/tests/test-foo.sh tests/test-foo.sh /repo/src/test_foo.py test_bar.py; do
+  cq_d5_idx=$((cq_d5_idx + 1))
+  echo "--- Test (d): ${cq_test_path} is silent (#3615) ---"
+  CQ_SID_D5="test-sid-d5-${cq_d5_idx}-$(date +%s%N)"
+  CQ_PAYLOAD_D5="$(cq_payload Write "$cq_test_path" '' 'def do_thing(): return 1' "$CQ_SID_D5")"
+  CQ_OUT_D5="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_D5")"
+  if [ -z "$CQ_OUT_D5" ]; then
+    cq_pass "(d) ${cq_test_path} edit is silent"
+  else
+    cq_fail "(d) ${cq_test_path} edit should be silent; got: $CQ_OUT_D5"
+  fi
+done
+
+# Controls for #3615: names that merely contain "test" are not test files, so
+# the skip patterns must stay anchored (no `*test*`).
+cq_d6_idx=0
+for cq_src_path in /repo/src/contest.py /repo/src/tests_helper.py /repo/src/latest-version.sh; do
+  cq_d6_idx=$((cq_d6_idx + 1))
+  echo "--- Test (d): ${cq_src_path} still fires (#3615 control) ---"
+  CQ_SID_D6="test-sid-d6-${cq_d6_idx}-$(date +%s%N)"
+  CQ_PAYLOAD_D6="$(cq_payload Edit "$cq_src_path" 'def do_thing(): return 1' '' "$CQ_SID_D6")"
+  CQ_OUT_D6="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_D6")"
+  if jq -e '.decision == "block"' > /dev/null 2>&1 <<< "$CQ_OUT_D6"; then
+    cq_pass "(d) ${cq_src_path} edit fires"
+  else
+    cq_fail "(d) ${cq_src_path} edit should fire; got: $CQ_OUT_D6"
+  fi
+done
+
 # --- (i) diagram/binary files are silent even for large payloads (issue #1730) ---
 echo "--- Test (i): 60-line .d2 diagram edit is silent ---"
 CQ_SID_I1="test-sid-i1-$(date +%s%N)"

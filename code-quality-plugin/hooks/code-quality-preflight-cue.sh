@@ -70,11 +70,15 @@ esac
 [ "$cq_base_name" = "CHANGELOG.md" ] && exit 0
 
 # Test/spec files — path segment or basename pattern.
-case "$cq_file_path" in
-    */test/*|*/spec/*|*/__tests__/*) exit 0 ;;
+# The path is matched with a leading "/" so a relative path (`tests/x.sh`)
+# matches the same segment patterns as an absolute one. Basename prefixes
+# `test-`/`test_` cover the `tests/test-<name>.<ext>` layout (#3615); the
+# patterns stay anchored so `contest.py` or `tests_helper.py` still get the cue.
+case "/${cq_file_path#/}" in
+    */test/*|*/tests/*|*/spec/*|*/__tests__/*) exit 0 ;;
 esac
 case "$cq_base_name" in
-    *_test.*|*.test.*|*.spec.*) exit 0 ;;
+    test-*|test_*|*_test.*|*.test.*|*.spec.*) exit 0 ;;
 esac
 
 # Lockfiles — always silent.
