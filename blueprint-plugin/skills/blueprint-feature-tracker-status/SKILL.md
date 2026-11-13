@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-07-26
+modified: 2026-11-13
 reviewed: 2026-07-26
 description: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work.
 allowed-tools: Read, Bash, AskUserQuestion
@@ -19,9 +19,12 @@ Display feature tracker statistics, phase progress, and completion summary.
 | You're checking blocked features without modifying state | You want to recalculate completion percentages |
 | You want a quick "where are we?" snapshot | Use feature-tracking instead for low-level FR-code edits |
 
-## Steps
+## Execution
 
-1. **Check if feature tracking is enabled**:
+Execute this status workflow:
+
+### Step 1: Check if feature tracking is enabled
+
    - Look for `docs/blueprint/feature-tracker.json`
    - If not found, report:
      ```
@@ -29,20 +32,22 @@ Display feature tracker statistics, phase progress, and completion summary.
      Run `/blueprint:init` and enable feature tracking to get started.
      ```
 
-2. **Load tracker data**:
+### Step 2: Load tracker data
+
    - Read `feature-tracker.json`
    - Extract project name, source document, last_updated
    - Get statistics section
    - Get phase information
    - Get PRD status
 
-3. **Calculate derived metrics** (if not in statistics):
+### Step 3: Calculate derived metrics (if not in statistics)
+
    - Count features by status at all nesting levels
    - Calculate completion percentage
    - Count features per phase
    - Count PRDs by status
 
-3a. **Confirm the statistics cache is trustworthy** (read-only):
+### Step 3a: Confirm the statistics cache is trustworthy (read-only)
 
    Everything this skill displays is quoted from `statistics`, which is a
    **cache** of the features collection — so verify it before quoting it:
@@ -58,74 +63,22 @@ Display feature tracker statistics, phase progress, and completion summary.
    heading. This skill never writes, so it reports and defers the fix to
    `/blueprint:feature-tracker-sync` (its Step 7a).
 
-4. **Display status report**:
-   ```
-   Feature Tracker Status
-   ======================
-   Project: {project}
-   Source: {source_document}
-   Last Updated: {last_updated}
+### Step 4: Display status report
 
-   Overall Progress:
-   ==================
-   {progress_bar} {completion_percentage}% ({complete}/{total_features})
+   Render the display from the template in
+   [references/status-display.md](references/status-display.md), which also
+   holds a filled-in example and the quick commands to show at the end of the
+   display. Use the Step 5 progress bar for `{progress_bar}`.
 
-   Complete:     {complete}
-   Partial:      {partial}
-   In Progress:  {in_progress}
-   Not Started:  {not_started}
-   Blocked:      {blocked}
+### Step 4a: Resolve portfolio links (v3.3.0+)
 
-   Phase Progress:
-   ===============
-   {For each phase:}
-   Phase {N}: {name}
-   Status: {status}
-   Features: {complete}/{total} complete
-
-   PRD Coverage:
-   =============
-   {For each PRD:}
-   {PRD_NAME}: {status}
-     Features: {features_implemented count}
-     {If tests_passing:} Tests: {tests_passing} passing
-
-   {If blocked features exist:}
-   Blocked Features:
-   =================
-   {For each blocked feature:}
-   - {FR code}: {name}
-     Reason: {implementation.notes or "No reason documented"}
-
-   {If not_started features exist and count <= 10:}
-   Ready to Start:
-   ===============
-   {List first 10 not_started features by phase order}
-   - {FR code}: {name} (Phase {N})
-
-   {If any feature has non-empty implemented_by (monorepo portfolio, v3.3.0+):}
-   Portfolio Features (linked to child workspaces):
-   ================================================
-   {For each portfolio feature with implemented_by:}
-   - {FR code}: {name} — derived status: {status}
-     Implemented by:
-     {For each link:}
-       - {link.workspace}/{link.ref} → {status from child feature-tracker}
-
-   {If top-level "workspaces" summary present:}
-   Workspace Rollups:
-   ==================
-   {For each workspace key:}
-   - {path}: {complete}/{total} ({completion_percentage}%) [last synced: {last_synced_at}]
-   ```
-
-4a. **Resolve portfolio links** (v3.3.0+):
    For each feature with non-empty `implemented_by`, open each referenced child
    `<workspace>/docs/blueprint/feature-tracker.json` and look up the `ref` FR to
    obtain its current status. Warn (do not fail) on missing workspaces or
    refs; suggest `/blueprint:workspace-scan` + `/blueprint:feature-tracker-sync`.
 
-5. **Display visual progress bar**:
+### Step 5: Display visual progress bar
+
    Create ASCII progress bar:
    ```
    [##########----------] 52.4%
@@ -134,14 +87,16 @@ Display feature tracker statistics, phase progress, and completion summary.
    - `-` for remaining
    - 20 characters wide
 
-6. **Check for staleness**:
+### Step 6: Check for staleness
+
    - If `last_updated` is more than 7 days old, warn:
      ```
      Note: Tracker hasn't been synced in {N} days.
      Run `/blueprint:feature-tracker-sync` to update.
      ```
 
-7. **Prompt for next action** (use AskUserQuestion):
+### Step 7: Prompt for next action (use AskUserQuestion)
+
    Build options dynamically based on state:
    - If stale → Include "Sync feature tracker"
    - If not_started features exist → Include "Start next feature"
@@ -170,78 +125,6 @@ Display feature tracker statistics, phase progress, and completion summary.
    - "Continue" → Show in_progress features, suggest continuing
    - "View by status" → Ask which status, then list matching features
    - "Exit" → End command
-
-**Example Output**:
-```
-Feature Tracker Status
-======================
-Project: gooho
-Source: REQUIREMENTS.md
-Last Updated: 2026-01-01
-
-Overall Progress:
-==================
-[##########----------] 52.4% (22/42)
-
-Complete:     22
-Partial:      4
-In Progress:  2
-Not Started:  14
-Blocked:      0
-
-Phase Progress:
-===============
-Phase 0: Foundation
-Status: complete
-Features: 4/4 complete
-
-Phase 1: Core Gameplay
-Status: complete
-Features: 8/8 complete
-
-Phase 2: Advanced Features
-Status: in_progress
-Features: 10/14 complete
-
-Phase 3-8: Future Development
-Status: not_started
-Features: 0/16 complete
-
-PRD Coverage:
-=============
-PRD_GAME_SETUP_FLOW: complete
-  Features: 4
-  Tests: 45 passing
-
-PRD_TERRAIN_VISUAL_ENHANCEMENT: complete
-  Features: 6
-  Tests: 107 passing
-
-PRD_ENTITY_BEHAVIOR_SYSTEM: complete
-  Features: 8
-  Tests: 187 passing
-
-PRD_UI_CONTROLS_SYSTEM: partial
-  Features: 3/5
-
-Ready to Start:
-===============
-- FR3.1: Resource Types (Phase 3)
-- FR3.2: Resource Gathering (Phase 3)
-- FR3.3: Resource Storage (Phase 3)
-- FR4.1: Basic Crafting (Phase 4)
-- FR4.2: Recipe System (Phase 4)
-
-Note: 14 features ready to start. Run `/blueprint:feature-tracker-sync` before beginning new work.
-```
-
-**Quick Commands** (shown at end):
-```
-Quick commands for feature tracker:
-- jq '.statistics' docs/blueprint/feature-tracker.json
-- jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feature-tracker.json
-- jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
-```
 
 ## Agentic Optimizations
 
