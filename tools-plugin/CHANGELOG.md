@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.16.0...tools-plugin-v2.16.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **tools-plugin:** prescribe capture-then-grep for pipefail membership tests ([#3635](https://github.com/laurigates/claude-plugins/issues/3635)) ([d6f3bb4](https://github.com/laurigates/claude-plugins/commit/d6f3bb472844fc630c73e3c2616848cff89d28b8))
+
 ## [2.16.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.15.1...tools-plugin-v2.16.0) (2026-11-12)
 
 
