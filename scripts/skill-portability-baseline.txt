@@ -3,5 +3,4 @@
 # for the per-plugin sweep (#3308). Counts may only go down; rewrite with
 # --update-baseline, which never raises an entry.
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
-project-plugin/skills/changelog-review/SKILL.md	laurigates/.github	2
 taskwarrior-plugin/skills/task-triage/references/agent-brief.md	~/repos/	1

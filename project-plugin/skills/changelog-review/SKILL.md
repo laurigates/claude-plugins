@@ -4,7 +4,7 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-09-24
+modified: 2026-11-13
 reviewed: 2026-07-06
 ---
 
@@ -186,10 +186,10 @@ The CI path opens a triage issue instead — see Automation Integration below.
 
 ## Automation Integration
 
-The `.github/workflows/changelog-review.yml` workflow runs this review weekly.
-It is a thin caller of the org reusable workflow
+The `.github/workflows/changelog-review.yml` workflow runs this review weekly
+in this marketplace. It is a thin caller of the published reusable workflow
 `laurigates/.github/.github/workflows/reusable-changelog-review.yml@main`
-(issue #1304): the schedule, dispatch input, and repo-specific inputs (analyzer
+(issue #1304), the default a project can swap for its own copy: the schedule, dispatch input, and repo-specific inputs (analyzer
 path, commit scope, rule-file sections, plugin list) live in the caller; the
 two-job pipeline (bash pre-check gate → opus triage) lives upstream. The
 analyzer script and its tests stay in this repo and are handed to the reusable
