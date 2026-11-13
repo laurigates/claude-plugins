@@ -49,8 +49,8 @@ echo "PASS trial-integration recipe aborts a conflicted merge before removing th
 #    exists before finalise, so the check fires only on a reused branch name.
 docs="$(cat "$skill")"
 if [[ "$docs" == *"because a PR can merge while its verifier runs"* \
-   || "$docs" != *'In `implement-verify` no PR exists before finalise'* \
-   || "$docs" != *'In `repair-round` the branch already has a PR'* ]]; then
+   || "$docs" != *"In \`implement-verify\` no PR exists before finalise"* \
+   || "$docs" != *"In \`repair-round\` the branch already has a PR"* ]]; then
   echo "FAIL SKILL.md does not state the PR-state check's reason per template"; exit 1
 fi
 echo "PASS SKILL.md states the PR-state check's reason per template"
