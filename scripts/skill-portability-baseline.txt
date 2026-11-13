@@ -6,10 +6,6 @@ agent-patterns-plugin/skills/meta-context-diet/references/anti-patterns.md	lauri
 agent-patterns-plugin/skills/meta-promote/SKILL.md	~/repos/	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
 agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md	laurigates/loractl	1
-configure-plugin/skills/claude-security-settings/SKILL.md	laurigates/loractl	1
-configure-plugin/skills/configure-completions/REFERENCE.md	laurigates/shore-recon	1
-configure-plugin/skills/configure-reusable-workflows/REFERENCE.md	laurigates/.github	9
-configure-plugin/skills/configure-reusable-workflows/SKILL.md	laurigates/.github	1
 github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
 github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
 hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1
