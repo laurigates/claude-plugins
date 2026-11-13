@@ -44,6 +44,17 @@ if [[ "$recipe" != *"$abort"* || "$recipe" != *"$remove"* ]] || (( ${#before_abo
 fi
 echo "PASS trial-integration recipe aborts a conflicted merge before removing the worktree"
 
+# 5. The docs give the PR-state check's reason per template: a PR merging while
+#    its verifier runs applies only to repair-round; in implement-verify no PR
+#    exists before finalise, so the check fires only on a reused branch name.
+docs="$(cat "$skill")"
+if [[ "$docs" == *"because a PR can merge while its verifier runs"* \
+   || "$docs" != *'In `implement-verify` no PR exists before finalise'* \
+   || "$docs" != *'In `repair-round` the branch already has a PR'* ]]; then
+  echo "FAIL SKILL.md does not state the PR-state check's reason per template"; exit 1
+fi
+echo "PASS SKILL.md states the PR-state check's reason per template"
+
 status=0
 for t in implement-verify repair-round; do
   node "$here/run-template.mjs" "$wf/$t.workflow.js" || status=1

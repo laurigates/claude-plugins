@@ -152,14 +152,29 @@ const units = (ids) =>
   const r = await run({ ...units(['a', 'b']), repo: 'o/r', land: 'local' }, (k, u) =>
     k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u) : verdict(u, 'pass'))
   const p = r.sent['repair:a']?.prompt ?? ''
-  const at = p.indexOf('gh pr list -R o/r --head fix/a --state all --json number,state')
+  const at = p.indexOf('gh pr list -R o/r --head fix/a --state all --json number,state,headRefOid')
   check('repair prompt reads PR state first', at !== -1 && at < p.indexOf('Work in your own worktree'), p)
   check('repair prompt: MERGED or CLOSED → blocked, no new PR', /MERGED or CLOSED[^\n]*commit nothing[^\n]*"blocked"/.test(p) && /do not open a PR/.test(p), p)
   // --state all returns every PR ever opened from the branch name, so a reused
   // name can list an old MERGED PR beside the OPEN one: the OPEN entry wins.
   check('repair prompt: an OPEN entry wins over older MERGED/CLOSED ones',
-    /an OPEN entry wins/.test(p) && /no entry is OPEN and one is MERGED or CLOSED → stop/.test(p)
+    /An OPEN entry wins/.test(p) && /no entry is OPEN and a MERGED or CLOSED entry counts → stop/.test(p)
       && !/^MERGED or CLOSED → stop/m.test(p), p)
+  // The list matches by branch name, not commits: a reused name whose only PR is
+  // an old MERGED one must not stop the repair. A MERGED/CLOSED entry counts only
+  // when its headRefOid is the branch tip or an ancestor of it.
+  check('repair prompt: MERGED/CLOSED counts only when its headRefOid is an ancestor of the branch',
+    /merge-base --is-ancestor <headRefOid> fix\/a/.test(p) && /fails the test is earlier work on a reused name: ignore it/.test(p), p)
+}
+// 14b. Both finalise briefs apply the same rule: OPEN wins, and a MERGED/CLOSED
+// entry skips the branch only when its headRefOid is head_sha or an ancestor.
+{
+  const r = await run(units(['a', 'b']), (k, u) => (k === first ? fix(u) : k === 'verify' ? verdict(u, 'pass') : { prs: [], pushed: [] }))
+  const p = r.sent.finalise?.prompt ?? ''
+  check('finalise reads headRefOid and tests ancestry against head_sha',
+    /--state all --json number,state,headRefOid/.test(p) && /merge-base --is-ancestor <headRefOid> <head_sha>/.test(p), p)
+  check('finalise: OPEN wins; a MERGED/CLOSED entry failing the test is ignored',
+    /An OPEN entry wins/.test(p) && /earlier work on a reused branch name: ignore it/.test(p), p)
 }
 // 15. A repairer that stopped on a merged PR (blocked) is BLOCKED, not re-verified, not landed.
 {
