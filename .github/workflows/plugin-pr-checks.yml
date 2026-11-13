@@ -217,6 +217,13 @@ jobs:
         # day a tool is added, which is the disease the checkout gate had.
         run: bash scripts/check-dead-tool-grants.sh
 
+      - name: Check no bundled-script line carries a command substitution
+        # A $(…) or backtick on a ${CLAUDE_SKILL_DIR}/${CLAUDE_PLUGIN_ROOT}
+        # script invocation voids the skill's pre-approved grant for that script
+        # (measured on 2.1.322 for health-check, #3577). Whole-repo scan of
+        # skill and agent markdown, sidecars included (#3640).
+        run: bash scripts/check-voided-script-grant.sh
+
       - name: Check every subagent_type resolves to a real agent
         # The guard existed but reached nobody: pre-commit invoked it without
         # --strict and non-verbose, and it appeared in NO workflow, so its WARN
