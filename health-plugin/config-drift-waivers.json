@@ -234,39 +234,39 @@
   {
    "a": ".claude/rules/conventional-commits.md",
    "b": "git-plugin/skills/github-pr-title/SKILL.md",
-   "a_hash": "6cc5b5f82ae21beb",
-   "b_hash": "ad8b132aeae4c61d",
+   "a_hash": "660b7135d3539bc5",
+   "b_hash": "fc5cf90597f277c8",
    "reason": "Repo policy the skill does not carry: how release-please routes commits across this multi-package manifest (the scope is a label; the files touched decide what releases). The rule already delegates procedure to git-plugin skills in its Related section, so a pointer stub would drop the policy rather than a duplicate.",
-   "finding": "rule_covered_by_skill: portfolio:conventional-commits is 64% covered by skill github-pr-title -- candidate for a pointer stub"
+   "finding": "rule_covered_by_skill: portfolio:conventional-commits is 69% covered by skill github-pr-title -- candidate for a pointer stub"
   },
   {
    "a": ".claude/rules/gitattributes.md",
    "b": "configure-plugin/skills/configure-gitattributes/SKILL.md",
-   "a_hash": "e8a1737682c818ef",
-   "b_hash": "f8218d071e8fa3e3",
+   "a_hash": "f7f27f3b03100638",
+   "b_hash": "bd03d6e87da87da5",
    "reason": "Path-scoped and repo-local: which files here qualify for merge=union, and the measured fact that GitHub's merge button ignores merge=union (PR #1759). It already names configure-gitattributes as the cross-repo automation, so the overlap is that delegation.",
-   "finding": "rule_covered_by_skill: portfolio:gitattributes is 57% covered by skill configure-gitattributes -- candidate for a pointer stub"
+   "finding": "rule_covered_by_skill: portfolio:gitattributes is 59% covered by skill configure-gitattributes -- candidate for a pointer stub"
   },
   {
    "a": "blueprint-plugin/skills/blueprint-story-reconcile/SKILL.md",
    "b": "blueprint-plugin/skills/blueprint-story-audit/SKILL.md",
-   "a_hash": "0a8722255053cc12",
-   "b_hash": "979b44d31bf95c35",
+   "a_hash": "66cc19aaa9da7c2a",
+   "b_hash": "0b5cc1c192deea42",
    "reason": "A deliberate pipeline pair, not a duplicate: story-audit is read-only and writes a drift report; story-reconcile applies that report to the PRDs. Each names the other as the home of the other half.",
-   "finding": "semantic_overlap_skill_skill: skill blueprint-story-reconcile and skill blueprint-story-audit are 91% semantically similar"
+   "finding": "semantic_overlap_skill_skill: skill blueprint-story-audit and skill blueprint-story-reconcile are 91% semantically similar"
   },
   {
    "a": "component-patterns-plugin/skills/version-badge-pattern/SKILL.md",
    "b": "component-patterns-plugin/skills/components-version-badge/SKILL.md",
    "a_hash": "1f2919e0cadb0685",
-   "b_hash": "37abd7d1e05d6f2e",
+   "b_hash": "80cc64e26aa60e41",
    "reason": "A deliberate implementation/pattern pair: components-version-badge implements the badge per framework and routes to version-badge-pattern for the pattern documentation in its When to Use table.",
    "finding": "semantic_overlap_skill_skill: skill version-badge-pattern and skill components-version-badge are 92% semantically similar"
   },
   {
    "a": "typescript-plugin/skills/bun-publishing/SKILL.md",
    "b": "typescript-plugin/skills/bun-publish/SKILL.md",
-   "a_hash": "6929ba6adb9f93fe",
+   "a_hash": "8c9d64eb639b5256",
    "b_hash": "dbe9d5d35815d740",
    "reason": "A deliberate quick-command/reference pair, the typescript-plugin convention (bun-test beside bun-development): bun-publish runs a publish, bun-publishing covers package configuration and release automation, and bun-publish routes to bun-publishing in its When to Use table.",
    "finding": "semantic_overlap_skill_skill: skill bun-publishing and skill bun-publish are 92% semantically similar"
