@@ -2,10 +2,7 @@
 # path<TAB>matched text<TAB>count: hits that predate the rule and wait
 # for the per-plugin sweep (#3308). Counts may only go down; rewrite with
 # --update-baseline, which never raises an entry.
-agent-patterns-plugin/skills/meta-context-diet/references/anti-patterns.md	laurigates/loractl	2
-agent-patterns-plugin/skills/meta-promote/SKILL.md	~/repos/	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	laurigates/.github	1
-agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md	laurigates/loractl	1
 github-actions-plugin/skills/ai-review-max-turns/references/unpublished-finding.md	laurigates/.github	1
 github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	laurigates/.github	1
 hooks-plugin/hooks/bash-antipatterns.sh	~/repos/	1
