@@ -18,7 +18,7 @@
 | `docker images` without `--format` | Verbose default table | Add `--format` with Go template | report only |
 | `cat <file>` in context sections | Reads entire file | Use `head -N <file>` or targeted extraction | report only |
 | Test commands without `--bail`/`-x` | No fail-fast | Add `--bail=1`, `-x`, or `--bail` | report only |
-| `eslint` without `--format` | Verbose default output | Add `--format=stylish` (core default) or `--format=json` | report only |
+| `eslint` without `--format` | Verbose default output | Add `--format=stylish` (core default), or `--format=json` for parsing; `unix` is not a core formatter in ESLint 10.14.0 (checked 2026-11-12) and needs `eslint-formatter-unix` | report only |
 | `biome check` without `--reporter` | Verbose default output | Add `--reporter=github` | `--reporter=github` |
 
 ## Report Template

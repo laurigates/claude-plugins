@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-10-09
+modified: 2026-11-12
 reviewed: 2026-04-25
 description: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
@@ -167,7 +167,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
    --argjson prds "${PRDS_TOUCHED:-0}" \
    '.task_registry["story-reconcile"].last_completed_at = $now |
     .task_registry["story-reconcile"].last_result = $result |
-    .task_registry["story-reconcile"].stats.runs_total = ((.task_registry["story-reconcile"].stats.runs_total // 0) + 1) |
     .task_registry["story-reconcile"].stats.items_processed = $edits |
     .task_registry["story-reconcile"].stats.prds_touched = $prds' \
    docs/blueprint/manifest.json > docs/blueprint/manifest.json.tmp \

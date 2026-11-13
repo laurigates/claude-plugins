@@ -1103,6 +1103,57 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: references/consumer-sweep.md must define the sweep for CLAUDE.md section candidates (PR #2978)")
         has_errors=true
       fi
+      # Regression (#3608): the Step 4 approval table showed the full size of
+      # the text being moved as the saving (~8K chars over six candidates) while
+      # the measured net was ~3.7K — the pointer and invariant lines that stay
+      # behind were never subtracted. Step 4 must estimate the NET, and the
+      # Step 6 report must state the measured net with the command behind it.
+      if ! grep -qF 'estimated net saving' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 4 must present an estimated net saving (moved minus residual), not the moved size (issue #3608)")
+        has_errors=true
+      fi
+      for token in 'measured net' 'wc -c'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (report the measured net saving and the command that produced it — issue #3608)")
+          has_errors=true
+        fi
+      done
+      # Review of the #3608 fix: (a) a rule given a `paths:` glob stays in the
+      # measured glob at the same size, so the procedure must take it out of
+      # the after-sum or a Path-scope saving measures as 0; (b) the worked
+      # example must split the ~8K-vs-3.7K gap into approved-but-never-deleted
+      # text and added residual text; (c) `wc -c` counts bytes, so the text
+      # must not convert its output with chars/4.
+      for token in 'out of the after-sum' 'never deleted' 'counts bytes'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (path-scoped rules leave the after-sum; both components of the overstatement; wc -c counts bytes — issue #3608)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'chars/4' "$mcd_dir/references/report-format.md" 2>/dev/null; then
+        issues+=("❌ ${plugin}/${skill_name}: references/report-format.md converts wc -c output with chars/4 — wc -c counts bytes (issue #3608)")
+        has_errors=true
+      fi
+      # Second review of the #3608 fix: (a) SKILL.md Step 1 still converted
+      # `wc -c` output with chars/4, and Step 4 still credited the whole
+      # ~8K-vs-3.7K gap to the pointers that stayed, contradicting
+      # report-format.md; (b) the 6,162/2,483 counts come from `rg '^-[^-]'`,
+      # which skips removed lines that start with `-` (Markdown bullets), so
+      # the split is an estimate and the removed count a lower bound.
+      if grep -qF 'chars/4' "$skill_file" || grep -qF 'once their pointers stayed' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must call wc -c output bytes (no chars/4) and must not credit the whole Step 4 overstatement to the pointers — point at references/report-format.md (issue #3608)")
+        has_errors=true
+      fi
+      if ! grep -qF 'bytes/4' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 1 must convert wc -c bytes with bytes/4 (issue #3608)")
+        has_errors=true
+      fi
+      for token in 'lower bound' 'Markdown bullet'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (the worked example's split is an estimate from rg counts that skip removed bullet lines — issue #3608)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision
@@ -1408,6 +1459,19 @@ check_skill_body() {
                    "untrustworthy under concurrency"; do
         if ! grep -qF "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (per-model attachment budget + workspace-root restriction + model_used concurrency caveat)")
+          has_errors=true
+        fi
+      done
+      # Regression (#3591): the placeholder-key and workspace-root facts were
+      # already in the mechanics table (c3e200edc, #2120), yet a consult two
+      # days later still fanned out on listmodels alone — OpenAI 401'd on an
+      # unexpanded ${OPENAI_API_KEY}, OpenCode Go 429'd on its monthly limit,
+      # and all three reviews went to one model with no disagreement to read.
+      # The probe must sit in the protocol's first step, before any fan-out,
+      # and files from another repo must be staged under the session repo.
+      for token in 'configuration, not reachability' 'from another repository'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (one-line chat probe per provider before the fan-out + stage other repos' files under PAL_WORKSPACE_ROOT — issue #3591)")
           has_errors=true
         fi
       done
@@ -1771,6 +1835,18 @@ check_skill_body() {
       for token in 'failure mode you have already seen' 'the control agrees with the false negative'; do
         if ! grep -qF "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain stderr-suppression token '${token}' (a caller's own 2>/dev/null turns a loud rejection into a clean negative, and the same-shape control test cannot catch it — issue #2504)")
+          has_errors=true
+        fi
+      done
+      # Regression (#3618): `gh run list --commit <short-sha>` exits 0 with an
+      # empty list while a run for that commit exists — the flag is passed to
+      # the Actions API's head_sha filter, which matches the full 40-character
+      # SHA exactly, never a prefix (reproduced on gh 2.89.0: full SHA → 15
+      # runs, 7-char prefix → 0). The empty result read as "the push triggered
+      # no workflow". Pin the command and the fix (resolve with git rev-parse).
+      for token in 'gh run list --commit' 'git rev-parse'; do
+        if ! grep -qF "$token" "$(dirname "$skill_file")/references/rejected-flags.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/rejected-flags.md must retain token '${token}' (an exact-match SHA filter given a short SHA returns an empty list, exit 0 — issue #3618)")
           has_errors=true
         fi
       done

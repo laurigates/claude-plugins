@@ -1,6 +1,6 @@
 # Issue Selection Modes
 
-Moved verbatim from `SKILL.md` § Mode Detection. Read when Step 0 counts zero refs (interactive), two or more refs (multiple), or `--auto` was passed.
+Moved from `SKILL.md` § Mode Detection. Read when Step 0 counts zero refs (interactive), two or more refs (multiple), or `--auto` was passed.
 
 ### No Arguments → Interactive Mode
 
@@ -25,7 +25,8 @@ questions:
 
 **For "Claude decides priority":**
 - Analyze all open issues
-- Score by clarity, scope, dependencies
+- Run the already-implemented check (Auto Mode, step 2) and set its hits aside
+- Score the rest by clarity, scope, dependencies
 - Present top recommendations
 
 **For "Filter by label":**
@@ -41,6 +42,16 @@ questions:
 ### Auto Mode (`/git:issue --auto`)
 
 1. Fetch all open issues
-2. Score and prioritize
-3. Present recommendations for approval
-4. Process approved issues
+2. **Run the already-implemented check before scoring.** An issue stays open
+   when the PR that implemented it carried no closing keyword, so an open
+   issue is not proof the work is undone. For each issue, search merged work
+   by its title and one or two key phrases from its body:
+   `gh pr list --state merged --search "<issue title> in:title" --json number,title,mergedAt`
+   and `git log --oneline -i --grep "<key phrase>" origin/main`. Present a hit as
+   "already done: verify and close" with the PR or commit it names, and route
+   it to the [Verification-Only Flow](verification-only.md) instead of the
+   scored list. A hit is a lead, not a verdict: a PR with a similar title may
+   cover only part of the issue, so the flow checks each criterion at HEAD.
+3. Score and prioritize the remaining issues
+4. Present recommendations for approval
+5. Process approved issues

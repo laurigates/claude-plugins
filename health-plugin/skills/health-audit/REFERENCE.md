@@ -89,7 +89,7 @@ Precedence: managed, then local (`.claude/settings.local.json`), then project (`
 | `installed` | Installed plugins, every scope | `id`, `scope` |
 | `available` | Marketplace plugins not installed | `pluginId`, `name`, `description`, `marketplaceName` |
 
-Installed entries carry no description, and neither array has keyword or category fields. Plain `claude plugin list --json` prints only the installed entries, as a bare array rather than this object.
+Installed entries carry no description, and neither array has keyword or category fields. They also carry `enabled`, `projectEnabled` and, for project and local rows, `projectPath`, which the audit does not use. Observed on 2.1.322 (2026-11-12, three directories): both booleans describe the plugin in the directory the command runs from and repeat on every row of that plugin; `enabled` matched whether the merged settings there enable it, `projectEnabled` whether that directory's `.claude/settings.json` does. Plain `claude plugin list --json` prints only the installed entries, as a bare array rather than this object.
 
 ## Report Template
 

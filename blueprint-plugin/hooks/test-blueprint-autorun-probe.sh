@@ -50,6 +50,9 @@ STATUS=OK
 ISSUE_COUNT=0
 === END BLUEPRINT AUTORUN ===
 OUT
+if [ -n "${STUB_EXTRA:-}" ]; then
+    printf '%s\n' "$STUB_EXTRA"
+fi
 EOF
 chmod +x "$STUB"
 
@@ -198,6 +201,40 @@ sig=$(signal_file sidH)
 kindh=$(jq -r '[.findings[].kind] | join(",")' "$sig" 2>/dev/null)
 [ "$kindh" = "task_due,task_due" ] && ok "H: a completed re-run clears autorun_incomplete" \
     || notok "H: findings after a completed re-run: '$kindh'"
+rm -rf "$proj"
+
+# ---- Test I: registry writes and task errors reach the session (#3551) ----
+# The probe sent runner stdout to a cache file, so the sync-ids CHANGED= line
+# never reached the session: a session starting with a modified manifest had
+# no explanation for it.
+kinds_of() { jq -r '[.findings[].kind] | join(",")' "$(signal_file "$1")" 2>/dev/null; }
+count_kind() { jq --arg k "$2" '[.findings[] | select(.kind == $k)] | length' "$(signal_file "$1")" 2>/dev/null; }
+proj=$(make_project 1)
+run_probe "$proj" sidI STUB_EXTRA="TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=ran DOCS=3 CHANGED=true"
+[ "$(count_kind sidI registry_reconciled)" = "1" ] && ok "I: CHANGED=true emits exactly one registry_reconciled" \
+    || notok "I: registry_reconciled findings: $(kinds_of sidI)"
+rem=$(jq -r '.findings[] | select(.kind == "registry_reconciled") | .remediation_skill' "$(signal_file sidI)")
+[ "$rem" = "commit docs/blueprint/manifest.json" ] && ok "I: remediation is to commit the manifest" || notok "I: remediation=$rem"
+
+# A second probe within the TTL re-reads the fresh cache: no repeat.
+rm -rf "$work/signals"
+run_probe "$proj" sidI STUB_EXTRA="TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=ran DOCS=3 CHANGED=true"
+[ "$(count_kind sidI registry_reconciled)" = "0" ] && ok "I: a TTL-fresh cache emits no registry_reconciled" \
+    || notok "I: registry_reconciled repeated from the cache: $(kinds_of sidI)"
+rm -rf "$proj"
+
+proj=$(make_project 1)
+run_probe "$proj" sidJ STUB_EXTRA="TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=error"
+[ "$(count_kind sidJ autorun_task_error)" = "1" ] && ok "I: STATE=error emits autorun_task_error" \
+    || notok "I: autorun_task_error findings: $(kinds_of sidJ)"
+summary=$(jq -r '.findings[] | select(.kind == "autorun_task_error") | .summary' "$(signal_file sidJ)")
+case "$summary" in *sync-ids*) ok "I: autorun_task_error names the task" ;; *) notok "I: summary=$summary" ;; esac
+rm -rf "$proj"
+
+proj=$(make_project 1)
+run_probe "$proj" sidK STUB_EXTRA="TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=ran DOCS=3 CHANGED=false"
+[ "$(kinds_of sidK)" = "task_due,task_due" ] && ok "I: CHANGED=false emits no new finding" \
+    || notok "I: CHANGED=false findings: $(kinds_of sidK)"
 rm -rf "$proj"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"

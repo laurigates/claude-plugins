@@ -274,4 +274,23 @@ done
 pass "absent or null id_registry/documents: REGISTRY_PRESENT=false, no registry rows, exit 0"
 validate_contract "absent registry" "$out4"
 
+# --- An index README's fenced template is not an ADR (#3549) -------------------
+# The audit read ids with `head -50 | grep '^id:'`, so a fenced `id: ADR-NNNN`
+# format example within an index README's first 50 lines counted as a
+# frontmatter-only ADR claim. It now uses the shared frontmatter parser, which
+# reads frontmatter only when it opens the file.
+proj5="$(mktemp -d)"
+[ -n "$proj5" ] || fail "mktemp failed"
+trap 'rm -rf "$proj" "$home" "$proj3" "$proj4" "$proj5"' EXIT
+mkdir -p "${proj5}/docs/adrs" "${proj5}/docs/blueprint"
+printf -- '---\nid: ADR-0001\nstatus: Accepted\n---\n# ADR-0001\n' > "${proj5}/docs/adrs/0001-first.md"
+# shellcheck disable=SC2016  # literal markdown fence
+printf -- '# ADR index\n\nTemplate:\n\n```markdown\n---\nid: ADR-NNNN\ntitle: "ADR-NNNN: Title"\n---\n```\n' > "${proj5}/docs/adrs/README.md"
+printf '{ "format_version": "3.3.0" }\n' > "${proj5}/docs/blueprint/manifest.json"
+out5="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj5" 2>&1)"
+grep -q "ADR-NNNN" <<<"$out5" && fail "fenced template in README reported as an ADR:\n$out5"
+grep -q "^ADR_WITH_ID=1$" <<<"$out5" || fail "expected ADR_WITH_ID=1, got:\n$out5"
+grep -q "^ADR_FRONTMATTER_ONLY=0$" <<<"$out5" || fail "expected ADR_FRONTMATTER_ONLY=0, got:\n$out5"
+pass "a fenced id template in an index README is not read as an ADR"
+
 echo "ALL TESTS PASSED"

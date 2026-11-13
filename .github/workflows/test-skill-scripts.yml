@@ -171,9 +171,11 @@ jobs:
 
       # documentation-plugin's check-public-export.sh scans with ripgrep and
       # exits 2 without it; ubuntu-latest does not ship rg, so its regression
-      # suite failed every case here while passing locally.
+      # suite failed every case here while passing locally. original-awk is the
+      # BWK awk macOS ships as /usr/bin/awk; without it the BWK row of
+      # blueprint-plugin's test-frontmatter-rows.sh is skipped here.
       - name: Install ripgrep
-        run: sudo apt-get install -y -qq ripgrep
+        run: sudo apt-get install -y -qq ripgrep original-awk
 
       # blueprint-plugin/scripts/check-manifest-schema.py is a self-contained
       # `uv run` PEP723 script (jsonschema). Absent uv, its regression suite

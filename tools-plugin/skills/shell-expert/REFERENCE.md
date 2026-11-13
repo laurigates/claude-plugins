@@ -478,14 +478,43 @@ set -euo pipefail
 # Wrong: intermittently false-negative
 printf '%s\n' "$section" | grep -Fq "$needle" || fail "not documented"
 some_command | grep -q "ready" || fail "not ready"
+exists() { gh label list --json name --jq '.[].name' | grep -Fxq "$1"; }
 
 # Right: no second process, so nothing can take SIGPIPE
 grep -Fq "$needle" <<<"$section" || fail "not documented"
-grep -q "ready" <<<"$(some_command)" || fail "not ready"
+
+# Right: capture into a variable first, then read it with a here-string
+output=$(some_command)
+grep -q "ready" <<<"$output" || fail "not ready"
+
+# Right, inside a function: check the capture's status explicitly, because
+# `if exists ...` suspends set -e for the whole function body
+exists() {
+  local names
+  names=$(gh label list --json name --jq '.[].name') || { echo "label lookup failed" >&2; exit 1; }
+  grep -Fxq "$1" <<<"$names"
+}
 
 # Right: grep without -q reads to EOF, so the producer always finishes
 some_command | grep "ready" >/dev/null || fail "not ready"
 ```
+
+Capture with an assignment, not inline. `grep -q PAT <<<"$(some_command)"`
+also avoids `SIGPIPE`, but it loses the producer's exit status: if
+`some_command` fails, grep sees empty or partial input and reports a miss. In a
+membership test that decides whether to create, rename or delete something, a
+failed lookup then reads as "absent". The assignment `output=$(some_command)`
+returns the command's status, so at top level `set -e` stops the script there.
+
+That stop only happens where errexit is active. Bash suspends `set -e` inside
+a function called from `if`, `while`, `until`, `!`, or the left side of `&&` or
+`||`, so a failed capture in `exists()` falls through to the grep and still
+reads as "absent". Check the status on the assignment itself, as the
+`exists()` example in this section does, and declare the variable with `local` on its own line:
+`local names=$(cmd)` returns the status of `local`, which is 0. Capture inside
+the function rather than once at the top of the script: a script that creates,
+renames or deletes the things it tests for would otherwise test against a list
+that is out of date after its first change.
 
 `| head` has the same mechanism. It is usually deliberate truncation, so drop
 `pipefail` for that script or add `|| true` to that line. Do not add `|| true`

@@ -184,7 +184,7 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
 | Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
 | Credential files | `credentials.json`, `secrets.json`, `.api_tokens` (e.g. `~/.api_tokens`), `*.keystore`, `*.key` |
-| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints) |
+| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints). A protected path that is only an output-redirect target is a write and passes (`cat > .env`, `… \| ssh host 'cat > /srv/app/.env'`); one read anywhere in the command (`cat .env > /tmp/x`, `ssh host 'cat /srv/app/.env'`, the read-write redirect `cat <>.env`, a substitution such as `cat >/tmp/a$(cat .env)`) still blocks (#3594) |
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD`; the verb (`echo`/`printf`/`cat`/`env`/`printenv`/`export`) must be a command word, so `source .env && tool --token=$X_TOKEN` and `dotenv run -- …` pass |
 | Full env dump | Bare `printenv` or `env` commands |
 
@@ -351,19 +351,19 @@ A PreToolUse hook that blocks an Edit or Write which adds, to a shell file, a de
 
 | Aspect | Detail |
 |--------|--------|
-| Tier | **Block** (exit 2). The listing exposes secrets, and the fix is a rewrite of the same line, so the agent is never dead-ended |
-| Fires on | `Edit` and `Write` to a shell file: `*.sh`, `*.bash`, `*.zsh`, `*.ksh`, the rc files (`.zshrc`, `.bashrc`, `.profile`, …), the chezmoi source names for those (`dot_zshrc.tmpl`), or a file whose first line is a `sh`/`bash`/`zsh`/`ksh`/`dash` shebang |
+| Tier | **Block** (exit 2) for an Edit or Write. The listing exposes secrets, and the fix is a rewrite of the same line, so the agent is never dead-ended. A **Bash** command that runs or writes such a line gets a non-blocking `additionalContext` note instead (#3629): most of those run with a non-empty expansion, and a block would stop each one |
+| Fires on | `Edit` and `Write` to a shell file: `*.sh`, `*.bash`, `*.zsh`, `*.ksh`, the rc files (`.zshrc`, `.bashrc`, `.profile`, …), the chezmoi source names for those (`dot_zshrc.tmpl`), or a file whose first line is a `sh`/`bash`/`zsh`/`ksh`/`dash` shebang. Also the shell lines of non-shell files (#3629): Makefile recipe lines (`Makefile`, `GNUmakefile`, `*.mk`; a leading tab, `$$` read as `$`, an empty `$(VAR)` counted as an expansion), justfile recipe lines (`justfile`, `.justfile`, `*.just`; indented, `{{x}}` counted as an expansion), and `run:` values in `.github/workflows/*.yml` and `action.yml`. A top-level `export` in a Makefile or justfile is the tool's own directive and is not checked |
 | Checked | Only the text the edit adds. A line that `old_string` or the file on disk already holds is not blocked |
 | Blocked | `local $names`, `export $(grep -v '^#' .env \| xargs)`, ``export `cmd` ``, `typeset -x $names`, `declare -p $name`, `typeset "${names[@]}"`, `export "$@"` — at the start of a line or after `;`, `&&`, `\|\|`, `{`, `(`, `then`, `do`, `else` |
 | Allowed | An assignment (`local name=$value`), a literal name among the arguments (`local first $rest`), a quoted single value (`export "$name"`: empty is an error), a non-empty default (`${names:-a b}`), an abort form (`"${names[@]:?names is empty}"`) |
 | Escape hatch | A `# allow-bare-decl` comment on the line, or alone on the line above. It is meant for the agent: it records in the source that the line cannot expand to nothing |
-| Not covered | Text written through Bash (a heredoc, `tee`), shell inside non-shell files (justfile and Makefile recipes, workflow `run:` blocks), and `readonly`/`integer`/`float`, whose bare forms list only their own kind of parameter. A match inside a string or a heredoc body is a false positive |
+| Not covered | Shell in Dockerfiles; `readonly`/`integer`/`float`, whose bare forms list only their own kind of parameter (bare `readonly` printed 6 lines and no exported canary in bash 5.2, so it is not a secret leak and gets no block). A match inside a string or a heredoc body is a false positive; on an Edit or Write the allow comment clears a string |
 
 Which shells print the listing was measured with an exported canary variable (bash 5.2, zsh 5.9): `typeset`, `declare` and `export` in both, `local` in zsh only. The hook checks `local` in every shell file because a `.sh` file can be sourced by zsh. The suite runs each fixture in the real shells, so the pattern and the behaviour cannot drift apart.
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1` in your shell environment. An inline prefix does not reach the hook.
 
-**Tests:** `bash hooks-plugin/hooks/test-bare-declaration-guard.sh` (bash always; the zsh column when `zsh` is installed).
+**Tests:** `bash hooks-plugin/hooks/test-bare-declaration-guard.sh` (bash always; the zsh column when `zsh` is installed, and the make and just rows when those tools are; the summary line says when the zsh column did not run).
 
 ### external-pr-merge-guard.sh
 
@@ -386,6 +386,16 @@ hook falls back to `gh api repos/OWNER/REPO/pulls/N` and
 (or the MCP tool's `owner`/`repo`) and a numeric PR. Without `-R`, gh resolves
 the repository from remotes and its default setting, which the hook does not
 guess, so the merge stays denied; name the repository and retry.
+
+A lookup that fails is reported as a failed lookup, not as an authorship
+verdict (issue #3602). On an HTTP error `gh api` prints the error body on
+stdout and exits 1, so the hook keeps a lookup's output only on exit 0. When
+the viewer or author lookup fails, the denial asks `gh api rate_limit` (which
+does not count against the limit) and, if the REST or GraphQL limit is
+exhausted, names it with the reset time and says to retry after the reset.
+Otherwise it quotes gh's error message. A failed viewer lookup denies only a
+non-bot author: a bot PR is trusted whoever the viewer is, so it is still
+allowed.
 
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge` (and `curl`

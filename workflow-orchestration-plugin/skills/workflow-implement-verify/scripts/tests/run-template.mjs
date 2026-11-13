@@ -146,6 +146,46 @@ const units = (ids) =>
   const r = await run(base, () => fix('x'))
   check('shared branch aborts', r.result.reason === 'shared-branch' && r.calls.length === 0, r.result)
 }
+// 14. The repair brief reads the branch's PR state before any other work, and
+// a merged or closed PR means stop and report, never a new PR (#3589).
+{
+  const r = await run({ ...units(['a', 'b']), repo: 'o/r', land: 'local' }, (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u) : verdict(u, 'pass'))
+  const p = r.sent['repair:a']?.prompt ?? ''
+  const at = p.indexOf('gh pr list -R o/r --head fix/a --state all --json number,state,headRefOid')
+  check('repair prompt reads PR state first', at !== -1 && at < p.indexOf('Work in your own worktree'), p)
+  check('repair prompt: MERGED or CLOSED → blocked, no new PR', /MERGED or CLOSED[^\n]*commit nothing[^\n]*"blocked"/.test(p) && /do not open a PR/.test(p), p)
+  // --state all returns every PR ever opened from the branch name, so a reused
+  // name can list an old MERGED PR beside the OPEN one: the OPEN entry wins.
+  check('repair prompt: an OPEN entry wins over older MERGED/CLOSED ones',
+    /An OPEN entry wins/.test(p) && /no entry is OPEN and a MERGED or CLOSED entry counts → stop/.test(p)
+      && !/^MERGED or CLOSED → stop/m.test(p), p)
+  // The list matches by branch name, not commits: a reused name whose only PR is
+  // an old MERGED one must not stop the repair. A MERGED/CLOSED entry counts only
+  // when its headRefOid is the branch tip or an ancestor of it.
+  check('repair prompt: MERGED/CLOSED counts only when its headRefOid is an ancestor of the branch',
+    /merge-base --is-ancestor <headRefOid> fix\/a/.test(p) && /fails the test is earlier work on a reused name: ignore it/.test(p), p)
+}
+// 14b. Both finalise briefs apply the same rule: OPEN wins, and a MERGED/CLOSED
+// entry skips the branch only when its headRefOid is head_sha or an ancestor.
+{
+  const r = await run(units(['a', 'b']), (k, u) => (k === first ? fix(u) : k === 'verify' ? verdict(u, 'pass') : { prs: [], pushed: [] }))
+  const p = r.sent.finalise?.prompt ?? ''
+  check('finalise reads headRefOid and tests ancestry against head_sha',
+    /--state all --json number,state,headRefOid/.test(p) && /merge-base --is-ancestor <headRefOid> <head_sha>/.test(p), p)
+  check('finalise: OPEN wins; a MERGED/CLOSED entry failing the test is ignored',
+    /An OPEN entry wins/.test(p) && /earlier work on a reused branch name: ignore it/.test(p), p)
+}
+// 15. A repairer that stopped on a merged PR (blocked) is BLOCKED, not re-verified, not landed.
+{
+  const r = await run(units(['a', 'b']), (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed')
+      : k === 'repair' ? fix(u, { status: 'blocked', blockers: ['PR #7 is MERGED'] })
+      : k === 'reverify' ? verdict(u, 'pass') : { prs: [], pushed: [] })
+  check('blocked repair → BLOCKED', statuses(r).a === 'BLOCKED', statuses(r))
+  check('blocked repair → no re-verify', !r.calls.some((c) => c.startsWith('reverify')), r.calls)
+  check('blocked repair → not landed', r.result.finalisePlan.length === 0 && !r.calls.includes('finalise'), r.result.finalisePlan)
+}
 if (isImpl) {
   // 8. no-change is its own outcome and skips the verifier.
   const r = await run(units(['a', 'b']), (k, u) => (k === 'implement' ? fix(u, { status: 'no-change' }) : verdict(u, 'pass')))
@@ -154,6 +194,13 @@ if (isImpl) {
   // 9. A single unit is below the floor.
   const one = await run(units(['a']), () => fix('a'))
   check('one unit aborts below floor', one.result.reason === 'below-floor' && one.calls.length === 0, one)
+  // The implement brief caps follow-up volume: 7 units returned 52 followups
+  // without it, about 12 with it (#3605).
+  {
+    const capped = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) => (k === 'implement' ? fix(u) : verdict(u, 'pass')))
+    const p = capped.sent['implement:a']?.prompt ?? ''
+    check('implement prompt caps followups', /put pre-existing problems in followups, not the diff\.[^\n]*Keep followups to defects worth an issue/.test(p), p)
+  }
   // 10. Units in two repositories: each unit's repo, root and gates reach its own
   // prompts, a foreign unit's agents make worktrees under its root, and the
   // landing plan names each unit's repository.
@@ -201,6 +248,10 @@ if (isImpl) {
   // 8. A unit without findings aborts the run.
   const r = await run({ units: [{ id: 'a', branch: 'fix/a', findings: [] }] }, () => fix('a'))
   check('unit without findings aborts', r.result.reason === 'incomplete-units' && r.calls.length === 0, r)
+  // 9. A first-stage fixer that found the PR merged (blocked, tip unchanged) gets no verifier (#3589).
+  const m = await run(units(['a', 'b']), (k, u) =>
+    k === 'fix' ? (u === 'a' ? fix(u, { status: 'blocked', commits: [] }) : fix(u)) : k === 'verify' ? verdict(u, 'pass') : { pushed: [] })
+  check('blocked fixer → BLOCKED, unverified', statuses(m).a === 'BLOCKED' && !m.calls.includes('verify:a'), m.calls)
 }
 
 process.exit(failed ? 1 : 0)

@@ -19,8 +19,8 @@
 #     ERROR `id_path_mismatch`, ERROR `registry_path_missing`) and WARNs
 #     `counter_stale` when a `last_*` counter is below the highest id on disk.
 # The registry checks run ONLY when the manifest carries an `id_registry` with
-# a `documents` map. Without one (this repo's own manifest has no id_registry)
-# they are skipped entirely and REGISTRY_PRESENT=false is reported.
+# a `documents` map. Without one they are skipped entirely and
+# REGISTRY_PRESENT=false is reported.
 #
 # Usage: bash blueprint-sync-ids.sh --project-dir <path> [--home-dir <path>]
 #
@@ -75,9 +75,40 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 echo "JQ_AVAILABLE=true"
 
-# Extract a frontmatter id value (first match, trimmed).
+# Frontmatter ids come from the parser the write-time hook and the
+# session-start sweep use (blueprint-autorun.sh --frontmatter-rows, #3549). The
+# `head -50 | grep '^id:'` this replaced read a fenced `id: ADR-NNNN` template
+# inside an index README's first 50 lines as an ADR, and kept inline comments
+# and quotes as part of the id.
+sync_ids_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+autorun_bin="${sync_ids_dir}/../../../scripts/blueprint-autorun.sh"
+if [ ! -f "$autorun_bin" ]; then
+  echo "STATUS=ERROR"
+  echo "REASON=missing_tool: blueprint-autorun.sh not found at ${autorun_bin}"
+  echo "ISSUE_COUNT=1"
+  echo "ISSUES:"
+  echo "  - SEVERITY=ERROR TYPE=missing_tool MSG=blueprint-autorun.sh not found at ${autorun_bin}"
+  echo "=== END BLUEPRINT SYNC-IDS ==="
+  exit 1
+fi
+
+declare -A fm_id_of=()
+load_frontmatter_ids() {
+  local -a files=()
+  local f row_path row_fm row_id _rest
+  for f in "$@"; do
+    [ -f "$f" ] && files+=("$f")
+  done
+  [ "${#files[@]}" -gt 0 ] || return 0
+  while IFS=$'\037' read -r row_path row_fm row_id _rest; do
+    [ -n "$row_path" ] || continue
+    [ "$row_fm" = "1" ] && fm_id_of["$row_path"]="$row_id"
+  done < <(bash "$autorun_bin" --frontmatter-rows "${files[@]}")
+}
+
+# The frontmatter id of a document, or nothing.
 extract_id() {
-  head -50 "$1" 2>/dev/null | grep -m1 "^id:" | sed 's/^id:[[:space:]]*//' | tr -d '\r'
+  printf '%s' "${fm_id_of["$1"]:-}"
 }
 
 # Project-relative form of a path under the project dir.
@@ -110,6 +141,9 @@ for cand in docs/adrs docs/adr; do
     break
   fi
 done
+
+load_frontmatter_ids "${prd_dir}"/*.md "${prp_dir}"/*.md "${wo_dir}"/*.md \
+  ${adr_dir:+"${adr_dir}"/*.md}
 
 # --- PRDs: id present or NEEDS_ID (no filename derivation) ---
 prd_with=0; prd_missing=0
@@ -268,7 +302,7 @@ if [ -f "$manifest" ] && jq empty "$manifest" >/dev/null 2>&1; then
     | length
   ' "$manifest" 2>/dev/null || echo 0)"
   # Present only as an object `documents` map: a null, absent, or non-object
-  # id_registry (this repo's own manifest has none) skips every registry check.
+  # id_registry skips every registry check.
   if jq -e '((.id_registry // {}) | type) == "object"
             and (((.id_registry // {}).documents // null) | type) == "object"' \
        "$manifest" >/dev/null 2>&1; then

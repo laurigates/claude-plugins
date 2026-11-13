@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-06
+modified: 2026-11-12
 reviewed: 2026-08-09
 description: (Re)generate path-scoped rules from PRDs into generated_rules_path, with hash-based conflict checks. Use when creating or refreshing rules from docs/prds/; for full setup use blueprint-development.
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
@@ -197,7 +197,6 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
      '.task_registry["generate-rules"].last_completed_at = $now |
       .task_registry["generate-rules"].last_result = "success" |
       .task_registry["generate-rules"].context.source_prd_hashes = ($source_prd_hashes // {}) |
-      .task_registry["generate-rules"].stats.runs_total = ((.task_registry["generate-rules"].stats.runs_total // 0) + 1) |
       .task_registry["generate-rules"].stats.items_processed = $processed |
       .task_registry["generate-rules"].stats.items_created = $created' \
      docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
