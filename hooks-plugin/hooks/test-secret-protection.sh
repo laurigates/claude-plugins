@@ -446,6 +446,53 @@ assert_exit \
     "cat .env.example; echo done is allowed" 0 \
     "cat ${env_token}.example; echo done"
 
+# ── a protected path that is only a redirect target is a write (issue #3594) ──
+# `cat > .env` writes the file and prints nothing, so it exposes nothing to the
+# transcript; `gcloud … > .env` and `tee .env` already passed. The reader verb
+# matched anyway, which blocked writing a remote `.env` from a secret store
+# (`… | ssh host 'cat > /srv/app/.env'`). A redirect target is dropped before
+# the match is judged; a protected path anywhere else in it still blocks.
+echo ""
+echo "a protected path that is only a redirect target is a write, not a read (#3594):"
+
+assert_exit "cat > .env is allowed (write)" 0 "cat > ${env_token}"
+assert_exit "cat >> .env is allowed (append)" 0 "cat >> ${env_token}"
+assert_exit "cat >.env is allowed (no space)" 0 "cat >${env_token}"
+assert_exit "cat - 1> .env is allowed (fd redirect)" 0 "cat - 1> ${env_token}"
+assert_exit "cat 2>/dev/null > .env is allowed" 0 "cat 2>/dev/null > ${env_token}"
+assert_exit "cat > .env.local is allowed" 0 "cat > ${env_token}.local"
+assert_exit "head -c 10 > .env is allowed" 0 "head -c 10 > ${env_token}"
+assert_exit "cat > ~/.api_tokens is allowed" 0 "cat > ~/.api_tokens"
+assert_exit "cat > .env <<'EOF' heredoc write is allowed" 0 \
+    "$(printf '%s\n' "cat > ${env_token} <<'EOF'" 'A=1' 'EOF')"
+assert_exit "secret store piped to a remote cat > .env is allowed" 0 \
+    "gcloud secrets versions access latest --secret=tg | ssh host 'cat > /srv/app/${env_token}'"
+assert_exit "secret store piped to remote sudo sh -c cat > .env is allowed" 0 \
+    "gcloud secrets versions access latest --secret=tg | ssh host 'sudo sh -c \"cat > /srv/app/${env_token}\"'"
+# Controls: a protected path that is read stays blocked, wherever the output goes.
+assert_exit "cat .env > /tmp/x is blocked (reads .env)" 2 "cat ${env_token} > /tmp/x"
+assert_exit "cat > /tmp/x .env is blocked (reads .env)" 2 "cat > /tmp/x ${env_token}"
+assert_exit "cat > .env.bak .env is blocked (reads .env)" 2 "cat > ${env_token}.bak ${env_token}"
+assert_exit "cat < .env > /tmp/x is blocked (input redirect)" 2 "cat < ${env_token} > /tmp/x"
+assert_exit "cut -d= -f1 .env > keys is blocked" 2 "cut -d= -f1 ${env_token} > keys"
+assert_exit "cat > /tmp/x; cat .env is blocked" 2 "cat > /tmp/x; cat ${env_token}"
+assert_exit "remote read ssh host 'cat /srv/app/.env' is blocked" 2 "ssh host 'cat /srv/app/${env_token}'"
+assert_exit "cat ~/.ssh/id_ed25519 > /tmp/k is blocked" 2 "cat ~/.ssh/id_ed25519 > /tmp/k"
+# `<>` opens the file read-write on fd 0, so cat prints it: its `>` is not an
+# output redirect.
+assert_exit "cat <>.env is blocked (read-write redirect reads .env)" 2 "cat <>${env_token}"
+assert_exit "cat 0<> .env is blocked (read-write redirect)" 2 "cat 0<> ${env_token}"
+assert_exit "head -c 10 <>~/.api_tokens is blocked" 2 "head -c 10 <>~/.api_tokens"
+# A substitution glued to the target runs and reads the secret; so does a
+# `>(…)` process substitution. Neither is part of the target word.
+assert_exit "cat >/tmp/a\$(cat\${IFS}.env) is blocked (substitution in target)" 2 \
+    'cat >/tmp/a$(cat${IFS}'"${env_token})"
+assert_exit "cat >(cat \${IFS}.env) is blocked (process substitution)" 2 \
+    'cat >(cat${IFS}'"${env_token})"
+# A parameter expansion in the target is still a write.
+assert_exit "cat > \"\$HOME/.env\" is allowed (write)" 0 'cat > "$HOME/'"${env_token}"'"'
+assert_exit "cat > \${D}/.env is allowed (write)" 0 'cat > ${D}/'"${env_token}"
+
 # ── .api_tokens + sed/awk/grep/cut/perl/rg as file readers (issue #2900) ──────
 # An agent ran `sed -n 's/^export OPENCODE_API_KEY=//p' ~/.api_tokens` and
 # nothing blocked it: `.api_tokens` matched no protected pattern and sed was not
