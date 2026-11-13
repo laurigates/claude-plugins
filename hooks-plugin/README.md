@@ -820,11 +820,17 @@ Options:
 
 ## Extending
 
-Add new hooks by:
+A new hook in this plugin touches five files. Decide first whether it blocks or nudges (`.claude/rules/hook-block-vs-nudge.md`): exit 2 is for safety and correctness, a style preference gets a nudge.
 
-1. Creating a new `.sh` script in `hooks/`
-2. Following the input/output conventions (see existing hooks)
-3. Adding configuration to `.claude/settings.json`
+| File | What goes in it | Checked by |
+|------|-----------------|------------|
+| `hooks/<name>.sh` | The script, mode `100755`: `set -euo pipefail`, the standard `block()` function, `TOOL_NAME` for the tool name, and an exit 0 on every path where the hook does not apply (`.claude/rules/shell-scripting.md` § Hook Script Conventions) | `scripts/lint-shell-scripts.sh`, `shellcheck` |
+| `hooks/test-<name>.sh` | The regression suite, mode `100755`, exiting non-zero on any failure | `scripts/run-skill-script-tests.sh` discovers `*/hooks/test-*.sh`; the `Test: Skill scripts` workflow runs it |
+| `.claude-plugin/plugin.json` | The registration under its event and matcher, with an explicit `timeout` in seconds. The matcher is a tool name, never a permission rule. `"onFailure": "block"` only on a safety block | `scripts/check-hook-matchers.sh`, `scripts/check-hook-timeout-units.sh`, `scripts/check-hook-fail-closed.sh` |
+| `README.md` (this file) | A `### <name>.sh` section under Available Hooks, and a row in [Toggling Hooks](#toggling-hooks) | `scripts/check-plugin-readme-currency.sh` (advisory) |
+| `docs/feature-flags.md` | One row for every `CLAUDE_HOOKS_*` variable the script reads | `scripts/check-feature-flags-catalog.sh --strict` fails the commit when a row is missing |
+
+To use one of these scripts in a project without the plugin, copy it and register it in `.claude/settings.json` as described under [Installation](#installation).
 
 ## Toggling Hooks
 
