@@ -16,6 +16,8 @@
 #   H  the failing output satisfies the structured-output contract
 #   I  a prompt that names `gh issue create` only in prose is a filing site
 #   J  a job on the EXEMPT_SITES list is counted as exempt, not checked
+#   K  a step running scripts/publish-agent-issue.sh is a filing site, and its
+#      env carries the `## Processing` section (#2769)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -216,6 +218,39 @@ YAML
 run "$tmp/j"
 assert "J exempt job passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "J exempt job is counted" "$(contains "$OUT" '^SITES_EXEMPT=1$')"
+
+# --- K: a bash step that publishes an agent-written body (#2769) --------------
+# After the split the Claude prompt no longer names `gh issue create`; the
+# filing site is the step that runs scripts/publish-agent-issue.sh, and its
+# `## Processing` text arrives through the step's env. Without this case the
+# check would stop seeing every converted workflow.
+make_project "$tmp/k"
+cat >> "$tmp/k/.github/workflows/report.yml" <<'YAML'
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish
+        env:
+          PROCESSING: |
+            ## Processing
+
+            - **Closes:** next month.
+        run: |
+          bash scripts/publish-agent-issue.sh --repo "$GITHUB_REPOSITORY" \
+            --title "Report" --body-file body.md --processing "$PROCESSING"
+YAML
+run "$tmp/k"
+assert "K publish step with processing passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "K publish step is counted as a site" "$(contains "$OUT" '^SITES_CHECKED=4$')"
+python3 - "$tmp/k/.github/workflows/report.yml" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace("            ## Processing\n\n            - **Closes:** next month.", "            - **Closes:** next month.")
+open(p, "w").write(s)
+PY
+run "$tmp/k"
+assert "K publish step without processing exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "K names the publish site" "$(contains "$OUT" 'TYPE=missing_processing.*report.yml:split:Publish')"
 
 # --- H: structured-output contract --------------------------------------------
 if [ -f "$contract" ]; then
