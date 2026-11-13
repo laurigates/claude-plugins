@@ -1361,6 +1361,25 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+    # Regression (#3308): the end-to-end pipelines resolve <owner> from context,
+    # but the scaffolds default --publisher to one maintainer's account. A
+    # scaffold invocation without --publisher writes that account into the
+    # generated manifest URLs (FoundryVTT module.json url/manifest/download),
+    # so the repo is created under <owner> while the module installs from a
+    # repo that does not exist; the scaffold's own --verify gate checks only
+    # the URL suffix and misses it. Every `scaffold.py --name` line must pass
+    # --publisher. Keyed on the skill name alone (both are unique in the repo),
+    # so the self-test can exercise it from its fixture plugin.
+    if [ "$skill_name" = "foundryvtt-module" ] || [ "$skill_name" = "comfy-node" ]; then
+      scaffold_lines="$(grep -E 'scaffold\.py .*--name ' "$skill_file" || true)"
+      if [ -z "$scaffold_lines" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md lost its 'scaffold.py --name' invocation; the --publisher guard has nothing to check (#3308)")
+        has_errors=true
+      elif grep -qvF -- '--publisher' <<<"$scaffold_lines"; then
+        issues+=("❌ ${plugin}/${skill_name}: a 'scaffold.py --name' invocation omits --publisher <owner>, so the scaffold's default owner lands in the generated repo URLs (#3308)")
+        has_errors=true
+      fi
+    fi
 
     # Regression: configure-worktreeinclude generates a .worktreeinclude whose
     # patterns copy gitignored inputs into new worktrees. Its load-bearing

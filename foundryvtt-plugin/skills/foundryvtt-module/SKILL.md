@@ -59,6 +59,12 @@ what you do in Phase 2 below:
   `gh api user --jq .login`; `iac_repo:` / `iac_dir:` are read from
   `.claude/foundryvtt-plugin.local.md`. When they are unset, ask once how this
   user manages repo settings and secrets, and offer to save the answer there.
+- `<owner>` is also the scaffold's `--publisher`, which writes the
+  `module.json` `url`, `manifest` and `download` addresses. Leave it out and
+  the scaffold's built-in default owner lands in them, so the module would
+  install from a repo that does not exist. `<author>` (the scaffold's
+  `--author`) is a sibling module's `module.json` `authors[0].name`, else
+  `git config user.name`.
 - The remaining preconditions (a **personal** `gh auth` that may create repos, and
   an uncommitted-change-free gitops clone) are stated once in the owner skill —
   satisfy them before Phase 3.
@@ -103,7 +109,7 @@ way.)
 ## Phase 2 — Scaffold, init, and get to green
 
 ```sh
-python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --variant basic
+python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --variant basic --publisher <owner> --author "<author>"
 ```
 
 ```sh
