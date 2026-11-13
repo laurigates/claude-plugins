@@ -90,6 +90,12 @@ ceiling — `--max-cycles` / `--max-iterations`, "same failure N times in a row 
 stuck", or a phase cap. A loop with no ceiling and a strict verifier can churn
 forever; bound it and surface the stuck state for a human.
 
+A loop that queries tools needs the same ceiling per source: "same tool or
+source returns nothing useful N times in a row = stop querying it". Make it a
+counter, not prompt wording: in arXiv 2610.06191 agents labelled a failing
+source's results useless 97–100% of the time yet rarely stopped on that
+judgment, and prompt cues moved when they stopped, not what they stopped on.
+
 ## Where this applies
 
 | Skill | How it should meet the bar |

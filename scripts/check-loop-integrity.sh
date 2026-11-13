@@ -66,6 +66,9 @@ require "$RULE" "Next target" "state packet lost the next-target field (successo
 # Research radar W39 (#2767): a reciprocal verifier pair drifts off the protocol
 # over repeated rounds, so mutual checking is not Pillar 1 independence.
 require "$RULE" "reciprocal" "Pillar 1 lost the reciprocal-verifier caveat (re-instantiate the verifier per iteration) (#2767)"
+# Research radar W41 (#2960): agents judge a source useless yet keep querying it;
+# the stop has to be a counter, not prompt wording.
+require "$RULE" "returns nothing useful" "Bounding runaway lost the useless-source stop counter (#2960)"
 # Checkpoint skill — the plan file IS the state packet; gate stays independent.
 require "$CHECKPOINT" "Verifier result" "checkpoint plan format lost the Verifier-result field (reverts to self-judged done)"
 require "$CHECKPOINT" "Changed since last run" "checkpoint plan format lost the changed-since field (resume redoes/undoes work)"
