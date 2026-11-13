@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-10-11
+modified: 2026-11-13
 reviewed: 2026-08-09
 description: "Check for stale generated content and offer regeneration or promotion. Use when syncing blueprint after PRD changes, or reconciling .claude/rules/ drift."
 args: "[--dry-run]"
@@ -42,162 +42,172 @@ receipt instead. Quiet mode never skips confirmation gates that guard writes —
 only navigation menus. A direct user invocation always behaves fully
 interactively (explicit intent overrides quiet; see ADR-0020).
 
-## Steps
+## Execution
+
+Execute this sync workflow:
 
 **Purpose**:
 - Detect when generated skills/commands have been manually modified
 - Detect when source PRDs have changed (making generated content stale)
 - Offer appropriate actions: regenerate, promote to custom, or keep as-is
 
-1. **Read manifest**:
+### Step 1: Read manifest
+
+```bash
+cat docs/blueprint/manifest.json
+```
+- Extract `generated.rules` section
+- If no generated content, report "Nothing to sync"
+
+### Step 1a: Detect pre-contract records (issue #2868)
+
+Manifests written by blueprint 3.0.0 key `generated.rules` without `.md` and
+carry no `content_hash`, so Step 2 would report every rule missing. Check first:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --dry-run
+```
+
+- `STATUS=OK` → continue to Step 2.
+- `KEY_MISSING_EXTENSION` or `RECORD_MISSING_HASH` above 0 → WARN in the
+  report with each `key_missing_extension` / `record_missing_hash` issue —
+  never list those rules as missing. With `--dry-run`, stop at the warning
+  and recommend `/blueprint:sync`. Otherwise run the script without
+  `--dry-run`: it re-keys to `<key>.md` and backfills `content_hash` from the
+  current file with `status: "modified"`, never touching the rule files.
+- `key_unresolved` / `key_conflict` issues → list them for the user; the
+  script leaves those records untouched.
+
+### Step 2: Check each generated rule
+
+First resolve the rules directory from the manifest — never hardcode
+`.claude/rules/`, or sync looks in the wrong place in every repo that chose
+an isolated `generated_rules_path` in `/blueprint:init` Step 4a
+(issues #1043, #1675, #2331):
+
+```bash
+RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+RULES_DIR="${RULES_DIR%/}"
+```
+
+`generated.rules` is an **object map** keyed by filename (see
+`blueprint-plugin/schemas/manifest.schema.json`), so iterate it with
+`to_entries[]`:
+
+```bash
+jq -r '(.generated.rules // {}) | to_entries[] | [.key, (.value.content_hash // ""), (.value.source_hash // "")] | @tsv' docs/blueprint/manifest.json
+```
+
+For each entry, `{key}` is the rule's **bare filename including the `.md`
+extension**, relative to `$RULES_DIR`. Resolve it as `"$RULES_DIR/{key}"` —
+do **not** append `.md`, which would look for `development.md.md` and report
+every registered rule as missing.
+
+a. **Verify file exists**:
    ```bash
-   cat docs/blueprint/manifest.json
+   test -f "$RULES_DIR/{key}"
    ```
-   - Extract `generated.rules` section
-   - If no generated content, report "Nothing to sync"
 
-1a. **Detect pre-contract records** (issue #2868):
-
-   Manifests written by blueprint 3.0.0 key `generated.rules` without `.md` and
-   carry no `content_hash`, so Step 2 would report every rule missing. Check first:
-
+b. **Hash current content** (bare hex, matching the `content_hash` the
+   producers write — no `sha256:` prefix):
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --dry-run
+   sha256sum "$RULES_DIR/{key}" | cut -d' ' -f1
    ```
 
-   - `STATUS=OK` → continue to Step 2.
-   - `KEY_MISSING_EXTENSION` or `RECORD_MISSING_HASH` above 0 → WARN in the
-     report with each `key_missing_extension` / `record_missing_hash` issue —
-     never list those rules as missing. With `--dry-run`, stop at the warning
-     and recommend `/blueprint:sync`. Otherwise run the script without
-     `--dry-run`: it re-keys to `<key>.md` and backfills `content_hash` from the
-     current file with `status: "modified"`, never touching the rule files.
-   - `key_unresolved` / `key_conflict` issues → list them for the user; the
-     script leaves those records untouched.
+c. **Compare hashes**:
+   - If `content_hash` matches → status: `current`
+   - If `content_hash` differs → status: `modified`
 
-2. **Check each generated rule**:
+d. **Check source freshness** (for rules from PRDs):
+   - Hash current PRD content
+   - Compare with `source_hash` in manifest
+   - If differs → status: `stale`
+   - A record with no `source_hash` (rules written by `/blueprint:init`) is
+     never stale — only `modified` applies
 
-   First resolve the rules directory from the manifest — never hardcode
-   `.claude/rules/`, or sync looks in the wrong place in every repo that chose
-   an isolated `generated_rules_path` in `/blueprint:init` Step 4a
-   (issues #1043, #1675, #2331):
+### Step 3: Display sync report
 
-   ```bash
-   RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
-   RULES_DIR="${RULES_DIR%/}"
-   ```
+```
+Generated Content Sync Status
 
-   `generated.rules` is an **object map** keyed by filename (see
-   `blueprint-plugin/schemas/manifest.schema.json`), so iterate it with
-   `to_entries[]`:
+Rules ($RULES_DIR):
+✅ architecture-patterns.md: Current
+⚠️ testing-strategies.md: Modified locally
+🔄 implementation-guides.md: Stale (PRDs changed)
+✅ quality-standards.md: Current
 
-   ```bash
-   jq -r '(.generated.rules // {}) | to_entries[] | [.key, (.value.content_hash // ""), (.value.source_hash // "")] | @tsv' docs/blueprint/manifest.json
-   ```
+Summary:
+- Current: 3 files
+- Modified: 1 file (user edited)
+- Stale: 1 file (source changed)
+```
 
-   For each entry, `{key}` is the rule's **bare filename including the `.md`
-   extension**, relative to `$RULES_DIR`. Resolve it as `"$RULES_DIR/{key}"` —
-   do **not** append `.md`, which would look for `development.md.md` and report
-   every registered rule as missing.
+### Step 4: If `--dry-run`, stop
 
-   a. **Verify file exists**:
-      ```bash
-      test -f "$RULES_DIR/{key}"
-      ```
+Output the sync report from Step 3 and exit. Skip all remaining steps.
 
-   b. **Hash current content** (bare hex, matching the `content_hash` the
-      producers write — no `sha256:` prefix):
-      ```bash
-      sha256sum "$RULES_DIR/{key}" | cut -d' ' -f1
-      ```
+### Step 5: For modified content, offer options
 
-   c. **Compare hashes**:
-      - If `content_hash` matches → status: `current`
-      - If `content_hash` differs → status: `modified`
+```
+question: "{name} has been modified locally. What would you like to do?"
+options:
+  - label: "Keep modifications"
+    description: "Mark as acknowledged, preserve your changes"
+  - label: "Discard modifications (regenerate)"
+    description: "Overwrite with fresh generation from PRDs"
+  - label: "View diff"
+    description: "See what changed before deciding"
+  - label: "Skip this file"
+    description: "Leave as-is for now"
+```
 
-   d. **Check source freshness** (for rules from PRDs):
-      - Hash current PRD content
-      - Compare with `source_hash` in manifest
-      - If differs → status: `stale`
-      - A record with no `source_hash` (rules written by `/blueprint:init`) is
-        never stale — only `modified` applies
+**Based on selection:**
+- "Keep modifications" → Update `content_hash` to current, mark as acknowledged
+- "Regenerate" → Regenerate this rule from PRDs
+- "View diff" → Show diff then re-ask
+- "Skip" → Continue to next file
 
-3. **Display sync report**:
-   ```
-   Generated Content Sync Status
+### Step 6: For stale content, offer options
 
-   Rules ($RULES_DIR):
-   ✅ architecture-patterns.md: Current
-   ⚠️ testing-strategies.md: Modified locally
-   🔄 implementation-guides.md: Stale (PRDs changed)
-   ✅ quality-standards.md: Current
+```
+question: "{name} is stale (PRDs have changed). What would you like to do?"
+options:
+  - label: "Regenerate from PRDs (Recommended)"
+    description: "Update with latest patterns from docs/prds/"
+  - label: "Keep current version"
+    description: "Mark as current without regenerating"
+  - label: "View what changed in PRDs"
+    description: "See PRD changes before deciding"
+  - label: "Skip this file"
+    description: "Leave stale for now"
+```
 
-   Summary:
-   - Current: 3 files
-   - Modified: 1 file (user edited)
-   - Stale: 1 file (source changed)
-   ```
+**Based on selection:**
+- "Regenerate" → Regenerate this rule from PRDs
+- "Keep" → Update `source_hash` to current, mark as current
+- "View" → Show PRD diff then re-ask
+- "Skip" → Continue to next file
 
-4. **If `--dry-run`**: Output the sync report from Step 3 and exit. Skip all remaining steps.
+### Step 7: Update manifest after changes
 
-5. **For modified content**, offer options:
-   ```
-   question: "{name} has been modified locally. What would you like to do?"
-   options:
-     - label: "Keep modifications"
-       description: "Mark as acknowledged, preserve your changes"
-     - label: "Discard modifications (regenerate)"
-       description: "Overwrite with fresh generation from PRDs"
-     - label: "View diff"
-       description: "See what changed before deciding"
-     - label: "Skip this file"
-       description: "Leave as-is for now"
-   ```
+- Update `content_hash` for regenerated files
+- Update `source_hash` if PRD changes acknowledged
+- Update `status` field appropriately
 
-   **Based on selection:**
-   - "Keep modifications" → Update `content_hash` to current, mark as acknowledged
-   - "Regenerate" → Regenerate this rule from PRDs
-   - "View diff" → Show diff then re-ask
-   - "Skip" → Continue to next file
+### Step 8: Final report
 
-6. **For stale content**, offer options:
-   ```
-   question: "{name} is stale (PRDs have changed). What would you like to do?"
-   options:
-     - label: "Regenerate from PRDs (Recommended)"
-       description: "Update with latest patterns from docs/prds/"
-     - label: "Keep current version"
-       description: "Mark as current without regenerating"
-     - label: "View what changed in PRDs"
-       description: "See PRD changes before deciding"
-     - label: "Skip this file"
-       description: "Leave stale for now"
-   ```
+```
+Sync Complete
 
-   **Based on selection:**
-   - "Regenerate" → Regenerate this rule from PRDs
-   - "Keep" → Update `source_hash` to current, mark as current
-   - "View" → Show PRD diff then re-ask
-   - "Skip" → Continue to next file
+Actions taken:
+- testing-strategies.md: Modifications acknowledged
+- implementation-guides.md: Regenerated from PRDs
 
-7. **Update manifest** after changes:
-   - Update `content_hash` for regenerated files
-   - Update `source_hash` if PRD changes acknowledged
-   - Update `status` field appropriately
+Current state:
+- 4 generated rules (all current)
 
-8. **Final report**:
-   ```
-   Sync Complete
-
-   Actions taken:
-   - testing-strategies.md: Modifications acknowledged
-   - implementation-guides.md: Regenerated from PRDs
-
-   Current state:
-   - 4 generated rules (all current)
-
-   Manifest updated.
-   ```
+Manifest updated.
+```
 
 **Tips**:
 - Run `/blueprint:sync` periodically to check for drift
