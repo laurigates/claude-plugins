@@ -5,7 +5,7 @@ args: "[--analyze] [--create <plugin/skill>] [--all]"
 allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
 argument-hint: "--analyze | --create git-plugin/git-commit-workflow | --all"
 created: 2026-01-24
-modified: 2026-11-06
+modified: 2026-11-13
 reviewed: 2026-02-14
 ---
 
@@ -43,7 +43,7 @@ Execute this skill script analysis and creation workflow:
 
 Execute analyzer to get structured data on all skills:
 
-1. Run analyzer: `bash "${CLAUDE_PLUGIN_ROOT}/skills/project-discovery/scripts/analyze-skills.sh" $(git rev-parse --show-toplevel 2>/dev/null || echo '.')`
+1. Run analyzer: `bash "${CLAUDE_PLUGIN_ROOT}/skills/project-discovery/scripts/analyze-skills.sh"` (it scans the git toplevel; pass a path to scan another root)
 2. Parse output to identify:
    - Current coverage (skills with scripts)
    - High-scoring candidates (score >= 8)

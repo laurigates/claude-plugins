@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-13
 reviewed: 2026-07-05
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
 allowed-tools: Glob, Grep, Read, TodoWrite, Bash(bash *)
@@ -72,7 +72,7 @@ detection script (read-only) and collect only its `STATUS=` and `ISSUE_COUNT=`
 lines for the roll-up:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../<name>/scripts/<name>.sh" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/../<name>/scripts/<name>.sh"
 ```
 
 For `HAS_SCRIPT=false` components, assess presence from the file-presence

@@ -4,7 +4,8 @@
 # refresh the root manifest's workspaces.children registry + cached stats.
 #
 # Usage:
-#   workspace-scan.sh --project-dir <path> [--max-depth N] [--dry-run]
+#   workspace-scan.sh [--project-dir <path>] [--max-depth N] [--dry-run]
+#   --project-dir defaults to the working directory.
 #
 # Output:
 #   Structured KEY=value pairs with === SECTION === headers.
@@ -27,10 +28,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$project_dir" ]]; then
-  echo "Usage: workspace-scan.sh --project-dir <path> [--max-depth N] [--dry-run]" >&2
-  exit 1
-fi
+# Default to the working directory. The skill used to pass --project-dir
+# "$(pwd)", and a $(…) on a bundled-script line voids its pre-approved grant
+# (#3640).
+[[ -n "$project_dir" ]] || project_dir="$(pwd)"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required but not installed" >&2

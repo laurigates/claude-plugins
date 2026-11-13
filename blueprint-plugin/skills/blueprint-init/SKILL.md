@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-02
+modified: 2026-11-13
 reviewed: 2026-08-09
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
@@ -150,9 +150,10 @@ Step 5):
 ```bash
 bash "${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh" \
   --source "blueprint-init" \
-  --plugin-version "$(jq -r .version "${CLAUDE_SKILL_DIR}/../../.claude-plugin/plugin.json")" \
   development.md testing.md document-management.md
 ```
+
+The script records the plugin version from its own `plugin.json`, so the call carries no `--plugin-version`.
 
 Check `REGISTERED=` and `STATUS=OK` in the script's output before continuing. The record shape and manifest key form are in [references/rules-setup.md](references/rules-setup.md).
 

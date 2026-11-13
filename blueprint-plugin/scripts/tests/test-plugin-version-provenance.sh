@@ -90,10 +90,13 @@ check_read() { # <label> <SKILL.md>
 check_read blueprint-init "$INIT_SKILL"
 check_read blueprint-upgrade "$UPGRADE_SKILL"
 
-# The init --plugin-version argument must itself be that read.
-grep -qE -- '--plugin-version "\$\(jq -r \.version "\$\{CLAUDE_SKILL_DIR\}/[^"]*plugin\.json"\)"' "$INIT_SKILL" \
-    && ok "B: blueprint-init passes --plugin-version from plugin.json" \
-    || notok "B: blueprint-init --plugin-version is not the plugin.json read"
+# blueprint-init used to pass --plugin-version "$(jq -r .version …)". A $(…) on
+# a bundled-script line voids the skill's pre-approved grant (#3640), so init
+# passes no --plugin-version and register-generated-rules.sh reads plugin.json
+# itself (pinned by case 8 of test-register-generated-rules.sh).
+grep -qE -- '(^[[:space:]]*|register-generated-rules\.sh.*[[:space:]])--plugin-version' "$INIT_SKILL" \
+    && notok "B: blueprint-init passes --plugin-version (the script reads plugin.json itself)" \
+    || ok "B: blueprint-init leaves --plugin-version to register-generated-rules.sh"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

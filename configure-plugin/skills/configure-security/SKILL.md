@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-24
+modified: 2026-11-13
 reviewed: 2026-09-04
 description: "Security scanning: dependency automation, SAST, secrets detection. Use when setting up Renovate/Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -62,7 +62,7 @@ three security layers (dependency auditing / SAST / secret detection) plus a
 SECURITY.md policy:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/configure-security.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-security.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines

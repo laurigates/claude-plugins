@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-07-26
+modified: 2026-11-13
 reviewed: 2026-07-26
 description: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work.
 allowed-tools: Read, Bash, AskUserQuestion
@@ -48,7 +48,7 @@ Display feature tracker statistics, phase progress, and completion summary.
    **cache** of the features collection — so verify it before quoting it:
 
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh"
    ```
 
    On `STATUS=ERROR` with `TYPE=statistics_divergence` rows, display the

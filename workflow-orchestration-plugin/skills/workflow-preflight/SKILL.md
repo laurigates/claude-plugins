@@ -5,7 +5,7 @@ args: "[issue-number|branch-name]"
 allowed-tools: Bash(bash *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git stash *), Bash(gh pr *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 argument-hint: optional issue number or branch name to check
 created: 2026-02-08
-modified: 2026-10-21
+modified: 2026-11-13
 reviewed: 2026-06-10
 ---
 
@@ -40,7 +40,7 @@ Invoke the gatherer. Pass `--issue <n>` or `--branch <name>` when the argument
 is a GitHub issue number or branch:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)" [--issue N] [--branch NAME]
+bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" [--issue N] [--branch NAME]
 ```
 
 The script fetches `origin --prune`, resolves the base ref (`origin/main` →
@@ -94,7 +94,7 @@ Before a wave whose agents push, merge, release, or create worktrees, add
 `--recon`, plus one `--need-secret NAME` per repo secret the run uses:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)" --recon [--need-secret NAME]...
+bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --recon [--need-secret NAME]...
 ```
 
 | Key | Act on it |
@@ -118,7 +118,7 @@ script cannot see (a running debug browser, a signed-in service).
 
 | Context | Command |
 |---------|---------|
-| Full preflight (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)"` |
+| Full preflight (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh"` |
 | Preflight for an issue | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --issue N` |
 | Offline / no network | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --no-fetch` |
 | Override base ref | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --base origin/develop` |

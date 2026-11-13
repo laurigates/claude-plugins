@@ -201,5 +201,23 @@ assert_eq "case7: exits 1 when the manifest is absent" "1" "$rc"
 assert_contains "case7: names the missing manifest" "TYPE=manifest_missing" "$out"
 rm -rf "$proj"
 
+# ── CASE 8: no --plugin-version records the plugin's own version (#3640) ─────
+# /blueprint:init used to pass --plugin-version "$(jq -r .version …)"; a $(…) on
+# a bundled-script line voids the skill's pre-approved grant, so the script now
+# reads the version from its own plugin.json when the flag is absent.
+proj="$(make_project '')"
+printf 'TDD workflow\n' >"$proj/.claude/rules/development.md"
+man="$(manifest_of "$proj")"
+own_version="$(jq -r .version "${SCRIPT_DIR}/../../.claude-plugin/plugin.json")"
+out="$(bash "$SCRIPT" --project-dir "$proj" --source blueprint-init development.md 2>&1)"
+rc=$?
+assert_eq "case8: exits 0 without --plugin-version" "0" "$rc"
+assert_eq "case8: plugin_version defaults to the plugin's own version" "$own_version" \
+    "$(jq -r '.generated.rules["development.md"].plugin_version' "$man")"
+out="$(bash "$SCRIPT" --project-dir "$proj" --source blueprint-init --plugin-version 9.9.9 development.md 2>&1)"
+assert_eq "case8: an explicit --plugin-version still wins" "9.9.9" \
+    "$(jq -r '.generated.rules["development.md"].plugin_version' "$man")"
+rm -rf "$proj"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

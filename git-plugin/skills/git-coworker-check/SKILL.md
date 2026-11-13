@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-11-04
+modified: 2026-11-13
 reviewed: 2026-05-19
 ---
 
@@ -77,7 +77,7 @@ Inspect `$ARGUMENTS`. If it contains `--claim`, go to Step 2a. If it contains `-
 Run:
 
 ```
-bash ${CLAUDE_SKILL_DIR}/scripts/claim-session.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/claim-session.sh
 ```
 
 Report the three file paths printed. These are the marker and baseline files — do not commit or delete them. They live inside `.git/` and are not tracked.
@@ -89,7 +89,7 @@ Stop here.
 Run:
 
 ```
-bash ${CLAUDE_SKILL_DIR}/scripts/release-session.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/release-session.sh
 ```
 
 No output is expected. Stop here.
@@ -100,7 +100,6 @@ Look up the current session's baseline files (if `--claim` was run earlier this 
 
 ```
 bash ${CLAUDE_SKILL_DIR}/scripts/detect-coworkers.sh \
-  --project-dir "$(pwd)" \
   --self-agent claude-${CLAUDE_SESSION_ID:0:8} \
   --baseline-status .git/.claude-baseline-$$.status \
   --baseline-stash .git/.claude-baseline-$$.stash
@@ -146,7 +145,7 @@ Bulk-edit / commit-loop skills invoke this **before staging any files**. For the
 
 | Context | Command |
 |---------|---------|
-| Cheapest detection (no baseline) | `bash scripts/detect-coworkers.sh --project-dir "$(pwd)"` |
+| Cheapest detection (no baseline) | `bash scripts/detect-coworkers.sh` |
 | Full detection with drift | Add `--baseline-status` + `--baseline-stash` from a `--claim` run |
 | One-line verdict check | `... \| awk -F= '/^VERDICT=/ {print $2}'` |
 

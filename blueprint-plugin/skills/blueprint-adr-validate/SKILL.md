@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-07-26
 description: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions.
 args: "[--report-only]"
@@ -79,7 +79,7 @@ infrastructure #2015 collision where two ADRs both claimed `0038`). Run the
 deterministic guard:
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh
 ```
 
 It emits `STATUS=` / `REASON=` / `ISSUE_COUNT=` and reports these
@@ -112,10 +112,10 @@ rotted. Rebuild it from frontmatter:
 
 ```bash
 # CI / read-only gate: non-zero exit when the on-disk index is out of date
-bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh --project-dir "$(pwd)" --check
+bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh --check
 
 # Repair: rewrite the table in every resolved ADR directory
-bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh
 ```
 
 Only the block between two marker comments is rewritten, so prose around it
@@ -208,7 +208,7 @@ Report all changes made:
 | Extract frontmatter | `head -50 {file} \| grep -m1 "^field:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | Find by domain | `grep -l "^domain: {domain}" docs/adrs/*.md` |
 | Detect cycles | Build supersession graph and traverse |
-| Number collisions | `bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh --project-dir "$(pwd)"` |
+| Number collisions | `bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh` |
 | Two ADR dirs | `… /check-adr-numbers.sh --adr-dir docs/adrs --adr-dir docs/blueprint/adrs` |
 | Index drift gate (CI) | `bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh --check` |
 | Regenerate index | `bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh` |

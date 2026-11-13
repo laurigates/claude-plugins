@@ -46,6 +46,18 @@ repos:
         files: '(SKILL|skill)\.md$'
         exclude: '^\.claude/'
         pass_filenames: true
+      - id: check-voided-script-grant
+        name: no $(…) or backtick on a bundled-script line (voids its grant, #3640)
+        entry: ./scripts/check-voided-script-grant.sh
+        language: script
+        files: '^([^/]+-plugin/(skills|agents)/.*\.md|scripts/(check-voided-script-grant\.sh|lib/extract-md-elements\.py))$'
+        pass_filenames: false
+      - id: check-voided-script-grant-test
+        name: voided-script-grant guard regression
+        entry: ./scripts/tests/test-check-voided-script-grant.sh
+        language: script
+        files: '^scripts/(check-voided-script-grant\.sh|lib/extract-md-elements\.py|tests/test-check-voided-script-grant\.sh)$'
+        pass_filenames: false
       - id: check-driver-freshness
         name: check configure-repo driver freshness
         entry: bash ./scripts/check-driver-freshness.sh

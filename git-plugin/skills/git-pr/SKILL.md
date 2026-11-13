@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-11-07
+modified: 2026-11-13
 reviewed: 2026-06-10
 name: git-pr
 description: "From an already-pushed branch: open the pull request with body, labels, reviewers and issue refs. Use when the user says \"create PR\", \"open pull request\", or \"submit for review\"."
@@ -32,7 +32,7 @@ against `origin/main`, probes for an existing PR (via the `state` field — neve
 `merged`), scans for stacked dependents, and audits closing keywords:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --base origin/main
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --base origin/main
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. Read `PR_READY` (false when
@@ -130,7 +130,7 @@ a tempfile first, or pass the fetched body) — it emits `BODY_REFERENCED`,
 
 ```bash
 gh pr view --json body --jq .body > /tmp/pr-body-check.md
-bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --body-file /tmp/pr-body-check.md
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --body-file /tmp/pr-body-check.md
 ```
 
 If `BODY_NOT_AUTOCLOSING` is non-empty, edit the PR body with `gh pr edit <num> --body-file ...`

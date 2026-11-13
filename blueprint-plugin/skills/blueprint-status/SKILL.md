@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
@@ -77,7 +77,7 @@ Execute this status workflow. Step numbers are stable: the reference files cite 
 Run the manifest schema check (background: [references/schema-validation.md](references/schema-validation.md)):
 
 ```bash
-uv run --quiet --script "${CLAUDE_SKILL_DIR}/../../scripts/check-manifest-schema.py" --project-dir "$(pwd)"
+uv run --quiet --script "${CLAUDE_SKILL_DIR}/../../scripts/check-manifest-schema.py"
 ```
 
 Read the emitted keys:
