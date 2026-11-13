@@ -1,6 +1,6 @@
 ---
 created: 2026-01-09
-modified: 2026-11-06
+modified: 2026-11-12
 reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
@@ -96,6 +96,8 @@ Release-please PRs modify `.release-please-manifest.json` which tracks all compo
 - The manifest changes
 - Other PRs become out of date
 - GitHub marks them as conflicting
+
+A PR left `CONFLICTING` by a `chore:`/`docs:`/`ci:` commit is not updated by the next run: close it and re-run ([references/stuck-conflicting.md](references/stuck-conflicting.md)).
 
 ### Resolution Flow
 

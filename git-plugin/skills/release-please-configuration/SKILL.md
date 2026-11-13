@@ -1,6 +1,6 @@
 ---
 created: 2025-12-28
-modified: 2026-11-10
+modified: 2026-11-12
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
@@ -154,28 +154,9 @@ recovers the releases from it.
 }
 ```
 
-### Recovery: Unwedge an Already-Merged Untagged PR
-
-Once a grouped release PR has merged with a bare title, dropping the config fixes
-future runs but the **already-merged** PR is still stuck at `autorelease: pending`,
-so runs keep aborting. Relabel it to `autorelease: tagged` so release-please stops
-treating it as outstanding, then dispatch a fresh run to cut the releases:
-
-```bash
-# Create the label first if the repo lacks it — release-please only
-# auto-creates `autorelease: tagged` when it successfully tags a PR.
-gh label create "autorelease: tagged" --color 2A7A2A --description "release-please tagged"
-
-# Relabel the stuck merged PR
-gh pr edit $PR_NUMBER --add-label "autorelease: tagged" --remove-label "autorelease: pending"
-
-# Dispatch a fresh run — with no tags cut, it recomputes the same releases
-# into a new, parseable release PR (or tags directly on the next merge).
-gh workflow run release-please.yml
-```
-
-No tags were cut for the wedged PR, so release-please recomputes the identical set
-of releases on the next run; the relabel only removes the "outstanding" blocker.
+A PR that already merged with a bare title stays `autorelease: pending` after
+the fix, so runs keep aborting; relabel it and re-run as in
+[references/troubleshooting.md](references/troubleshooting.md#recovery-unwedge-an-already-merged-untagged-pr).
 
 ## Per-Package `extra-files` for Custom Version Locations
 
@@ -232,7 +213,7 @@ package path.
 | YAML | `{"type": "yaml", "path": "...", "jsonpath": "$.version"}` |
 | TOML | `{"type": "toml", "path": "...", "jsonpath": "$.version"}`; `uv.lock`, stale PR: [uv-lock.md](references/uv-lock.md) |
 | XML | `{"type": "xml", "path": "...", "xpath": "//version"}` |
-| Plain text | `"path/to/version.txt"` (string is fine) |
+| Plain text | `"path/to/version.txt"` (string is fine; it uses the generic updater, whose silent failures are in [generic-updater.md](references/generic-updater.md)) |
 
 ## Adding a New Package to a Monorepo
 

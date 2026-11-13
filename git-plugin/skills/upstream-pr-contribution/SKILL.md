@@ -3,7 +3,7 @@ name: upstream-pr-contribution
 description: "Opening a pull request against a repository you do not own. Use when about to open one, to read CONTRIBUTING.md and the PR template in full and meet the contribution gates bots enforce."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-09-25
+modified: 2026-11-12
 reviewed: 2026-09-12
 ---
 
@@ -54,6 +54,26 @@ against:
 gh pr view <n> -R <owner>/<repo> --json comments --jq '.comments[]|"\(.author.login): \(.body[0:200])"'
 gh pr checks <n> -R <owner>/<repo>
 ```
+
+## Check the outcome, not the reaction
+
+The contribution gates cover the PR's form; this one covers the evidence for
+the fix. When the fix changes what a device, service or external system does,
+name the observable that shows the **outcome** (a reading, a stored value, an
+output file, a returned field) and check it before opening the PR. A reaction
+is not that observable: the device moved, the endpoint returned 200, the
+command exited 0. Each says the system accepted the input, not that it did the
+intended thing.
+
+If the outcome cannot be observed yet (no hardware at hand, no access to the
+service), open the PR with `gh pr create --draft` and say in the description
+which observable is still unchecked.
+
+> Evidence (2026-11, `fablabnbg/inkscape-silhouette#405`): a cutter sent a new
+> blade-depth command reported `moving` for 10 s, which was read as "the command
+> works", and the issue and PR were filed. The blade's own depth indicator later
+> showed it landing at 9, then 6, for a requested 1. The PR went back to draft,
+> and a second commit added the tool-select command the depth needed.
 
 ## Writing the description
 
