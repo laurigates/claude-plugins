@@ -12,6 +12,7 @@ allowed-tools: Bash, Read, Grep
 ## Steps
 
 Use `gh` for GitHub, or run `bash <plugin>/scripts/sync.sh` from the plugin.
+Pick the branch `type` first.
 
 ```bash
 git status --porcelain
@@ -28,4 +29,6 @@ python3 -c "print(1)"
 git -C other/repo log
 bun --inspect-brk run.ts
 git ls-files | xargs wc -l
+ruff check .
+docker run --rm -v "$(pwd)/docs:/out" img
 ```

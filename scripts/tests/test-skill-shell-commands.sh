@@ -144,12 +144,16 @@ assert "D8 rm is dropped" "$(hasre '^DROPPED=Bash\(rm \*\) WHY=destructive')"
 assert "D9 a sudo command is dropped with sudo spelled" "$(hasre '^DROPPED=Bash\(sudo apt-get install \*\) WHY=sudo')"
 assert "D10 inline interpreter code is dropped" "$(hasre '^DROPPED=Bash\(python3 -c \*\) WHY=inline code')"
 assert "D11 a global option before the subcommand is dropped" "$(hasre '^DROPPED=Bash\(git -C \*\) WHY=global option')"
+assert "D9b a linter with subcommands is narrowed to the subcommand" "$( [ "$(has 'CANDIDATE=Bash(ruff check *)')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(ruff \*\)')" = true ] && echo true || echo false)"
+assert "D9c docker run is dropped (any image, any mount)" "$(hasre '^DROPPED=Bash\(docker run \*\) WHY=runs arbitrary code')"
 assert "D10b a command runner (xargs) is dropped" "$(hasre '^DROPPED=Bash\(xargs \*\) WHY=runs another command')"
 assert "D11a a leading flag that takes no argument is itself a narrow candidate" "$(has 'CANDIDATE=Bash(bun --inspect-brk *)')"
 assert "D11b a bare multi-level CLI is dropped, never Bash(gh *)" \
   "$( [ "$(hasre '^DROPPED=Bash\(gh \*\) WHY=no subcommand')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(gh \*\)')" = true ] && echo true || echo false)"
 assert "D11c a placeholder path is dropped, not offered" \
   "$( [ "$(hasre '^DROPPED=Bash\(bash <plugin>/scripts/sync\.sh \*\) WHY=placeholder')" = true ] && [ "$(lacks '^CANDIDATE=.*<plugin>')" = true ] && echo true || echo false)"
+assert "D11d a lone word in a prose span is listed but not offered as a grant" \
+  "$( [ "$(hasre '^HEAD=type SUB= SUB2= COUNT=1 ')" = true ] && [ "$(hasre '^DROPPED=Bash\(type \*\) WHY=named alone')" = true ] && echo true || echo false)"
 assert "D12 kept candidates still present (positive control)" \
   "$( [ "$(has 'CANDIDATE=Bash(git status *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git commit *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git branch *)')" = true ] && echo true || echo false)"
 

@@ -31,10 +31,13 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
   DROPPED=<pattern> WHY=<why>  a command the skill shows that should keep
                                prompting: destructive or outward (rm, git push,
                                git reset, publish/deploy verbs), sudo, inline
-                               interpreter code (python3 -c), a global option
+                               interpreter code (python3 -c), a command runner
+                               (xargs, env, timeout) or docker/podman run|exec,
+                               a global option
                                before the subcommand (git -C <dir> ...), a
                                multi-level CLI with no subcommand shown (a lone
-                               `gh`), or a <placeholder> path
+                               `gh`), a <placeholder> path, or a command only
+                               named alone in a prose span (`type` in a table)
   Never a bare interpreter wildcard such as Bash(bash *). A lone dot-dir path in
   a prose span (`.claude/settings.json`) is not listed as a command.
   The candidates are a starting point for an editor, not a verdict: they
@@ -79,7 +82,7 @@ MULTI_LEVEL = {
     "uvx", "pip", "pipx", "task", "just", "make", "terraform", "tofu", "mise",
     "brew", "apt", "apt-get", "kustomize", "skaffold", "argocd", "pre-commit",
     "gcloud", "aws", "az", "systemctl", "launchctl", "obsidian", "comfy",
-    "twine", "poetry", "ansible", "vagrant",
+    "twine", "poetry", "ansible", "vagrant", "biome", "ruff",
 }
 # CLIs whose verbs sit two levels down; None = for every subcommand.
 TWO_LEVEL = {
@@ -107,6 +110,8 @@ SUDO = re.compile(r"^\s*(?:\$\s+)?sudo\s")
 PATH_FORM = re.compile(r"^(\.|~|<)")
 NO_SUBCOMMAND = "no subcommand shown: Bash(%s *) would admit every subcommand"
 PLACEHOLDER = "placeholder: the body spells a <placeholder>, not a runnable command"
+LONE_WORD = ("named alone in a prose span (a table cell or a mention), never shown with "
+             "arguments; grant it only if the skill runs it")
 DESTRUCTIVE = "destructive: a prefix grant on it also admits the dangerous forms"
 DROP_HEADS = {
     "rm": "destructive: Bash(rm *) also admits rm -rf",
@@ -123,6 +128,10 @@ DROP_SUBS = {
     ("docker", "push"): "outward: pushes an image",
     ("podman", "push"): "outward: pushes an image",
 }
+for _tool in ("docker", "podman"):
+    for _verb in ("run", "exec"):
+        DROP_SUBS[(_tool, _verb)] = ("runs arbitrary code: Bash(%s %s *) admits any image, "
+                                     "mount and flag" % (_tool, _verb))
 for _tool in ("npm", "pnpm", "yarn", "bun", "cargo", "uv", "poetry"):
     DROP_SUBS[(_tool, "publish")] = "outward: publishes a package"
 DROP_SUBS[("twine", "upload")] = "outward: publishes a package"
@@ -375,6 +384,8 @@ class Inventory:
         why = "sudo: keep it prompting" if sudo else (why or drop_reason(words))
         if not why and any("<" in w and ">" in w for w in words):
             why = PLACEHOLDER
+        if not why and src_type == "inline_code" and len(toks) == 1:
+            why = LONE_WORD
         if why:
             self.dropped.setdefault(pattern, why)
         else:
