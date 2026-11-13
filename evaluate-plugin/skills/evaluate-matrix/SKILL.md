@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-10-05
+modified: 2026-11-13
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -85,7 +85,7 @@ combination:
    of fixtures, a false negative that poisons this gate:
    ```
    bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh \
-     --fixture '<eval.fixture JSON>' --repo-root "$(pwd)"
+     --fixture '<eval.fixture JSON>'
    ```
    Parse `WORKDIR=`; the subagent operates there. Tear it down after the
    transcript is copied out (`--teardown "$WORKDIR"`).
@@ -124,7 +124,7 @@ Write the eval prompt to `$RUN_DIR/prompt.txt`; use the fixture's `WORKDIR` (or
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/rollout_headless.sh \
   --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \
   --model <loop model alias or full id> [--effort <e>] --max-budget-usd 0.25 \
-  [--plugin-dir "$(pwd)/<plugin-name>"]      # with_skill only; omit for baseline
+  [--plugin-dir <plugin-name>]      # with_skill only; omit for baseline
 ```
 It writes `transcript.md`, `trace.json` and `workspace/` into `$RUN_DIR`. Omit
 `--effort` on haiku. `STATUS=ERROR` is an ERROR cell, not a 0% pass.
