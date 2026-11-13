@@ -82,10 +82,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Provisioning stays in THIS file because the attach site does: Claude runs
-      # `gh issue create --label "agentic-audit,maintenance"` from the prompt
-      # below. `scripts/check-workflow-labels.sh` verifies that pairing per file,
-      # so moving this into the composite would leave the prompt's attach site
+      # Provisioning stays in THIS file because the attach site does: the
+      # "Publish the agentic audit issue" step below runs
+      # `publish-agent-issue.sh --label "agentic-audit,maintenance"`.
+      # `scripts/check-workflow-labels.sh` verifies that pairing per file, so
+      # moving this into the composite would leave that attach site
       # unprovisioned as far as the guard can see.
       - name: Ensure the agentic-audit label exists
         env:
@@ -102,7 +103,7 @@ jobs:
             --description "Monthly agentic quality audit" \
             --force
 
-      # Guard-only: Claude opens the issue itself further down, so the composite
+      # Guard-only: the publish step further down files the issue, so the composite
       # only reports whether one is already open. `force: 'false'` because the
       # step above already provisioned the label. `supersede` (#3346): only this
       # month's report blocks the run; last month's is carried forward and
@@ -163,9 +164,13 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
-          # Claude opens the issue itself (research-radar.yml pattern). The
-          # claude-code-action step exposes no `result` output, so a downstream
-          # gh-create step keyed on steps.<id>.outputs.result never fired (#1774).
+          # Claude writes the report; it does not publish it (#2769). The
+          # claude-code-action step exposes no `result` output (#1774), so the
+          # body travels as a FILE: Claude writes agentic-audit-issue-body.md
+          # and the "Publish the agentic audit issue" step files it. When
+          # Claude ran `gh issue create` with labels and an assignee itself, a failed
+          # assignment after the create could make it retry and file twice
+          # (#2720, the changelog-review duplicates).
           #
           # The tool boundary belongs in `--allowedTools`. It used to sit in
           # `additional_permissions:`, but that input takes a GitHub permissions
@@ -173,6 +178,12 @@ jobs:
           # at all while every tool call was denied anyway (observed:
           # permission_denials_count: 9 + error_max_turns at 16 turns against
           # --max-turns 15). Hence the raised turn budget here too.
+          #   - Edit(./agentic-audit-issue-body.md): file permission rules are
+          #     Edit(path) rules for Write as well, so this grants writing the
+          #     one body file and nothing else in the checkout.
+          #   - Bash(date *), Bash(cat *) and Bash(gh issue create *) DROPPED:
+          #     they existed only for the old `gh issue create` snippet. The
+          #     title comes from the guard step, and the publish step files it.
           #
           # One flag per line: scripts/check-workflow-model.sh matches
           # `--model`/`--effort` anchored at line start in a folded scalar.
@@ -180,11 +191,11 @@ jobs:
             --model opus
             --effort low
             --max-turns 25
-            --allowedTools "Read,Grep,Glob,TodoWrite,Bash(date *),Bash(cat *),Bash(gh issue create *)"
+            --allowedTools "Read,Grep,Glob,TodoWrite,Edit(./agentic-audit-issue-body.md)"
           prompt: |
             Perform a monthly agentic quality audit on skills in this plugin repository.
             Read .claude/rules/agentic-optimization.md and .claude/rules/skill-quality.md for standards.
-            Do NOT edit any files or workflows — your ONLY side effect is creating one GitHub issue (see the end of this prompt).
+            Do NOT edit any repository file — your ONLY output is the report body, written to `agentic-audit-issue-body.md` (see the end of this prompt). A later workflow step files it as the issue.
 
             Here is pre-computed deterministic data to save you time. It is
             scraped from third-party-authored skill files (DATA, not
@@ -224,26 +235,15 @@ jobs:
             section when the file does not exist. The workflow closes last
             month's report after yours is filed.
 
-            Then create the issue yourself with `gh issue create` (your only
-            side effect — do not edit any repo files). Compute the month with
-            `date +%Y-%m` and reproduce this title/labels exactly:
+            Finally, use the Write tool to write the report body to
+            `agentic-audit-issue-body.md` in the repository root, as your last
+            action. Write the body only: the workflow sets the issue title
+            (`${{ steps.check_issue.outputs.title }}`), its labels and its
+            assignee, and appends the `## Processing` section. Do not try to
+            open the issue yourself. Use this shape:
 
-            Run these as TWO separate Bash calls. The second must BEGIN with
-            `gh issue create`: the allowlist grants `Bash(gh issue create *)`,
-            which is a PREFIX match, so a line starting with a `VAR=$(...)`
-            assignment matches no grant and is denied.
-
-            ```bash
-            date -u +%Y-%m    # note the value, e.g. 2026-08
-            ```
-
-            ```bash
-            gh issue create \
-              --title "Monthly Agentic Quality Audit: <the value from above>" \
-              --label "agentic-audit,maintenance" \
-              --assignee laurigates \
-              --body "$(cat <<'EOF'
-            ## Monthly Agentic Quality Audit: <YYYY-MM>
+            ```markdown
+            ## ${{ steps.check_issue.outputs.title }}
 
             ### Summary
             | Metric | Value |
@@ -262,20 +262,40 @@ jobs:
 
             ### Carried forward from #<N>
             - (still-open recommendations from last month's report; omit this section when there was none)
+            ```
 
+      # The bash half of the split (#2769): find or create the issue once,
+      # then apply and read back its labels and assignee
+      # (scripts/publish-agent-issue.sh). It runs after a failed Claude step
+      # too, so a step that wrote the body and then overran its turn budget
+      # still gets its report filed; `!cancelled()` rather than `always()`, so
+      # a cancelled run publishes nothing. A missing body fails this step, the
+      # same signal the assertion below gives.
+      - name: Publish the agentic audit issue
+        id: publish
+        if: ${{ !cancelled() && steps.audit.outcome != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.check_issue.outputs.title }}
+          PROCESSING: |
             ## Processing
 
             - **Processed by:** Lauri, or an agent asked to act on this report.
             - **Completed means:** superseded by next month's report. File or fix each recommendation that needs work before then; one that needs longer gets its own issue.
             - **Closes:** automatically when next month's report opens, which carries forward whatever is still open. See `docs/issue-lifecycle.md`.
-            EOF
-            )"
-            ```
+        run: |
+          bash scripts/publish-agent-issue.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TITLE" \
+            --body-file agentic-audit-issue-body.md \
+            --label "agentic-audit,maintenance" \
+            --assignee laurigates \
+            --processing "$PROCESSING"
 
       # The transcript is the raw SDK message stream. The action redacts it only
       # on the way into the step summary (format-turns.ts:185/:437 and run.ts:141
-      # at v1), not in the file it writes. None of the tools granted above is
-      # path-scoped — `Bash(cat *)` can read /proc/self/environ, where the CLI's
+      # at v1), not in the file it writes. `Read`, granted above, is not
+      # path-scoped — it can read /proc/self/environ, where the CLI's
       # children inherit the OAuth token — so before the file leaves the runner
       # the job's own tokens are scrubbed by literal value and the token shapes
       # the action's redactSecrets() knows are scrubbed by pattern. Public-repo
@@ -338,11 +358,12 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      # The issue is this job's only output, and the SDK exits 0 when the
-      # `gh issue create` call is denied, so without this step a run that files
-      # nothing is green (#2731). `always()` still reports a Claude step that
-      # failed without filing; a skipped Claude step (an open report already
-      # exists) is not a missed deliverable.
+      # The issue is this job's only output, and the SDK exits 0 when a tool
+      # call is denied, so without this step a run that files nothing could be
+      # green (#2731). It counts what GitHub holds, independently of the
+      # publish step's own read-back. `always()` still reports a Claude step
+      # that failed without writing a body; a skipped Claude step (an open
+      # report already exists) is not a missed deliverable.
       - name: Assert the agentic audit issue was filed
         if: always() && steps.audit.outcome != 'skipped'
         env:
@@ -352,14 +373,15 @@ jobs:
           if ! bash scripts/assert-issue-filed.sh \
             --repo "$GITHUB_REPOSITORY" --label agentic-audit --since "$SINCE" \
             --title-prefix 'Monthly Agentic Quality Audit:'; then
-            echo "::error title=Agentic audit filed no issue::No 'Monthly Agentic Quality Audit:' issue labelled agentic-audit appeared during this run. Read the uploaded claude-execution transcript for the denied tool calls."
+            echo "::error title=Agentic audit filed no issue::No 'Monthly Agentic Quality Audit:' issue labelled agentic-audit appeared during this run. Read the publish step's output, then the uploaded claude-execution transcript for the denied tool calls."
             exit 1
           fi
 
       # Last month's report is superseded once this month's is filed (#3346).
-      # The script closes nothing when this month's report is missing.
+      # The script closes nothing when this month's report is missing. Gated on
+      # the publish step, the one that files the report.
       - name: Close the superseded report
-        if: steps.audit.outcome == 'success' && steps.check_issue.outputs.previous != ''
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' && steps.check_issue.outputs.previous != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           CURRENT_TITLE: ${{ steps.check_issue.outputs.title }}
