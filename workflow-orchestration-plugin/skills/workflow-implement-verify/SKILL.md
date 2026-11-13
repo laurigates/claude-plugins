@@ -98,8 +98,10 @@ Every repair brief reads the branch's PR state first (`gh pr list --head <branch
 In `repair-round` the branch already has a PR, which can merge while its verifier runs.
 In `implement-verify` no PR exists before finalise, so the check fires only on a reused branch name.
 The list matches by branch name, not commits, so it holds every PR ever opened from that name:
-an `OPEN` entry wins, and a `MERGED` or `CLOSED` entry counts only when its `headRefOid` is the
-branch tip or an ancestor of it (`git merge-base --is-ancestor`). Only when no entry is `OPEN`
+an `OPEN` entry wins, and a `MERGED` or `CLOSED` entry counts only when its `headRefOid` and the
+branch tip lie on one line of history (`git merge-base --is-ancestor`, both directions, after
+`git fetch origin pull/<number>/head`, since a head pushed from another clone may be missing here).
+An entry whose head cannot be fetched counts. Only when no entry is `OPEN`
 and a `MERGED` or `CLOSED` entry counts does the repairer commit
 nothing and return `blocked` with the PR in `blockers`, and the template skips the re-verify.
 Both finalise briefs apply the same rule against `head_sha` before pushing.

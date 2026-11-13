@@ -165,6 +165,15 @@ const units = (ids) =>
   // when its headRefOid is the branch tip or an ancestor of it.
   check('repair prompt: MERGED/CLOSED counts only when its headRefOid is an ancestor of the branch',
     /merge-base --is-ancestor <headRefOid> fix\/a/.test(p) && /fails the test is earlier work on a reused name: ignore it/.test(p), p)
+  // A headRefOid pushed from another clone is not in the local object store and
+  // can be ahead of the local tip, so the brief fetches the PR head, tests both
+  // directions, and counts an entry it cannot fetch rather than ignoring it (#3642).
+  check('repair prompt: fetches the PR head before the ancestry test',
+    /fetch origin -q pull\/<number>\/head/.test(p), p)
+  check('repair prompt: a PR head ahead of the branch tip also counts',
+    /merge-base --is-ancestor fix\/a <headRefOid>/.test(p), p)
+  check('repair prompt: an unfetchable PR head counts, not ignored',
+    /If the fetch fails, the entry counts/.test(p) && !/a headRefOid git does not have counts as not an ancestor/.test(p), p)
 }
 // 14b. Both finalise briefs apply the same rule: OPEN wins, and a MERGED/CLOSED
 // entry skips the branch only when its headRefOid is head_sha or an ancestor.
@@ -173,6 +182,9 @@ const units = (ids) =>
   const p = r.sent.finalise?.prompt ?? ''
   check('finalise reads headRefOid and tests ancestry against head_sha',
     /--state all --json number,state,headRefOid/.test(p) && /merge-base --is-ancestor <headRefOid> <head_sha>/.test(p), p)
+  check('finalise fetches the PR head and tests both directions (#3642)',
+    /fetch origin -q pull\/<number>\/head/.test(p) && /merge-base --is-ancestor <head_sha> <headRefOid>/.test(p)
+      && /cannot be fetched/.test(p) && !/a headRefOid git does not have counts as not an ancestor/.test(p), p)
   check('finalise: OPEN wins; a MERGED/CLOSED entry failing the test is ignored',
     /An OPEN entry wins/.test(p) && /earlier work on a reused branch name: ignore it/.test(p), p)
 }
