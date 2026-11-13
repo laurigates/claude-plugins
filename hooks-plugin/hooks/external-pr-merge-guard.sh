@@ -1370,6 +1370,21 @@ check_record() {
   local PR_NUM AUTHOR IS_BOT TITLE URL
   IFS=$'\t' read -r PR_NUM AUTHOR IS_BOT TITLE URL <<< "$meta"
 
+  # A bot author renders differently depending on which gh subcommand produced
+  # it: `gh pr view` gives is_bot=true with login "app/<name>"; the search API
+  # gives is_bot=false with a "<name>[bot]" login. Accept every spelling —
+  # missing one would flag release-please/renovate/dependabot as strangers and
+  # make this guard noise that gets disabled.
+  #
+  # Bots are classified before the viewer check: trusting a bot does not depend
+  # on who you are, so a failed `gh api user` (a rate limit, issue #3602) must
+  # not deny a bot PR.
+  local trusted=0
+  [ "$IS_BOT" = "true" ] && trusted=1
+  case "$AUTHOR" in *'[bot]'|app/*) trusted=1 ;; esac
+
+  [ "$trusted" = "1" ] && return 0
+
   if [ -z "$ME" ]; then
     # Issue #3602: say why the lookup failed. A failed lookup is not an
     # authorship verdict, so the denial must not read like one.
@@ -1377,17 +1392,7 @@ check_record() {
     deny "Refusing to merge ${PR_REPO:-this repo}#${PR_NUM} (\"${TITLE}\"): could not determine the authenticated GitHub user (gh api user failed${LF_CAUSE:+: ${LF_CAUSE}}), so authorship was not checked against you. Denied rather than guessed. ${LF_REMEDY:-Fix gh auth (gh auth status) and retry.}"
   fi
 
-  # A bot author renders differently depending on which gh subcommand produced
-  # it: `gh pr view` gives is_bot=true with login "app/<name>"; the search API
-  # gives is_bot=false with a "<name>[bot]" login. Accept every spelling —
-  # missing one would flag release-please/renovate/dependabot as strangers and
-  # make this guard noise that gets disabled.
-  local trusted=0
-  [ "$AUTHOR" = "$ME" ] && trusted=1
-  [ "$IS_BOT" = "true" ] && trusted=1
-  case "$AUTHOR" in *'[bot]'|app/*) trusted=1 ;; esac
-
-  [ "$trusted" = "1" ] && return 0
+  [ "$AUTHOR" = "$ME" ] && return 0
 
   # -------------------------------------------------------------------------
   # External author — build a denial that carries the facts a reviewer needs.

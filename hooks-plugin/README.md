@@ -393,7 +393,9 @@ stdout and exits 1, so the hook keeps a lookup's output only on exit 0. When
 the viewer or author lookup fails, the denial asks `gh api rate_limit` (which
 does not count against the limit) and, if the REST or GraphQL limit is
 exhausted, names it with the reset time and says to retry after the reset.
-Otherwise it quotes gh's error message.
+Otherwise it quotes gh's error message. A failed viewer lookup denies only a
+non-bot author: a bot PR is trusted whoever the viewer is, so it is still
+allowed.
 
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge` (and `curl`

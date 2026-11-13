@@ -1007,6 +1007,23 @@ STUB_AUTHOR=laurigates STUB_ME_403="$RL_MSG" STUB_RATE_FAIL=1 \
   run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
 ck "rate_limit probe fails too: denied"            DENY "$LAST_VERDICT"
 ck_reason "still names the gh error"               "rate limit exceeded"
+# A bot PR does not depend on who the viewer is, so a failed viewer lookup must
+# not deny it (on main before #3602 the error body was taken as a login and the
+# bot check still ran). Both bot spellings, plus a human control on the same
+# failed lookup, which stays denied with the lookup-error wording.
+STUB_AUTHOR='app/release-please' STUB_ISBOT=true STUB_ME_403="$RL_MSG" STUB_RATE_CORE='0 1800000000' \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "bot (app/, is_bot) + rate-limited viewer: allowed" ALLOW "$LAST_VERDICT"
+STUB_AUTHOR='renovate[bot]' STUB_ISBOT=false STUB_ME_403="$RL_MSG" \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "bot ([bot]) + failed viewer lookup: allowed"       ALLOW "$LAST_VERDICT"
+STUB_AUTHOR='renovate[bot]' STUB_ISBOT=false STUB_NO_ME=1 \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "bot ([bot]) + viewer lookup exits empty: allowed"  ALLOW "$LAST_VERDICT"
+STUB_AUTHOR=joshua-trustabl STUB_ME_403="$RL_MSG" STUB_RATE_CORE='0 1800000000' \
+  run "$(bash_json 'gh pr merge 1070 -R laurigates/mcu-tinkering-lab --squash')" >/dev/null
+ck "human + rate-limited viewer: denied"               DENY "$LAST_VERDICT"
+ck_reason "human + failed viewer: lookup-error wording" "could not determine the authenticated GitHub user"
 # Author-association lookup rate-limited on a real external PR: the denial
 # stands, but the 403 body is not printed as the association.
 STUB_AUTHOR=joshua-trustabl STUB_ASSOC_403=1 \
