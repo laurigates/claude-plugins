@@ -285,6 +285,17 @@ OUT="${WORK}/default-root-cwd.txt"
 check "7b: with no env var the current directory is the root" "$FLEET_REAL" \
     "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
 check "7b: cwd root sees both modules" "2" "$(field "$OUT" MODULE_COUNT)"
+
+# An explicit --fleet-root outranks the env var: point the env var at an empty
+# dir, so an inverted precedence reports zero modules instead of two.
+mkdir -p "${WORK}/env-decoy-fleet"
+OUT="${WORK}/flag-beats-env.txt"
+FOUNDRYVTT_FLEET_ROOT="${WORK}/env-decoy-fleet" python3 "$CHECKER" \
+    --fleet-root "$FLEET" --policy "$POLICY" >"$OUT" 2>"${OUT}.err"
+check "7b: --fleet-root wins over FOUNDRYVTT_FLEET_ROOT" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: --fleet-root over the env var sees both modules" "2" \
+    "$(field "$OUT" MODULE_COUNT)"
 check "7b: the help text names no maintainer checkout path" "0" \
     "$(python3 "$CHECKER" --help | grep -c 'repos/')"
 
