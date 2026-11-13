@@ -4,7 +4,7 @@ description: "Claude Code security settings: permission wildcards, shell operato
 user-invocable: false
 allowed-tools: Bash(jq *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-11-11
+modified: 2026-11-13
 compatibility: claude-code
 reviewed: 2026-11-11
 ---
@@ -137,7 +137,7 @@ When a deny rule targets a specific flag (a force-push backstop is the canonical
 }
 ```
 
-> **Gotcha — colon form widens to longer flags.** The `:*` suffix (`"Bash(git push --force:*)"`) has been observed prefix-matching the raw command string, so it also matched `git push --force-with-lease …` — silently hard-blocking the safe recovery form that stacked-PR workflows depend on. Deny rules cannot be overridden except via `bypassPermissions`, so the widening is a hard block, not a prompt (laurigates/claude-plugins#2038, caught in laurigates/loractl#39). Current official docs state an end-of-pattern `:*` is equivalent to the trailing space form, but the equivalence is not version-pinned in the changelog and the widening was observed in practice — the space form's word-boundary semantics are explicit, stable, and match what the permission dialog itself writes when you approve a prefix.
+> **Gotcha — colon form widens to longer flags.** The `:*` suffix (`"Bash(git push --force:*)"`) has been observed prefix-matching the raw command string, so it also matched `git push --force-with-lease …` — silently hard-blocking the safe recovery form that stacked-PR workflows depend on. Deny rules cannot be overridden except via `bypassPermissions`, so the widening is a hard block, not a prompt (laurigates/claude-plugins#2038). Current official docs state an end-of-pattern `:*` is equivalent to the trailing space form, but the equivalence is not version-pinned in the changelog and the widening was observed in practice — the space form's word-boundary semantics are explicit, stable, and match what the permission dialog itself writes when you approve a prefix.
 
 When auditing or generating deny entries, flag any entry ending in a flag followed by `:*` (e.g. `--force:*`, `-f:*`) and rewrite it to the space form.
 

@@ -1577,14 +1577,14 @@ assert_exit \
 
 assert_exit \
     "GUARD INTEGRITY (D): cd into a repo, relative sed target, still blocked" 2 \
-    "cd ~/repos/x && sed -i '' 's/a/b/' src/f.py"
+    "cd ~/src/x && sed -i '' 's/a/b/' src/f.py"
 
 # F is the reason the predicate keys on a cd TARGET / variable VALUE rather than
 # "the command mentions /tmp anywhere": here the only /tmp is a stderr redirect,
 # and the file being rewritten is a repo file.
 assert_exit \
     "GUARD INTEGRITY (F): repo sed -i that merely redirects stderr to /tmp still blocked" 2 \
-    "cd ~/repos/x && sed -i '' 's/a/b/' f.py 2>/tmp/log"
+    "cd ~/src/x && sed -i '' 's/a/b/' f.py 2>/tmp/log"
 
 # A `cd /tmp/...` that is only TEXT — inside a heredoc body or a trailing shell
 # comment — is not shell state and must not grant the exemption (#2106's class).
