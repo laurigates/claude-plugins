@@ -20,8 +20,32 @@ Emit a final table and the net context saving:
 
 | Unit | Size (tok) | Disposition | Target | Always-loaded delta |
 |---|---|---|---|---|
-| `.claude/rules/foo.md` | ~1,200 | Promote to skill | `someplugin:foo-workflow` | −1,200 |
+| `.claude/rules/foo.md` | ~1,200 | Promote to skill | `someplugin:foo-workflow` | −1,140 (pointer stays) |
 | `CLAUDE.md` § Bar | ~300 | Keep but lean | linked `docs/bar.md` | −260 |
 | `.claude/rules/baz.md` | ~400 | Path-scope | `paths: "**/*.py"` | conditional |
 
-End with: total tokens removed from the every-turn surface, the new skills created (with their trigger descriptions), and the commit outcome: the per-concern commits made when the user's or project's commit policy says to commit, or — when it does not — the next step (review `git status`, commit per concern with conventional-commit messages).
+**Report the measured net, not the Step 4 estimate.** Re-run `wc -c` on the
+same always-loaded files Step 1 measured, after the edits. `wc -c` counts bytes,
+not characters: an em-dash or an arrow is 3 bytes, so tokens ≈ bytes/4 runs
+slightly high on text that uses them. A deleted file counts as 0, and text moved
+into a skill, a `REFERENCE.md` or a `docs/` file leaves the every-turn surface,
+so it does not count. A rule that this diet gave a `paths:` glob is still on
+disk at the same size, so a re-run of the same glob would show it saving
+nothing. Leave it out of the after-sum and report its bytes as conditional, as
+the Path-scope row in the table does. The measured net is the Step 1 total minus
+the new total. Name the command beside the figure, with the files it summed
+(`wc -c CLAUDE.md .claude/rules/a.md .claude/rules/b.md`, before and after), so
+the number can be checked. Where the Step 4 estimate and the measured net
+disagree, report both.
+
+In one 2026-11 diet the approval table summed to about 8K, and the diff counted
+6,162 bytes removed and 2,483 added, a net of about 3.7K. Both counts come from
+`git diff | rg '^-[^-]' | wc -c` and `git diff | rg '^\+[^+]' | wc -c`, so they
+include one diff-marker byte per line and skip blank lines. The removal pattern
+also skips every removed line that starts with `-`, such as a Markdown bullet,
+while the addition pattern counts added bullets, so 6,162 is a lower bound on
+the bytes removed. The gap therefore splits only as an estimate: up to about
+1.8K of the approved size was never deleted, and the 2,483 added bytes were
+residual pointer and invariant text that the estimate did not subtract.
+
+End with: the measured net tokens removed from the every-turn surface and the command that measured it, the new skills created (with their trigger descriptions), and the commit outcome: the per-concern commits made when the user's or project's commit policy says to commit, or — when it does not — the next step (review `git status`, commit per concern with conventional-commit messages).

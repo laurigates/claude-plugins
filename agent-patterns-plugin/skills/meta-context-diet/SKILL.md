@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-10-10
+modified: 2026-11-12
 compatibility: claude-code
 reviewed: 2026-07-08
 allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -57,7 +57,7 @@ Build the candidate list from three sources:
 
 When `scope-path` is `.` (or names the user-global tree), also `Glob(pattern="$HOME/.claude/rules/**/*.md")` and the root `$HOME/.claude/CLAUDE.md` during execution — that surface is the heaviest every-turn cost. The plugin-skill list already loaded for this session is in the session prompt; scan it by name when checking the **Consolidate** disposition.
 
-For each file, record its size (`wc -c`, est. tokens ≈ chars/4 — same proxy as `skill-quality.md`) and, for `CLAUDE.md`, treat each `##` section as a separately-classifiable unit. Path-scoped rules already pay only on matching turns — flag them only if they are *also* intent-shaped (a better skill) or duplicate a loaded plugin skill.
+For each file, record its size in bytes (`wc -c`, est. tokens ≈ bytes/4, slightly high on multi-byte text — [report-format.md](references/report-format.md#6-report)) and, for `CLAUDE.md`, treat each `##` section as a separately-classifiable unit. Path-scoped rules already pay only on matching turns — flag them only if they are *also* intent-shaped (a better skill) or duplicate a loaded plugin skill.
 
 Then run the [consumer sweep](references/consumer-sweep.md) per candidate and record its path consumers; Step 2 uses them to choose Promote or a `docs/` move.
 
@@ -85,10 +85,11 @@ Before proposing a promotion, draft its skill home + name, an auto-triggering de
 
 For each candidate, present:
 
-1. The file/section, its size (chars + est. tokens), and its Step 1 path consumers.
+1. The file/section, its size (bytes + est. tokens), and its Step 1 path consumers.
 2. The recommended disposition with a one-sentence justification.
 3. For promote-to-skill: the drafted skill home, name, and description.
-4. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
+4. The **estimated net saving**: bytes leaving the always-loaded file minus the residual text drafted to stay behind (the kept invariant, the pointer line, the stub). Draft the residual before you estimate. The moved size alone overstates it; [report-format.md](references/report-format.md#6-report) has a worked example.
+5. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
 
 Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
 
@@ -120,7 +121,7 @@ After every write, run `git status` so the user sees what changed. **Commit poli
 
 ### 6. Report
 
-Emit the final table, net every-turn saving, and commit outcome per [report-format.md](references/report-format.md).
+Emit the final table, the measured net every-turn saving (re-measured after the edits, with the command named), and commit outcome per [report-format.md](references/report-format.md).
 
 ## Anti-patterns and notes
 

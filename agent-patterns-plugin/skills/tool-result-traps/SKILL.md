@@ -4,7 +4,7 @@ description: Tool results that mean something other than they look — a pattern
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-11-06
+modified: 2026-11-12
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -84,7 +84,7 @@ See [references/process-match-traps.md](references/process-match-traps.md) when 
 
 ## A rejected flag looks exactly like "no results"
 
-See [references/rejected-flags.md](references/rejected-flags.md) when an empty pipeline result is about to dedup an issue, or a silent mutating call is about to be reported as done.
+See [references/rejected-flags.md](references/rejected-flags.md) when an empty pipeline result is about to dedup an issue, a silent mutating call is about to be reported as done, or `gh run list --commit` given a short SHA returned no runs.
 
 ## Your own `2>/dev/null` turns a loud rejection into a clean negative
 
