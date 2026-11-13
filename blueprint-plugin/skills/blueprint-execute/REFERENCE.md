@@ -253,6 +253,10 @@ Auto-sync is silent when no changes - only reports if something was updated.
 | `on-change` | Source inputs changed since last run (task-specific) |
 | `on-demand` | Never auto-suggested; only runs on explicit invocation |
 
+These rows apply to agent-judgment tasks. A deterministic task (`sync-ids`) is
+never due, whatever its schedule: it keeps no `last_completed_at`, and the
+SessionStart runner reconciles it on every run (ADR-0027).
+
 ### Priority Order for Due Tasks
 
 When multiple tasks are due, execute in this order:

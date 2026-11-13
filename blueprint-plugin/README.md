@@ -256,6 +256,11 @@ IDs are automatically generated when:
 - Running `/blueprint:sync-ids` to batch-assign IDs to existing documents
 - Accessing documents without IDs (auto-assigned on first access)
 
+A new PRD, PRP or TRP number is max(`id_registry.last_<kind>`, highest id of
+that kind on disk) + 1, from `scripts/blueprint-next-id.sh --kind PRD|PRP|TRP`.
+The counter alone could reissue the id of a document that arrived through
+`git pull` before the registry saw it.
+
 ### Cross-Linking
 
 Documents link to each other via frontmatter:
@@ -318,17 +323,25 @@ the manifest `automation` block (format 3.4.0, ADR-0020 in claude-plugins):
 | 3 | scheduled pipeline | Reserved (out-of-band scheduled runs + approved work-order execution; not yet implemented) |
 
 The runner implements the `task_registry` `auto_run`/`schedule` contract:
-a task runs only when `enabled: true` **and** `auto_run: true` **and** its
-schedule interval has elapsed since `last_completed_at` (written back with
-`last_result` and `stats.runs`). `on-change` tasks are event-driven
-(PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
-reconciled on every run, because the on-change signal misses edits made outside
-Claude Code and Bash edits outside the recorded change list. A reconcile that
-changes nothing leaves the manifest byte-identical. The sweep reads all
-frontmatter in one `awk` pass and registers it in one `jq` call, so it fits the
+an agent-judgment task is due only when `enabled: true` **and** `auto_run:
+true` **and** its schedule interval has elapsed since `last_completed_at`.
+`on-change` tasks are event-driven (PostToolUse hooks). A deterministic task
+(`sync-ids`) is reconciled on every run whatever its schedule, because the
+on-change signal misses edits made outside Claude Code and Bash edits outside
+the recorded change list. The runner writes no `task_registry` run state
+(ADR-0027): a reconcile that changes nothing leaves the manifest
+byte-identical, and one that registers a document changes only `id_registry`. The sweep reads all
+frontmatter in one `awk` pass and registers it in one `jq` call. That pass is
+`blueprint-autorun.sh --frontmatter-rows`, the one frontmatter parser the
+write-time hook, the sweep and the `/blueprint:sync-ids` audit share: it reads
+inline comments, quotes, CRLF files and `relates-to`/`github-issues` lists the
+way `yaml.safe_load` does. The sweep fits the
 probe's 5 s SessionStart hook timeout; a run the timeout kills is reported in
 the next session as an `autorun_incomplete` finding (remediation
-`/blueprint:sync-ids`). `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
+`/blueprint:sync-ids`). The session whose run wrote the manifest gets a
+`registry_reconciled` finding (remediation: commit
+`docs/blueprint/manifest.json`), and a failed task gets `autorun_task_error`;
+both come only from the run itself, never from the probe's TTL cache. `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
 proposals (GitHub issues labeled `work-order-draft`); promotion is a separate,
 reviewed `/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
 `/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
@@ -337,6 +350,10 @@ ask the agent to create a work order or execute a PRP directly.
 ```bash
 # Dry-run the due-ness computation (no execution, no writeback)
 bash <plugin-root>/scripts/blueprint-autorun.sh --report
+
+# One \037-separated row per file: path, has_frontmatter, id, status, title,
+# created, relates_to, github_issues
+bash <plugin-root>/scripts/blueprint-autorun.sh --frontmatter-rows docs/adrs/*.md
 
 # Kill levels 1-2 locally regardless of manifest
 export BLUEPRINT_AUTORUN_DISABLE=1

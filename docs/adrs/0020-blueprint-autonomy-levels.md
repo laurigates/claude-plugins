@@ -31,8 +31,10 @@ relates-to:
 > state. The runner reconciles them on every run whatever their schedule, and
 > writes `id_registry` only when it differs; it no longer writes
 > `last_completed_at`/`last_result`/`stats` for them. Agent-judgment tasks keep
-> `last_completed_at`/`last_result`, written only after an explicit run. The
-> runner change lands in #3548; until then the runner behaves as described below.
+> `last_completed_at`/`last_result`, written only after an explicit run (by the
+> skill itself, or by `/blueprint:autopilot` after running the task), never at
+> session start. The `stats.runs`/`stats.runs_total` counters are no longer
+> incremented; existing values stay in place.
 
 ## Context
 
