@@ -27,6 +27,9 @@ at --base with the same directory at --head:
     direction word is accepted when some line added at the head differs from
     it only in the pointer (is_pointer_rewrite):
       - the added line carries at least one markdown link the base line lacks;
+      - every word of each new link's text appears in the base line or in
+        that link's target, so the link text names what it points at and
+        carries no new content ("or [older](#versions)" is an error);
       - with those new links masked, a token diff of the two lines removes only
         POINTER_WORDS, words that appear in a new link's text, and
         POINTER_PUNCT, and adds only new links, POINTER_WORDS and POINTER_PUNCT.
@@ -83,6 +86,7 @@ POINTER_WORDS = frozenset(
 # Punctuation a pointer rewrite may drop or add around the link ("(see above)").
 POINTER_PUNCT = frozenset(",.;:()-—–")
 LINK_RE = re.compile(r"\[([^\]\n]*)\]\(([^)\s]*)\)")
+WORD_RE = re.compile(r"\w+")
 TOKEN_RE = re.compile(r"\x00|[\w`'#/*-]+(?:[.:][\w`'#/*-]+)*|\S")
 LINK_TOKEN = "\x00"
 MSG_MAX = 160
@@ -146,7 +150,8 @@ def tokens(text: str) -> list[str]:
 def is_pointer_rewrite(base_line: str, added_line: str) -> bool:
     """True when added_line is base_line with only its pointer changed.
 
-    The added line must carry a markdown link that base_line lacks. With each
+    The added line must carry a markdown link that base_line lacks, and each
+    such link's text may use only words of base_line and of its target. With each
     such link masked to one placeholder token, the token diff may remove only
     pointer words, words of a new link's text, and pointer punctuation, and add
     only placeholders, pointer words, and pointer punctuation. Anything else,
@@ -158,6 +163,15 @@ def is_pointer_rewrite(base_line: str, added_line: str) -> bool:
     ]
     if not new_links:
         return False
+    # The link is masked below, so its text is never diffed. Hold that text to
+    # naming what it points at: every word must come from base_line (moved
+    # into the link) or from the link's own target (anchor slug, file path).
+    # Otherwise "or later" -> "or [older](#versions)" changes the line freely.
+    base_words = set(WORD_RE.findall(base_line.lower()))
+    for m in new_links:
+        named = base_words | set(WORD_RE.findall(m.group(2).lower()))
+        if not set(WORD_RE.findall(m.group(1).lower())) <= named:
+            return False
     link_words = {t.lower() for m in new_links for t in tokens(m.group(1))}
     masked = LINK_RE.sub(
         lambda m: m.group(0) if m.group(0) in base_links else LINK_TOKEN, added_line

@@ -38,11 +38,12 @@
 #   M. a missing --base or skill dir is a usage error (exit 2)
 #   N. a content change in a line with a direction word is ERROR, including a
 #      change that also adds a link (number, negation, adjective, dropped or
-#      added qualifier)
+#      added qualifier) and a change carried in the new link's text, which
+#      may use only words of the base line and of the link's target
 #   O. a direction-word line replaced by a dissimilar line is ERROR
 #   P. one added line cannot account for two rewrites (COUNT=1 left over)
 #   Q. the pointer rewrites the prompt asks for (anchor, file link, link text
-#      reusing the line's own words) are OK and counted
+#      reusing the line's own words or naming its target) are OK and counted
 #   R. a pointer dropped with no link in its place is ERROR
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L can be shown
@@ -286,6 +287,9 @@ The following flags are mandatory.|The following flags are optional.
 Requires Node 18 or later.|Requires Node 16 or [later](#later).
 Use the flags below only on a scratch tree.|Use the [flags](#flags) on a scratch tree.
 Pin the version shown above before you deploy.|Pin the version shown in [Versions](#versions) only before you deploy.
+Requires Node 18 or later.|Requires Node 18 or [older](#versions).
+The following flags are mandatory.|The [optional flags](#flags) are mandatory.
+Never run `deploy --force` here in production.|Never run `deploy --force` [outside staging](#deploy) in production.
 CASES
 
 # --- O: a direction-word line replaced by a dissimilar line ------------------
@@ -316,6 +320,8 @@ See the Kill switches table above.|See the [Kill switches](#kill-switches) table
 The table below lists every exit code.|[references/exit-codes.md](references/exit-codes.md) lists every exit code.
 Use the preceding section's flags (see above).|Use the [Flags](#flags) section's flags (see [Flags](#flags)).
 The following flags are mandatory.|The [flags](#flags) are mandatory.
+Run the command shown earlier.|Run the command shown in [Setup](#setup).
+The steps below install the hook.|The [Install](references/install.md) steps install the hook.
 CASES
 
 # --- R: a pointer dropped without a link in its place ------------------------
