@@ -49,8 +49,11 @@ assert "A1: pipe form reads a present value as absent under pipefail (got $pipe_
 
 producer | grep -Fxq 1
 pipe_status=("${PIPESTATUS[@]}")
-assert "A2: the producer took SIGPIPE (got ${pipe_status[0]})" \
-  "$([ "${pipe_status[0]}" -eq 141 ] && echo true || echo false)"
+# 141 is death by SIGPIPE. Where the parent ignores SIGPIPE (GitHub Actions
+# runners do), the write fails with EPIPE instead and seq exits 1. Both are the
+# non-zero producer status that pipefail reports.
+assert "A2: the producer failed on the closed pipe, by SIGPIPE (141) or EPIPE (1) (got ${pipe_status[0]})" \
+  "$([ "${pipe_status[0]}" -eq 141 ] || [ "${pipe_status[0]}" -eq 1 ] && echo true || echo false)"
 assert "A3: grep itself matched (got ${pipe_status[1]})" \
   "$([ "${pipe_status[1]}" -eq 0 ] && echo true || echo false)"
 
