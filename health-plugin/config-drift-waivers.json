@@ -9,17 +9,73 @@
   },
   {
    "kind": "review_staleness",
+   "path": "agent-patterns-plugin/skills/exclusive-lock-dispatch/SKILL.md",
+   "hash": "b851213ba23fff75",
+   "reason": "Body changed by 1 line(s) since the review on 2026-05-09, all of it mechanical: section citations and relative links repaired (#2942). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: exclusive-lock-dispatch changed 151d after its declared reviewed:2026-05-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/dependency-audit.md",
+   "hash": "071adb732d8dfbd3",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: dependency-audit changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/docs.md",
+   "hash": "7ac212f5e73f834e",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: docs changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/performance.md",
+   "hash": "6089c3cd596fd6f6",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: performance changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/research.md",
+   "hash": "9c9e7695c92956e5",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: research changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
    "path": "agents-plugin/agents/review.md",
-   "hash": "592d3881f6efff56",
-   "reason": "Body changed by 15 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262). The reviewed content is otherwise intact.",
-   "finding": "review_staleness: review changed 178d after its declared reviewed:2026-03-09"
+   "hash": "2fb8d2b8185aa4fd",
+   "reason": "Body changed by 21 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262); the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: review changed 228d after its declared reviewed:2026-03-09"
   },
   {
    "kind": "review_staleness",
    "path": "agents-plugin/agents/security-audit.md",
-   "hash": "d467b62e47bf6a82",
-   "reason": "Body changed by 15 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262). The reviewed content is otherwise intact.",
-   "finding": "review_staleness: security-audit changed 178d after its declared reviewed:2026-03-09"
+   "hash": "3c349d4ddc2b7b0b",
+   "reason": "Body changed by 21 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262); the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: security-audit changed 228d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/test.md",
+   "hash": "3935d163d6dca604",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "blog-plugin/skills/blog-post-writing/SKILL.md",
+   "hash": "15d79f32ee06f544",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: section citations and relative links repaired (#2942). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: blog-post-writing changed 165d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "blueprint-plugin/skills/blueprint-adr-list/SKILL.md",
+   "hash": "4256fbf5e15310d3",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: derive-prd/derive-adr references renamed to derive-plans (#1453). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: blueprint-adr-list changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
@@ -37,10 +93,17 @@
   },
   {
    "kind": "review_staleness",
+   "path": "blueprint-plugin/skills/blueprint-rules/SKILL.md",
+   "hash": "a43ad2ab32d7a7ad",
+   "reason": "Body changed by 1 line(s) since the review on 2026-02-09, all of it mechanical: slash-command invocation syntax fixed (#1007). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: blueprint-rules changed 227d after its declared reviewed:2026-02-09"
+  },
+  {
+   "kind": "review_staleness",
    "path": "blueprint-plugin/skills/confidence-scoring/SKILL.md",
-   "hash": "49e61de8b971d58e",
-   "reason": "Body changed by 15 line(s) since the review on 2025-12-16, all of it mechanical: When to Use converted to a table and ai_docs references retargeted to curated `.claude/rules/` entries (#1927). The reviewed content is otherwise intact.",
-   "finding": "review_staleness: confidence-scoring changed 199d after its declared reviewed:2025-12-16"
+   "hash": "2fae7a62bb2c0dc5",
+   "reason": "Body changed by 9 line(s) since the review on 2025-12-16, all of it mechanical: When to Use section converted to the required table (#1192); derive-prd/derive-adr references renamed to derive-plans (#1453); ai_docs references retargeted to curated .claude/rules/ entries (#1927); stale slash-command references resolved (#2945). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: confidence-scoring changed 295d after its declared reviewed:2025-12-16"
   },
   {
    "kind": "review_staleness",
@@ -58,10 +121,52 @@
   },
   {
    "kind": "review_staleness",
+   "path": "component-patterns-plugin/skills/components-version-badge/SKILL.md",
+   "hash": "80cc64e26aa60e41",
+   "reason": "Body changed by 3 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); references to the Context block pointed at its anchor (#2973); escaped quotes removed from Context find commands (#3410). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: components-version-badge changed 195d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "configure-plugin/skills/configure-load-tests/SKILL.md",
+   "hash": "d76c3961f5c31880",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-29, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); references to the Context block pointed at its anchor (#2973). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: configure-load-tests changed 164d after its declared reviewed:2026-04-29"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "configure-plugin/skills/configure-select/SKILL.md",
+   "hash": "45b801903dab26c4",
+   "reason": "Body changed by 4 line(s) since the review on 2026-07-05, all of it mechanical: escaped quotes removed from Context find commands (#3392). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: configure-select changed 121d after its declared reviewed:2026-07-05"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "configure-plugin/skills/configure-sentry/SKILL.md",
+   "hash": "0f4d30c547dd43a0",
+   "reason": "Body changed by 3 line(s) since the review on 2026-07-05, all of it mechanical: escaped quotes removed from Context find commands (#3392). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: configure-sentry changed 121d after its declared reviewed:2026-07-05"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "configure-plugin/skills/configure-status/SKILL.md",
+   "hash": "f74622c982e25119",
+   "reason": "Body changed by 6 line(s) since the review on 2026-07-05, all of it mechanical: references to the Context block pointed at its anchor (#2973); escaped quotes removed from Context find commands (#3392). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: configure-status changed 121d after its declared reviewed:2026-07-05"
+  },
+  {
+   "kind": "review_staleness",
    "path": "configure-plugin/skills/multi-repo-discipline/SKILL.md",
    "hash": "b4711da6d560cc34",
    "reason": "Body changed by 2 line(s) since the review on 2026-04-24, all of it mechanical: one cross-reference repointed to `git-plugin:git-coworker-check` by the citation-resolution sweep (#2627). The reviewed content is otherwise intact.",
    "finding": "review_staleness: multi-repo-discipline changed 137d after its declared reviewed:2026-04-24"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "container-plugin/agents/container-build.md",
+   "hash": "af1c5fc5848f316a",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: container-build changed 127d after its declared reviewed:2026-06-18"
   },
   {
    "kind": "review_staleness",
@@ -72,6 +177,34 @@
   },
   {
    "kind": "review_staleness",
+   "path": "documentation-plugin/skills/docs-generate/SKILL.md",
+   "hash": "4f77ca4baf117c7f",
+   "reason": "Body changed by 5 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); agent names in delegation lines fixed to agents that exist (#2196); references to the Context block pointed at its anchor (#2973). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: docs-generate changed 168d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "documentation-plugin/skills/docs-sync/SKILL.md",
+   "hash": "09f67580905115c4",
+   "reason": "Body changed by 1 line(s) since the review on 2026-04-25, all of it mechanical: stale slash-command references resolved (#2945). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: docs-sync changed 165d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "evaluate-plugin/agents/eval-analyzer.md",
+   "hash": "1abfbc0b069a017d",
+   "reason": "Body changed by 23 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262); the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: eval-analyzer changed 228d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "evaluate-plugin/agents/eval-comparator.md",
+   "hash": "9d630c698155f2e1",
+   "reason": "Body changed by 23 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262); the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: eval-comparator changed 228d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
    "path": "evaluate-plugin/skills/evaluate-report/SKILL.md",
    "hash": "b21e5eb68327c277",
    "reason": "Body changed by 2 line(s) since the review on 2026-03-04, all of it mechanical: one command name updated after a rename (`/evaluate:plugin` -> `/evaluate:plugin-batch`). The reviewed content is otherwise intact.",
@@ -79,10 +212,24 @@
   },
   {
    "kind": "review_staleness",
+   "path": "finops-plugin/skills/finops-caches/SKILL.md",
+   "hash": "ea4790eba4a86aba",
+   "reason": "Body changed by 1 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: finops-caches changed 168d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
    "path": "finops-plugin/skills/finops-compare/SKILL.md",
    "hash": "0751218a5e26f621",
    "reason": "Body unchanged since the review on 2026-04-25; only frontmatter changed (`description`, `effort`, `model`). The reviewed content is intact.",
    "finding": "review_staleness: finops-compare changed 168d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "finops-plugin/skills/finops-workflows/SKILL.md",
+   "hash": "346cb3b5da7e1bd8",
+   "reason": "Body changed by 1 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: finops-workflows changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
@@ -121,10 +268,38 @@
   },
   {
    "kind": "review_staleness",
+   "path": "github-actions-plugin/skills/github-actions-mcp-config/SKILL.md",
+   "hash": "89ae9fbdef367fb1",
+   "reason": "Body changed by 7 line(s) since the review on 2026-04-25, all of it mechanical: Renovate version-pin bumps (#3325); Renovate version-pin bumps (#3473). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: github-actions-mcp-config changed 196d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
    "path": "github-actions-plugin/skills/github-social-preview/SKILL.md",
    "hash": "d0f54a71650a916c",
    "reason": "Body changed by 23 line(s) since the review on 2025-12-16, all of it mechanical: the script path made repo-relative and use/don't-use bullets converted to a table. The reviewed content is otherwise intact.",
    "finding": "review_staleness: github-social-preview changed 179d after its declared reviewed:2025-12-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "health-plugin/skills/health-skill-audit/SKILL.md",
+   "hash": "22e738746b20f308",
+   "reason": "Body changed by 4 line(s) since the review on 2026-04-24, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: health-skill-audit changed 153d after its declared reviewed:2026-04-24"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "kubernetes-plugin/agents/k8s-diagnostics.md",
+   "hash": "2a46ccee4f1f11c4",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: k8s-diagnostics changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "macos-plugin/skills/tui-keybinding-debug/SKILL.md",
+   "hash": "816ef1219910e216",
+   "reason": "Body changed by 3 line(s) since the review on 2026-07-05, all of it mechanical: kitty skill references updated for the move to kitty-plugin (#3538). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: tui-keybinding-debug changed 127d after its declared reviewed:2026-07-05"
   },
   {
    "kind": "review_staleness",
@@ -135,10 +310,38 @@
   },
   {
    "kind": "review_staleness",
+   "path": "project-plugin/skills/project-skill-scripts/SKILL.md",
+   "hash": "6bdac19ccbba4d9c",
+   "reason": "Body changed by 3 line(s) since the review on 2026-02-14, all of it mechanical: Context commands stripped of pipes and ls (#653); Context-command shell-operator fixes (#702); Context commands stripped of 2>/dev/null (#792); Context probes matched with -path (#3454). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: project-skill-scripts changed 266d after its declared reviewed:2026-02-14"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "prose-plugin/skills/prose-synthesize/SKILL.md",
+   "hash": "61f0b3fa944d244c",
+   "reason": "Body changed by 1 line(s) since the review on 2026-02-16, all of it mechanical: stale slash-command references resolved (#2945). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: prose-synthesize changed 233d after its declared reviewed:2026-02-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "python-plugin/skills/python-code-quality/SKILL.md",
+   "hash": "b3e70341e55725b9",
+   "reason": "Body changed by 1 line(s) since the review on 2026-05-29, all of it mechanical: Renovate version-pin bumps (#3325); Renovate version-pin bumps (#3473); Renovate version-pin bumps (#3500). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: python-code-quality changed 164d after its declared reviewed:2026-05-29"
+  },
+  {
+   "kind": "review_staleness",
    "path": "python-plugin/skills/python-development/SKILL.md",
    "hash": "bf6545d72320600f",
    "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
    "finding": "review_staleness: python-development changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "python-plugin/skills/ty-type-checking/SKILL.md",
+   "hash": "46c68fc0852a5592",
+   "reason": "Body changed by 3 line(s) since the review on 2026-01-29, all of it mechanical: Renovate version-pin bumps (#3325); Renovate version-pin bumps (#3473); Renovate version-pin bumps (#3500). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: ty-type-checking changed 284d after its declared reviewed:2026-01-29"
   },
   {
    "kind": "review_staleness",
@@ -163,6 +366,13 @@
   },
   {
    "kind": "review_staleness",
+   "path": "terraform-plugin/agents/terraform-ops.md",
+   "hash": "f6ac0d93230f3032",
+   "reason": "Body changed by 6 line(s) since the review on 2026-06-18, all of it mechanical: the fleet-wide Turn Budget section added to every agent with maxTurns (#3158). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: terraform-ops changed 127d after its declared reviewed:2026-06-18"
+  },
+  {
+   "kind": "review_staleness",
    "path": "testing-plugin/skills/test-focus/SKILL.md",
    "hash": "5431a677305f9451",
    "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
@@ -171,16 +381,16 @@
   {
    "kind": "review_staleness",
    "path": "testing-plugin/skills/test-full/SKILL.md",
-   "hash": "2179bcb84a3cf03c",
-   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
-   "finding": "review_staleness: test-full changed 133d after its declared reviewed:2026-04-25"
+   "hash": "3b0b631c2228572b",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: subagent_type values plugin-qualified (#2576); references to the Context block pointed at its anchor (#2973). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-full changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
    "path": "testing-plugin/skills/test-quick/SKILL.md",
-   "hash": "ff35524a806677e9",
-   "reason": "Body changed by 4 line(s) since the review on 2026-04-25, all of it mechanical: a Context command made missing-directory-safe and `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
-   "finding": "review_staleness: test-quick changed 133d after its declared reviewed:2026-04-25"
+   "hash": "a2f13937cbdb3f4e",
+   "reason": "Body changed by 3 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); subagent_type values plugin-qualified (#2576); references to the Context block pointed at its anchor (#2973). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-quick changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
@@ -192,16 +402,16 @@
   {
    "kind": "review_staleness",
    "path": "testing-plugin/skills/test-run/SKILL.md",
-   "hash": "71cca3a4ef982d2b",
-   "reason": "Body changed by 6 line(s) since the review on 2026-04-25, all of it mechanical: two Context commands made missing-file-safe and `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
-   "finding": "review_staleness: test-run changed 133d after its declared reviewed:2026-04-25"
+   "hash": "ee3a43a612fb755b",
+   "reason": "Body changed by 4 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); subagent_type values plugin-qualified (#2576); references to the Context block pointed at its anchor (#2973). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-run changed 168d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
    "path": "testing-plugin/skills/test-setup/SKILL.md",
-   "hash": "a740541a59d6016a",
-   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: one Context command rewritten to the missing-directory-safe `find` form. The reviewed content is otherwise intact.",
-   "finding": "review_staleness: test-setup changed 131d after its declared reviewed:2026-04-25"
+   "hash": "bdd76e43778fa801",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: fragile Context commands rewritten by the execution harness (#1690); stale slash-command references resolved (#2945). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-setup changed 165d after its declared reviewed:2026-04-25"
   },
   {
    "kind": "review_staleness",
