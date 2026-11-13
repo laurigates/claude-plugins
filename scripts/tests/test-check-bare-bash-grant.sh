@@ -153,7 +153,6 @@ assert "D4 baseline-held hits exit 0" "$(is "$RC" 0)"
 assert "D5 held hits are reported as WARN rows of their own type" \
   "$(grep -q 'SEVERITY=WARN TYPE=bare_bash SKILL=x-plugin/skills/one-line-bare/SKILL.md' <<<"$OUT" && echo true || echo false)"
 assert "D6 WARN output satisfies the contract" "$(validates "$OUT")"
-held_out="$OUT"
 
 # A new bare grant is ERROR new_hit, exit 1, while the held ones stay WARN.
 make_skill "$c" "x-plugin/skills/brand-new" 'allowed-tools: Read, Bash'

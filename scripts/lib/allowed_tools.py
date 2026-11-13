@@ -75,7 +75,7 @@ def parse_allowed_tools(text: str) -> list[str]:
                 value = value[1:-1]
             return [t for t in (_clean(x) for x in split_top_level(value)) if t]
         tokens: list[str] = []
-        for nxt in fm[i + 1:]:
+        for nxt in fm[i + 1 :]:
             if nxt and not nxt[0].isspace() and not nxt.startswith("-"):
                 break
             item = nxt.strip()

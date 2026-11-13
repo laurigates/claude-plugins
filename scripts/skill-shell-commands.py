@@ -77,17 +77,70 @@ SHELL_AWK = os.path.join(LIB, "shell-commands.awk")
 ALLOWED_TOOLS_PY = os.path.join(LIB, "allowed_tools.py")
 
 MULTI_LEVEL = {
-    "git", "gh", "glab", "docker", "podman", "kubectl", "helm", "npm", "npx",
-    "pnpm", "yarn", "bun", "bunx", "deno", "cargo", "rustup", "go", "uv",
-    "uvx", "pip", "pipx", "task", "just", "make", "terraform", "tofu", "mise",
-    "brew", "apt", "apt-get", "kustomize", "skaffold", "argocd", "pre-commit",
-    "gcloud", "aws", "az", "systemctl", "launchctl", "obsidian", "comfy",
-    "twine", "poetry", "ansible", "vagrant", "biome", "ruff",
+    "git",
+    "gh",
+    "glab",
+    "docker",
+    "podman",
+    "kubectl",
+    "helm",
+    "npm",
+    "npx",
+    "pnpm",
+    "yarn",
+    "bun",
+    "bunx",
+    "deno",
+    "cargo",
+    "rustup",
+    "go",
+    "uv",
+    "uvx",
+    "pip",
+    "pipx",
+    "task",
+    "just",
+    "make",
+    "terraform",
+    "tofu",
+    "mise",
+    "brew",
+    "apt",
+    "apt-get",
+    "kustomize",
+    "skaffold",
+    "argocd",
+    "pre-commit",
+    "gcloud",
+    "aws",
+    "az",
+    "systemctl",
+    "launchctl",
+    "obsidian",
+    "comfy",
+    "twine",
+    "poetry",
+    "ansible",
+    "vagrant",
+    "biome",
+    "ruff",
 }
 # CLIs whose verbs sit two levels down; None = for every subcommand.
 TWO_LEVEL = {
-    "gh": None, "glab": None, "gcloud": None, "aws": None, "az": None,
-    "docker": {"compose", "image", "container", "network", "volume", "buildx", "system"},
+    "gh": None,
+    "glab": None,
+    "gcloud": None,
+    "aws": None,
+    "az": None,
+    "docker": {
+        "compose",
+        "image",
+        "container",
+        "network",
+        "volume",
+        "buildx",
+        "system",
+    },
     "podman": {"compose", "image", "container", "network", "volume", "system"},
     "git": {"stash", "remote", "worktree", "submodule"},
 }
@@ -95,13 +148,43 @@ INTERPRETERS = {"bash", "sh", "zsh", "python", "python3", "node"}
 INLINE_FLAGS = {"-c", "-e", "-p", "--eval", "-"}
 # Options that take an argument and may precede a multi-level CLI's subcommand.
 GLOBAL_ARG_OPTS = {
-    "-C", "-c", "--git-dir", "--work-tree", "-R", "--repo", "-n", "--namespace",
-    "--context", "--kubeconfig", "--kube-context", "-H", "--host", "--project",
-    "--cwd", "--profile", "--region", "-f", "--file", "--chdir", "--directory",
-    "--prefix", "--manifest-path",
+    "-C",
+    "-c",
+    "--git-dir",
+    "--work-tree",
+    "-R",
+    "--repo",
+    "-n",
+    "--namespace",
+    "--context",
+    "--kubeconfig",
+    "--kube-context",
+    "-H",
+    "--host",
+    "--project",
+    "--cwd",
+    "--profile",
+    "--region",
+    "-f",
+    "--file",
+    "--chdir",
+    "--directory",
+    "--prefix",
+    "--manifest-path",
 }
-SCRIPT_RUNNERS = {("bash",), ("sh",), ("zsh",), ("python",), ("python3",), ("node",),
-                  ("uv", "run"), ("bun",), ("bun", "run"), ("deno", "run"), ("tsx",)}
+SCRIPT_RUNNERS = {
+    ("bash",),
+    ("sh",),
+    ("zsh",),
+    ("python",),
+    ("python3",),
+    ("node",),
+    ("uv", "run"),
+    ("bun",),
+    ("bun", "run"),
+    ("deno", "run"),
+    ("tsx",),
+}
 ANCHORED = re.compile(r"^\$\{?(CLAUDE_SKILL_DIR|CLAUDE_PLUGIN_ROOT)\}?/")
 PLAIN = re.compile(r"^[a-z0-9][a-z0-9._:-]*$")
 ASSIGN_ONLY = re.compile(r"^\s*(?:\$\s+)?(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s*)+$")
@@ -110,16 +193,32 @@ SUDO = re.compile(r"^\s*(?:\$\s+)?sudo\s")
 PATH_FORM = re.compile(r"^(\.|~|<)")
 NO_SUBCOMMAND = "no subcommand shown: Bash(%s *) would admit every subcommand"
 PLACEHOLDER = "placeholder: the body spells a <placeholder>, not a runnable command"
-LONE_WORD = ("named alone in a prose span (a table cell or a mention), never shown with "
-             "arguments; grant it only if the skill runs it")
+LONE_WORD = (
+    "named alone in a prose span (a table cell or a mention), never shown with "
+    "arguments; grant it only if the skill runs it"
+)
 DESTRUCTIVE = "destructive: a prefix grant on it also admits the dangerous forms"
 DROP_HEADS = {
     "rm": "destructive: Bash(rm *) also admits rm -rf",
-    "dd": DESTRUCTIVE, "mkfs": DESTRUCTIVE, "shred": DESTRUCTIVE,
+    "dd": DESTRUCTIVE,
+    "mkfs": DESTRUCTIVE,
+    "shred": DESTRUCTIVE,
 }
-for _runner in ("xargs", "env", "nohup", "timeout", "time", "watch", "nice", "exec", "eval"):
-    DROP_HEADS[_runner] = ("runs another command: Bash(%s *) pre-approves whatever "
-                           "command it is given" % _runner)
+for _runner in (
+    "xargs",
+    "env",
+    "nohup",
+    "timeout",
+    "time",
+    "watch",
+    "nice",
+    "exec",
+    "eval",
+):
+    DROP_HEADS[_runner] = (
+        "runs another command: Bash(%s *) pre-approves whatever "
+        "command it is given" % _runner
+    )
 DROP_SUBS = {
     ("git", "push"): "outward: pushes to a remote",
     ("git", "reset"): "destructive: Bash(git reset *) also admits --hard",
@@ -130,8 +229,10 @@ DROP_SUBS = {
 }
 for _tool in ("docker", "podman"):
     for _verb in ("run", "exec"):
-        DROP_SUBS[(_tool, _verb)] = ("runs arbitrary code: Bash(%s %s *) admits any image, "
-                                     "mount and flag" % (_tool, _verb))
+        DROP_SUBS[(_tool, _verb)] = (
+            "runs arbitrary code: Bash(%s %s *) admits any image, "
+            "mount and flag" % (_tool, _verb)
+        )
 for _tool in ("npm", "pnpm", "yarn", "bun", "cargo", "uv", "poetry"):
     DROP_SUBS[(_tool, "publish")] = "outward: publishes a package"
 DROP_SUBS[("twine", "upload")] = "outward: publishes a package"
@@ -166,7 +267,10 @@ def emit_env_error(title: str, itype: str, msg: str) -> None:
 
 def usage(msg: str) -> None:
     print("skill-shell-commands.py: %s" % msg, file=sys.stderr)
-    print("Usage: python3 scripts/skill-shell-commands.py <skill-dir> [--check]", file=sys.stderr)
+    print(
+        "Usage: python3 scripts/skill-shell-commands.py <skill-dir> [--check]",
+        file=sys.stderr,
+    )
     sys.exit(2)
 
 
@@ -222,7 +326,7 @@ def split_segments(text: str) -> tuple[list[tuple[str, str]], list[str]]:
             i += 1
             continue
         if ch == "\\" and i + 1 < n:
-            cur.append(text[i:i + 2])
+            cur.append(text[i : i + 2])
             mask.append("__")
             i += 2
             continue
@@ -236,8 +340,8 @@ def split_segments(text: str) -> tuple[list[tuple[str, str]], list[str]]:
         if ch == "`":
             j = text.find("`", i + 1)
             j = n - 1 if j == -1 else j
-            nested_bodies.append(text[i + 1:j])
-            cur.append(text[i:j + 1])
+            nested_bodies.append(text[i + 1 : j])
+            cur.append(text[i : j + 1])
             mask.append("$X")
             i = j + 1
             continue
@@ -299,7 +403,9 @@ def grant_words(toks: list[str]) -> tuple[list[str], str | None]:
     head = toks[0]
     if head in INTERPRETERS:
         if len(toks) == 1:
-            return [head], "inline code: an interpreter with no script reads code from stdin"
+            return [
+                head
+            ], "inline code: an interpreter with no script reads code from stdin"
         t1 = toks[1]
         if t1 in INLINE_FLAGS:
             return [head, t1], "inline code: a prefix grant on it admits arbitrary code"
@@ -313,7 +419,12 @@ def grant_words(toks: list[str]) -> tuple[list[str], str | None]:
         if PLAIN.match(t1):
             words = [head, t1]
             subs = TWO_LEVEL.get(head, set())
-            if head in TWO_LEVEL and (subs is None or t1 in subs) and len(toks) > 2 and PLAIN.match(toks[2]):
+            if (
+                head in TWO_LEVEL
+                and (subs is None or t1 in subs)
+                and len(toks) > 2
+                and PLAIN.match(toks[2])
+            ):
                 words.append(toks[2])
             return words, None
         if t1.startswith("-"):
@@ -321,7 +432,10 @@ def grant_words(toks: list[str]) -> tuple[list[str], str | None]:
             # the subcommand would, so no prefix grant can narrow it. A flag
             # that takes no argument (`bun --inspect-brk x.ts`) is itself narrow.
             if t1 in GLOBAL_ARG_OPTS or "=" in t1:
-                return [head, t1], "global option before the subcommand; a prefix grant cannot narrow it"
+                return (
+                    [head, t1],
+                    "global option before the subcommand; a prefix grant cannot narrow it",
+                )
             return [head, t1], None
         return [head], NO_SUBCOMMAND % head  # a variable or placeholder subcommand
     return [head], None
@@ -367,7 +481,11 @@ class Inventory:
 
         # A bundled-script invocation, through a runner or run directly.
         for width in (2, 1):
-            if tuple(toks[:width]) in SCRIPT_RUNNERS and len(toks) > width and ANCHORED.match(toks[width]):
+            if (
+                tuple(toks[:width]) in SCRIPT_RUNNERS
+                and len(toks) > width
+                and ANCHORED.match(toks[width])
+            ):
                 self._script(toks[width], " ".join(toks[:width]), stripped, source)
                 return
         if ANCHORED.match(toks[0]):
@@ -412,13 +530,19 @@ def skill_files(skill_dir: str) -> list[str]:
 def collect(skill_dir: str, title: str) -> tuple[Inventory, int]:
     files = skill_files(skill_dir)
     try:
-        proc = subprocess.run([EXTRACT, "--types", "fence_line,inline_code"] + files,
-                              capture_output=True, text=True)
+        proc = subprocess.run(
+            [EXTRACT, "--types", "fence_line,inline_code"] + files,
+            capture_output=True,
+            text=True,
+        )
     except OSError as exc:
         emit_env_error(title, "extract_failed", "cannot run %s: %s" % (EXTRACT, exc))
     if proc.returncode != 0:
-        emit_env_error(title, "extract_failed",
-                       "%s exited %d: %s" % (EXTRACT, proc.returncode, proc.stderr.strip()[:120]))
+        emit_env_error(
+            title,
+            "extract_failed",
+            "%s exited %d: %s" % (EXTRACT, proc.returncode, proc.stderr.strip()[:120]),
+        )
 
     lines: list[tuple[str, str]] = []  # (source, segments...) bookkeeping
     awk_rows: list[str] = []
@@ -440,19 +564,30 @@ def collect(skill_dir: str, title: str) -> tuple[Inventory, int]:
             awk_rows.append("%d\t%s\t%s\t%d\t%s" % (line_id, src_type, lang, idx, seg))
 
     try:
-        awk = subprocess.run(["awk", "-F\t", "-v", "mode=segments", "-f", SHELL_AWK],
-                             input="\n".join(awk_rows) + "\n", capture_output=True, text=True)
+        awk = subprocess.run(
+            ["awk", "-F\t", "-v", "mode=segments", "-f", SHELL_AWK],
+            input="\n".join(awk_rows) + "\n",
+            capture_output=True,
+            text=True,
+        )
     except OSError as exc:
         emit_env_error(title, "awk_failed", "cannot run awk: %s" % exc)
     if awk.returncode != 0:
-        emit_env_error(title, "awk_failed", "awk exited %d: %s" % (awk.returncode, awk.stderr.strip()[:120]))
+        emit_env_error(
+            title,
+            "awk_failed",
+            "awk exited %d: %s" % (awk.returncode, awk.stderr.strip()[:120]),
+        )
 
     verdicts: dict[int, dict[int, tuple[int, str]]] = {}
     for row in awk.stdout.splitlines():
         cols = row.split("\t")
         if len(cols) < 3 or not cols[0].isdigit():
             continue
-        verdicts.setdefault(int(cols[0]), {})[int(cols[1])] = (int(cols[2]), cols[3] if len(cols) > 3 else "")
+        verdicts.setdefault(int(cols[0]), {})[int(cols[1])] = (
+            int(cols[2]),
+            cols[3] if len(cols) > 3 else "",
+        )
 
     inv = Inventory()
     for line_id, segs in sorted(verdicts.items()):
@@ -480,8 +615,13 @@ def grant_findings(skill_dir: str, inv: Inventory) -> tuple[int, list[tuple[str,
             continue
         grants += 1
         if kind:
-            findings.append((kind, "%s is a full-shell grant; list the commands the skill runs "
-                                   "as Bash(<command> *)" % token))
+            findings.append(
+                (
+                    kind,
+                    "%s is a full-shell grant; list the commands the skill runs "
+                    "as Bash(<command> *)" % token,
+                )
+            )
             continue
         pattern = inner
         for suffix in (":*", " *"):
@@ -494,7 +634,9 @@ def grant_findings(skill_dir: str, inv: Inventory) -> tuple[int, list[tuple[str,
 
         def matches(toks: list[str]) -> bool:
             return len(toks) >= len(words) and all(
-                fnmatch.fnmatchcase(t, w) if "*" in w else t == w for w, t in zip(words, toks))
+                fnmatch.fnmatchcase(t, w) if "*" in w else t == w
+                for w, t in zip(words, toks)
+            )
 
         if not any(matches(t) for t in inv.token_lists):
             head_seen = any(t and t[0] == words[0] for t in inv.token_lists)
@@ -529,7 +671,9 @@ def main(argv: list[str]) -> int:
     title = "SKILL GRANT CHECK" if check else "SKILL SHELL COMMANDS"
     for needed in (EXTRACT, SHELL_AWK, ALLOWED_TOOLS_PY):
         if not os.path.isfile(needed):
-            emit_env_error(title, "missing_helper", "shared library file not found: %s" % needed)
+            emit_env_error(
+                title, "missing_helper", "shared library file not found: %s" % needed
+            )
 
     inv, files_scanned = collect(skill_dir, title)
 
@@ -556,9 +700,15 @@ def main(argv: list[str]) -> int:
         return 1 if findings else 0
 
     for (head, sub, sub2), (count, sources) in sorted(inv.heads.items()):
-        print("HEAD=%s SUB=%s SUB2=%s COUNT=%d SOURCES=%s" % (head, sub, sub2, count, ",".join(sorted(sources))))
+        print(
+            "HEAD=%s SUB=%s SUB2=%s COUNT=%d SOURCES=%s"
+            % (head, sub, sub2, count, ",".join(sorted(sources)))
+        )
     for (path, interp, quoted), (count, sources) in sorted(inv.scripts.items()):
-        print("SCRIPT=%s INTERP=%s QUOTED=%d COUNT=%d SOURCES=%s" % (path, interp, quoted, count, ",".join(sorted(sources))))
+        print(
+            "SCRIPT=%s INTERP=%s QUOTED=%d COUNT=%d SOURCES=%s"
+            % (path, interp, quoted, count, ",".join(sorted(sources)))
+        )
     for pattern in sorted(inv.candidates):
         print("CANDIDATE=%s" % pattern)
     for pattern, why in sorted(inv.dropped.items()):
