@@ -9,7 +9,7 @@ description: |
 tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), TodoWrite
 maxTurns: 20
 created: 2026-03-04
-modified: 2026-10-22
+modified: 2026-11-13
 reviewed: 2026-03-09
 ---
 
@@ -36,7 +36,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ## Scope
 
-- **Input**: Graded eval results (grading.json files) + SKILL.md content
+- **Input**: Graded eval results (grading.json files) + SKILL.md content, plus the run directories' `transcript.md` files when diagnosing variable results
 - **Output**: `analysis.json` with patterns, strengths, weaknesses, and suggestions
 - **Steps**: 5-15 depending on data volume
 - **Model justification**: Opus required for pattern recognition across multiple data points and actionable improvement reasoning
@@ -60,7 +60,7 @@ When only with-skill data is available (no baseline):
 1. **Read all grading outputs** — across runs and eval cases
 2. **Find patterns in failures** — which assertions consistently fail
 3. **Find patterns in successes** — which assertions always pass
-4. **Identify variable results** — assertions that pass inconsistently (non-determinism)
+4. **Identify variable results** — assertions that pass inconsistently (non-determinism). For the two or three most variable assertions, read one passing and one failing run's `transcript.md` from the same config and name the first action where the two runs diverge. Cite it as the suggestion's `evidence`. A passing run is the reference for diagnosing the failing one, which turns variance into an edit `evaluate-improve` can apply (arXiv 2610.27435).
 5. **Generate observations** — data-grounded insights about skill quality
 
 ## Suggestion Categories

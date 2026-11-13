@@ -29,6 +29,8 @@ Every iteration leaves a compact state packet.
 Fields: Verifier result, Changed since last run.
 - Ordering / preconditions: which steps must precede which
 - Next target: what the last iteration chose to do next
+A reciprocal pair (A verifies B, B verifies A) is not this independence.
+"same tool or source returns nothing useful N times in a row = stop querying it"
 EOF
 
   cat > "$root/workflow-orchestration-plugin/skills/workflow-checkpoint-refactor/SKILL.md" <<'EOF'
@@ -129,6 +131,10 @@ strip_mutant rule_no_ordering "$RULE_REL" "Ordering / preconditions" \
   "rule missing the Ordering / preconditions field is flagged (#2693)"
 strip_mutant rule_no_next "$RULE_REL" "Next target" \
   "rule missing the Next target field is flagged (#2693)"
+strip_mutant rule_no_reciprocal "$RULE_REL" "reciprocal" \
+  "rule missing the reciprocal-verifier caveat is flagged (#2767)"
+strip_mutant rule_no_useless_stop "$RULE_REL" "returns nothing useful" \
+  "rule missing the useless-source stop counter is flagged (#2960)"
 strip_mutant ck_no_ordering "$CK_REL" "Ordering / preconditions" \
   "checkpoint plan missing Ordering / preconditions is flagged (#2693)"
 strip_mutant ck_no_next "$CK_REL" "Next target" \

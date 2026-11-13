@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-23
+modified: 2026-11-13
 reviewed: 2026-07-04
 ---
 
@@ -54,6 +54,11 @@ The independent-verifier requirement bites when "done" is a judgement
 ("the class is now single-purpose", "the docs are accurate"): that judgement
 must come from outside the worker.
 
+A reciprocal pair (A verifies B, B verifies A, round after round) is not this
+independence: in arXiv 2609.24967, such pairs drifted off the verification
+protocol in 94% of trajectories across 10 models once compliance conflicted with
+reward. Start a fresh verifier for each iteration instead of reusing one.
+
 ## Pillar 2 — every iteration leaves a compact state packet
 
 A loop that re-enters across context limits or session boundaries must, *before
@@ -84,6 +89,12 @@ Both pillars assume the loop terminates. Independent verifiers reduce false
 ceiling — `--max-cycles` / `--max-iterations`, "same failure N times in a row =
 stuck", or a phase cap. A loop with no ceiling and a strict verifier can churn
 forever; bound it and surface the stuck state for a human.
+
+A loop that queries tools needs the same ceiling per source: "same tool or
+source returns nothing useful N times in a row = stop querying it". Make it a
+counter, not prompt wording: in arXiv 2610.06191 agents labelled a failing
+source's results useless 97–100% of the time yet rarely stopped on that
+judgment, and prompt cues moved when they stopped, not what they stopped on.
 
 ## Where this applies
 
