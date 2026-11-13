@@ -4,7 +4,7 @@ description: Audit a CLAUDE.local.md — verify each claim live, fix drifted env
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash(ssh *), Bash(gh api *), Bash(gh workflow *), Bash(git log *), Bash(git status *), Bash(git stash list *), Bash(ls *), Bash(wc *), TodoWrite
 model: opus
 created: 2026-08-13
-modified: 2026-08-13
+modified: 2026-11-13
 reviewed: 2026-08-13
 ---
 
@@ -83,6 +83,15 @@ usually a handful of calls.
 That last row catches the class you would otherwise miss: a claim that is still
 *plausible* and still *about the machine*, but that the project fixed. A `perf(...)`
 commit in the repo silently invalidates a "this is pathologically slow" note.
+
+**An inferred rule needs its observation, not just a probe.** A note that
+generalizes ("X always fails here, use Y") is riskier than one that records a
+fact, because every session that reads it reuses the lesson without re-checking
+it. Storing inferred rules and summaries beside raw history lets errors in them
+spread through reuse (arXiv 2610.27406). Find the observation the rule came from
+and reproduce it live. Keep the rule only if the observation still holds, and
+write the observation into the note beside it. If no observation can be found
+or reproduced, cut the rule.
 
 ### 3. Cross-check before deleting
 
