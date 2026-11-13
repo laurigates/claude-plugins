@@ -1134,6 +1134,26 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: references/report-format.md converts wc -c output with chars/4 — wc -c counts bytes (issue #3608)")
         has_errors=true
       fi
+      # Second review of the #3608 fix: (a) SKILL.md Step 1 still converted
+      # `wc -c` output with chars/4, and Step 4 still credited the whole
+      # ~8K-vs-3.7K gap to the pointers that stayed, contradicting
+      # report-format.md; (b) the 6,162/2,483 counts come from `rg '^-[^-]'`,
+      # which skips removed lines that start with `-` (Markdown bullets), so
+      # the split is an estimate and the removed count a lower bound.
+      if grep -qF 'chars/4' "$skill_file" || grep -qF 'once their pointers stayed' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must call wc -c output bytes (no chars/4) and must not credit the whole Step 4 overstatement to the pointers — point at references/report-format.md (issue #3608)")
+        has_errors=true
+      fi
+      if ! grep -qF 'bytes/4' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 1 must convert wc -c bytes with bytes/4 (issue #3608)")
+        has_errors=true
+      fi
+      for token in 'lower bound' 'Markdown bullet'; do
+        if ! grep -qF "$token" "$mcd_dir/references/report-format.md" 2>/dev/null; then
+          issues+=("❌ ${plugin}/${skill_name}: references/report-format.md must retain token '${token}' (the worked example's split is an estimate from rg counts that skip removed bullet lines — issue #3608)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision

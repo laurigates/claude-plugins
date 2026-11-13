@@ -38,10 +38,14 @@ the new total. Name the command beside the figure, with the files it summed
 the number can be checked. Where the Step 4 estimate and the measured net
 disagree, report both.
 
-In one 2026-11 diet the approval table summed to about 8K, and the diff removed
-6,162 bytes and added 2,483 (each count includes one diff-marker byte per
-line), a net of about 3.7K. The gap has two parts: about 1.8K of the approved
-size was never deleted, and the 2,483 added bytes were residual pointer and
-invariant text that the estimate did not subtract.
+In one 2026-11 diet the approval table summed to about 8K, and the diff counted
+6,162 bytes removed and 2,483 added, a net of about 3.7K. Both counts come from
+`git diff | rg '^-[^-]' | wc -c` and `git diff | rg '^\+[^+]' | wc -c`, so they
+include one diff-marker byte per line and skip blank lines. The removal pattern
+also skips every removed line that starts with `-`, such as a Markdown bullet,
+while the addition pattern counts added bullets, so 6,162 is a lower bound on
+the bytes removed. The gap therefore splits only as an estimate: up to about
+1.8K of the approved size was never deleted, and the 2,483 added bytes were
+residual pointer and invariant text that the estimate did not subtract.
 
 End with: the measured net tokens removed from the every-turn surface and the command that measured it, the new skills created (with their trigger descriptions), and the commit outcome: the per-concern commits made when the user's or project's commit policy says to commit, or — when it does not — the next step (review `git status`, commit per concern with conventional-commit messages).
