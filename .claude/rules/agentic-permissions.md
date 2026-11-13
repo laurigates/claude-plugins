@@ -283,8 +283,10 @@ Not `Bash(bash *)`: it prefix-matches any `bash -c '<script>'`, so it pre-approv
 
 Scripts live in `skills/<skill-name>/scripts/` and are invoked via:
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME"
 ```
+
+**No `$(…)` or backtick substitution on the invocation line.** It voids the anchored grant: the call prompts (measured on 2.1.322, #3577). Let the script default the value instead (`--project-dir` to the working directory). `scripts/check-voided-script-grant.sh` enforces it (#3640).
 
 #### When to Use Scripts vs Granular Patterns
 
