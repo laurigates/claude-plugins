@@ -63,12 +63,12 @@ echo "=== #3616 release-please: generic updater and release-workflow gotchas ===
 rpc="${SKILLS}/release-please-configuration"
 generic="${rpc}/references/generic-updater.md"
 has "release-please-configuration links the generic-updater reference" "$(cat "${rpc}/SKILL.md")" "](references/generic-updater.md)"
-# The GITHUB_TOKEN tag case is GitHub Actions behaviour; the summary must not
-# count it among the generic updater's failures (finding F3).
-gsum=$(section "${rpc}/SKILL.md" "### Generic Updater and Non-JS Repos")
-has "the summary counts two generic-updater failures" "$gsum" "fails silently in two"
-has "the summary attributes the tag case to GitHub Actions" "$gsum" "GitHub Actions behaviour"
 gtext=$(cat "$generic" 2>/dev/null)
+# The GITHUB_TOKEN tag case is GitHub Actions behaviour; the summary must not
+# count it among the generic updater's failures (finding F3). The summary lives
+# in the reference so the SKILL.md body stays under the size WARN (finding G2).
+has "the summary counts two generic-updater failures" "$gtext" "fails silently in two"
+has "the summary attributes the tag case to GitHub Actions" "$gtext" "GitHub Actions behaviour"
 has "generic updater skips a version that is not major.minor.patch" "$gtext" "major.minor.patch"
 has "generic updater rewrites CRLF files as LF" "$gtext" "CRLF"
 has "a GITHUB_TOKEN tag triggers no on: push: tags workflow" "$gtext" "GITHUB_TOKEN"
@@ -80,9 +80,16 @@ has "Why Conflicts Occur links the stuck-PR reference" "$(section "${rppw_dir}/S
 rppw=$(cat "${rppw_dir}/references/stuck-conflicting.md" 2>/dev/null)
 has "a release PR stuck CONFLICTING after a non-releasable commit" "$rppw" "non-releasable"
 has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "--delete-branch"
+# The Recovery section moved verbatim to troubleshooting.md to make room for the
+# generic-updater link (finding G2); the body still points at it.
+has "the untagged-PR failure links the moved Recovery section" "$(section "${rpc}/SKILL.md" "### Common Failure: Merged Release PR Never Tagged")" "troubleshooting.md#recovery-unwedge-an-already-merged-untagged-pr"
+has "troubleshooting.md carries the Recovery section" "$(section "${rpc}/references/troubleshooting.md" "### Recovery: Unwedge")" 'gh pr edit $PR_NUMBER --add-label "autorelease: tagged"'
 rppw_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${rppw_dir}/SKILL.md")
 [ "$rppw_chars" -le 10000 ] && ok "release-please-pr-workflow SKILL.md is within the 10,000-char WARN line" ||
     notok "release-please-pr-workflow SKILL.md is ${rppw_chars} chars, over the 10,000-char WARN line"
+rpc_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${rpc}/SKILL.md")
+[ "$rpc_chars" -le 10000 ] && ok "release-please-configuration SKILL.md is within the 10,000-char WARN line" ||
+    notok "release-please-configuration SKILL.md is ${rpc_chars} chars, over the 10,000-char WARN line"
 
 echo "=== #3614 no-force stack: Case A step 1 is expected to fail for a child that edits lines at or next to the base's ==="
 nofp="${NOFORCE_STACK_FILE:-${SKILLS}/git-merge-hazards/references/no-force-push-stack.md}"

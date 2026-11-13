@@ -5,6 +5,11 @@ plain path (the generic updater, which rewrites lines carrying an
 `x-release-please-*` marker), or a build must run after a release is cut.
 Each behaviour in this file fails without an error message.
 
+The generic updater fails silently in two ways: it skips a version that is not
+`major.minor.patch`, and it rewrites a CRLF file as LF. The third section, a tag
+that a `GITHUB_TOKEN` run creates starting no `on: push: tags` workflow, is
+GitHub Actions behaviour, not the updater's.
+
 ## The generic updater skips a two-part version
 
 The updater's version pattern requires `major.minor.patch` (with an optional
