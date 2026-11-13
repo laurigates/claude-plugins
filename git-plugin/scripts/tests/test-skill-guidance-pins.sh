@@ -83,7 +83,7 @@ has "the stuck PR is closed with its branch deleted before the rerun" "$rppw" "-
 # The Recovery section moved verbatim to troubleshooting.md to make room for the
 # generic-updater link (finding G2); the body still points at it.
 has "the untagged-PR failure links the moved Recovery section" "$(section "${rpc}/SKILL.md" "### Common Failure: Merged Release PR Never Tagged")" "troubleshooting.md#recovery-unwedge-an-already-merged-untagged-pr"
-has "troubleshooting.md carries the Recovery section" "$(section "${rpc}/references/troubleshooting.md" "### Recovery: Unwedge")" 'gh pr edit $PR_NUMBER --add-label "autorelease: tagged"'
+has "troubleshooting.md carries the Recovery section" "$(section "${rpc}/references/troubleshooting.md" "### Recovery: Unwedge")" '--add-label "autorelease: tagged" --remove-label "autorelease: pending"'
 rppw_chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "${rppw_dir}/SKILL.md")
 [ "$rppw_chars" -le 10000 ] && ok "release-please-pr-workflow SKILL.md is within the 10,000-char WARN line" ||
     notok "release-please-pr-workflow SKILL.md is ${rppw_chars} chars, over the 10,000-char WARN line"
