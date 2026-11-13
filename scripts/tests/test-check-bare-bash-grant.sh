@@ -221,6 +221,28 @@ run_check "$wt" --list
 assert "F5 a project root under .claude/worktrees/ is still scanned" "$(listed inside-worktree bare_bash)"
 
 ##########
+# G. A trailing YAML comment does not hide a grant (#3464 F2)
+##########
+# Without the comment strip, the tokens read `Bash # note` and `Bash  # full
+# shell`, which classify() does not flag, so a new bare Bash passes the ratchet.
+echo "=== G: trailing comments ==="
+g="$sandbox/g"
+make_skill "$g" "x-plugin/skills/comment-one-line" 'allowed-tools: Read, Bash # note'
+make_skill "$g" "x-plugin/skills/comment-yaml-list" 'allowed-tools:
+  - Read
+  # a comment line between items
+  - Bash  # full shell'
+make_skill "$g" "x-plugin/skills/comment-broad" 'allowed-tools: Read, Bash(python3 *)  # for scripts'
+# A `#` inside quotes, or with no space before it, is part of the grant.
+make_skill "$g" "x-plugin/skills/hash-in-grant" 'allowed-tools: "Bash(git log --format=%h#x *)", Bash(jq -r '"'"'.a # b'"'"' *), Read'
+run_check "$g" --list
+assert "G1 one-line bare Bash with a trailing comment is a hit" "$(listed comment-one-line bare_bash)"
+assert "G2 YAML-list bare Bash with a trailing comment is a hit" "$(listed comment-yaml-list bare_bash)"
+assert "G3 a broad grant with a trailing comment is a hit" "$(listed comment-broad broad_shell_grant)"
+assert "G4 a # inside a grant is not a comment (negative control)" "$(grep -q 'hash-in-grant' <<<"$OUT" && echo false || echo true)"
+assert "G5 exactly 3 rows" "$(is "$(grep -c . <<<"$OUT")" 3)"
+
+##########
 # G. Worktree and dist copies inside a plugin are pruned (#1492, #2214)
 ##########
 echo "=== G: prune ==="

@@ -12,7 +12,9 @@ Forms read, from the frontmatter between the first two `---` lines:
     - Bash
     - Read
 Commas inside parentheses do not split a token: `Bash(jq -r .a,.b *)` is one
-grant.
+grant. A trailing YAML comment (` # ...` outside quotes) is dropped, as YAML
+drops it, so `- Bash  # full shell` reads as a bare `Bash`; a block scalar
+body (`allowed-tools: |`) is text in YAML and keeps its `#`.
 """
 
 from __future__ import annotations
@@ -49,6 +51,20 @@ def _clean(token: str) -> str:
     return token
 
 
+def strip_comment(line: str) -> str:
+    """Drop a YAML comment: a `#` at line start or after whitespace, outside quotes."""
+    quote = None
+    for i, ch in enumerate(line):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+        elif ch == "#" and (i == 0 or line[i - 1].isspace()):
+            return line[:i].rstrip()
+    return line
+
+
 def frontmatter_lines(text: str) -> list[str]:
     lines = text.split("\n")
     if not lines or lines[0].strip() != "---":
@@ -68,8 +84,9 @@ def parse_allowed_tools(text: str) -> list[str]:
         m = re.match(r"^allowed-tools:[ \t]*(.*)$", line)
         if not m:
             continue
-        value = m.group(1).strip()
-        if value and value not in ("|", ">", "|-", ">-"):
+        value = strip_comment(m.group(1)).strip()
+        block_scalar = value in ("|", ">", "|-", ">-")
+        if value and not block_scalar:
             value = _clean(value)
             if value.startswith("[") and value.endswith("]"):
                 value = value[1:-1]
@@ -78,7 +95,7 @@ def parse_allowed_tools(text: str) -> list[str]:
         for nxt in fm[i + 1 :]:
             if nxt and not nxt[0].isspace() and not nxt.startswith("-"):
                 break
-            item = nxt.strip()
+            item = (nxt if block_scalar else strip_comment(nxt)).strip()
             if item.startswith("- "):
                 tokens.append(_clean(item[2:]))
             elif item and item != "-":  # block scalar body: comma-separated text
