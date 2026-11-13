@@ -33,7 +33,11 @@ echo "PASS shared region identical ($(printf '%s\n' "$a" | wc -l | tr -d ' ') li
 #    throwaway worktree: `git worktree remove` refuses a tree holding a
 #    conflicted merge's modified files unless forced.
 skill="$here/../../SKILL.md"
-recipe="$(awk '/^\*\*Trial-integrate/,/^$/' "$skill")"
+landing="$here/../../references/landing.md"
+recipe="$(awk '/^\*\*Trial-integrate/,/^$/' "$landing")"
+if [[ "$(cat "$skill")" != *"references/landing.md"* ]]; then
+  echo "FAIL SKILL.md does not link references/landing.md"; exit 1
+fi
 abort='git -C <tmp> merge --abort'
 remove='git worktree remove <tmp>'
 # Offset of the first abort and of the last remove, by string slicing (no pipes under pipefail).
