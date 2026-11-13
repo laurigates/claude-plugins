@@ -189,12 +189,13 @@ The CI path opens a triage issue instead — see Automation Integration below.
 The `.github/workflows/changelog-review.yml` workflow runs this review weekly
 in this marketplace. It is a thin caller of the published reusable workflow
 `laurigates/.github/.github/workflows/reusable-changelog-review.yml@main`
-(issue #1304), the default a project can swap for its own copy: the schedule, dispatch input, and repo-specific inputs (analyzer
-path, commit scope, rule-file sections, plugin list) live in the caller; the
-two-job pipeline (bash pre-check gate → opus triage) lives upstream. The
-analyzer script and its tests stay in this repo and are handed to the reusable
-workflow via its `analyzer-script` input, so the analysis logic remains
-reviewable and unit-tested here:
+(issue #1304); a project can swap in its own copy. The schedule, dispatch
+input, and repo-specific inputs (analyzer path, commit scope, rule-file
+sections, plugin list) live in the caller; the two-job pipeline (bash
+pre-check gate → opus triage) lives upstream. The analyzer script and its
+tests stay in this repo and are handed to the reusable workflow via its
+`analyzer-script` input, so the analysis logic remains reviewable and
+unit-tested here:
 
 ```bash
 bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . \
