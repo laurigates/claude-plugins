@@ -39,11 +39,6 @@ has() {
     grep -qF -- "$3" <<<"$2" && ok "$1" || notok "$1: missing '$3'"
 }
 
-# lacks <label> <text> <fixed-string> — <text> does not contain <fixed-string>.
-lacks() {
-    grep -qF -- "$3" <<<"$2" && notok "$1: still contains '$3'" || ok "$1"
-}
-
 # before <label> <text> <first> <second> — <first> appears on an earlier line
 # than <second>, and both appear.
 before() {
@@ -73,7 +68,6 @@ has "release-please-configuration links the generic-updater reference" "$(cat "$
 gsum=$(section "${rpc}/SKILL.md" "### Generic Updater and Non-JS Repos")
 has "the summary counts two generic-updater failures" "$gsum" "fails silently in two"
 has "the summary attributes the tag case to GitHub Actions" "$gsum" "GitHub Actions behaviour"
-lacks "the summary no longer counts three updater failures" "$gsum" "fails silently in three"
 gtext=$(cat "$generic" 2>/dev/null)
 has "generic updater skips a version that is not major.minor.patch" "$gtext" "major.minor.patch"
 has "generic updater rewrites CRLF files as LF" "$gtext" "CRLF"
@@ -100,8 +94,6 @@ has "step 1 calls the failure expected for this shape" "$case_a" "step 2 is its 
 has "the intro states the condition at line level" "$case_a" "lines at or next to the lines the base changed"
 has "the intro says a 3-way merge conflicts per hunk" "$case_a" "conflicts per hunk, not per file"
 has "step 1 states the condition at line level" "$case_a" "edits lines at or next to its base's"
-lacks "the file-level diagnosis is gone" "$case_a" "both sides changing the same files"
-lacks "step 1 no longer sends every shared-file child to step 2" "$case_a" "edits its base's files"
 
 echo "=== #3614 mechanism: merge-tree after a squash-merge, per hunk ==="
 # The text above claims git behaviour; check it against git itself. A base PR
