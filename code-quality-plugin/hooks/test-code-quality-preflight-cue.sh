@@ -77,8 +77,9 @@ fi
 # --- (b) a version-only Edit of a manifest is silent (issue #3627) ---
 # A one-token pin bump (`=1.1.5` -> `=1.1.6`) drew the "Large/structural edit"
 # cue because Signal 1 fired on the manifest name alone. An Edit whose old and
-# new strings differ only in version digits and dots no longer counts; any other
-# manifest edit (a new key, a renamed dependency) still fires.
+# new strings differ only in version tokens no longer counts; any other manifest
+# edit (a new key, a renamed dependency, a bare number such as a port, a dot
+# dropped from a non-version token) still fires.
 cq_edit_payload() {
   jq -n --arg file_path "$1" --arg old_string "$2" --arg new_string "$3" --arg session_id "$4" \
     '{tool_name: "Edit", tool_input: {file_path: $file_path, old_string: $old_string, new_string: $new_string}, session_id: $session_id}'
@@ -89,7 +90,9 @@ for cq_b2_case in \
   'package.json|"version": "1.2.3",|"version": "1.10.0",' \
   'pyproject.toml|version = "0.9.1"|version = "0.9.2"' \
   'plugin.json|"version": "2.0.0-rc.1"|"version": "2.0.0-rc.2"' \
-  'marketplace.json|"version": "1.28.2"|"version": "1.28.3"'; do
+  'marketplace.json|"version": "1.28.2"|"version": "1.28.3"' \
+  'pyproject.toml|requires-python = ">=3.9"|requires-python = ">=3.12"' \
+  'Cargo.toml|serde = "1"|serde = "2"'; do
   cq_b2_idx=$((cq_b2_idx + 1))
   IFS='|' read -r cq_b2_name cq_b2_old cq_b2_new <<< "$cq_b2_case"
   echo "--- Test (b): version-only ${cq_b2_name} edit is silent (#3627) ---"
@@ -107,7 +110,10 @@ cq_b3_idx=0
 for cq_b3_case in \
   'Cargo.toml|rustix = "1.1.5"|nix = "1.1.5"' \
   'Cargo.toml|[dependencies]|[dependencies]\ntokio = "1"' \
-  'package.json|"version": "1.2.3"|"version": "1.2.3",\n  "type": "module"'; do
+  'package.json|"version": "1.2.3"|"version": "1.2.3",\n  "type": "module"' \
+  'package.json|"port": 3000|"port": 30001' \
+  'package.json|"main": "index.js"|"main": "indexjs"' \
+  'Cargo.toml|edition = "2021"|edition = "2021" # 2024'; do
   cq_b3_idx=$((cq_b3_idx + 1))
   IFS='|' read -r cq_b3_name cq_b3_old cq_b3_new <<< "$cq_b3_case"
   cq_b3_new="${cq_b3_new//\\n/$'\n'}"
