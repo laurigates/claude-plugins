@@ -198,11 +198,12 @@ jobs:
             Using this data plus your own judgment, evaluate:
 
             ### 1. Bare CLI Commands Without Compact Flags
-            - For skills in the missing agentic optimizations list above, scan their CLI examples
+            - This is the primary finding. Scan skills' fenced shell blocks and `!` context commands for CLI commands that lack the compact, fail-fast, or machine-readable flag named in the Bare CLI Command Patterns table of `health-plugin/skills/health-agentic-audit/REFERENCE.md`
             - Suggest compact/agentic-optimized flags where applicable
+            - The "Agentic Optimizations" table is optional (`.claude/rules/context-engineering.md` § Supersedes). Never report a missing table as a finding; the CLI-wrapper list above is INFO only and does not count towards concerns
 
             ### 2. Model Appropriateness
-            - Read both `model` and `effort` from frontmatter of flagged skills
+            - Read both `model` and `effort` from frontmatter of flagged skills (skills named in any pre-computed list above or in your §1 findings)
             - `model` is normally unset (inherits) or `opus`; `fable` and `inherit` are valid values — judge `fable` against `.claude/rules/skill-development.md`. `effort` (`low|medium|high|xhigh|max`, inherits when unset) is the cost lever — flag values outside that set and mismatches with the skill's job shape (mechanical skill at `xhigh`, judgment-heavy skill at `low`). `haiku` is valid only on a report, listing, or user-driven terminal skill whose output ends the turn (see `.claude/rules/skill-development.md`).
             - Flag a skill pinned to `haiku` that the model calls mid-task (the override lasts the rest of the turn), or pinned to `sonnet` without a clear reason
 
@@ -249,7 +250,8 @@ jobs:
             | Metric | Value |
             |--------|-------|
             | Total skills audited | N |
-            | Missing Agentic Optimizations | N |
+            | Bare CLI commands | N |
+            | CLI wrappers without an Agentic Optimizations table (INFO) | N |
             | Stale reviews (>90d) | N |
             | Distinct stale review dates | N |
             | Model concerns | N |
