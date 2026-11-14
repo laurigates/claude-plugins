@@ -32,7 +32,7 @@ or `obsolete` on an empty result alone.
 ## Where things live
 
 <!-- Main session: fill in for this machine. Examples: -->
-- Repo roots: `<e.g. ~/repos/<org>/<name>>`. Slugs that don't match a directory name: `<slug> → <path or owner/repo>`.
+- Repo roots: `<the directory holding this user's checkouts, e.g. <root>/<org>/<name>>`. Slugs that don't match a directory name: `<slug> → <path or owner/repo>`.
 - Bare `#N` refs belong to the task's own project repo unless an `owner/repo#N` says otherwise.
 - Local checkouts can be stale, on feature branches, or in use by other sessions. **Read through GitHub, not the working tree**: `gh pr view N -R o/r --json state,mergedAt,title`, `gh issue view N -R o/r --json state,closedAt,comments`, `gh api repos/o/r/contents/<path>?ref=main`, `gh run list -R o/r -b main -L 3`, `gh repo view o/r --json isArchived`. For local files use `git -C <repo> fetch -q origin` then `git -C <repo> show origin/main:<path>`.
 

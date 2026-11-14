@@ -1,6 +1,6 @@
 ---
 created: 2026-06-26
-modified: 2026-11-07
+modified: 2026-11-13
 reviewed: 2026-07-30
 name: foundryvtt-module
 description: >-
@@ -19,12 +19,12 @@ Reach for `foundryvtt-module-scaffold` on its own when all you want is the local
 file tree. Reach for **this** skill when the remote repo should also exist, be
 seeded, and be under Terraform management by the time you stop.
 
-## Delegated: the gitops repo-adoption procedure
+## Delegated: the repo-adoption procedure
 
 The second half of this pipeline — creating and seeding the GitHub repo, opening
 the gitops adoption PR, the human merge gate, and the import-block-removal
-follow-up — is **not duplicated here**. It is identical for every laurigates repo
-class and is owned by:
+follow-up — is **not duplicated here**. It is identical for every repo class and
+is owned by:
 
 > **`comfyui-plugin:comfy-node`, Phases 3 → 5** (plus its branch-protection hook
 > note and its generic failure-mode rows).
@@ -51,9 +51,16 @@ what you do in Phase 2 below:
 
 ## Preconditions
 
-- Work from the FoundryVTT workspace (`repos/laurigates/foundryvtt-dev/`), so the
-  new checkout sits beside `foundryvtt-mcp` / `foundryvtt-mediasoup-webrtc`. The
-  gitops clone is therefore at `../gitops`.
+- Work from the directory holding the user's other FoundryVTT module clones.
+- Resolve `<owner>`, `<iac-repo>` and `<iac-dir>` as the owner skill's *Values
+  from context* section does, except: `<owner>` comes from a
+  sibling module's `git remote get-url origin`, else `gh api user --jq .login`;
+  `iac_repo:` / `iac_dir:` come from `.claude/foundryvtt-plugin.local.md` (when
+  unset, ask once and offer to save it).
+- `<owner>` is also the scaffold's `--publisher`, which writes the `module.json`
+  `url`, `manifest` and `download`; without it the scaffold's default owner
+  lands there. `<author>` (`--author`) is a sibling module's
+  `authors[0].name`, else `git config user.name`.
 - The remaining preconditions (a **personal** `gh auth` that may create repos, and
   an uncommitted-change-free gitops clone) are stated once in the owner skill —
   satisfy them before Phase 3.
@@ -85,20 +92,19 @@ test ! -e foundryvtt-initiative-tweaks && echo "local: free" || echo "local: EXI
 ```
 
 ```sh
-grep -q '"foundryvtt-initiative-tweaks"' ../gitops/repositories.tf && echo "gitops: EXISTS" || echo "gitops: free"
+grep -q '"foundryvtt-initiative-tweaks"' <iac-dir>/repositories.tf && echo "gitops: EXISTS" || echo "gitops: free"
 ```
 
 ```sh
-gh repo view laurigates/foundryvtt-initiative-tweaks >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
+gh repo view <owner>/foundryvtt-initiative-tweaks >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
 ```
 
-(`../gitops` assumes the foundryvtt-dev layout; point it at wherever the gitops
-clone actually lives.)
+(With no `<iac-dir>`, skip that lookup.)
 
 ## Phase 2 — Scaffold, init, and get to green
 
 ```sh
-python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --variant basic
+python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --variant basic --publisher <owner> --author "<author>"
 ```
 
 ```sh
@@ -134,12 +140,12 @@ Everything the owner skill states that is not listed in this table applies verba
 | Owner's step | FoundryVTT value |
 |---|---|
 | Repo name | `foundryvtt-initiative-tweaks` |
-| gitops clone path | `../gitops` — so `git -C ../gitops …` throughout, and `grep … ../gitops/repositories.tf` |
+| `<iac-dir>` | From [Preconditions](#preconditions); `git -C <iac-dir> …` throughout |
 | Seed commit subject | `feat: scaffold foundryvtt-initiative-tweaks (basic module)` |
 | `repositories.tf` entry | `release_please = true` and **no registry flag** — see below |
 | PR title | `feat: adopt foundryvtt-initiative-tweaks` |
 | What merging the PR pushes | The release-please App credentials only (no registry token) |
-| Phase 5 verification | `gh api repos/laurigates/foundryvtt-initiative-tweaks/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` — it should echo the variable name. Skip the owner's `gh secret list` probe; there is no registry secret to find. |
+| Phase 5 verification | `gh api repos/<owner>/foundryvtt-initiative-tweaks/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` — it should echo the variable name. Skip the owner's `gh secret list` probe; there is no registry secret to find. |
 
 The entry to add under the active repositories `locals` block, beside the other
 `foundryvtt-*` entries (mirror `foundryvtt-mcp`):
