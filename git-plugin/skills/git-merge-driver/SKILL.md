@@ -1,7 +1,7 @@
 ---
 name: git-merge-driver
 description: Write a custom git merge driver that merges a file's structure instead of its lines. Use when a tool-rewritten JSON/YAML/lock file keeps conflicting on mechanical fields.
-allowed-tools: Bash(git config *), Bash(git check-attr *), Bash(git merge *), Bash(git merge-file *), Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(git config --get *), Bash(git check-attr *), Bash(git merge *), Bash(git merge-file *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-11-03
 modified: 2026-11-14
 reviewed: 2026-11-03
