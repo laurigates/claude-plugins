@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: playwright-testing
 description: "Playwright E2E testing — cross-browser, visual regression, API testing, mobile emulation. Use when writing E2E tests or setting up automated UI testing for web apps."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
+allowed-tools: Glob, Grep, Read, Bash(bunx playwright test *), Bash(bunx playwright show-report *), Bash(bunx playwright show-trace *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Playwright Testing

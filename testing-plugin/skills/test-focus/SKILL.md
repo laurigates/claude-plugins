@@ -1,8 +1,8 @@
 ---
 created: 2026-01-19
-modified: 2026-09-05
+modified: 2026-11-14
 reviewed: 2026-04-25
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(find *), Bash(bunx playwright test *), Bash(bunx vitest run *), Bash(bunx jest *), Bash(cargo test *), Bash(go test *), Read, Grep, Glob, TodoWrite
 args: "<file-path> [--serial] [--debug]"
 argument-hint: "<file-path> [--serial] [--debug]"
 description: "One test file, fail-fast — Playwright, Vitest, Jest, pytest, cargo, go test. Use when running a single spec file, headed/debug mode, or serial single-worker WebGL tests."

@@ -1,11 +1,11 @@
 ---
 created: 2026-03-19
-modified: 2026-03-19
+modified: 2026-11-14
 reviewed: 2026-03-19
 name: playwright-cli
 description: "Playwright CLI browser automation — navigate, screenshot, fill forms, click. Use when automating browser tasks from the shell; 4-10x more token-efficient than Playwright MCP."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(playwright-cli *), Bash(npx playwright-cli *), Read, Grep, Glob, TodoWrite
 ---
 
 # Playwright CLI

@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-27
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: mutation-testing
 description: "Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
 user-invocable: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(npx stryker *), Bash(uv run mutmut *), Bash(uv run pytest *), Bash(bun test *), Bash(vitest *), Bash(jq *), Bash(grep *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
 # Mutation Testing

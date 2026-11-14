@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-08-04
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: vitest-testing
 description: "Vitest test runner — Vite-native, ESM, watch/UI mode, coverage, mocking, snapshots. Use when setting up tests for Vite projects, migrating from Jest, or needing fast execution."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
+allowed-tools: Glob, Grep, Read, Bash(bunx vitest *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Vitest Testing
