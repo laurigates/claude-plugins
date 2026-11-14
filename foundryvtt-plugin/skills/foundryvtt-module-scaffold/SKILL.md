@@ -1,13 +1,13 @@
 ---
 created: 2026-06-26
-modified: 2026-11-07
+modified: 2026-11-14
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
   Local files only: a new FoundryVTT v13 module tree (Vite + TS + bun + biome,
   CI, release-please), basic/app/libwrapper variants; no GitHub repo. Use when
   generating a new module's files.
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scaffold.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py *), Bash(git init *), Bash(just check *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-manifest-invariants.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-app-biome-format.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-fleet-drift.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-biome-markdown-off.sh *), Read, Write, Edit, Grep, Glob, TodoWrite
 args: "[--name <repo>] [--display <title>] [--desc <text>] [--variant <basic|app|libwrapper>]"
 argument-hint: --name foundryvtt-x --display "X" --desc "…" --variant basic
 ---
