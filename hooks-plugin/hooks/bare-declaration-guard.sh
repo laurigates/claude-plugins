@@ -35,18 +35,22 @@
 # the claim "this cannot expand to nothing" in the source, where a reviewer
 # reads it.
 #
-# Not covered: text written through Bash (a heredoc, `tee`, `sed`), which
-# Edit/Write hooks never see; shell inside non-shell files (justfile and
-# Makefile recipes, workflow `run:` blocks); `readonly`, `integer` and `float`,
-# whose bare forms list only their own kind of parameter. A match inside a
-# string or a heredoc body is a false positive; the allow comment or a reword
-# clears it.
+# Also checked (issue #3629): the shell lines of a Makefile, a justfile and a
+# workflow or composite-action YAML file (see file_kind below), and a Bash
+# command. A Bash command gets a non-blocking additionalContext note, not a
+# block: it may write a script through a heredoc or run the line directly, and
+# most such commands run with a non-empty expansion.
+#
+# Not covered: shell in Dockerfiles; `readonly`, `integer` and `float`, whose
+# bare forms list only their own kind of parameter (bare `readonly` printed no
+# exported variable in bash 5.2). A match inside a string or a heredoc body is
+# a false positive; the allow comment or a reword clears it.
 #
 # Toggle: a human operator can export CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1
 # in their shell environment to skip this hook. A hook runs as its own process,
 # so an inline prefix on a command does not reach it.
 #
-# Matches: Edit, Write
+# Matches: Edit, Write, Bash
 
 set -euo pipefail
 
@@ -73,6 +77,11 @@ case "$TOOL_NAME" in
     Edit)
         ADDED=$(jq -r '.tool_input.new_string // empty' <<<"$INPUT")
         EXISTING=$(jq -r '.tool_input.old_string // empty' <<<"$INPUT")
+        ;;
+    Bash)
+        ADDED=$(jq -r '.tool_input.command // empty' <<<"$INPUT")
+        EXISTING=""
+        FILE_PATH="(Bash command)"
         ;;
     *)
         exit 0
@@ -116,7 +125,109 @@ is_shell_file() {
     [[ "$first" =~ $SHEBANG_RE ]]
 }
 
-is_shell_file || exit 0
+# file_kind — which lines of the file a shell runs (issue #3629):
+#   shell     every line (a shell file, or a Bash command)
+#   make      Makefile recipe lines: a leading tab, then `@`/`-`/`+` prefixes;
+#             `$$` is the shell's `$`, and an empty `$(VAR)` leaves a bare
+#             `export` too. A top-level `export` is make's own directive.
+#   just      justfile recipe lines (indented); `{{x}}` is an interpolation
+#             that can be empty. A top-level `export X := …` is just's own.
+#   workflow  `run:` values in .github/workflows/*.yml and action.yml.
+FILE_KIND=""
+file_kind() {
+    local base
+    if [ "$TOOL_NAME" = "Bash" ] || is_shell_file; then FILE_KIND="shell"; return 0; fi
+    base=${FILE_PATH##*/}
+    base=${base%.tmpl}
+    case "$base" in
+        Makefile | makefile | GNUmakefile | *.mk | *.mak) FILE_KIND="make"; return 0 ;;
+        [Jj]ustfile | .[Jj]ustfile | *.just) FILE_KIND="just"; return 0 ;;
+        action.yml | action.yaml) FILE_KIND="workflow"; return 0 ;;
+    esac
+    case "$FILE_PATH" in
+        */.github/workflows/*.yml | */.github/workflows/*.yaml | .github/workflows/*.yml | .github/workflows/*.yaml)
+            FILE_KIND="workflow"; return 0 ;;
+    esac
+    return 1
+}
+
+file_kind || exit 0
+
+# shell_lines <text> — print, one per input line, the shell a line runs (an
+# empty line for a line no shell runs), so line adjacency for the allow
+# comment survives.
+JUST_INTERP_RE='\{\{[^}]*\}\}'
+RUN_KEY_RE='^([[:space:]]*)(-[[:space:]]+)?run:[[:space:]]*(.*)$'
+BLOCK_SCALAR_RE='^[|>][-+0-9]*[[:space:]]*(#.*)?$'
+shell_lines() {
+    local line out in_run=0 run_indent=0 indent value
+    if [ "$FILE_KIND" = shell ]; then
+        printf '%s\n' "$1"
+        return 0
+    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        out=""
+        case "$FILE_KIND" in
+            make)
+                if [ "${line:0:1}" = $'\t' ]; then
+                    out=${line#$'\t'}
+                    out=${out#"${out%%[!@+-]*}"}
+                    out=${out//\$\$/\$}
+                fi
+                ;;
+            just)
+                case "$line" in
+                    [[:space:]]*)
+                        out="${line#"${line%%[![:space:]]*}"}"
+                        out=${out#"${out%%[!@-]*}"}
+                        while [[ "$out" =~ $JUST_INTERP_RE ]]; do
+                            out=${out/"${BASH_REMATCH[0]}"/\$JUST_INTERPOLATION}
+                        done
+                        ;;
+                esac
+                ;;
+            workflow)
+                if [ "$in_run" = 1 ]; then
+                    indent="${line%%[![:space:]]*}"
+                    if [ -z "${line//[[:space:]]/}" ] || [ "${#indent}" -gt "$run_indent" ]; then
+                        printf '%s\n' "$line"
+                        continue
+                    fi
+                    in_run=0
+                fi
+                if [[ "$line" =~ $RUN_KEY_RE ]]; then
+                    run_indent=${#BASH_REMATCH[1]}
+                    value=${BASH_REMATCH[3]}
+                    if [[ "$value" =~ $BLOCK_SCALAR_RE ]]; then
+                        in_run=1
+                    else
+                        case "$value" in
+                            \"*\") value=${value#\"}; value=${value%\"} ;;
+                            \'*\') value=${value#\'}; value=${value%\'} ;;
+                        esac
+                        out=$value
+                    fi
+                fi
+                ;;
+        esac
+        printf '%s\n' "$out"
+    done <<<"$1"
+}
+
+# A workflow Edit changes a fragment of a run: block whose `run:` key is
+# usually outside new_string, so the edited file is rebuilt and read whole.
+# Every line of it the file on disk already holds is excluded below, which
+# leaves the lines the edit adds.
+if [ "$FILE_KIND" = workflow ] && [ "$TOOL_NAME" = "Edit" ] && [ -f "$FILE_PATH" ] && [ -r "$FILE_PATH" ]; then
+    ON_DISK=$(cat -- "$FILE_PATH")
+    if [ -n "$EXISTING" ] && [[ "$ON_DISK" == *"$EXISTING"* ]]; then
+        ADDED=${ON_DISK/"$EXISTING"/"$ADDED"}
+        EXISTING=$ON_DISK
+    fi
+fi
+
+ADDED=$(shell_lines "$ADDED")
+EXISTING=$(shell_lines "$EXISTING")
 
 # ── The pattern ─────────────────────────────────────────────────────────────
 # One argument that can expand to nothing:
@@ -188,6 +299,19 @@ while IFS= read -r line || [ -n "$line" ]; do
 done <<<"$ADDED"
 
 [ -n "$FOUND" ] || exit 0
+
+# A Bash command gets a note, not a block (issue #3629). Most such commands
+# run with a non-empty expansion, and a hard block would stop each of them; the
+# note names the risk and the command still runs
+# (.claude/rules/hook-block-vs-nudge.md).
+if [ "$TOOL_NAME" = "Bash" ]; then
+    NUDGE="Note: this command runs or writes a declaration that runs with no arguments when its expansions are empty:
+
+${FOUND}
+\`local\`, \`typeset\`, \`declare\` and \`export\` with no arguments print every parameter in scope, exported secrets included, into the output. If the expansion can be empty, name the variables, quote a single name (export \"\$name\"), or make an empty list an error (typeset \"\${names[@]:?names is empty}\"). A comment at the end of the line, # allow-bare-decl: <reason>, silences this note."
+    jq -nc --arg m "$NUDGE" '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $m}}'
+    exit 0
+fi
 
 block "Blocked: this edit adds a declaration that runs with no arguments when its expansions are empty:
 

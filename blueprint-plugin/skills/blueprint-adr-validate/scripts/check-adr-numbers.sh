@@ -340,8 +340,8 @@ fi
 # Two files can both SAY ADR-0016; only one can be REGISTERED. This catches the
 # #2129 collision in one comparison and needs no filename convention at all.
 # Degrades SILENTLY (REGISTRY=absent, no issue, exit 0) when there is no
-# manifest, no jq, or no id_registry — this repo's own manifest has no
-# id_registry key, and that path must stay quiet.
+# manifest, no jq, or no id_registry — a consumer that never registered a
+# document has no id_registry key, and that path must stay quiet.
 manifest=""
 for cand in "$project_dir/docs/blueprint/manifest.json" "$project_dir/docs/blueprint/.manifest.json"; do
   if [ -f "$cand" ]; then manifest="$cand"; break; fi

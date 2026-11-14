@@ -260,6 +260,16 @@ const FIX_PROMPT = (ctx, u, findings) => `You repair unit ${u.id} on the EXISTIN
 
 ${common(ctx)}
 
+Before any other work, read the branch's PR state (an open PR can merge while its verifier runs, and a reused branch name lists PRs of earlier work):
+  gh pr list -R ${ctx.repo} --head ${u.branch} --state all --json number,state,headRefOid
+The list holds every PR ever opened from this branch name, so read every entry. An OPEN entry wins → continue.
+A MERGED or CLOSED entry counts only when it carries this branch's commits: its headRefOid is the branch tip or an ancestor of it
+  (git -C ${ctx.root} fetch origin -q; git -C ${ctx.root} merge-base --is-ancestor <headRefOid> ${u.branch} exits 0, testing origin/${u.branch} when there is no local ${u.branch};
+  a headRefOid git does not have counts as not an ancestor). One that fails the test is earlier work on a reused name: ignore it.
+No PR yet, or only ignored entries → continue.
+Only when no entry is OPEN and a MERGED or CLOSED entry counts → stop: commit nothing and return status "blocked" with the PR number and state in blockers.
+The orchestrator decides whether the findings become a new unit cut from ${ctx.base}; do not open a PR or push.
+
 Work in your own worktree:
   ${ctx.worktrees ? worktreeAdd(ctx, `repair-${u.id}`, `<path> ${u.branch}`) : `git fetch origin -q; git switch ${u.branch}`}
   (If git says the branch is already used by another worktree, a finished agent forgot to detach:
@@ -343,6 +353,9 @@ const repairThenReverify = (ctxOf, rounds) => async (r) => {
   const rep = await repairStage(ctx)(u, verdict)
   if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
   const merged = mergeRepair(fix, rep)
+  // A repairer that found the PR merged or closed stops without committing:
+  // the row is BLOCKED, and re-verifying an unchanged branch spends an agent.
+  if (rep.status === 'blocked') return { ...r, merged, repaired: true, final: null }
   const final = await verifyStage(ctx, 'Repair')(u, merged, `reverify:${u.id}`)
   return { ...r, merged, repaired: true, final }
 }
@@ -367,7 +380,7 @@ ${ctx.trailer ? `   End every commit message with exactly these lines:\n${ctx.tr
 6. Run \`git switch --detach\` so a verifier can check the branch out next.
 
 Do not push, open PRs, or comment on issues — a later sequential stage does that.
-Change only what the unit needs; put pre-existing problems in followups, not the diff.
+Change only what the unit needs; put pre-existing problems in followups, not the diff. Keep followups to defects worth an issue.
 If it is already fixed at the base, return status "no-change" with evidence and commit nothing.
 Draft pr_title and pr_body for the finalise stage.`
 
@@ -497,9 +510,11 @@ ${JSON.stringify(finalisePlan, null, 1)}
 
 For each entry, in order:
 1. git -C <root> log --oneline <base>..<branch> must show only that unit's commits, and its tip must equal head_sha. If not, record "skipped" with the reason; do not repair it.
-2. gh pr list -R <repo> --head <branch> --state all --json number,state. MERGED or CLOSED → "skipped" (do not reopen). OPEN → push and record "updated".
+2. gh pr list -R <repo> --head <branch> --state all --json number,state,headRefOid, and read every entry. An OPEN entry wins → push and record "updated".
+   Otherwise a MERGED or CLOSED entry whose headRefOid is head_sha or an ancestor of it (git -C <root> merge-base --is-ancestor <headRefOid> <head_sha> exits 0;
+   a headRefOid git does not have counts as not an ancestor) → "skipped" (do not reopen). One that fails the test is earlier work on a reused branch name: ignore it.
 3. git -C <root> push -u origin <head_sha>:refs/heads/<branch> (never force).
-4. If no PR exists: gh pr create -R <repo> --base <base without its origin/ prefix> --head <branch> --title <pr_title> --body-file <tmp file> -a ${PR.assignee}${PR.labels.length ? ` -l ${PR.labels.join(',')}` : ''} plus the entry's labels. The body is pr_body, then "Fixes #n" / "Refs #n" lines from fixes/refs${PR.footer ? `, then:\n${PR.footer}` : ''}.
+4. If no PR exists, or only ignored ones: gh pr create -R <repo> --base <base without its origin/ prefix> --head <branch> --title <pr_title> --body-file <tmp file> -a ${PR.assignee}${PR.labels.length ? ` -l ${PR.labels.join(',')}` : ''} plus the entry's labels. The body is pr_body, then "Fixes #n" / "Refs #n" lines from fixes/refs${PR.footer ? `, then:\n${PR.footer}` : ''}.
 Do not merge, approve, or request review from the PR author. Stop at the first push that fails and mark the rest "skipped".`,
   { label: 'finalise', phase: 'Finalise', schema: FINALISE_SCHEMA, model: 'opus', effort: 'medium' },
 )

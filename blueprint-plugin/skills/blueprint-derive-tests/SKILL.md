@@ -1,6 +1,6 @@
 ---
 created: 2026-02-22
-modified: 2026-06-18
+modified: 2026-11-12
 reviewed: 2026-06-10
 description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
@@ -118,9 +118,10 @@ filtering, narrow the git scope with the commands in
 TRPs live at the **top level** under `docs/trps/` — not `docs/blueprint/trps/`. This matches the sibling derive-* skills' top-level layout. Never write TRPs under `docs/blueprint/`; that path is reserved for blueprint machinery.
 
 1. Create output directory: `mkdir -p docs/trps`
-2. Determine TRP ID:
-   - If manifest exists, read `id_registry.last_trp`, increment by 1
-   - Otherwise start at `TRP-001`
+2. Determine the TRP ID with
+   `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind TRP`:
+   max(`id_registry.last_trp`, highest TRP id on disk) + 1, `TRP-001` when
+   neither exists
 3. Generate slug from scope or date range (e.g., `regression-gaps-2024-q3`)
 4. Write TRP document to `docs/trps/{slug}.md` using template from [REFERENCE.md](REFERENCE.md#trp-document-template)
 
@@ -155,7 +156,6 @@ If Blueprint is initialized:
      --argjson gaps "{gaps_found}" \
      '.task_registry["derive-tests"].last_completed_at = $now |
       .task_registry["derive-tests"].last_result = "success" |
-      .task_registry["derive-tests"].stats.runs_total = ((.task_registry["derive-tests"].stats.runs_total // 0) + 1) |
       .task_registry["derive-tests"].stats.items_processed = $analyzed |
       .task_registry["derive-tests"].stats.items_created = $gaps |
       .task_registry["derive-tests"].context.commits_analyzed_up_to = $sha' \

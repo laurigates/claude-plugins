@@ -59,34 +59,24 @@ if [ ! -f "$FILE_PATH" ]; then
     exit 0
 fi
 
-# Extract frontmatter from the actual file on disk. Frontmatter opens the file:
-# a `---` pair further down (a fenced format example in an index README) is
-# body text, and reading it registered a junk ADR-NNNN entry.
-FRONTMATTER=$(awk 'NR==1 && !/^---$/{exit} /^---$/{if(++n==2)exit}n' "$FILE_PATH" | tail -n +2)
+# Read the fields with the parser the session-start sweep and the sync-ids
+# audit use (blueprint-autorun.sh --frontmatter-rows, #3549), so the hook and
+# the sweep cannot register one document two ways. Row fields, \037-separated:
+# path, has_frontmatter, id, status, title (heading fallback applied), created,
+# relates_to, github_issues (lists \036-separated).
+AUTORUN_BIN="${HOOK_DIR}/../scripts/blueprint-autorun.sh"
+ROW=$(bash "$AUTORUN_BIN" --frontmatter-rows "$FILE_PATH")
+IFS=$'\037' read -r _ HAS_FM DOC_ID DOC_STATUS DOC_TITLE DOC_CREATED DOC_RELATES DOC_ISSUES <<<"$ROW" || true
 
-if [ -z "$FRONTMATTER" ]; then
-    exit 0
-fi
-
-# Extract fields
-DOC_ID=$(echo "$FRONTMATTER" | grep -m1 "^id:" | sed 's/^id:[[:space:]]*//' | tr -d '\r' || true)
-
-# No ID means nothing to register (PreToolUse should have caught this)
-if [ -z "$DOC_ID" ]; then
+# No frontmatter or no ID means nothing to register (PreToolUse should have
+# caught this)
+if [ "${HAS_FM:-0}" != "1" ] || [ -z "$DOC_ID" ]; then
     exit 0
 fi
 
 # Check if this ID is already in the registry
 if jq -e --arg id "$DOC_ID" '.id_registry.documents[$id]' "$MANIFEST" >/dev/null 2>&1; then
-    # Already registered — update path/status/title in case they changed
-    DOC_STATUS=$(echo "$FRONTMATTER" | grep -m1 "^status:" | sed 's/^status:[[:space:]]*//' | tr -d '\r' || true)
-    DOC_TITLE=$(echo "$FRONTMATTER" | grep -m1 "^title:" | sed 's/^title:[[:space:]]*//' | tr -d '\r' || true)
-
-    # If no title in frontmatter, try first heading
-    if [ -z "$DOC_TITLE" ]; then
-        DOC_TITLE=$(grep -m1 "^# " "$FILE_PATH" | sed 's/^# //' | tr -d '\r' || true)
-    fi
-
+    # Already registered — update path/status/title in case they changed.
     # Most edits change the body, not the registered fields. jq re-serialises
     # the whole manifest, so writing anyway would reformat a hand-edited file
     # (expanding inline arrays) on every document edit.
@@ -113,21 +103,10 @@ if jq -e --arg id "$DOC_ID" '.id_registry.documents[$id]' "$MANIFEST" >/dev/null
     exit 0
 fi
 
-# New document — register it
-DOC_STATUS=$(echo "$FRONTMATTER" | grep -m1 "^status:" | sed 's/^status:[[:space:]]*//' | tr -d '\r' || true)
-DOC_TITLE=$(echo "$FRONTMATTER" | grep -m1 "^title:" | sed 's/^title:[[:space:]]*//' | tr -d '\r' || true)
-DOC_CREATED=$(echo "$FRONTMATTER" | grep -m1 "^created:" | sed 's/^created:[[:space:]]*//' | tr -d '\r' || true)
-
-# If no title in frontmatter, try first heading
-if [ -z "$DOC_TITLE" ]; then
-    DOC_TITLE=$(grep -m1 "^# " "$FILE_PATH" | sed 's/^# //' | tr -d '\r' || true)
-fi
-
-# Extract cross-references (relates-to array)
-RELATES_TO=$(echo "$FRONTMATTER" | awk '/^relates-to:/{flag=1; next} /^[a-z]/{flag=0} flag && /^  - /{gsub(/^  - /,""); print}' | jq -R -s 'split("\n") | map(select(length > 0))' || echo '[]')
-
-# Extract github-issues array
-GITHUB_ISSUES=$(echo "$FRONTMATTER" | awk '/^github-issues:/{flag=1; next} /^[a-z]/{flag=0} flag && /^  - /{gsub(/^  - /,""); print}' | jq -R -s 'split("\n") | map(select(length > 0) | tonumber)' 2>/dev/null || echo '[]')
+# New document — register it. Cross-references come from the parser's list
+# fields; a github-issues item that is not a number is dropped.
+RELATES_TO=$(jq -cn --arg l "$DOC_RELATES" '$l | split("\u001e") | map(select(length > 0))')
+GITHUB_ISSUES=$(jq -cn --arg l "$DOC_ISSUES" '$l | split("\u001e") | map(ltrimstr("#") | tonumber? // empty)')
 
 # Add document to registry
 jq --arg id "$DOC_ID" \

@@ -19,4 +19,4 @@
 | Validate settings JSON | `find .claude -maxdepth 1 -name 'settings.json'` |
 | Smoke-test install script | `CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh` |
 | Validate pre-commit config | `pre-commit validate-config .pre-commit-config.yaml` |
-| Check marketplace enrollment | `find .claude -maxdepth 1 -name 'settings.json'` then grep for `extraKnownMarketplaces` |
+| Marketplace enrollment (1e) | Step 1a's `check-marketplace-enrollment.sh` invocation; append `--repo <owner/name>` to look for another marketplace |

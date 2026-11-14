@@ -8,9 +8,11 @@
 #      any `bash -c '<script>'` (.claude/rules/agentic-permissions.md).
 #   2. Every bundled script the body runs is pre-approved: each
 #      `bash ${CLAUDE_SKILL_DIR}/…sh` / `bash ${CLAUDE_PLUGIN_ROOT}/…sh`
-#      invocation is unquoted (a quoted path is different command text from the
-#      rule) and has a matching `Bash(bash <path> *)` rule; every such rule
-#      names a script that exists; every scripts/check-*.sh is run by the body.
+#      invocation is unquoted and has a matching `Bash(bash <path> *)` rule;
+#      every such rule names a script that exists; every scripts/check-*.sh is
+#      run by the body; no invocation carries a `$(…)` or backtick substitution. Measured on
+#      Claude Code 2.1.322 (#3577): a quoted path is pre-approved only while it
+#      holds no space, and a `$(…)` in the command voids the pre-approval.
 #   3. No `/health:<name>` command reference in ANY health-plugin skill's
 #      SKILL.md, REFERENCE.md or references/*.md, in any plugin's markdown, or
 #      in health-plugin's hook and skill scripts points at a skill that is
@@ -84,7 +86,7 @@ resolve_script() {
 body_text="$(awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' "$skill_md")"
 mapfile -t quoted_calls < <(grep -oE 'bash "\$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh"' <<<"$body_text" | sort -u)
 if [ "${#quoted_calls[@]}" -eq 0 ]; then
-  pass "no quoted bundled-script invocation (quoted text differs from the grant)"
+  pass "no quoted bundled-script invocation (a quoted path with a space is not pre-approved)"
 else
   fail "quoted bundled-script invocations: ${quoted_calls[*]}"
 fi
@@ -106,6 +108,66 @@ for call_path in "${script_calls[@]}"; do
   disk_path="$(resolve_script "$call_path")"
   [ -f "$disk_path" ] || fail "body runs ${call_path}, which does not exist at ${disk_path}"
 done
+
+# --- 2a'. no command substitution on a bundled-script invocation line (#3577)
+# Measured on Claude Code 2.1.322 (`claude -p`, default mode, no allow rules):
+# `bash <skill-dir>/scripts/check-plugins.sh --home-dir "$HOME" --project-dir
+# "$(pwd)"` was denied ("Quoted text in this command can't be checked before it
+# runs") although its anchored grant matched; the same command with a literal
+# path ran. The scripts default --project-dir to the working directory.
+# A backtick substitution is the same construct, so it is caught too. The
+# command ends at the line end in a fenced block, and at the closing delimiter
+# of an inline code span (a run of N backticks right before `bash`), so the
+# span's own closing backtick is not read as a substitution.
+invocation_re='bash \$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh'
+span_open_re='(`+)$'
+# has_substitution <line>: succeed when the line's bundled-script invocation
+# carries a $(…) or backtick command substitution.
+has_substitution() {
+  local line_text="$1" prefix_text rest_text cmd_text delim=""
+  [[ "$line_text" =~ $invocation_re ]] || return 1
+  prefix_text="${line_text%%"${BASH_REMATCH[0]}"*}"
+  rest_text="${line_text#"$prefix_text"}"
+  [[ "${prefix_text% }" =~ $span_open_re ]] && delim="${BASH_REMATCH[1]}"
+  if [ -n "$delim" ]; then
+    cmd_text="${rest_text%%"$delim"*}"
+  else
+    cmd_text="$rest_text"
+  fi
+  [[ "$cmd_text" == *'$('* || "$cmd_text" == *'`'* ]]
+}
+
+# Fixtures: the detector must flag both substitution forms in both contexts
+# and pass the inline-span shapes the body really uses.
+subst_flag=(
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "$(pwd)"'
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "`pwd`"'
+  '| x | `bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "$(pwd)"` |'
+  '| x | `` bash ${CLAUDE_PLUGIN_ROOT}/skills/s/scripts/fix.sh --project-dir `pwd` `` |'
+)
+subst_clean=(
+  'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME"'
+  '| `registry` | `bash ${CLAUDE_PLUGIN_ROOT}/skills/s/scripts/fix.sh --home-dir "$HOME"` (append `--dry-run`) |'
+  '| x | `` bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME" `` and `y` |'
+)
+detector_ok=true
+for fixture_line in "${subst_flag[@]}"; do
+  has_substitution "$fixture_line" || { detector_ok=false; fail "substitution detector missed: ${fixture_line}"; }
+done
+for fixture_line in "${subst_clean[@]}"; do
+  has_substitution "$fixture_line" && { detector_ok=false; fail "substitution detector flagged a clean line: ${fixture_line}"; }
+done
+[ "$detector_ok" = true ] && pass "substitution detector flags \$(…) and backticks, fenced and inline, and passes clean spans"
+
+subst_calls=()
+while IFS= read -r body_line; do
+  has_substitution "$body_line" && subst_calls+=("$body_line")
+done <<<"$body_text"
+if [ "${#subst_calls[@]}" -eq 0 ]; then
+  pass "no bundled-script invocation carries a \$(…) or backtick substitution (it voids the pre-approval)"
+else
+  fail "bundled-script invocations with a command substitution (not pre-approved):\n  $(printf '%s\n  ' "${subst_calls[@]}")"
+fi
 
 # --- 2b. every script grant names an existing script
 for rule_text in "${grant_rules[@]}"; do
@@ -192,9 +254,23 @@ if [ -f "$env_md" ]; then
   grep -qF 'Bash(<prefix> *)' <<<"$env_text" && grep -qF 'Bash(<prefix>:*)' <<<"$env_text" \
     && pass "1d reference documents both Bash(<prefix> *) and Bash(<prefix>:*)" \
     || fail "1d reference must document both Bash(<prefix> *) and Bash(<prefix>:*) forms"
+  # 1e is a script (#3579): the inline jq snippet had no grant, so it prompted.
+  grep -qF 'check-marketplace-enrollment.sh' <<<"$env_text" \
+    && pass "environment-checks.md routes 1e to check-marketplace-enrollment.sh" \
+    || fail "environment-checks.md 1e does not name check-marketplace-enrollment.sh"
+  grep -qE 'MP_KEY=\$\(jq' <<<"$env_text" \
+    && fail "environment-checks.md still carries the inline 1e jq snippet (no grant covers it)" \
+    || pass "environment-checks.md carries no inline 1e jq snippet"
 else
   fail "references/environment-checks.md missing"
 fi
+
+# --- 4b. SKILL.md stays under the skill-quality WARN band (#3579)
+# #3570 grew the file past 10,000 chars with per-script output-key lists; those
+# live in references/ now. Counted as check_skill_size() counts: decoded chars.
+skill_chars="$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' "$skill_md")"
+[ "$skill_chars" -le 10000 ] && pass "SKILL.md is ${skill_chars} chars (<= 10,000)" \
+  || fail "SKILL.md is ${skill_chars} chars, over the 10,000-char WARN band; move output-key detail to references/"
 
 # --- 5. stack/agentic audits are loaded through the Skill tool
 # health-check used to tell the agent to "follow the steps" in

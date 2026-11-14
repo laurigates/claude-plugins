@@ -8,8 +8,10 @@
 #   1. NARROW GRANTS. allowed-tools carries no bare `Bash` and no
 #      `Bash(bash *)` / `Bash(sh *)`. Every `Bash(bash ${CLAUDE_SKILL_DIR}/<p> *)`
 #      rule names a script that exists, and the body runs it with exactly that
-#      spelling (a quoted `bash "${CLAUDE_SKILL_DIR}/..."` does not match the
-#      rule's prefix). Rule: .claude/rules/agentic-permissions.md
+#      spelling. On Claude Code 2.1.322 a quoted path matched the unquoted
+#      rule only while the path held no space; with a space it was not
+#      pre-approved, and neither was a quoted rule (#3577), so quoting buys
+#      nothing. Rule: .claude/rules/agentic-permissions.md
 #      § Skill allowed-tools is a pre-approval.
 #   2. NO HIDDEN COMMANDS. A `/health:<name>` citation must resolve to a
 #      health-plugin skill that is user-invocable; a `user-invocable: false`

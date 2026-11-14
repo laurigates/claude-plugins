@@ -97,12 +97,7 @@
     "sync-ids": {
       "enabled": true,
       "auto_run": true,
-      "last_completed_at": "2026-10-31T21:12:25Z",
-      "last_result": "ok",
       "schedule": "on-change",
-      "stats": {
-        "runs": 1
-      },
       "context": {
         "rationale": "Deterministic id-registry sweep (blueprint-autorun.sh). The auto-sync-id-registry.sh PostToolUse hook registers documents on write; the runner reconciles on every session start to catch documents added outside Write/Edit (e.g. git operations) and writes the manifest only when the registry differs. on-change rather than weekly: a weekly due run stamps last_completed_at even when nothing changed, which dirtied every fresh clone (#3545)."
       }

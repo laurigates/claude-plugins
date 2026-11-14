@@ -18,6 +18,7 @@
 #   J  a job on the EXEMPT_SITES list is counted as exempt, not checked
 #   K  a step running scripts/publish-agent-issue.sh is a filing site, and its
 #      env carries the `## Processing` section (#2769)
+#   K  the session-workflow-capture template without `## Processing` fails
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -177,6 +178,18 @@ printf '## Skill\n' > "$tmp/f/feedback-plugin/skills/feedback-session/references
 run "$tmp/f"
 assert "F feedback template without section exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "F names the feedback template" "$(contains "$OUT" 'TYPE=missing_processing.*issue-format.md')"
+
+# --- K: workflow-capture template without the section ------------------------
+make_project "$tmp/k"
+mkdir -p "$tmp/k/session-plugin/skills/session-workflow-capture/references"
+printf '## What\n## Processing\n- x\n' > "$tmp/k/session-plugin/skills/session-workflow-capture/references/issue-format.md"
+run "$tmp/k"
+assert "K workflow-capture template with section exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "K counts both templates" "$(contains "$OUT" 'ISSUE_TEMPLATES_CHECKED=2')"
+printf '## What\n## Workflow\n' > "$tmp/k/session-plugin/skills/session-workflow-capture/references/issue-format.md"
+run "$tmp/k"
+assert "K workflow-capture template without section exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "K names the workflow-capture template" "$(contains "$OUT" 'TYPE=missing_processing.*session-workflow-capture/references/issue-format.md')"
 
 # --- G: nothing scanned -------------------------------------------------------
 make_project "$tmp/g"

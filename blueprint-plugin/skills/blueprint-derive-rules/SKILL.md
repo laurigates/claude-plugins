@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-06-18
+modified: 2026-11-12
 reviewed: 2026-05-22
 description: Derive Claude rules from git commit history. Use when extracting implicit decisions from commits or codifying code-style, testing, and API-design rules.
 args: "[--since DATE] [--scope SCOPE]"
@@ -140,7 +140,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   '.task_registry["derive-rules"].last_completed_at = $now |
    .task_registry["derive-rules"].last_result = "success" |
    .task_registry["derive-rules"].context.commits_analyzed_up_to = $sha |
-   .task_registry["derive-rules"].stats.runs_total = ((.task_registry["derive-rules"].stats.runs_total // 0) + 1) |
    .task_registry["derive-rules"].stats.items_processed = $processed |
    .task_registry["derive-rules"].stats.items_created = $created' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json

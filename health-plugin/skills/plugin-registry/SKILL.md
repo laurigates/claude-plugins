@@ -4,9 +4,9 @@ description: "Claude Code plugin registry structure, install scopes, and version
 user-invocable: false
 allowed-tools: Bash(jq *), Bash(cp ~/.claude/plugins/installed_plugins.json *), Bash(claude plugin list *), Bash(bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/check-registry.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../health-plugins/scripts/fix-registry.sh *), Read, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-11-10
+modified: 2026-11-12
 compatibility: claude-code
-reviewed: 2026-11-10
+reviewed: 2026-11-12
 ---
 
 # Claude Code Plugin Registry
@@ -62,13 +62,13 @@ Each plugin key maps to an **array** of installations (supporting multiple scope
 
 When scopes disagree, `local` overrides `project`, which overrides `user`, and managed settings override everything (official plugin loading reference, "Find where a plugin is enabled").
 
-A project entry can also appear with no install command run: a session-start sync was observed adding one per plugin the committed `.claude/settings.json` enables, recorded at the then-current version ([REFERENCE.md](REFERENCE.md) § Session-start sync creates project entries).
+A project entry can also appear with no install command run: a session-start sync adds one per plugin the committed `.claude/settings.json` enables that is installed at user scope, recorded at the then-current version ([REFERENCE.md](REFERENCE.md) § Session-start sync creates project entries).
 
 ## Known Issue: #14202
 
-[anthropics/claude-code#14202](https://github.com/anthropics/claude-code/issues/14202) is **open** as of 2026-10-30: after a `--scope project` install in one project, other projects were reported (on 2.0.70) to show the plugin as "(installed)" and refuse to install it, while it does not load there. Recent comments name no version; details in [REFERENCE.md](REFERENCE.md) § Known issue #14202.
+[anthropics/claude-code#14202](https://github.com/anthropics/claude-code/issues/14202) is **open** as of 2026-10-30: after a `--scope project` install in one project, other projects were reported (on 2.0.70) to show the plugin as "(installed)" and refuse to install it, while it does not load there. The refusal did not reproduce on 2.1.322; details in [REFERENCE.md](REFERENCE.md) § Known issue #14202.
 
-An "already installed (scope: project)" message exits `0`, so check `claude plugin list --json` for a row with your `projectPath`. Try `--scope local` (not verified to escape #14202) before § Last resort: edit the registry by hand.
+An "already installed (scope: project)" message exits `0`, so check `claude plugin list --json` for a row with your `projectPath`. Try `--scope local` (it installed cleanly on 2.1.322) before § Last resort: edit the registry by hand.
 
 ## Which Install Loads, and Why a Project Can Run an Old Version
 
