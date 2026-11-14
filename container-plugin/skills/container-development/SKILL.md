@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 name: container-development
 description: "Container development — Docker, multi-stage builds, Skaffold, non-root users, Alpine/slim images, security hardening. Use when working with Docker, Dockerfiles, docker-compose, or container security."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash(docker build *), Bash(docker images *), Bash(docker history *), Bash(docker scout *), Bash(docker inspect *), Bash(head *), Bash(jq *), Bash(trivy *), Bash(grype *), Bash(dive *), Edit, Write, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Bash(docker build *), Bash(docker images *), Bash(docker history *), Bash(docker scout cves *), Bash(docker inspect *), Bash(head *), Bash(jq *), Bash(trivy image *), Bash(grype *), Bash(dive *), Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 
 # Container Development
