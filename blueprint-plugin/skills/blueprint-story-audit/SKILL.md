@@ -1,11 +1,11 @@
 ---
 created: 2026-04-25
-modified: 2026-10-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
 argument-hint: "--scope auth to limit; --prd docs/prds/PRD-001.md to override; --no-write skips artifact"
-allowed-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Bash(find *), Bash(git rev-parse *), Bash(date *), Bash(mkdir *), Bash(jq *), Bash(mv *), Bash(grep *), Task, AskUserQuestion
 model: opus
 name: blueprint-story-audit
 ---

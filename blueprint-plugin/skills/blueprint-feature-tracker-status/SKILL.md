@@ -3,7 +3,7 @@ created: 2026-01-02
 modified: 2026-07-26
 reviewed: 2026-07-26
 description: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work.
-allowed-tools: Read, Bash, AskUserQuestion
+allowed-tools: Read, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh *), Bash(grep *), Bash(jq *), AskUserQuestion
 model: sonnet
 name: blueprint-feature-tracker-status
 ---

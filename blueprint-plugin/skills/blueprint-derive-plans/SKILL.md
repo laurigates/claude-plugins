@@ -1,11 +1,11 @@
 ---
 created: 2026-01-15
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-05-29
 description: Derive PRDs, ADRs, PRPs from git history, docs, and codebase. Use when onboarding a project to blueprint, generating a PRD or ADRs retroactively, or extracting features from conventional commits.
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
-allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+allowed-tools: Read, Write, Glob, Grep, Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(find *), Bash(grep *), Bash(sed *), Bash(sort *), Bash(uniq *), Bash(head *), Bash(wc *), Bash(mkdir *), Bash(jq *), Bash(date *), Bash(mv *), Bash(gh issue create *), AskUserQuestion, Task
 model: opus
 name: blueprint-derive-plans
 ---

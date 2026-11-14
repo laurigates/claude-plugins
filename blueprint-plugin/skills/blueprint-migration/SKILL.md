@@ -2,9 +2,9 @@
 name: blueprint-migration
 description: Versioned migration procedures for blueprint format upgrades (v1.x to v3.3). Use when blueprint-upgrade needs version-specific logic, content hashing, or rollback.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
+allowed-tools: Bash(jq *), Bash(mv *), Bash(mkdir *), Bash(cp *), Bash(rmdir *), Bash(sha256sum *), Bash(cut *), Bash(ls *), Bash(find *), Bash(grep *), Bash(git status *), Bash(basename *), Bash(head *), Bash(wc *), Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 ---
 

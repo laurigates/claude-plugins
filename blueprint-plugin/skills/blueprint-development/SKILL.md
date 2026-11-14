@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-02-14
 name: blueprint-development
 description: Full Blueprint Development setup in one pass - PRD-derived rules, workflow commands, manifest mapping. Use when bootstrapping rules and commands together; for rules alone use blueprint-generate-rules.
 user-invocable: false
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(find *), Bash(mkdir *), Bash(ls *), Bash(wc *), TodoWrite
 ---
 
 # /blueprint:development

@@ -1,9 +1,9 @@
 ---
 created: 2026-01-14
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: "Blueprint meta command: determine and execute the next logical action. Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."
-allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
+allowed-tools: Read, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(cat *), Bash(grep *), Bash(jq *), Bash(git rev-list *), Bash(find *), Bash(wc *), Bash(date *), Bash(mv *), AskUserQuestion, SlashCommand, Task
 name: blueprint-execute
 ---
 

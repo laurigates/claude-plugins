@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-10
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue.
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
-allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
+allowed-tools: Read, Write, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(cat *), Bash(gh issue view *), Bash(gh issue edit *), Bash(gh issue comment *), Bash(gh issue create *), Bash(gh issue list *), Bash(gh label create *), Bash(gh label list *), Bash(git status *), Bash(git log *), Bash(jq *), Bash(mv *), Bash(grep *), Bash(head *), AskUserQuestion
 name: blueprint-work-order
 ---
 

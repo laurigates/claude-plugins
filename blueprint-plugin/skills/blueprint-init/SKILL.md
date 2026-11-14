@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-11-02
 reviewed: 2026-08-09
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
-allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
+allowed-tools: Bash(mkdir *), Bash(jq *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh *), Bash(find *), Bash(grep *), Bash(basename *), Bash(wc *), Bash(tr *), Write, Read, AskUserQuestion, Glob
 name: blueprint-init
 ---
 

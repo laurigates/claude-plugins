@@ -2,9 +2,9 @@
 description: Execute a PRP with validation loop, TDD, and quality gates. Use when asked to execute a PRP, run a planned feature from docs/prps/, or delegate a PRP to subagents.
 args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
-allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Bash(find *), Bash(git rev-parse *), Bash(git status *), Bash(head *), Bash(grep *), Bash(sed *), Bash(ls *), Bash(gh issue create *), Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-11-04
+modified: 2026-11-14
 reviewed: 2026-09-02
 name: blueprint-prp-execute
 ---
