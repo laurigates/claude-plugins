@@ -200,7 +200,7 @@ jobs:
         run: rustup toolchain install --no-self-update
 
       - name: Install nextest
-        uses: taiki-e/install-action@v2.90.1
+        uses: taiki-e/install-action@v2.90.3
         with:
           tool: nextest
 
@@ -215,7 +215,7 @@ jobs:
           path: target/nextest/ci/junit.xml
 
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2.25.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.26.0
         if: always()
         with:
           files: target/nextest/ci/junit.xml

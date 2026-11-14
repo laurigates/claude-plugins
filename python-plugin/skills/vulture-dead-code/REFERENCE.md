@@ -365,7 +365,7 @@ repos:
 
   # deadcode
   - repo: https://github.com/albertas/deadcode
-    rev: 2.4.1
+    rev: v2.6.1
     hooks:
       - id: deadcode
         args: ['.']

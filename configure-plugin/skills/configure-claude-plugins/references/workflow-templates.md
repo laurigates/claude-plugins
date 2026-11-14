@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1.0.268
+        uses: anthropics/claude-code-action@v1.0.271
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model opus --effort high"
@@ -81,7 +81,7 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Code Review
-        uses: anthropics/claude-code-action@v1.0.268
+        uses: anthropics/claude-code-action@v1.0.271
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
