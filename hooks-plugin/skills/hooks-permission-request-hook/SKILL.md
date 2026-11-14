@@ -2,11 +2,11 @@
 name: hooks-permission-request-hook
 description: Generate a PermissionRequest hook with auto-approve/deny rules. Use when needing a safer alternative to --dangerouslySkipPermissions tailored to your project stack.
 args: "[--strict] [--category <name>...]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(jq *), Bash(chmod *), TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-07-18
+modified: 2026-11-14
 compatibility: claude-code
 reviewed: 2026-04-29
 ---
