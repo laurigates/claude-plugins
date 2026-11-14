@@ -12,7 +12,7 @@
 # outside the baseline or the config's allowlist.
 #
 # Guards:
-#   A. the real repo: no new hits, baseline hits reported as WARN, exit 0
+#   A. the real repo: no new hits, an empty baseline, STATUS=OK, exit 0
 #   B. a new hit (no baseline entry) is ERROR, with its path:line
 #   C. a hit held by the baseline is WARN, exit 0
 #   D. an allowlisted hit is OK and counted as allowed
@@ -98,7 +98,8 @@ OUT="$(bash "$checker" 2>&1)"
 RC=$?
 assert "A: real repo exits 0" "$(rc_is 0)"
 assert "A: real repo reports NEW_HITS=0" "$(contains "$OUT" '^NEW_HITS=0$')"
-assert "A: real repo reports its baseline hits as WARN" "$(contains "$OUT" '^STATUS=WARN$')"
+assert "A: real repo reports STATUS=OK (the #3308 sweep emptied the baseline)" "$(contains "$OUT" '^STATUS=OK$')"
+assert "A: real repo baseline holds no hits" "$(contains "$OUT" '^BASELINE_TOTAL=0$')"
 assert "A: real repo scanned files" "$(lacks "$OUT" '^FILES_SCANNED=0$')"
 assert "A: real repo output satisfies the contract" "$(validates "$OUT")"
 
