@@ -1,11 +1,11 @@
 ---
 created: 2026-01-15
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: go-containers
 description: "Go container optimization — scratch/distroless images, static binaries, CGO, ldflags, trimpath (846MB to 2.5MB). Use when working with Go containers or optimizing Go image sizes."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
+allowed-tools: Bash(go build *), Bash(go tool *), Bash(ls *), Bash(wc *), Bash(file *), Bash(ldd *), Bash(docker build *), Bash(docker images *), Bash(docker history *), Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 
 # Go Container Optimization
