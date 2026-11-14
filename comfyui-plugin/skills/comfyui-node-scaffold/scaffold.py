@@ -2678,6 +2678,13 @@ permissions:
   issues: write
   statuses: write # emit the "Comfy Registry / scan" commit status
 
+# The marker dedupe reads the tracking issue, then comments. A post-publish
+# poll (up to ~30 min) overlapping the daily schedule could both read "no
+# matching marker" and both comment, so queue runs instead of overlapping them.
+concurrency:
+  group: registry-health
+  cancel-in-progress: false
+
 jobs:
   check:
     name: Check registry release status
@@ -2765,6 +2772,11 @@ jobs:
                   map("  - `\(.issue_type // .error_type // .type // "?")` (\(.scanner // "?")) in `\(.file_path // .path // "?")`: \(.description // "" | tostring | .[0:200])")
                   | join("\n")
                 else "  - \(tostring | .[0:400])" end' versions.json)
+            # The raw reason, one line. Deleted prints it as-is: registry-backend
+            # sets "Node zip file doesn't exist" when it deletes a version whose
+            # upload never landed, the only sign a deletion was automatic.
+            reason=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status_reason // ""
+              | tostring | gsub("\\s+"; " ") | .[0:400]' versions.json)
             # What a clean install actually gets. /install returns the newest
             # NON-BANNED version: Flagged still installs, Banned falls back —
             # possibly to a very old, itself-deprecated version. Deleted is
@@ -2785,7 +2797,11 @@ jobs:
               header="Declared version **\`${ver}\`** is **Banned** by Comfy-Org registry moderation."
             elif [ "$status" = "NodeVersionStatusDeleted" ]; then
               problem="deleted"
-              impact="- Clean installs are expected to fall back to an older version (not yet verified against \`/install\`): ${installs}. The fallback can be much older than \`${ver}\`."
+              if [ "$resolved" = "$ver" ]; then
+                impact="- Clean installs still get the deleted version itself: ${installs}."
+              else
+                impact="- Clean installs are expected to fall back to an older version (not yet verified against \`/install\`): ${installs}. The fallback can be much older than \`${ver}\`."
+              fi
               header="Declared version **\`${ver}\`** is **Deleted** from the Comfy Registry."
               remedy="- Publish a new version (> \`${ver}\`) to supersede it, or check ${dash} if the deletion was unintended."
             else
@@ -2803,8 +2819,11 @@ jobs:
               printf '%s\n' "$header" "" "$impact"
               [ -z "$listing" ] || printf '%s\n' "$listing"
               # Deletion is not a scan verdict, so a Deleted body has no
-              # findings section — not even "(none reported)".
-              if [ "$problem" != "deleted" ]; then
+              # findings section — not even "(none reported)" — but it does
+              # carry the registry's reason when one is set.
+              if [ "$problem" = "deleted" ]; then
+                [ -z "$reason" ] || printf '%s\n' "- Registry reason: ${reason}"
+              else
                 printf '%s\n' \
                   "- Scan findings (\`include_status_reason=true\`):" \
                   "${findings:-  - (none reported)}"
