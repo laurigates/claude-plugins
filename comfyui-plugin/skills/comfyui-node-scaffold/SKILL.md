@@ -1,13 +1,13 @@
 ---
 created: 2026-06-04
-modified: 2026-11-07
+modified: 2026-11-14
 reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
   Local files only: a new ComfyUI node pack tree (TypeScript + bun build,
   CI, release-please, vitest+pytest) on @laurigates/comfy-modal-kit; no GitHub
   repo. Use when generating a new pack's files.
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scaffold.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py *), Bash(git init *), Bash(uv sync *), Bash(just check *), Bash(just assets *), Bash(bun run build *), Bash(npm view *), Read, Write, Edit, Grep, Glob, TodoWrite
 ---
 
 # comfyui-node-scaffold

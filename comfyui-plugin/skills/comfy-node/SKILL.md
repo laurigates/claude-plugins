@@ -1,6 +1,6 @@
 ---
 created: 2026-06-04
-modified: 2026-11-07
+modified: 2026-11-14
 reviewed: 2026-07-29
 model: opus
 name: comfy-node
@@ -8,7 +8,7 @@ description: >-
   New ComfyUI node pack to a gitops-adopted repo: scaffold, create + seed the
   GitHub repo, open the gitops adoption PR. Use when standing up a new comfyui
   node pack end to end.
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/../comfyui-node-scaffold/scaffold.py *), Bash(gh repo view *), Bash(gh repo create *), Bash(git init *), Bash(git add *), Bash(git commit *), Bash(uv sync *), Bash(just check *), Bash(just assets *), Bash(gh pr create *), Bash(gh label list *), Bash(gh secret list *), Bash(gh api *), Bash(task *), Bash(jq *), Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 ---
 
 <!-- skill-size-exception: scripts/plugin-compliance-check.sh check_skill_body (comfy-node gitops-owner block, #2142) -->

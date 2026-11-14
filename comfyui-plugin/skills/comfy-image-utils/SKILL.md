@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-image-utils
 description: >-
   ComfyUI non-inference image ops: resize/crop/pad/tile/batch/mask utilities, plus image-to-text captioners (Florence-2, WD14, BLIP, DeepDanbooru). Use when manipulating images or generating captions/tags in a workflow.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # ComfyUI image utilities
