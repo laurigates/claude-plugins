@@ -240,7 +240,7 @@ uv remove black
 ```yaml
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.6.5
+    rev: v2.6.6
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@2.4.16"]

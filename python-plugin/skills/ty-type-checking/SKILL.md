@@ -229,7 +229,7 @@ jobs:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ty
-    rev: 0.0.98
+    rev: 0.0.100
     hooks:
       - id: ty
 ```
