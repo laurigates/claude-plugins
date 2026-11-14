@@ -1,6 +1,6 @@
 ---
 created: 2026-06-26
-modified: 2026-11-13
+modified: 2026-11-14
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
@@ -8,8 +8,8 @@ description: >-
   CI, release-please), basic/app/libwrapper variants; no GitHub repo. Use when
   generating a new module's files.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
-args: "[--name <repo>] [--display <title>] [--desc <text>] [--variant <basic|app|libwrapper>]"
-argument-hint: --name foundryvtt-x --display "X" --desc "…" --variant basic
+args: "[--name <repo>] [--display <title>] [--desc <text>] [--variant <basic|app|libwrapper>] [--publisher <owner>] [--author <name>]"
+argument-hint: --name foundryvtt-x --display "X" --desc "…" --publisher <owner> --author "<name>"
 ---
 
 # foundryvtt-module-scaffold
@@ -66,29 +66,22 @@ start from the closest one and add the rest by hand.
 `scaffold.py` is stdlib-only. Run from the directory where the module should
 land (the one holding the user's other module clones), or pass `--dir`.
 
-Basic settings+hooks module:
+Pass the repo owner and author from context (the git remote, a sibling
+module's `module.json`, or `gh api user`); the built-in defaults are one
+maintainer's account and would land in `module.json`'s
+`url`/`manifest`/`download` and `authors`:
 
 ```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker."
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --publisher <owner> --author "<author>"
 ```
 
-Module with an ApplicationV2 UI panel:
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-party-overview --display "Party Overview" --desc "A dockable party status panel for GMs." --variant app
-```
-
-Module that patches a core method via libWrapper:
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-token-vision-tweak --display "Token Vision Tweak" --desc "Adjusts token vision drawing via a libWrapper-guarded patch." --variant libwrapper
-```
+Add `--variant app` or `--variant libwrapper` for the other variants.
 
 Flags: `--name` (GitHub repo, e.g. `foundryvtt-x`), `--id` (Foundry module id;
 default = `--name` minus the leading `foundryvtt-`), `--display` (title),
 `--desc`, `--variant {basic,app,libwrapper}`, `--fvtt-min` / `--fvtt-verified`
-(compatibility, default `12` / `13`), `--publisher` (default `laurigates`),
-`--author`, `--dir` (parent dir, default cwd).
+(compatibility, default `12` / `13`), `--publisher` (repo owner), `--author`,
+`--dir` (parent dir, default cwd).
 
 It refuses to overwrite an existing directory.
 
@@ -178,8 +171,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 
 | Context | Command |
 |---------|---------|
-| Scaffold a basic module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…"` |
-| Scaffold an app module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…" --variant app` |
+| Scaffold a module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…" --publisher <owner> --author "<author>" [--variant app]` |
 | Verify a generated module | `cd foundryvtt-X && bun install && just check` |
 | Gate the finishing pass (machine verdict) | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify foundryvtt-X` |
 | Check the pilot still matches scaffold.py | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh` |

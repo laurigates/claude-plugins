@@ -1321,20 +1321,21 @@ rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
 # owner-reference token so that unrelated rule stays green.
 # ============================================================================
 make_pipeline_skill() {
-  # make_pipeline_skill <scaffold-line-or-empty> [<extra-body-line>]
-  local dir="$root/$PLUGIN/skills/foundryvtt-module"
+  # make_pipeline_skill <scaffold-line-or-empty> [<extra-body-line>] [<skill-name>]
+  local skill="${3:-foundryvtt-module}"
+  local dir="$root/$PLUGIN/skills/$skill"
   rm -rf "$dir"
   mkdir -p "$dir"
   {
     printf -- '---\n'
-    printf 'name: foundryvtt-module\n'
+    printf 'name: %s\n' "$skill"
     printf 'description: Fixture pipeline. Use when exercising the compliance self-test.\n'
     printf 'allowed-tools: Read\n'
     printf 'created: 2026-11-13\n'
     printf 'modified: 2026-11-13\n'
     printf 'reviewed: 2026-11-13\n'
     printf -- '---\n\n'
-    printf '# Fixture foundryvtt-module\n\n'
+    printf '# Fixture %s\n\n' "$skill"
     printf 'Phases 3 to 5 are owned by comfyui-plugin:comfy-node.\n\n'
     if [ -n "$1" ]; then
       printf '```sh\n%s\n```\n\n' "$1"
@@ -1374,6 +1375,22 @@ assert_eq "pipeline: scaffold line with --publisher exits 0" "$rc_pub4" "0"
 assert_absent "pipeline: compliant shape raises no #3308 issue" \
   "$out_pub4" "#3308"
 rm -rf "${root:?}/$PLUGIN/skills/foundryvtt-module"
+
+# --- The standalone scaffold skill is guarded too (#3308) -------------------
+# foundryvtt-module-scaffold's own examples omitted --publisher, so following
+# that skill directly wrote the default owner into module.json.
+SCAF_BASE='python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-x --display "X" --desc "X."'
+make_pipeline_skill "$SCAF_BASE" "" foundryvtt-module-scaffold
+run_check; out_pub5="$OUT"; rc_pub5="$RC"
+assert_eq "scaffold skill: scaffold line without --publisher exits 1" "$rc_pub5" "1"
+assert_contains "scaffold skill: missing --publisher is named (#3308)" \
+  "$out_pub5" "foundryvtt-module-scaffold: a 'scaffold.py --name' invocation omits --publisher <owner>"
+make_pipeline_skill "$SCAF_BASE --publisher <owner> --author \"<author>\"" "" foundryvtt-module-scaffold
+run_check; out_pub6="$OUT"; rc_pub6="$RC"
+assert_eq "scaffold skill: scaffold line with --publisher exits 0" "$rc_pub6" "0"
+assert_absent "scaffold skill: compliant shape raises no #3308 issue" \
+  "$out_pub6" "#3308"
+rm -rf "${root:?}/$PLUGIN/skills/foundryvtt-module-scaffold"
 
 echo "---"
 echo "passed: $pass, failed: $fail"

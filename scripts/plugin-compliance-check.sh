@@ -1441,9 +1441,12 @@ check_skill_body() {
     # so the repo is created under <owner> while the module installs from a
     # repo that does not exist; the scaffold's own --verify gate checks only
     # the URL suffix and misses it. Every `scaffold.py --name` line must pass
-    # --publisher. Keyed on the skill name alone (both are unique in the repo),
-    # so the self-test can exercise it from its fixture plugin.
-    if [ "$skill_name" = "foundryvtt-module" ] || [ "$skill_name" = "comfy-node" ]; then
+    # --publisher. Keyed on the skill name alone (each is unique in the repo),
+    # so the self-test can exercise it from its fixture plugin. The standalone
+    # foundryvtt-module-scaffold skill is covered too: its examples omitted
+    # --publisher and named the maintainer account as the default (#3308).
+    if [ "$skill_name" = "foundryvtt-module" ] || [ "$skill_name" = "comfy-node" ] \
+      || [ "$skill_name" = "foundryvtt-module-scaffold" ]; then
       scaffold_lines="$(grep -E 'scaffold\.py .*--name ' "$skill_file" || true)"
       if [ -z "$scaffold_lines" ]; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md lost its 'scaffold.py --name' invocation; the --publisher guard has nothing to check (#3308)")
