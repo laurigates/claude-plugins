@@ -24,7 +24,12 @@ BSC_PASS=0
 BSC_FAIL=0
 
 BSC_TEST_CACHE_DIR="$(mktemp -d)"
-trap 'rm -rf "$BSC_TEST_CACHE_DIR"' EXIT
+# Default project dir for every case: empty, so no docs/blueprint/manifest.json.
+# Without this seam the hook would read the manifest of whatever checkout the
+# suite runs from (this repo's disables derive-plans, #3648).
+BSC_TEST_PROJECT_DIR="$(mktemp -d)"
+BSC_TEST_FIXTURE_ROOT="$(mktemp -d)"
+trap 'rm -rf "$BSC_TEST_CACHE_DIR" "$BSC_TEST_PROJECT_DIR" "$BSC_TEST_FIXTURE_ROOT"' EXIT
 
 bsc_pass() { echo "  PASS: $1"; BSC_PASS=$((BSC_PASS + 1)); }
 bsc_fail() { echo "  FAIL: $1"; BSC_FAIL=$((BSC_FAIL + 1)); }
@@ -56,7 +61,22 @@ bsc_payload() {
 }
 
 bsc_run() {
-    BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR="$BSC_TEST_CACHE_DIR" bash "$BSC_SCRIPT" <<<"$1"
+    CLAUDE_PROJECT_DIR="$BSC_TEST_PROJECT_DIR" \
+        BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR="$BSC_TEST_CACHE_DIR" bash "$BSC_SCRIPT" <<<"$1"
+}
+
+# Run the hook with CLAUDE_PROJECT_DIR pointing at a given project directory.
+bsc_run_in() {
+    CLAUDE_PROJECT_DIR="$1" \
+        BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR="$BSC_TEST_CACHE_DIR" bash "$BSC_SCRIPT" <<<"$2"
+}
+
+# Create a project dir whose docs/blueprint/manifest.json holds the given text.
+bsc_make_project() {
+    local bsc_proj="${BSC_TEST_FIXTURE_ROOT}/$1"
+    mkdir -p "${bsc_proj}/docs/blueprint"
+    printf '%s\n' "$2" > "${bsc_proj}/docs/blueprint/manifest.json"
+    printf '%s' "$bsc_proj"
 }
 
 # The cue fired: decision:block with a [blueprint] reason.
@@ -305,6 +325,91 @@ if printf '%s' "$BSC_NOSID_OUT" | jq -e '.decision == "block"' >/dev/null 2>&1; 
     bsc_pass "missing session_id still fires the cue"
 else
     bsc_fail "missing session_id should still fire; got: ${BSC_NOSID_OUT:-<empty>}"
+fi
+
+# --- #3648: the cue names only tasks the manifest's task_registry enables ---
+#
+# Pre-fix the cue was one fixed string naming both /blueprint:derive-plans and
+# /blueprint:adr-validate in every repo, including repos whose
+# docs/blueprint/manifest.json disables derive-plans. Each case asserts on the
+# reason text produced for a manifest fixture, not on the hook's source.
+echo ""
+echo "task_registry gates the named tasks (#3648):"
+
+BSC_PROJ_DP_OFF="$(bsc_make_project dp-off '{"task_registry": {"derive-plans": {"enabled": false}, "adr-validate": {"enabled": true}}}')"
+BSC_OUT_DP_OFF="$(bsc_run_in "$BSC_PROJ_DP_OFF" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-1)")"
+if printf '%s' "$BSC_OUT_DP_OFF" | jq -e '.decision == "block" and (.reason | contains("/blueprint:adr-validate")) and (.reason | contains("derive-plans") | not)' >/dev/null 2>&1; then
+    bsc_pass "derive-plans disabled -> cue names /blueprint:adr-validate only"
+else
+    bsc_fail "derive-plans disabled should name adr-validate only; got: ${BSC_OUT_DP_OFF:-<empty>}"
+fi
+
+BSC_PROJ_AV_OFF="$(bsc_make_project av-off '{"task_registry": {"derive-plans": {"enabled": true}, "adr-validate": {"enabled": false}}}')"
+BSC_OUT_AV_OFF="$(bsc_run_in "$BSC_PROJ_AV_OFF" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-2)")"
+if printf '%s' "$BSC_OUT_AV_OFF" | jq -e '.decision == "block" and (.reason | contains("/blueprint:derive-plans")) and (.reason | contains("adr-validate") | not)' >/dev/null 2>&1; then
+    bsc_pass "adr-validate disabled -> cue names /blueprint:derive-plans only"
+else
+    bsc_fail "adr-validate disabled should name derive-plans only; got: ${BSC_OUT_AV_OFF:-<empty>}"
+fi
+
+BSC_PROJ_BOTH_OFF="$(bsc_make_project both-off '{"task_registry": {"derive-plans": {"enabled": false}, "adr-validate": {"enabled": false}}}')"
+BSC_BOTH_OFF_EXIT=0
+BSC_OUT_BOTH_OFF="$(bsc_run_in "$BSC_PROJ_BOTH_OFF" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-3)")" || BSC_BOTH_OFF_EXIT=$?
+if [ -z "$BSC_OUT_BOTH_OFF" ] && [ "$BSC_BOTH_OFF_EXIT" -eq 0 ]; then
+    bsc_pass "both disabled -> no cue, exit 0"
+else
+    bsc_fail "both disabled should be silent with exit 0; exit=$BSC_BOTH_OFF_EXIT got: ${BSC_OUT_BOTH_OFF:-<empty>}"
+fi
+# Silence must not burn the session's one cue: the marker is written only when
+# a cue is actually emitted.
+if [ ! -f "${BSC_TEST_CACHE_DIR}/reg-3" ]; then
+    bsc_pass "a suppressed cue does not write the dedup marker"
+else
+    bsc_fail "dedup marker written although no cue was emitted"
+fi
+
+# This repo's manifest shape: auto_run and other tasks alongside enabled.
+BSC_PROJ_REAL="$(bsc_make_project real-shape '{"format_version": "3.3.0", "task_registry": {"derive-plans": {"enabled": false, "auto_run": false}, "adr-validate": {"enabled": true, "auto_run": false}, "sync-ids": {"enabled": true}}}')"
+BSC_OUT_REAL="$(bsc_run_in "$BSC_PROJ_REAL" "$(bsc_payload Write src/index.ts '' 'export function foo() {}' reg-4)")"
+if printf '%s' "$BSC_OUT_REAL" | jq -e '(.reason | contains("/blueprint:adr-validate")) and (.reason | contains("derive-plans") | not)' >/dev/null 2>&1; then
+    bsc_pass "manifest with extra keys -> still names adr-validate only"
+else
+    bsc_fail "manifest with extra keys should name adr-validate only; got: ${BSC_OUT_REAL:-<empty>}"
+fi
+
+# Fallbacks: anything other than an explicit enabled:false keeps today's text.
+BSC_TODAY_REASON="[blueprint] Structural change detected (manifest / public API). Consider /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current."
+
+BSC_OUT_NO_MANIFEST="$(bsc_run_in "$BSC_TEST_PROJECT_DIR" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-5)")"
+if printf '%s' "$BSC_OUT_NO_MANIFEST" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "no manifest -> cue text unchanged"
+else
+    bsc_fail "no manifest should keep today's text; got: ${BSC_OUT_NO_MANIFEST:-<empty>}"
+fi
+
+BSC_PROJ_BAD="$(bsc_make_project malformed '{"task_registry": {"derive-plans": {"enabled": fal')"
+BSC_BAD_EXIT=0
+BSC_OUT_BAD="$(bsc_run_in "$BSC_PROJ_BAD" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-6)" 2>&1)" || BSC_BAD_EXIT=$?
+if [ "$BSC_BAD_EXIT" -eq 0 ] && printf '%s' "$BSC_OUT_BAD" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "malformed manifest -> today's text, exit 0, nothing on stderr"
+else
+    bsc_fail "malformed manifest should fall back cleanly; exit=$BSC_BAD_EXIT got: ${BSC_OUT_BAD:-<empty>}"
+fi
+
+BSC_PROJ_NOREG="$(bsc_make_project no-registry '{"format_version": "3.3.0"}')"
+BSC_OUT_NOREG="$(bsc_run_in "$BSC_PROJ_NOREG" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-7)")"
+if printf '%s' "$BSC_OUT_NOREG" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "manifest without task_registry -> cue text unchanged"
+else
+    bsc_fail "manifest without task_registry should keep today's text; got: ${BSC_OUT_NOREG:-<empty>}"
+fi
+
+BSC_PROJ_BOTH_ON="$(bsc_make_project both-on '{"task_registry": {"derive-plans": {"enabled": true}, "adr-validate": {"enabled": true}}}')"
+BSC_OUT_BOTH_ON="$(bsc_run_in "$BSC_PROJ_BOTH_ON" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-8)")"
+if printf '%s' "$BSC_OUT_BOTH_ON" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "both enabled -> cue text unchanged"
+else
+    bsc_fail "both enabled should keep today's text; got: ${BSC_OUT_BOTH_ON:-<empty>}"
 fi
 
 # --- hooks.json registration gate ---
