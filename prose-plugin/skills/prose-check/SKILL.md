@@ -1,11 +1,11 @@
 ---
 created: 2026-08-27
-modified: 2026-08-27
+modified: 2026-11-14
 reviewed: 2026-08-27
 name: prose-check
 description: "Self-evaluate outward-bound prose against the house rubric — the three tics, end-on-the-fact, TL;DR footer. Use when drafting a PR body, issue body, doc, rule, or commit body before it ships."
 args: "[path to the draft] [--kind doc|answer|ticket]"
-allowed-tools: Bash, Read, Edit, Grep, Glob
+allowed-tools: Read, Edit, Grep, Glob
 argument-hint: <path to the draft> [--kind doc|answer|ticket]
 ---
 
