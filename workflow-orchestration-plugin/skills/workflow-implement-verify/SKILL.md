@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-11-07
+modified: 2026-11-13
 reviewed: 2026-10-26
 ---
 
@@ -92,11 +92,27 @@ that unit's `repo` and `root` as the run-level values.
 | `REJECTED` | verifier judged the approach wrong; a human decides | no |
 | `UNVERIFIED` | the verifier returned nothing | no |
 | `NO_CHANGE` | already correct at `base`, with evidence | no |
-| `BLOCKED` / `FAILED` | the author could not proceed, or returned nothing | no |
+| `BLOCKED` / `FAILED` | the author could not proceed (including a repairer that found the branch's PR already merged or closed), or returned nothing | no |
+
+Every repair brief reads the branch's PR state first (`gh pr list --head <branch> --state all`).
+In `repair-round` the branch already has a PR, which can merge while its verifier runs.
+In `implement-verify` no PR exists before finalise, so the check fires only on a reused branch name.
+The list matches by branch name, not commits, so it holds every PR ever opened from that name:
+an `OPEN` entry wins, and a `MERGED` or `CLOSED` entry counts only when its `headRefOid` is the
+branch tip or an ancestor of it (`git merge-base --is-ancestor`). Only when no entry is `OPEN`
+and a `MERGED` or `CLOSED` entry counts does the repairer commit
+nothing and return `blocked` with the PR in `blockers`, and the template skips the re-verify.
+Both finalise briefs apply the same rule against `head_sha` before pushing.
+The template stops and reports rather than opening a follow-up PR: to carry the findings forward,
+pass them to the next run as a new unit cut from `base`. Observed 2026-11-10: a repairer told to
+continue on a branch whose PR had merged found the remote branch deleted and opened a second PR.
 
 Each row carries the author's report (`fix`, including `followups` and
 `decisions_for_user`) and every verdict, so a re-dispatch starts from the state
 packet rather than from memory (`.claude/rules/loop-integrity.md` Pillar 2).
+The implement brief keeps `followups` to defects worth an issue: one 7-unit run without that
+line returned 52, mostly pre-existing lint notes and restatements of the brief, and the next
+run with it returned about 12.
 
 Read every verdict's defect list before integrating, including on a `PASS`. A
 verifier can pass the code and still report a defect outside it, such as an open
@@ -106,19 +122,9 @@ duplicate PRs, and the orchestrator found them only after a CI failure.
 
 ## Landing the PRs
 
-Neither template merges; land from the main session, one PR at a time:
-
-1. Update the branch from main (`gh pr update-branch <n>`, or a rebase in its worktree) and
-   confirm `git merge-base origin/main <head>` equals `git rev-parse origin/main`. Checks that
-   ran on an older base say nothing about the merged result.
-2. When main moved only by a release-please commit, confirm the update touched only release
-   files: `git diff --name-only <old head> <updated head>` lists none of the files in
-   `gh pr diff <n> --name-only`. Then merge on the required checks of the updated head.
-3. After each merge, update the next PR from the new main and repeat from step 1.
-
-For a cross-repository run, land each repository's PRs separately. Chains and
-`merge-chain.sh`: `git-plugin:git-merge-hazards`. Update-branch versus rebase, and when a
-stale base is safe to leave: `git-plugin:worktree-stale-base-merge`.
+Neither template merges. Land from the main session per
+[references/landing.md](references/landing.md): trial-integrate the landable
+branches first, stack them if they conflict, then merge one PR at a time.
 
 ## Workflow harness (template)
 

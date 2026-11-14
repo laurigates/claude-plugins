@@ -5,7 +5,7 @@ argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-12
 reviewed: 2026-02-14
 name: blueprint-prp-create
 ---
@@ -34,7 +34,7 @@ Create a comprehensive PRP (Product Requirement Prompt) - a self-contained packe
 ## Context
 
 - Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`
-- Last PRP ID: !`find . -path '*/docs/blueprint/manifest.json' -maxdepth 3 -exec jq -r '.id_registry.last_prp // 0' {} +`
+- Next PRP ID: !`bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh --kind PRP`
 - Curated rules available: !`find . -maxdepth 3 -path '*/.claude/rules/*' -type f -name "*.md"`
 - Existing PRDs: !`find . -path '*/docs/prds/*' -name "*.md" -type f`
 
@@ -82,9 +82,10 @@ Use WebSearch/WebFetch as needed. Create or update curated rule entries if neede
 
 ### Step 4: Generate PRP document ID and structure
 
-Generate next PRP ID from manifest:
-- Extract `id_registry.last_prp` from manifest.json
-- Next ID = last_prp + 1 (format: `PRP-NNN`)
+Take the next PRP ID from the "Next PRP ID" line in [Context](#context), or run
+`bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRP`. It is
+max(`id_registry.last_prp`, highest PRP id on disk) + 1 in `PRP-NNN` form, so a
+PRP pulled in since the last registry update is not assigned again.
 
 Create `docs/prps/[feature-name].md` with frontmatter and sections (see [REFERENCE.md](REFERENCE.md#prp-structure)).
 
@@ -163,7 +164,7 @@ Display summary showing:
 | Context | Command |
 |---------|---------|
 | Check blueprint init | `test -f docs/blueprint/manifest.json && echo "YES" \|\| echo "NO"` |
-| Next PRP ID | `jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json \| awk '{print $1+1}'` |
+| Next PRP ID | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRP` |
 | List existing PRPs | `ls -1 docs/prps/ 2>/dev/null \| wc -l` |
 | Search for patterns | Use Explore agent instead of manual grep |
 | Fast research | Use existing curated rules rather than fetching docs again |

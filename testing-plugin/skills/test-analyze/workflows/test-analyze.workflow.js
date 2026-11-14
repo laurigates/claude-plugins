@@ -25,6 +25,16 @@
  * needs PAL planning belongs on the inline path in SKILL.md.
  */
 
+export const meta = {
+  name: 'test-analyze',
+  description: 'Classify test failures by category, plan fixes per agent type in parallel, synthesize one fix plan',
+  phases: [
+    { title: 'Parse + classify', detail: 'one agent reads the result files and routes each failure' },
+    { title: 'Act', detail: 'one planner per agent type, at most 8' },
+    { title: 'Synthesize', detail: 'one agent orders the plans into a fix plan' },
+  ],
+}
+
 // --- The contract this harness shares with SKILL.md § Subagent Routing -------
 // Editing either side alone breaks the skill. The keys are the table's "Issue
 // category" column; the values are its "Dispatch" column, in the

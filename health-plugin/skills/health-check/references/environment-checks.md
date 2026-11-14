@@ -31,7 +31,23 @@ Each line is split on `&&`, `||`, `;` and `|` outside quotes. A quoted string th
 
 Scoring: OK with no missing tool, WARN for 1–3, ERROR for 4 or more (exit 1). The script needs bash 4 or later; under macOS `/bin/bash` 3.2 it reports `STATUS=ERROR` with `TYPE=bash_too_old` rather than a coverage result. The check is read-only and has no `--fix` path.
 
-## Checks 1b, 1c, 1e
+### 1e. Marketplace enrollment (`check-marketplace-enrollment.sh`)
+
+The local marketplace key (set by `claude marketplace add <name>`) is user-chosen and varies between installs (commonly `laurigates-claude-plugins`, sometimes `claude-plugins`), so the script identifies the marketplace by its stable `source.repo`: it reads `<project>/.claude/settings.json`, takes the first `extraKnownMarketplaces` entry whose `source.repo` equals `--repo` (default `laurigates/claude-plugins`), and counts the `enabledPlugins` keys ending in `@<that key>` whose value is `true`.
+
+| Key / row | Meaning |
+|---|---|
+| `MARKETPLACE_REPO=` | The `source.repo` looked for |
+| `PROJECT_SETTINGS=OK\|MISSING\|INVALID` | State of `<project>/.claude/settings.json` (`SETTINGS_FILE=` names it) |
+| `MARKETPLACE_KEY=` | The local key of the matching entry; absent when none matches |
+| `ENABLED_PLUGIN_COUNT=` | Plugins under that key set to `true` |
+| `TYPE=not_enrolled` (ERROR) | No entry names the repo, or there is no settings file. The remedy is `/configure:claude-plugins --fix` |
+| `TYPE=invalid_settings` (ERROR) | The settings file is not valid JSON |
+| `TYPE=no_enabled_plugins` (WARN) | Enrolled, but no plugin under the key is `true` |
+
+The script exits 1 on ERROR and 0 otherwise. It is read-only.
+
+## Checks 1b, 1c
 
 #### 1b. SessionStart smoke test
 
@@ -68,28 +84,3 @@ Report:
 - ERROR: exits non-zero — show validation error
 
 Permissions coverage (1d) runs as a script in Step 1a; see [1d. Permissions coverage](#1d-permissions-coverage-check-permissions-coveragesh).
-
-#### 1e. Marketplace enrollment check
-
-The local marketplace key (set by `claude marketplace add <name>`) is user-chosen and varies between installs (commonly `laurigates-claude-plugins`, sometimes `claude-plugins`). Identify the marketplace by its stable `source.repo`, not by a hardcoded local key.
-
-1. Read `.claude/settings.json`.
-2. Scan all entries under `extraKnownMarketplaces` and find the one whose `source.repo` equals `"laurigates/claude-plugins"`. Capture that entry's key as `$MP_KEY`.
-3. Check that `enabledPlugins` contains at least one key with the suffix `@$MP_KEY`.
-4. Report:
-   - OK: Both checks pass
-   - WARN: `enabledPlugins` has no `@$MP_KEY` entries (marketplace enrolled but no plugins enabled)
-   - ERROR: no `extraKnownMarketplaces` entry with `source.repo = laurigates/claude-plugins` (run `/configure:claude-plugins --fix` to add it)
-
-Reference `jq` snippet (for verification or fix scripts):
-
-```bash
-MP_KEY=$(jq -r '.extraKnownMarketplaces // {} | to_entries | map(select(.value.source.repo == "laurigates/claude-plugins")) | .[0].key // empty' .claude/settings.json)
-if [ -z "$MP_KEY" ]; then
-  echo "ERROR: no extraKnownMarketplaces entry with source.repo = laurigates/claude-plugins"
-else
-  jq -e --arg k "@$MP_KEY" '.enabledPlugins // {} | to_entries | map(select(.key | endswith($k))) | length > 0' .claude/settings.json >/dev/null \
-    && echo "OK: marketplace enrolled as $MP_KEY with enabled plugins" \
-    || echo "WARN: marketplace $MP_KEY enrolled but no @${MP_KEY} entries in enabledPlugins"
-fi
-```

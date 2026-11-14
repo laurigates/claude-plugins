@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-10-09
+modified: 2026-11-12
 reviewed: 2026-07-26
 description: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions.
 args: "[--report-only]"
@@ -186,7 +186,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson processed "${ADRS_VALIDATED:-0}" \
   '.task_registry["adr-validate"].last_completed_at = $now |
    .task_registry["adr-validate"].last_result = $result |
-   .task_registry["adr-validate"].stats.runs_total = ((.task_registry["adr-validate"].stats.runs_total // 0) + 1) |
    .task_registry["adr-validate"].stats.items_processed = $processed' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
 ```

@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal__listmodels, mcp__pal__chat, mcp__pal__consensus, mcp__pal__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-10-30
+modified: 2026-11-12
 reviewed: 2026-08-21
 ---
 
@@ -70,12 +70,21 @@ If a lookup under the correct prefix still finds nothing, see
 
 Execute a multi-model consult in these steps:
 
-### Step 1: Resolve model IDs first
+### Step 1: Resolve model IDs, then probe each provider
 
 Run `mcp__pal__listmodels` once at the start of the consult
 whenever a model is named loosely ("kimi2.7", "glm5.2") — registry IDs (`kimi-k2.7-code`,
 `glm-5.2`) and their aliases (`kimi`, `glm`) rarely match what anyone types
 from memory.
+
+Then send a one-line `mcp__pal__chat` (`Reply with OK`) to every model you
+plan to brief, before the fan-out.
+`listmodels` reports configuration, not reachability: it lists a provider
+whose key is an unexpanded `${VAR}`, and it cannot see a spent usage limit. In one review round OpenAI and OpenCode Go both
+listed as available; the probes returned a 401 and a monthly-limit 429, and only
+Gemini answered. Fewer than two answering providers means there is no
+disagreement to read, so replace the dead provider or tell the user the consult
+is single-model before spending the round.
 
 ### Step 2: Brief every model with the same prompt
 
@@ -147,7 +156,7 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 |---|---|---|
 | `kimi-k2.7-code` 400s whenever `temperature` is sent (OpenCode Go) | Opaque `Error from provider (Console Go): Upstream request failed` — names neither parameter nor constraint, so it reads as flakiness or "prompt too long" | Omit `temperature` for kimi; `glm-5.2` accepts it fine. Prompt length, attachments, `thinking_mode` are all innocent. [pal#67](https://github.com/laurigates/pal-mcp-server/issues/67) |
 | `absolute_file_paths` is capped at ~60% of context headroom, and the cap varies **wildly** by model | The attachment set is rejected for exceeding the budget. Observed on a 262K context: `gpt-5.3-codex` ≈ 76,800 tokens but `kimi-k2.7-code` only ≈ 28,311 — one ~84K, 7-file set bounced on **both** | Size attachments to the **smallest** target model's budget. Because the identical-briefs invariant is load-bearing, one model's ceiling trims the set for *all* of them — build a curated excerpt bundle instead |
-| `working_directory_absolute_path` must live inside `PAL_WORKSPACE_ROOT` | A scratchpad path outside the repo is rejected: `must reside within the PAL workspace root` | Work in `<repo>/tmp/<consult>/`, never a system temp dir |
+| `working_directory_absolute_path` must live inside `PAL_WORKSPACE_ROOT` | A scratchpad path outside the repo is rejected: `must reside within the PAL workspace root` | Work in `<repo>/tmp/<consult>/`, never a system temp dir. Diffs and files from another repository (PRs under review elsewhere) are exported there first, e.g. `gh pr diff <n> -R <owner>/<repo> > <repo>/tmp/<consult>/pr-<n>.diff` |
 | External models are third-party services | Sending a **private** repo's diff or files is denied by auto mode as data exfiltration; a public repo's content goes through | Consult external models only on content that is already public; review private code with a Claude agent instead |
 | `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/pal-mcp-server/issues/68) |
 | Registry models get retired upstream mid-consult | A `listmodels`-listed id 404s ("no longer available") | Pick a same-provider fallback *before* dispatching, and re-send the **identical** brief — a reworded one breaks the invariant |

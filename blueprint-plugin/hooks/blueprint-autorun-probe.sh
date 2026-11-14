@@ -11,6 +11,10 @@
 #       level 2+ -> one aggregated finding, remediation /blueprint:autopilot
 #   - a run that never returned (killed by the hook timeout) becomes an
 #     autorun_incomplete finding in the next session (#3169)
+#   - on the run that produced it (never from a TTL-fresh cache), a task line
+#     with CHANGED=true becomes a registry_reconciled finding (remediation:
+#     commit docs/blueprint/manifest.json) and STATE=error becomes an
+#     autorun_task_error finding naming the task (#3551)
 #
 # Level 0 / missing automation block is a complete no-op (empty signal file).
 # Opt out entirely with BLUEPRINT_AUTORUN_DISABLE=1; tune the debounce with
@@ -128,15 +132,50 @@ fi
 started_marker="${cache_base}/${project_key}.started"
 done_marker="${cache_base}/${project_key}.done"
 
+ran_now=0
 if [ "$cache_fresh" -eq 0 ]; then
     rm -f "$done_marker"
     touch "$started_marker" "$cache_file" 2>/dev/null
     if bash "$AUTORUN_BIN" --project-dir "$DRIFT_CWD" > "${cache_file}.tmp" 2>/dev/null; then
-        mv -f "${cache_file}.tmp" "$cache_file" || rm -f "${cache_file}.tmp"
+        if mv -f "${cache_file}.tmp" "$cache_file"; then
+            ran_now=1
+        else
+            rm -f "${cache_file}.tmp"
+        fi
     else
         rm -f "${cache_file}.tmp"
     fi
     touch "$done_marker" 2>/dev/null
+fi
+
+# What the sweep did this session (#3551). Read only from the run that just
+# produced the output: a TTL-fresh cache is re-read for up to an hour, and a
+# finding taken from it would repeat after the manifest was committed.
+if [ "$ran_now" -eq 1 ]; then
+    while IFS= read -r task_line; do
+        task_line=${task_line%$'\r'}
+        line_task=$(printf '%s\n' "$task_line" | sed -n 's/^TASK=\([^ ]*\).*/\1/p')
+        [ -n "$line_task" ] || continue
+        case " $task_line " in
+            *" STATE=error "*)
+                drift_add_finding warn \
+                    autorun_task_error \
+                    "blueprint autorun task ${line_task} failed at session start; the manifest was left unchanged" \
+                    "/blueprint:${line_task}"
+                ;;
+            *" CHANGED=true "*)
+                counts=""
+                for count_key in ADDED UPDATED PRUNED; do
+                    count_val=$(printf '%s\n' "$task_line" | sed -n "s/.* ${count_key}=\([0-9][0-9]*\).*/\1/p")
+                    [ -n "$count_val" ] && counts="${counts}${counts:+, }${count_key}=${count_val}"
+                done
+                drift_add_finding info \
+                    registry_reconciled \
+                    "blueprint ${line_task} reconciled the id registry at session start and wrote docs/blueprint/manifest.json${counts:+ (${counts})}" \
+                    "commit docs/blueprint/manifest.json"
+                ;;
+        esac
+    done < <(grep '^TASK=' "$cache_file" 2>/dev/null)
 fi
 
 if [ -f "$started_marker" ] && [ ! -f "$done_marker" ]; then

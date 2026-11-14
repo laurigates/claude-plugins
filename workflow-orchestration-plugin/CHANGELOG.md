@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.18.0...workflow-orchestration-plugin-v1.19.0) (2026-11-13)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** act on four implement-verify session-feedback issues ([#3638](https://github.com/laurigates/claude-plugins/issues/3638)) ([580cfa7](https://github.com/laurigates/claude-plugins/commit/580cfa7b004a3b43063fa088ba0c4fc4306cf571))
+
 ## [1.18.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.2...workflow-orchestration-plugin-v1.18.0) (2026-11-07)
 
 

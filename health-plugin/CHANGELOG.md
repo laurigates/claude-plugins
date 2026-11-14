@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.7](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.6...health-plugin-v1.24.7) (2026-11-13)
+
+
+### Bug Fixes
+
+* **health-plugin:** script check 1e, trim health-check, and fix its voided script grants ([#3634](https://github.com/laurigates/claude-plugins/issues/3634)) ([0dbf67d](https://github.com/laurigates/claude-plugins/commit/0dbf67d8afcdb8b4cc8c0a161eaec4fb1c3575d7))
+
 ## [1.24.6](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.5...health-plugin-v1.24.6) (2026-11-11)
 
 

@@ -474,7 +474,7 @@ ${OVERRIDE_NOTE}"
   path_prefix="([\"'][~\$/.][^[:space:]|;&'\"<>]*/|[^[:space:]|;&'\"<>]*/)?"
 
   # Exit 0 when one reader/filter match ($2, for pattern $1) is a real secret
-  # read; exit 1 when it is a template. The template rule:
+  # read; exit 1 when it is a template or a write. The template rule:
   #
   # .env.example / .env.sample / .env.template are templates committed by
   # convention, not secrets. check_sensitive_path() already exempts them on
@@ -493,10 +493,31 @@ ${OVERRIDE_NOTE}"
   # #3297). The class lives in a single-quoted variable to keep the backtick
   # out of the `$(...)` below (bash 3.2 parses a backtick there unreliably).
   sp_env_tok_class='[^[:space:]|;&'"'"'"`,)]*'
+  #
+  # A protected path that is only an output-redirect target is written, not
+  # read (issue #3594): `cat > .env`, `cat >> ~/.api_tokens`, `head -c 10 >
+  # .env`, and the remote form `… | ssh host 'cat > /srv/app/.env'` print
+  # nothing, the same as `gcloud … > .env` and `tee .env`, which no reader verb
+  # matches. So each `>`, `>>`, `>|`, `N>` or `&>` and the word after it are
+  # dropped before the match is judged. A protected path anywhere else in the
+  # match is still a read (`cat .env > /tmp/x`, `cat > /tmp/x .env`,
+  # `cat < .env`), and a remote READ (`ssh host 'cat /srv/app/.env'`) still
+  # blocks: it prints the remote secret into the transcript.
+  #
+  # `<>` is not an output redirect: it opens the file read-write on fd 0, so
+  # `cat <>.env` prints it. It is rewritten to `< ` first, which the redirect
+  # pattern never strips. The target word also stops at a command substitution
+  # (`$(`, a backtick) and at `(`, so `cat >/tmp/a$(cat .env)` and the process
+  # substitution `cat >(cat .env)` keep the inner read; a parameter expansion
+  # (`> "$HOME/.env"`, `> ${D}/.env`) stays part of the target.
+  # shellcheck disable=SC2016  # `$` and the backtick are regex literals
+  sp_redir_re='[0-9&]?>>?[|]?[[:space:]]*([^[:space:]|;&<>$`(]|\$[^[:space:]|;&<>`(])+'
   match_is_secret() {
-    local env_tokens non_template
+    local env_tokens non_template m
+    m=$(printf '%s\n' "$2" | sed -E "s/<>/< /g; s/${sp_redir_re}//g")
+    grep -Eq "$1" <<<"$m" || return 1
     if [ "$1" = '\.env\b' ]; then
-      env_tokens=$(echo "$2" | grep -oE "${1}${sp_env_tok_class}" | sed 's/\.*$//' || true)
+      env_tokens=$(echo "$m" | grep -oE "${1}${sp_env_tok_class}" | sed 's/\.*$//' || true)
       non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
       [ -n "$env_tokens" ] && [ -z "$non_template" ] && return 1
     fi

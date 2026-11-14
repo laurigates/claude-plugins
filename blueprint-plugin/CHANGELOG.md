@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.7](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.6...blueprint-plugin-v3.51.7) (2026-11-13)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** skip preflight cue on version-only manifest edits ([#3636](https://github.com/laurigates/claude-plugins/issues/3636)) ([b3d7454](https://github.com/laurigates/claude-plugins/commit/b3d7454bc1f5f7b6a74132fc0fdff7e26af47ca6))
+
 ## [3.51.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.5...blueprint-plugin-v3.51.6) (2026-11-10)
 
 
