@@ -1,10 +1,10 @@
 ---
 description: "Bun debugger via --inspect. Use when the user wants to debug a TS/JS file interactively, break at first line, wait for attach, or debug tests with --inspect-brk."
 args: <file> [--brk] [--wait] [--port=<port>]
-allowed-tools: Bash, Read
+allowed-tools: Bash(bun --inspect-brk test *), Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
 created: 2026-01-22
-modified: 2026-10-10
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: bun-debug
 model: haiku

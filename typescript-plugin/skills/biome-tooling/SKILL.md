@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-09-24
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: biome-tooling
 description: "Biome all-in-one JS/TS formatter and linter, 15-20x faster than ESLint/Prettier. Use when setting up formatting/linting or migrating from ESLint+Prettier."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
+allowed-tools: Glob, Grep, Read, Bash(bunx biome *), Bash(bun remove *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Biome Tooling

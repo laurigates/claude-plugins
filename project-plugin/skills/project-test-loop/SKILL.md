@@ -2,9 +2,9 @@
 description: "Test-fix-refactor loop that edits code between runs until the suite is green, bounded by --max-cycles. Use when asked to make failing tests pass or drive a TDD RED/GREEN/REFACTOR cycle."
 args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Optional test pattern to focus on; --max-cycles <N> to cap iterations (default 10)"
-allowed-tools: Read, Edit, Bash, Bash(bash *)
+allowed-tools: Read, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh *), Bash(find *), Bash(grep *)
 created: 2025-12-16
-modified: 2026-09-05
+modified: 2026-11-14
 reviewed: 2026-09-02
 name: project-test-loop
 ---

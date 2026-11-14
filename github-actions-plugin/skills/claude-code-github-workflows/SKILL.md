@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-11-14
 reviewed: 2026-09-02
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, mcp__github
+allowed-tools: Bash(gh pr view *), Read, Write, Edit, Grep, Glob, WebFetch, mcp__github
 ---
 
 # Claude Code GitHub Workflows

@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-08-07
+modified: 2026-11-14
 reviewed: 2026-08-07
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash(find *), Bash(uv sync *), Bash(uv add *), Bash(uv pip install *), Bash(bun install *), Bash(bun add *), Bash(npm ci *), Bash(npm install *), Bash(yarn install *), Bash(yarn add *), Bash(pnpm install *), Bash(pnpm add *), Bash(cargo build *), Bash(cargo add *), Bash(go mod download *), Bash(go get *), Read, Write
 model: sonnet
 args: "[package-names] [--dev] [--global]"
 argument-hint: "[package-names] [--dev] [--global]"

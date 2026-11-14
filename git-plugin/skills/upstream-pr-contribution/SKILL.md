@@ -1,9 +1,9 @@
 ---
 name: upstream-pr-contribution
 description: "Opening a pull request against a repository you do not own. Use when about to open one, to read CONTRIBUTING.md and the PR template in full and meet the contribution gates bots enforce."
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gh api *), Bash(base64 *), Bash(gh pr view *), Bash(gh pr checks *), Bash(gh pr create *), Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-09-12
 ---
 

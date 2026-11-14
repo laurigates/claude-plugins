@@ -1,9 +1,9 @@
 ---
 name: video-karaoke
 description: Burn word-timed karaoke lyrics into a video with the standalone karaoke CLI, from Suno's aligned lyrics. Use when adding sung lyrics with a hopping marker to a video.
-allowed-tools: Bash, Read
+allowed-tools: Bash(ffprobe *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

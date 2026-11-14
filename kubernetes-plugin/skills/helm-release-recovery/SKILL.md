@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: helm-release-recovery
 description: "Recover from failed Helm deployments — rollback, fix stuck states (pending-install/upgrade), atomic deployments. Use when the user mentions rollback, failed Helm upgrade, or stuck releases."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(helm rollback *), Bash(helm history *), Bash(helm status *), Bash(helm get *), Bash(helm list *), Bash(kubectl get *), Bash(kubectl diff *), Bash(stern *), Bash(diff *), Read, Grep, Glob
 ---
 
 # Helm Release Recovery

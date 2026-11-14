@@ -291,8 +291,8 @@ jobs:
         run: bash scripts/check-agent-frontmatter-keys.sh
 
       - name: Check for unused Bash grants
-        # A bare `Bash` in a skill's allowed-tools is the ratified standard
-        # (.claude/rules/agentic-permissions.md); the defect is the OPPOSITE — a
+        # A bare `Bash` in a skill that runs shell is the next step's finding
+        # (.claude/rules/agentic-permissions.md); this one is the OPPOSITE — a
         # Bash grant in a skill that runs no shell. The self-test step above
         # proves the guard before it reports on the tree, and pins the two cases
         # where the finding count swings hardest (unlabeled fences,
@@ -308,6 +308,16 @@ jobs:
         # ISSUE_COUNT=0" vacuously. Flipping to --strict on that reading would have
         # ratcheted against a corpus of nothing.
         run: bash scripts/check-unused-bash-grant.sh --strict
+
+      - name: Check for new bare or broad Bash grants
+        # The other half of the grant model: a skill that runs shell lists the
+        # commands it runs as narrow `Bash(<command> *)` patterns, never a bare
+        # `Bash` or an interpreter wildcard such as `Bash(bash *)` (#2839,
+        # .claude/rules/agentic-permissions.md). Ratchet while #3464 migrates
+        # the existing grants: a baseline-held grant is WARN (exit 0), a new one
+        # or a stale baseline entry is ERROR (exit 1). Seeded from b478400 with 221
+        # bare and 66 broad grants; the self-tests run under `Test: Skill scripts`.
+        run: bash scripts/check-bare-bash-grant.sh
 
       - name: Check workflow-run scripts are reachable from their path triggers
         # Guards the `paths:`-filter invariant this file's own header argues for:

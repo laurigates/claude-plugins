@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: cargo-nextest
 description: "cargo-nextest: fast Rust test runner with parallel execution and advanced filtering. Use when running tests, setting up CI, or diagnosing flaky/slow tests."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(cargo nextest run *), Bash(cargo test *), Bash(cargo llvm-cov nextest *), Read, Grep, Glob
 ---
 
 # cargo-nextest - Next-Generation Test Runner

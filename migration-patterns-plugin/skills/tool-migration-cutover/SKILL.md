@@ -1,9 +1,9 @@
 ---
 name: tool-migration-cutover
 description: "Migrating tools (Dependabot to Renovate, PAT to GitHub App, linter swaps). Use when removing the incumbent, to verify the new one runs, or on whole-file reformat churn from a leftover tool."
-allowed-tools: Bash, Read, Grep, Glob, Edit, TodoWrite
+allowed-tools: Bash(gh run list *), Bash(gh issue list *), Bash(gh api *), Bash(oxfmt *), Bash(prettier *), Bash(git add *), Bash(bunx lint-staged *), Read, Grep, Glob, Edit, TodoWrite
 created: 2026-08-08
-modified: 2026-09-24
+modified: 2026-11-14
 reviewed: 2026-09-12
 ---
 

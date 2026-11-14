@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 name: document-linking
 description: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking docs, finding orphans, auto-assigning IDs, or validating cross-doc references.
 user-invocable: false
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh *), Bash(jq *), Bash(gh issue list *), Bash(gh issue view *), Bash(grep *), Bash(printf *), TodoWrite
 ---
 
 # Document Linking

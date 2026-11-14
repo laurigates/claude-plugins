@@ -2,9 +2,9 @@
 name: mcp-code-execution
 description: Scaffold the code execution pattern for MCP-based agents. Use when agents call many MCP tools, intermediate data exceeds context, you need loops, or PII must stay out of context.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-02-08
-modified: 2026-07-28
+modified: 2026-11-14
 reviewed: 2026-06-14
 ---
 

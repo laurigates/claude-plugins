@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: rust-development
 description: Rust development — cargo, clippy, rustfmt, async, Tokio, Serde, memory safety. Use when mentioning Rust, cargo, ownership, lifetimes, fearless concurrency, or async programming.
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
+allowed-tools: Glob, Grep, Read, Bash(cargo build *), Bash(cargo run *), Bash(cargo test *), Bash(cargo bench *), Bash(cargo clippy *), Bash(cargo fmt *), Bash(cargo fix *), Bash(cargo add *), Bash(cargo update *), Bash(cargo audit *), Bash(cargo deny *), Bash(cargo new *), Bash(cargo init *), Bash(cargo doc *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Rust Development

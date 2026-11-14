@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-21
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: test-quality-analysis
 description: "Detect test smells, overmocking, flaky tests, coverage gaps, and tests that touch the real HOME or git config. Use when reviewing tests or analyzing test effectiveness and reliability."
 user-invocable: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(vitest *), Bash(uv run pytest *), Bash(npx playwright test *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
 # Test Quality Analysis

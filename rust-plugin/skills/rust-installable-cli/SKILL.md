@@ -1,11 +1,11 @@
 ---
 created: 2026-11-06
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-11-06
 name: rust-installable-cli
 description: "Installable Rust CLI: embedded default config, config layers, user dirs, clap input beside subcommands. Use when making a binary run outside its repo."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(cargo test *), Bash(cargo package *), Bash(grep *), Read, Write, Edit, Grep, Glob, AskUserQuestion, TodoWrite
 ---
 
 # rust-installable-cli — Patterns for a Rust CLI That Runs Outside Its Repo

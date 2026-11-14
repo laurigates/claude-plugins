@@ -1,9 +1,9 @@
 ---
 created: 2025-12-22
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2026-07-05
 description: "Pick-a-component menu for infrastructure standards — configures only the selected ones. Use when setting up one or a few named components (linting, CI, containers, tests)."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/../configure-all/scripts/list-components.sh *), Bash(find *), Bash(grep *), Bash(sed *), AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-select

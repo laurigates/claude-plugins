@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-05
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: openfeature
 description: "OpenFeature vendor-agnostic feature flag SDK: installation, evaluation, providers. Use when implementing feature flags, A/B testing, or progressive rollouts."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(npm install *), Bash(uv add *), Bash(go get *), Read, Write, Edit, Grep, Glob
 ---
 
 # OpenFeature SDK Integration

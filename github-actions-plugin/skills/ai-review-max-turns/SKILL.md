@@ -1,9 +1,9 @@
 ---
 name: ai-review-max-turns
 description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gh run view *), Bash(gh run list *), Bash(gh pr view *), Bash(gh pr checks *), Bash(gh api *), Bash(gh run download *), Bash(grep *), Read, Grep, Glob, TodoWrite
 created: 2026-09-02
-modified: 2026-10-09
+modified: 2026-11-14
 reviewed: 2026-09-23
 ---
 

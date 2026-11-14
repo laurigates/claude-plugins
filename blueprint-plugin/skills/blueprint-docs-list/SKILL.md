@@ -1,10 +1,10 @@
 ---
 created: 2026-02-06
-modified: 2026-10-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: List blueprint documents (ADRs, PRDs, PRPs) with frontmatter metadata. Use when listing docs, auditing statuses, or generating an index for project documentation.
 args: "<type>"
-allowed-tools: Bash, Glob
+allowed-tools: Bash(printf *), Bash(basename *), Bash(head *), Bash(grep *), Bash(sed *), Bash(ls *), Bash(wc *), Bash(tr *), Glob
 model: haiku
 argument-hint: "adrs | prds | prps | all"
 name: blueprint-docs-list

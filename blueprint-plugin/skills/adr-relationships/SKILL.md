@@ -2,9 +2,9 @@
 name: adr-relationships
 description: Domain analysis, conflict detection, and relationship validation for Architecture Decision Records. Use when creating or validating ADRs to ensure consistency.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(grep *), Bash(head *), Bash(sort *), Bash(uniq *), Bash(cut *), Bash(ls *), Read, Grep, Glob, TodoWrite
 created: 2026-01-15
-modified: 2026-04-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 ---
 

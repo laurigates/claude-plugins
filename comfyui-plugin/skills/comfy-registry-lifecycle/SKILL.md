@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-10-24
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
   Comfy Registry release pipeline: release-please + lockfile drift traps, the empty-web/dist publish bug, version status states, phantom versions, icon/banner generation. Use when debugging a pack's publish pipeline.
-allowed-tools: Bash, Read, Grep, Glob, Write, Edit
+allowed-tools: Bash(curl *), Bash(jq *), Bash(gh run list *), Bash(identify *), Bash(uvx --from cairosvg cairosvg *), Bash(uv lock *), Bash(bun run build *), Bash(git add *), Read, Grep, Glob, Write, Edit
 ---
 
 # comfy-registry-lifecycle

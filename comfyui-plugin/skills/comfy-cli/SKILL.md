@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-cli
 description: >-
   The `comfy` CLI for ComfyUI: install/update/bisect custom nodes, snapshot/restore state, publish to the registry, run workflows headlessly. Use when the user runs `comfy`, `comfy node`, or `comfy run`.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(comfy node *), Bash(comfy run *), Bash(comfy model *), Bash(comfy which *), Bash(comfy env *), Bash(journalctl *), Bash(diff *), Bash(mkdir *), Read, Grep, Glob
 ---
 
 # comfy CLI on this install

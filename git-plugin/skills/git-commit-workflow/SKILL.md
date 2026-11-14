@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-05-14
 name: git-commit-workflow
 description: "Commit-message and staging conventions: type(scope): subject, logical grouping, explicit-path staging. Reference only, makes no commit. Use when deciding how to word a message or split changes."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/git-commit-workflow/scripts/commit-context.sh *), Bash(git status *), Bash(git add *), Bash(git diff *), Bash(git commit *), Bash(git log *), Bash(git worktree add *), Bash(gh issue list *), Read
 ---
 
 # Git Commit Workflow

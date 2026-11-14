@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: basedpyright-type-checking
 description: Basedpyright static type checker for Python. Use when setting up type checking, configuring LSP, or comparing type checkers (basedpyright, pyright, mypy alternative).
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(basedpyright *), Bash(uv run basedpyright *), Read, Grep, Glob
 ---
 
 # Basedpyright Type Checking

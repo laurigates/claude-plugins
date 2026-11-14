@@ -2,10 +2,10 @@
 name: workflow-bake-off
 description: Workflow template for a bake-off — 2–5 independent attempts, lens judges, a winner computed by Borda or a metric rule, then refine. Use when comparing competing designs or running A/B arms.
 user-invocable: false
-allowed-tools: Bash, Read, TodoWrite
+allowed-tools: Bash(gh pr list *), Read, TodoWrite
 model: opus
 created: 2026-10-27
-modified: 2026-10-27
+modified: 2026-11-14
 reviewed: 2026-10-27
 ---
 

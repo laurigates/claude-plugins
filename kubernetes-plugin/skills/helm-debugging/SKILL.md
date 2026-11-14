@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: helm-debugging
 description: "Debug Helm failures — template errors, dry-run, YAML parse errors, value type errors, resource conflicts. Use when the user mentions Helm errors or template rendering issues."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(helm get *), Bash(helm history *), Bash(helm lint *), Bash(helm list *), Bash(helm show *), Bash(helm status *), Bash(helm template *), Bash(kubectl get *), Bash(kubectl describe *), Bash(kubectl logs *), Bash(kubectl api-resources *), Bash(yq *), Bash(grep *), Bash(diff *), Read, Grep, Glob
 ---
 
 # Helm Debugging & Troubleshooting

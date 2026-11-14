@@ -1,11 +1,11 @@
 ---
 created: 2026-03-04
-modified: 2026-09-22
+modified: 2026-11-14
 reviewed: 2026-09-22
 name: properties
 description: "Obsidian YAML frontmatter properties and aliases: read, set, remove on notes. Use when user mentions frontmatter, metadata, aliases, status, or dates."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(obsidian properties *), Bash(obsidian property:read *), Bash(obsidian property:set *), Bash(obsidian property:remove *), Bash(obsidian aliases *), Read, Grep, Glob
 ---
 
 # Obsidian Properties Management

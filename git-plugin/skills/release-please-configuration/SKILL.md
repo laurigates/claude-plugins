@@ -1,11 +1,11 @@
 ---
 created: 2025-12-28
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
 user-invocable: false
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite
+allowed-tools: Read, Write, Edit, Bash(gh pr list *), Bash(gh run list *), Bash(gh pr diff *), Bash(gh pr checkout *), Bash(gh pr edit *), Bash(jq *), Bash(grep *), Grep, Glob, TodoWrite
 ---
 
 # Release-Please Monorepo Configuration

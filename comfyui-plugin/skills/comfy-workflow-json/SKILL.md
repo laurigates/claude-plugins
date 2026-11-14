@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-workflow-json
 description: >-
   Programmatically edit ComfyUI workflow JSON: edge-list link rebuilds, link-encoding schemas, preserving the extra block (App Mode config). Use when a workflow JSON is too large to hand-edit or a transform drops state.
-allowed-tools: Bash, Read, Grep, Glob, Write, Edit
+allowed-tools: Read, Grep, Glob, Write, Edit
 ---
 
 # comfy-workflow-json

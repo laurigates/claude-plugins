@@ -2,9 +2,9 @@
 name: skaffold-testing
 description: "Container image validation with Skaffold test/verify stages — container-structure-tests, security scans. Use when configuring pre-deploy tests or integration tests in Skaffold."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(skaffold test *), Bash(skaffold verify *), Bash(skaffold dev *), Bash(container-structure-test test *), Bash(grype *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-23
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2025-12-23
 ---
 

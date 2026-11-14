@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-10
+modified: 2026-11-14
 reviewed: 2026-11-10
 name: github-labels
 description: "GitHub labels via gh CLI and the build:/area:/needs: taxonomy. Use when labeling a PR or issue, checking which labels a repo has, or creating a label."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(gh label list *), Bash(gh issue view *), Bash(gh issue edit *), Bash(gh pr edit *), Bash(gh pr create *), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py *), Read, Grep, Glob
 ---
 
 # GitHub Labels

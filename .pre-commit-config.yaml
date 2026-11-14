@@ -226,13 +226,34 @@ repos:
         name: no skill grants Bash without running shell
         entry: ./scripts/check-unused-bash-grant.sh --strict
         language: script
-        files: '^([^/]+-plugin/skills/.*/SKILL\.md|scripts/check-unused-bash-grant\.sh)$'
+        files: '^([^/]+-plugin/skills/.*/SKILL\.md|scripts/(check-unused-bash-grant\.sh|lib/shell-commands\.awk))$'
         pass_filenames: false
       - id: check-unused-bash-grant-test
         name: unused-Bash-grant lint regression
         entry: ./scripts/tests/test-check-unused-bash-grant.sh
         language: script
-        files: '^scripts/(check-unused-bash-grant\.sh|tests/test-check-unused-bash-grant\.sh)$'
+        files: '^scripts/(check-unused-bash-grant\.sh|lib/shell-commands\.awk|tests/test-check-unused-bash-grant\.sh)$'
+        pass_filenames: false
+      # A bare `Bash` or an interpreter wildcard (`Bash(bash *)`) in a skill's
+      # allowed-tools pre-approves (nearly) every shell command for the invoking
+      # turn. Ratchet: baseline-held grants WARN, a new one fails (#3464).
+      - id: check-bare-bash-grant
+        name: no new bare or broad Bash grant in a skill (#3464)
+        entry: ./scripts/check-bare-bash-grant.sh
+        language: script
+        files: '^([^/]+-plugin/skills/.*/SKILL\.md|scripts/(check-bare-bash-grant\.sh|bare-bash-grant-baseline\.txt|lib/allowed_tools\.py))$'
+        pass_filenames: false
+      - id: check-bare-bash-grant-test
+        name: bare-Bash-grant lint regression (#3464)
+        entry: ./scripts/tests/test-check-bare-bash-grant.sh
+        language: script
+        files: '^scripts/(check-bare-bash-grant\.sh|lib/allowed_tools\.py|tests/test-check-bare-bash-grant\.sh)$'
+        pass_filenames: false
+      - id: skill-shell-commands-test
+        name: skill shell-command / grant helper regression (#3464)
+        entry: ./scripts/tests/test-skill-shell-commands.sh
+        language: script
+        files: '^scripts/(skill-shell-commands\.py|lib/(allowed_tools\.py|shell-commands\.awk|extract-md-elements\.py)|tests/(test-skill-shell-commands\.sh|fixtures/skill-shell-commands/.*))$'
         pass_filenames: false
       # evalCoverageFloor counts that an evals.json EXISTS; this proves each
       # golden-set suite grades -- patterns compile and recorded probes pass or

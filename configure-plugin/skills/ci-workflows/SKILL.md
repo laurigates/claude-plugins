@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-05
+modified: 2026-11-14
 reviewed: 2026-06-01
 name: ci-workflows
 description: "Reference YAML for the canonical container-build, test, release-please and auto-fix workflow files. Use when another skill or a review needs the standard shape to cite or diff against."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob
+allowed-tools: Read, Write, Edit, Grep, Glob
 ---
 
 # CI Workflow Standards

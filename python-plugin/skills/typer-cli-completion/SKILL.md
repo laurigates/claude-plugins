@@ -1,11 +1,11 @@
 ---
 created: 2026-09-02
-modified: 2026-09-02
+modified: 2026-11-14
 reviewed: 2026-09-02
 name: typer-cli-completion
 description: Generate Typer/Click shell completions from a non-shell parent, bypassing shellingham. Use when `--install-completion` prints "Shell None is not supported", or when generating them in CI or Docker.
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Edit, Write, Bash
+allowed-tools: Glob, Grep, Read, Edit, Write
 ---
 
 # Typer/Click CLI Completion: Bypass shellingham

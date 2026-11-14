@@ -1,9 +1,9 @@
 ---
 name: gcp-throwaway-vm
 description: "Throwaway GCE VMs for benchmarks: project per run, budget and teardown order, zone fallback, older GCP kernels. Use when renting a GCP VM to run a test, then deleting it."
-allowed-tools: Bash, Read
+allowed-tools: Bash(gcloud projects create *), Bash(gcloud projects describe *), Bash(gcloud projects delete *), Bash(gcloud billing projects describe *), Bash(gcloud billing projects link *), Bash(gcloud billing budgets create *), Bash(gcloud billing budgets list *), Bash(gcloud billing budgets delete *), Bash(gcloud services enable *), Bash(gcloud compute instances create *), Bash(gcloud compute instances list *), Bash(gcloud compute instances get-serial-port-output *), Bash(gcloud compute instances delete *), Bash(gcloud compute project-info describe *), Bash(gcloud compute regions describe *), Bash(gcloud config list *), Bash(jq *), Bash(grep *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

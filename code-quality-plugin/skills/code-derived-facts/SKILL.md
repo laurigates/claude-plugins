@@ -1,9 +1,9 @@
 ---
 name: code-derived-facts
 description: "Verify code facts by running code, not grepping: is a function really called, is a derived table stale, did a scripted edit write. Use when auditing reachability or batch-editing source."
-allowed-tools: Read, Grep, Glob, Edit, Bash, TodoWrite
+allowed-tools: Read, Grep, Glob, Edit, Bash(grep *), TodoWrite
 created: 2026-11-06
-modified: 2026-11-07
+modified: 2026-11-14
 reviewed: 2026-11-06
 ---
 

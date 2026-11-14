@@ -2,7 +2,7 @@
 name: hooks-session-start-hook
 description: Create a SessionStart hook for Claude Code on the web. Use when setting up a repo so dependencies install and tests/linters run automatically on remote session start.
 args: "[--remote-only] [--no-verify]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(chmod *), TodoWrite
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
 disable-model-invocation: true
 created: 2026-02-07

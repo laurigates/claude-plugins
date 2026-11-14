@@ -2,9 +2,9 @@
 name: typescript-sentry
 description: Error monitoring and performance with Sentry SDK for Bun/Node.js/Next.js — error capture, breadcrumbs, spans, cron monitoring, source maps, structured logging, profiling. Use when adding Sentry, instrumenting cron, or uploading sourcemaps.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(npx sentry-cli sourcemaps inject *), Bash(npx sentry-cli sourcemaps upload *), Bash(npm pkg get *), Bash(tr *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-09-28
+modified: 2026-11-14
 reviewed: 2026-01-22
 ---
 

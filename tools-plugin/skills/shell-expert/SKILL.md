@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: shell-expert
 description: "Shell scripting: bash, zsh, POSIX, CLI tools, cross-platform automation. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
 user-invocable: false
-allowed-tools: Bash, Grep, Glob, Read, Write, Edit, TodoWrite
+allowed-tools: Bash(shellcheck *), Bash(jq *), Bash(yq *), Bash(jd *), Bash(fd *), Bash(rg *), Grep, Glob, Read, Write, Edit, TodoWrite
 ---
 
 # Shell Expert

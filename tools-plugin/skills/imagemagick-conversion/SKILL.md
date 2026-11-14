@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-13
 reviewed: 2025-12-16
 name: imagemagick-conversion
 description: "ImageMagick image manipulation: format conversion, resizing, batch processing, quality. Use when converting, resizing, batch-processing, or generating thumbnails."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(magick *), Bash(mkdir *), Bash(basename *), Read, Grep, Glob
 model: sonnet
 ---
 

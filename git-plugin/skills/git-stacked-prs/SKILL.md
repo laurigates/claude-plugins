@@ -2,9 +2,9 @@
 name: git-stacked-prs
 description: "GitHub native stacked PRs via gh stack. Use when creating, syncing, rebasing or merging a PR stack, or choosing stacks vs manual PR chains."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(gh stack init *), Bash(gh stack add *), Bash(gh stack view *), Bash(gh stack push *), Bash(gh stack submit *), Bash(gh stack sync *), Bash(gh stack rebase *), Bash(gh stack checkout *), Bash(gh stack link *), Bash(git add *), Bash(git commit *), Bash(git rebase *), Read
 created: 2026-09-04
-modified: 2026-10-26
+modified: 2026-11-14
 reviewed: 2026-09-04
 ---
 

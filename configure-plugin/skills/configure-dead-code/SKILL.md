@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Install and configure dead-code tooling (Knip, Vulture, cargo-machete, deadcode): config, pre-commit, CI. Use when setting up or migrating unused-code scanning; to run a scan use code-dead-code."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(bun add *), Bash(npm install *), Bash(uv add *), Bash(npx knip *), Bash(npm run knip *), Bash(vulture *), Bash(uv run vulture *), Bash(uv run deadcode *), Bash(cargo machete *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"
 argument-hint: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"
 name: configure-dead-code

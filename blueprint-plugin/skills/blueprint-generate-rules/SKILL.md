@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-08-09
 description: (Re)generate path-scoped rules from PRDs into generated_rules_path, with hash-based conflict checks. Use when creating or refreshing rules from docs/prds/; for full setup use blueprint-development.
-allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
+allowed-tools: Read, Write, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh *), Bash(jq *), Bash(mkdir *), Bash(ls *), Bash(sha256sum *), Bash(date *), Bash(mv *), AskUserQuestion
 name: blueprint-generate-rules
 ---
 

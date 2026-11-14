@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Set up .editorconfig and .vscode/ workspace settings shared by the team. Use when adding format-on-save, recommended extensions, or debug launch configs."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(jq *), Bash(editorconfig-checker *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-editor

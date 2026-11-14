@@ -1,11 +1,11 @@
 ---
 created: 2026-04-25
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
 argument-hint: "--audit docs/blueprint/audits/2026-04-25-story-audit.md (defaults to latest)"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(git branch --show-current *), Bash(git status *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(jq *), Bash(date *), Bash(mv *), Bash(grep *), AskUserQuestion
 model: opus
 name: blueprint-story-reconcile
 ---

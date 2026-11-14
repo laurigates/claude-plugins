@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-11
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: github-actions-inspection
 description: "Failing step, stack trace, and test output from a completed GitHub Actions run; rerun failed jobs. Use when a CI check finished red and you need the error extracted from its log."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, mcp__github
+allowed-tools: Bash(gh run view *), Bash(gh run list *), Bash(gh run rerun *), Bash(gh run watch *), Bash(gh run download *), Bash(gh workflow list *), Bash(gh workflow view *), Bash(gh api *), Bash(jq *), Bash(grep *), Read, Grep, Glob, mcp__github
 ---
 
 # GitHub Actions Inspection

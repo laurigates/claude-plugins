@@ -5,7 +5,7 @@ reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
 argument-hint: "--report-only to display status without interactive prompts"
-allowed-tools: Read, Bash, Glob, AskUserQuestion
+allowed-tools: Read, Bash(uv run --quiet --script ${CLAUDE_SKILL_DIR}/../../scripts/check-manifest-schema.py *), Bash(uv run --quiet --script ${CLAUDE_SKILL_DIR}/../../scripts/check-schema.py *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh *), Bash(jq *), Bash(grep *), Bash(wc *), Glob, AskUserQuestion
 model: sonnet
 name: blueprint-status
 ---

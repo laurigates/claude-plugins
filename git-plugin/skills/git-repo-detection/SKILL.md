@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: git-repo-detection
 description: "Detect GitHub repo owner/name from git remotes. Use when needing the owner/repo identifier for GitHub CLI or API calls, especially across multiple repos."
 user-invocable: false
-allowed-tools: Bash, Read, Grep
+allowed-tools: Bash(git remote -v), Bash(git remote get-url *), Bash(git remote show *), Bash(git rev-parse *), Bash(sed *), Bash(awk *), Bash(cut *), Bash(grep *), Bash(gh repo view *), Bash(gh issue list *), Bash(gh pr list *), Read, Grep
 ---
 
 # Git Repository Detection

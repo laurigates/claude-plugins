@@ -2,9 +2,9 @@
 name: git-branch-naming
 description: "Branch names: type prefix (feat/, fix/, chore/), issue number, kebab-case. Use when picking a name for a new branch or setting a repo's branch-naming convention."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(git switch *), Bash(git branch *), Read, Grep, Glob
 created: 2026-01-30
-modified: 2026-11-06
+modified: 2026-11-13
 reviewed: 2026-01-30
 ---
 

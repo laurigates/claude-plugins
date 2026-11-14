@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-14
 reviewed: 2026-04-29
 description: "Load testing: k6, Artillery, Locust. Use when setting up load tests, auditing smoke/stress/spike/soak coverage, or adding CI performance regression detection."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(k6 *), Bash(bun add *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"
 argument-hint: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"
 name: configure-load-tests

@@ -5,7 +5,7 @@ reviewed: 2026-06-10
 description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
 argument-hint: "--since 2024-06-01 for date range, --quick for last 50, --scope auth for specific area"
-allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+allowed-tools: Read, Write, Glob, Grep, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/blueprint-derive-tests.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git diff-tree *), Bash(find *), Bash(grep *), Bash(sed *), Bash(basename *), Bash(mkdir *), Bash(jq *), Bash(date *), Bash(mv *), AskUserQuestion, Task
 model: opus
 name: blueprint-derive-tests
 ---

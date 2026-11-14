@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-26
+modified: 2026-11-14
 reviewed: 2026-05-09
 name: git-branch-pr-workflow
 description: "Branch management and PR workflows — git switch/restore, GitHub MCP. Use when creating branches, opening PRs, or working with feature branches."
 user-invocable: false
-allowed-tools: Bash, Read, mcp__github__create_pull_request, mcp__github__list_pull_requests, mcp__github__update_pull_request
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/git-branch-pr-workflow/scripts/pr-context.sh *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(git status *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git log *), Bash(git diff *), Bash(git restore *), Bash(git rebase *), Bash(git merge *), Read, mcp__github__create_pull_request, mcp__github__list_pull_requests, mcp__github__update_pull_request
 ---
 
 # Git Branch PR Workflow

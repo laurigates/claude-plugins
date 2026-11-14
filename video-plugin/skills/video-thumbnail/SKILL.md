@@ -1,9 +1,9 @@
 ---
 name: video-thumbnail
 description: YouTube thumbnail from a video frame — contact sheet of candidate frames, then a 16:9 crop at 1280x720 JPEG under 2 MB. Use when choosing a video's thumbnail.
-allowed-tools: Bash, Read
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/contact-sheet.sh *), Bash(${CLAUDE_SKILL_DIR}/scripts/thumbnail.sh *), Read
 created: 2026-10-29
-modified: 2026-11-09
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

@@ -1,11 +1,11 @@
 ---
 created: 2026-07-03
-modified: 2026-11-04
+modified: 2026-11-14
 reviewed: 2026-07-03
 name: mockito-http-mocking
 description: "mockito HTTP mocking in Rust tests: expectations, match order, polling clients vs instant mock servers. Use when mocking an HTTP API, a matched() wait loop hangs, or tests hang under concurrent load."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(cargo nextest run *), Read, Grep, Glob
 ---
 
 # mockito-http-mocking - HTTP API Mocking in Rust Tests

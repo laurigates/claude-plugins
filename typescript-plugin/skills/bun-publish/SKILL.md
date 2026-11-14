@@ -1,11 +1,11 @@
 ---
 description: "Bun publish to npm. Use when the user wants to release to npm, preview with --dry-run, publish a scoped package with --access public, or enable --provenance signing."
 args: "[--dry-run] [--access <level>] [--provenance]"
-allowed-tools: Bash, Read
+allowed-tools: Bash(cat package.json *), Bash(jq *), Bash(bun run tsc *), Bash(head *), Bash(bun run build *), Bash(npm pack *), Bash(npm publish *), Bash(npm view *), Read
 argument-hint: "[--dry-run] [--access public]"
 disable-model-invocation: true
 created: 2025-12-21
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: bun-publish
 ---

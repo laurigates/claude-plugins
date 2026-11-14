@@ -1,9 +1,9 @@
 ---
 name: code-scaffold-backport
 description: Back-port an instance fix into the generator that produced it — cookiecutter, scaffold, `new-*` recipe. Use when fixing, reviewing, or auditing a generated file.
-allowed-tools: Read, Grep, Glob, Edit, Bash, TodoWrite
+allowed-tools: Read, Grep, Glob, Edit, Bash(diff *), TodoWrite
 created: 2026-08-19
-modified: 2026-08-19
+modified: 2026-11-14
 reviewed: 2026-08-19
 ---
 

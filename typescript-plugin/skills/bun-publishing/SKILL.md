@@ -2,9 +2,9 @@
 name: bun-publishing
 description: "Publish npm packages built with Bun: package.json config, CLI tool packaging, provenance signing, release automation. Use when setting up `publishConfig`/`files`/`bin`, packaging a CLI, enabling `--provenance`, or wiring release-please."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(bun run tsc *), Bash(bun run check *), Bash(bun test *), Bash(bun run build *), Bash(npm pack *), Bash(npm view *), Bash(npm access list *), Bash(npm outdated *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-21
-modified: 2026-06-06
+modified: 2026-11-14
 reviewed: 2026-06-06
 ---
 
