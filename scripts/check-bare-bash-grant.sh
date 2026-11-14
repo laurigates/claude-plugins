@@ -15,14 +15,18 @@
 # FINDINGS
 #   bare_bash          a bare `Bash` token
 #   broad_shell_grant  Bash(*), or Bash(<interp> *) / Bash(<interp>:*) for
-#                      interp in bash sh zsh python python3 node
+#                      interp in bash sh zsh python python3 node, however
+#                      spelled: no space before * (bash*), extra spaces, a
+#                      path or env prefix (/bin/bash *, env bash *), or an
+#                      inline-code flag (bash -c *, node -e *)
 # An anchored bundled-script grant, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *),
 # is narrow and never a finding.
 #
 # WHAT IT SCANS
 # <plugin>/skills/**/SKILL.md under every top-level `*-plugin` directory, the
 # frontmatter `allowed-tools` field in the one-line form (plain, quoted, or a
-# [flow, list]) and the YAML block-list form. Discovery runs from INSIDE the
+# [flow, list]), either continued over indented lines, and the YAML block-list
+# form. Discovery runs from INSIDE the
 # project dir against relative paths (#2219), pruning `.claude/worktrees/` and
 # `dist/` copies (#1492, #2214).
 #

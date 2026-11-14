@@ -8,6 +8,10 @@ Forms read, from the frontmatter between the first two `---` lines:
   allowed-tools: Bash, Read                 one-line
   allowed-tools: "Bash, Read"               quoted one-line
   allowed-tools: [Bash, Read]               flow list
+  allowed-tools: [Read,                     flow list over several lines
+    Bash]
+  allowed-tools: Read, Grep,                plain scalar over several lines
+    Bash
   allowed-tools:                            YAML block list
     - Bash
     - Read
@@ -22,9 +26,46 @@ from __future__ import annotations
 import re
 
 INTERPRETERS = ("bash", "sh", "zsh", "python", "python3", "node")
-# Bash(*), or Bash(<interp> *) / Bash(<interp>:*): each admits `<interp> -c
-# '<anything>'` by prefix match, which is nearly a bare Bash.
-BROAD_INNER = re.compile(r"^(\*|(?:%s)(?: \*|:\*))$" % "|".join(INTERPRETERS))
+# Flags after which an interpreter runs code from its next argument.
+INLINE_FLAGS = {
+    "bash": ("-c",),
+    "sh": ("-c",),
+    "zsh": ("-c",),
+    "python": ("-c",),
+    "python3": ("-c",),
+    "node": ("-e", "-p", "--eval", "--print"),
+}
+# A pattern ending in a wildcard: ` *`, `:*`, or `*` glued to the last word.
+TRAILING_WILDCARD = re.compile(r"^(.*?)(?: ?\*|:\*)$")
+
+
+def is_broad_inner(inner: str) -> bool:
+    """Bash(*), an interpreter wildcard, or an interpreter's inline-code wildcard.
+
+    Each admits `<interp> -c '<anything>'` by prefix match, which is nearly a
+    bare Bash. Whitespace is normalised (`bash  *`), the space before `*` is
+    optional (`bash*`), a path prefix on the interpreter is ignored
+    (`/bin/bash *`), so is a leading `env` (`env bash *`), and an interpreter
+    followed by its inline-code flag is broad too (`bash -c *`, `node -e *`).
+    """
+    pattern = " ".join(inner.split())
+    if pattern in ("*", ":*"):
+        return True
+    m = TRAILING_WILDCARD.match(pattern)
+    if not m:
+        return False
+    words = m.group(1).split()
+    if not words:
+        return True
+    if words[0].rsplit("/", 1)[-1] == "env":
+        words = words[1:]
+    if not words or "$" in words[0]:
+        return False
+    interp = words[0].rsplit("/", 1)[-1]
+    if interp not in INTERPRETERS:
+        return False
+    rest = words[1:]
+    return not rest or (len(rest) == 1 and rest[0] in INLINE_FLAGS[interp])
 
 
 def split_top_level(value: str) -> list[str]:
@@ -87,7 +128,23 @@ def parse_allowed_tools(text: str) -> list[str]:
         value = strip_comment(m.group(1)).strip()
         block_scalar = value in ("|", ">", "|-", ">-")
         if value and not block_scalar:
+            if value[0] not in "[\"'":
+                # A plain scalar continues on the following indented lines.
+                for nxt in fm[i + 1 :]:
+                    if not nxt.strip():
+                        continue
+                    if not nxt[0].isspace():
+                        break
+                    more = strip_comment(nxt).strip()
+                    if more:
+                        value += " " + more
             value = _clean(value)
+            if value.startswith("[") and "]" not in value:
+                # A flow list continued on the following lines.
+                for nxt in fm[i + 1 :]:
+                    value += " " + strip_comment(nxt).strip()
+                    if "]" in nxt:
+                        break
             if value.startswith("[") and value.endswith("]"):
                 value = value[1:-1]
             return [t for t in (_clean(x) for x in split_top_level(value)) if t]
@@ -120,6 +177,6 @@ def classify(token: str) -> str | None:
     if token == "Bash":
         return "bare_bash"
     inner = bash_inner(token)
-    if inner is not None and BROAD_INNER.match(inner):
+    if inner is not None and is_broad_inner(inner):
         return "broad_shell_grant"
     return None

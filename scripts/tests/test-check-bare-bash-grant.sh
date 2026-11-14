@@ -243,16 +243,58 @@ assert "G4 a # inside a grant is not a comment (negative control)" "$(grep -q 'h
 assert "G5 exactly 3 rows" "$(is "$(grep -c . <<<"$OUT")" 3)"
 
 ##########
-# G. Worktree and dist copies inside a plugin are pruned (#1492, #2214)
+# H. Worktree and dist copies inside a plugin are pruned (#1492, #2214)
 ##########
-echo "=== G: prune ==="
+echo "=== H: prune ==="
 run_check "$c" --list
-g_before="$(grep -c . <<<"$OUT")"
+h_before="$(grep -c . <<<"$OUT")"
 mkdir -p "$c/x-plugin/.claude/worktrees/a/skills/dup" "$c/x-plugin/dist/opencode/skills/dup"
 cp "$c/x-plugin/skills/broad-star/SKILL.md" "$c/x-plugin/.claude/worktrees/a/skills/dup/SKILL.md"
 cp "$c/x-plugin/skills/broad-star/SKILL.md" "$c/x-plugin/dist/opencode/skills/dup/SKILL.md"
 run_check "$c" --list
-assert "G1 worktree/dist copies add no rows" "$(is "$(grep -c . <<<"$OUT")" "$g_before")"
+assert "H1 worktree/dist copies add no rows" "$(is "$(grep -c . <<<"$OUT")" "$h_before")"
+
+##########
+# I. Spellings as broad as an interpreter wildcard (#3464 F5)
+##########
+# Each one was read as narrow before is_broad_inner() normalised it: no space
+# before *, a double space, an inline-code flag, a path or env prefix.
+echo "=== I: broad spellings ==="
+i="$sandbox/i"
+make_skill "$i" "x-plugin/skills/glued-bash"     'allowed-tools: Bash(bash*), Read'
+make_skill "$i" "x-plugin/skills/glued-python3"  'allowed-tools: Bash(python3*), Read'
+make_skill "$i" "x-plugin/skills/double-space"   'allowed-tools: Bash(bash  *), Read'
+make_skill "$i" "x-plugin/skills/bash-c"         'allowed-tools: Bash(bash -c *), Read'
+make_skill "$i" "x-plugin/skills/python3-c"      'allowed-tools: Bash(python3 -c *), Read'
+make_skill "$i" "x-plugin/skills/node-e-colon"   'allowed-tools: Bash(node -e:*), Read'
+make_skill "$i" "x-plugin/skills/bin-bash"       'allowed-tools: Bash(/bin/bash *), Read'
+make_skill "$i" "x-plugin/skills/env-bash"       'allowed-tools: Bash(env bash *), Read'
+make_skill "$i" "x-plugin/skills/multiline-flow" 'allowed-tools: [Read,
+  Bash]'
+make_skill "$i" "x-plugin/skills/multiline-plain" 'allowed-tools: Read, Grep,
+  Bash'
+# Negative controls: narrow grants that share a prefix or an interpreter.
+make_skill "$i" "x-plugin/skills/bashate"        'allowed-tools: Bash(bashate *), Read'
+make_skill "$i" "x-plugin/skills/python3-m"      'allowed-tools: Bash(python3 -m pytest *), Read'
+make_skill "$i" "x-plugin/skills/bash-script"    'allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *), Read'
+make_skill "$i" "x-plugin/skills/multiline-narrow" 'allowed-tools: [Read,
+  Bash(jq *)]'
+make_skill "$i" "x-plugin/skills/plain-narrow"   'allowed-tools: Read,
+  Bash(jq *)'
+run_check "$i" --list
+assert "I1 Bash(bash*) is broad"            "$(listed glued-bash broad_shell_grant)"
+assert "I2 Bash(python3*) is broad"         "$(listed glued-python3 broad_shell_grant)"
+assert "I3 Bash(bash  *) is broad"          "$(listed double-space broad_shell_grant)"
+assert "I4 Bash(bash -c *) is broad"        "$(listed bash-c broad_shell_grant)"
+assert "I5 Bash(python3 -c *) is broad"     "$(listed python3-c broad_shell_grant)"
+assert "I6 Bash(node -e:*) is broad"        "$(listed node-e-colon broad_shell_grant)"
+assert "I7 Bash(/bin/bash *) is broad"      "$(listed bin-bash broad_shell_grant)"
+assert "I8 Bash(env bash *) is broad"       "$(listed env-bash broad_shell_grant)"
+assert "I9 a bare Bash in a multi-line flow list is a hit" "$(listed multiline-flow bare_bash)"
+assert "I9b a bare Bash on a plain scalar's continuation line is a hit" "$(listed multiline-plain bare_bash)"
+assert "I10 narrow look-alikes are not hits" \
+  "$(grep -qE 'bashate|python3-m|bash-script|multiline-narrow|plain-narrow' <<<"$OUT" && echo false || echo true)"
+assert "I11 exactly 10 rows" "$(is "$(grep -c . <<<"$OUT")" 10)"
 
 echo ""
 echo "Passed: $pass_count, Failed: $fail_count"
