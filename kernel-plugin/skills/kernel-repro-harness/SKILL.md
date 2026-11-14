@@ -1,9 +1,9 @@
 ---
 name: kernel-repro-harness
 description: "Standalone kernel reproducer maintainers can rerun: syscall loop, controls, loop images, OrbStack then GCP. Use when reducing an app's kernel bug."
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(gcc *), Bash(shellcheck *), Bash(orb create *), Read, Write, Edit, Grep, Glob
 created: 2026-11-02
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-11-02
 ---
 
