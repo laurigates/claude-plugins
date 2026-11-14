@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: uv-run
 description: Run Python scripts with uv (PEP 723 inline deps, --with for one-off deps). Use when running scripts without venv activation or needing one-off dependencies.
 user-invocable: false
-allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, Edit, Write, NotebookEdit, Bash
+allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, Edit, Write, NotebookEdit, Bash(uv init *), Bash(uv add *), Bash(uv lock *), Bash(uvx ruff *)
 ---
 
 # UV Run

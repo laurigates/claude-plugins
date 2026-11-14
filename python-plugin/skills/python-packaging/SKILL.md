@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: python-packaging
 description: Build and publish Python packages with uv. Use when the user mentions building packages, publishing to PyPI, wheel/sdist creation, or entry points.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv build *), Bash(uv publish *), Read, Grep, Glob
 ---
 
 # Python Packaging

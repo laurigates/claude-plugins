@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: uv-tool-management
 description: Install and manage global Python CLI tools with uv (pipx alternative). Use when the user mentions uv tool, uvx, installing CLI tools globally, or pipx replacement.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv tool install *), Bash(uv tool list *), Bash(uv tool upgrade *), Bash(uv tool uninstall *), Bash(uvx ruff *), Bash(uvx black *), Read, Grep, Glob
 ---
 
 # UV Tool Management
