@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-09-29
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: nodejs-development
 description: "Node.js development with Bun, Vite, Vue 3, Pinia, TypeScript. Use when the user mentions Node.js, Bun, Vite, Vue, Pinia, npm, pnpm, or modern JS/TS frameworks."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, NotebookEdit
+allowed-tools: Glob, Grep, Read, Bash(bun install *), Bash(bun dev *), Bash(bun build *), Bash(bun run check *), Bash(bun run test *), Edit, Write, TodoWrite, WebFetch, WebSearch, NotebookEdit
 ---
 
 # Node.js Development

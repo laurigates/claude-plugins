@@ -2,9 +2,9 @@
 description: "Bun install: install all deps from package.json. Use when bootstrapping a checkout, running a reproducible CI install (--frozen-lockfile), or deploying (--production)."
 args: "[--frozen-lockfile] [--production]"
 argument-hint: "--frozen-lockfile for CI, --production for deployment"
-allowed-tools: Bash, Read
+allowed-tools: Bash(bun install *), Bash(bun run prepare *), Read
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: bun-install
 ---

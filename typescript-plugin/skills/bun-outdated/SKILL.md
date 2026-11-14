@@ -2,9 +2,9 @@
 description: "Bun outdated: check which deps have newer versions. Use when auditing freshness, spotting major updates, or deciding between bun update and bun update --latest."
 args: "[package]"
 argument-hint: "Optional package name to check specific dependency"
-allowed-tools: Bash, Read
+allowed-tools: Bash(bun outdated *), Read
 created: 2025-12-20
-modified: 2026-10-10
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: bun-outdated
 model: haiku
