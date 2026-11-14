@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016  # file-level: single-quoted `grep -F` needles are literal by design (must precede the first command)
-# Regression test for scripts/agentic-audit-precompute.sh (issue #2557).
+# Regression test for scripts/agentic-audit-precompute.sh (issues #2557, #3573).
 #
 # The generator used to be inline shell inside `.github/workflows/scheduled-audits.yml`,
 # so nothing under scripts/tests/ could reach it and its flagging predicates were
-# untestable. This suite pins the two defects that actually live in that block, plus
-# the stale-review date-cohort section added alongside the extraction.
+# untestable. This suite pins the `when to use` predicate, the stale-review
+# date-cohort section added alongside the extraction, and (#3573) the CLI-wrapper
+# predicate that replaced the ungated "missing Agentic Optimizations table" list:
+# the table is optional (`.claude/rules/context-engineering.md` § Supersedes), so
+# only a CLI-wrapper skill without one is listed, as INFO, mirroring
+# `health-plugin:health-agentic-audit` Step 3.
 #
 # HERMETIC: every case runs against a throwaway skill tree under a guarded
 # `mktemp -d`, cleaned by trap. The script under test resolves its own REPO_ROOT
@@ -80,7 +84,8 @@ mk_skill() {
 # Fixture skills
 ##########
 
-# (1) DEFECT: no Bash in allowed-tools, no Agentic Optimizations table.
+# (1) An ordinary skill with no table and no Bash grant. NOT a CLI wrapper, so it
+# must NOT be listed (#3573: the table is optional outside CLI wrappers).
 mk_skill "demo-plugin/skills/no-bash" <<EOF
 ---
 name: no-bash
@@ -94,8 +99,8 @@ reviewed: $FRESH_DATE
 Reading things.
 EOF
 
-# (1-control) Same shape but WITH Bash — proves the annotation discriminates
-# rather than printing a constant.
+# (1b) Same shape but WITH Bash and no fenced shell — a Bash grant alone does not
+# make a CLI wrapper. Must NOT be listed.
 mk_skill "demo-plugin/skills/has-bash" <<EOF
 ---
 name: has-bash
@@ -198,6 +203,95 @@ reviewed: $STALE_DATE
 | \`-q\` | quiet |
 EOF
 
+# (5) CLI WRAPPER, no table: 3 of 4 fenced shell commands start with `jq`, and
+# `jq` is named in the description. MUST be listed (positive control — without it
+# the "not listed" cases would pass against a generator that lists nothing).
+mk_skill "demo-plugin/skills/cli-wrapper" <<EOF
+---
+name: json-querying
+description: jq JSON processing. Use when filtering JSON.
+allowed-tools: Bash(jq *), Read
+reviewed: $FRESH_DATE
+---
+
+## When to Use This Skill
+
+\`\`\`bash
+jq '.items[]' data.json
+# a comment line is not a command
+jq -r '.name' data.json
+\`\`\`
+
+\`\`\`sh
+jq -c . data.json
+cat data.json
+\`\`\`
+EOF
+
+# (5-control a) Same commands, WITH a table — must NOT be listed.
+mk_skill "demo-plugin/skills/cli-wrapper-with-table" <<EOF
+---
+name: json-querying-tabled
+description: jq JSON processing. Use when filtering JSON.
+allowed-tools: Bash(jq *), Read
+reviewed: $FRESH_DATE
+---
+
+## When to Use This Skill
+
+\`\`\`bash
+jq '.items[]' data.json
+jq -r '.name' data.json
+\`\`\`
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Compact | \`jq -c .\` |
+EOF
+
+# (5-control b) Majority tool (`git`) NOT named in name/description — the "named"
+# half of the predicate. Must NOT be listed.
+mk_skill "demo-plugin/skills/majority-unnamed" <<EOF
+---
+name: release-notes
+description: Drafts release notes. Use when preparing a release.
+allowed-tools: Bash(git *), Read
+reviewed: $FRESH_DATE
+---
+
+## When to Use This Skill
+
+\`\`\`bash
+git log --oneline -n 20
+git tag --list
+\`\`\`
+EOF
+
+# (5-control c) `jq` is named in the description AND is the most common tool, but
+# covers only 2 of 5 commands — the "at least half" half of the predicate. Must
+# NOT be listed. (It must be the top tool, or the "named" check alone would
+# exclude it and this case would not test the half rule.)
+mk_skill "demo-plugin/skills/named-minority" <<EOF
+---
+name: data-pipeline
+description: Runs a pipeline that ends in jq. Use when transforming data.
+allowed-tools: Bash, Read
+reviewed: $FRESH_DATE
+---
+
+## When to Use This Skill
+
+\`\`\`bash
+python3 extract.py
+curl -s https://example.invalid/data
+cat out.json
+jq . out.json
+jq -r '.id' out.json
+\`\`\`
+EOF
+
 # (4) A worktree clone: an agent worktree is a full repo copy. It must be pruned,
 # not walked (the #2214 timeout class).
 mk_skill ".claude/worktrees/agent-deadbeef/demo-plugin/skills/no-bash" <<EOF
@@ -232,12 +326,12 @@ if [ -s "$err" ]; then
 fi
 
 # Section slicing so an assertion about one list cannot be satisfied by a hit in
-# another (every fixture skill appears in the MISSING_AGENTIC list too).
+# another.
 section() {
   # section <start-heading-regex> <end-heading-regex>
   awk -v s="$1" -v e="$2" '$0 ~ s {on=1; next} $0 ~ e {on=0} on' "$out"
 }
-agentic_section="$(section '^## Skills missing Agentic Optimizations table:$' '^## Skills with stale reviews')"
+agentic_section="$(section '^## CLI-wrapper skills without an Agentic Optimizations table [(]INFO[)]:$' '^## Skills with stale reviews')"
 # Literal parens as bracket expressions, NOT `\(` `\)`. `$0 ~ s` compiles s as a
 # DYNAMIC regex, and a backslash-escaped paren is undefined in POSIX awk, so awks
 # disagree: the GitHub runner's awk warns "escape sequence `\(' treated as plain
@@ -269,29 +363,34 @@ unset _s _body
 # GUARD INTEGRITY — the corpus was really walked
 ##########
 echo "=== guard integrity ==="
-assert "reports the 7 real fixture skills (worktree clone pruned, not counted)" \
-  "$(grep -q '^Pre-computed data for 7 skills:$' "$out" && echo true || echo false)"
+assert "reports the 11 real fixture skills (worktree clone pruned, not counted)" \
+  "$(grep -q '^Pre-computed data for 11 skills:$' "$out" && echo true || echo false)"
 assert "no .claude/worktrees path leaks into the report" \
   "$(! grep -q '\.claude/worktrees' "$out" && echo true || echo false)"
-assert "the Agentic-Optimizations list is non-empty" \
+assert "the CLI-wrapper INFO list is non-empty" \
   "$([ -n "$(printf '%s' "$agentic_section" | tr -d '[:space:]')" ] && echo true || echo false)"
 
 ##########
-# DEFECT 1 — has_bash annotation
+# CLI-WRAPPER PREDICATE (#3573) — mirrors health-agentic-audit Step 3
 ##########
-echo "=== has_bash annotation ==="
-assert "a skill with no Bash in allowed-tools reads '(Bash in allowed-tools: no)'" \
-  "$(printf '%s\n' "$agentic_section" \
-     | grep -qF 'demo-plugin/skills/no-bash/SKILL.md (Bash in allowed-tools: no)' && echo true || echo false)"
-assert "a skill WITH Bash in allowed-tools reads '(Bash in allowed-tools: yes)'" \
-  "$(printf '%s\n' "$agentic_section" \
-     | grep -qF 'demo-plugin/skills/has-bash/SKILL.md (Bash in allowed-tools: yes)' && echo true || echo false)"
-# The list ANNOTATES, it does not FILTER: a Bash-less skill must still be listed.
-assert "the Bash-less skill is still listed (annotation, not a filter)" \
-  "$(grep -qF 'demo-plugin/skills/no-bash/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+echo "=== CLI-wrapper INFO list ==="
+assert "a CLI-wrapper skill without a table IS listed" \
+  "$(grep -qF 'demo-plugin/skills/cli-wrapper/SKILL.md (jq)' <<<"$agentic_section" && echo true || echo false)"
+assert "an ordinary skill without a table and without Bash is NOT listed" \
+  "$(! grep -qF 'demo-plugin/skills/no-bash/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+assert "an ordinary skill without a table but WITH Bash is NOT listed" \
+  "$(! grep -qF 'demo-plugin/skills/has-bash/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+assert "a CLI-wrapper skill WITH a table is NOT listed" \
+  "$(! grep -qF 'demo-plugin/skills/cli-wrapper-with-table/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+assert "a majority tool not named in name/description is NOT listed" \
+  "$(! grep -qF 'demo-plugin/skills/majority-unnamed/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+assert "a named tool under half the fenced commands is NOT listed" \
+  "$(! grep -qF 'demo-plugin/skills/named-minority/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
+assert "the report no longer carries the ungated 'missing table' heading" \
+  "$(! grep -qF 'Skills missing Agentic Optimizations table' "$out" && echo true || echo false)"
 
 ##########
-# DEFECT 2 — unanchored `when to use` grep (current behaviour pinned)
+# Unanchored `when to use` grep (current behaviour pinned)
 ##########
 echo "=== when-to-use detection (current behaviour) ==="
 assert "a heading-shaped 'when to use' inside a fence is NOT reported missing (pins fence-blindness)" \
@@ -325,11 +424,11 @@ assert "the cohort section presents itself as data, not a diagnosis" \
   "$(grep -q 'not as a diagnosis' <<<"$cohort_section" && echo true || echo false)"
 
 ##########
-# Structure — the three original headings survive the extraction verbatim
+# Structure — the prompt-facing headings
 ##########
 echo "=== prompt-facing headings ==="
 for heading in \
-  '## Skills missing Agentic Optimizations table:' \
+  '## CLI-wrapper skills without an Agentic Optimizations table (INFO):' \
   '## Skills with stale reviews (>90 days):' \
   '## Skills with missing required sections/frontmatter:' \
   '## Stale-review date distribution'; do
