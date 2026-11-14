@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-05
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: go-feature-flag
 description: GO Feature Flag (GOFF) self-hosted feature flags with OpenFeature integration — config, relay proxy, targeting, rollouts. Use when working with GOFF or flags.goff.yaml.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(goff *), Bash(curl *), Bash(jq *), Bash(docker logs *), Read, Write, Edit, Grep, Glob
 ---
 
 # GO Feature Flag

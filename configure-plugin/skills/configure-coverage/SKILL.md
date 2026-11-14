@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-09-28
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Code coverage: thresholds and reporters for Vitest, Jest, pytest, Rust. Use when setting thresholds, adding Codecov/Coveralls, or wiring lcov/HTML reports."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(npm install *), Bash(uv add *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--threshold <percentage>]"
 argument-hint: "[--check-only] [--fix] [--threshold <percentage>]"
 name: configure-coverage

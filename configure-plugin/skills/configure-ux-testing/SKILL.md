@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-08-25
 reviewed: 2026-06-10
 description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/configure-ux-testing.sh *), Bash(find *), Bash(bun add *), Bash(bunx playwright *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--a11y] [--visual]"
 argument-hint: "[--check-only] [--fix] [--a11y] [--visual]"
 name: configure-ux-testing

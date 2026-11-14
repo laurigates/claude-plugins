@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Test frameworks: Vitest, Jest, pytest, cargo-nextest. Use when setting up test infrastructure, migrating to a modern framework, or validating coverage config."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(bun add *), Bash(npm install *), Bash(npm uninstall *), Bash(uv add *), Bash(grep *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"
 argument-hint: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"
 name: configure-tests

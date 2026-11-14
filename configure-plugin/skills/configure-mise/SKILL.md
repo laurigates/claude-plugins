@@ -1,9 +1,9 @@
 ---
 created: 2026-06-24
-modified: 2026-10-05
+modified: 2026-11-14
 reviewed: 2026-06-24
 description: "mise runtime/tool version manager - mise.toml, backends (pipx/aqua/npm/cargo/go), tasks, env, lockfile. Use when setting up, pinning runtimes/CLI tools, or migrating from asdf/nvm/pyenv/brew/Make."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(mise trust *), Bash(mise install *), Bash(mise lock *), Bash(mise doctor *), Bash(mise ls *), Bash(mise current *), Bash(mise ls-remote *), Bash(mise outdated *), Bash(git add mise.lock *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--global] [--migrate <asdf|nvm|pyenv|brew|makefile>]"
 argument-hint: "[--check-only] [--fix] [--global] [--migrate <source>]"
 name: configure-mise

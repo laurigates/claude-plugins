@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-11-03
 reviewed: 2026-08-25
 description: "Set up formatters (Biome, Ruff format, rustfmt) with pre-commit and CI format checks. Use when a repo has no formatter, replacing Prettier or Black, or unifying monorepo style."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/configure-formatting.sh *), Bash(find *), Bash(npm install *), Bash(npm uninstall *), Bash(bun add *), Bash(uv add *), Bash(uv remove *), Bash(uv run ruff *), Bash(biome format *), Bash(ruff format *), Bash(cargo fmt *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
 argument-hint: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
 name: configure-formatting

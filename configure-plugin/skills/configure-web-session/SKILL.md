@@ -1,7 +1,7 @@
 ---
 name: configure-web-session
 description: "SessionStart hook for Claude Code web sessions to install tools (helm, terraform, gitleaks, just). Use when CI tools fail in remote sessions due to missing binaries."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(chmod +x scripts/install_pkgs.sh *), Bash(grep *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
