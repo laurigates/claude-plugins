@@ -2,9 +2,9 @@
 description: Sync docs with actual skills, commands, and agents. Use when docs are out of sync, updating the skill catalog, or regenerating command reference to fix mismatches.
 args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
-allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
+allowed-tools: Bash(find *), Grep, Glob, Read, Edit, Write, TodoWrite
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: docs-sync
 ---
