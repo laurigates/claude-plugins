@@ -107,18 +107,19 @@ scr="$(stage scripts-skill)"
 run "$scr"
 assert "C1 an interpreter-run bundled script is a SCRIPT row" \
   "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/check.sh INTERP=bash QUOTED=0 COUNT=1 SOURCES=SKILL.md')"
-assert "C2 a quoted invocation is flagged QUOTED=1 and keeps its quotes" \
-  "$(has 'SCRIPT="${CLAUDE_SKILL_DIR}/scripts/report.py" INTERP=python3 QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
+assert "C2 a quoted invocation is flagged QUOTED=1, its path unquoted" \
+  "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/report.py INTERP=python3 QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
 assert "C3 a directly executed bundled script has no INTERP" \
   "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/direct.sh INTERP= QUOTED=0 COUNT=1 SOURCES=SKILL.md')"
 assert "C3b a quoted, directly executed bundled script is recognised" \
-  "$(has 'SCRIPT="${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh" INTERP= QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
+  "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh INTERP= QUOTED=1 COUNT=1 SOURCES=SKILL.md')"
 assert "C4 a command only in REFERENCE.md is listed with that source" \
   "$(has 'HEAD=git SUB=status SUB2= COUNT=1 SOURCES=REFERENCE.md')"
 assert "C5 an inline command in references/** is listed with that source" \
   "$(has 'HEAD=git SUB=log SUB2= COUNT=1 SOURCES=references/deep.md')"
-assert "C6 anchored candidates spell the script path as the body does" \
-  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/report.py" *)')" = true ] && [ "$(has 'CANDIDATE=Bash(${CLAUDE_SKILL_DIR}/scripts/direct.sh *)')" = true ] && echo true || echo false)"
+assert "C6 anchored candidates are unquoted, whatever the body's quoting (#3464 F4)" \
+  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/report.py *)')" = true ] && [ "$(has 'CANDIDATE=Bash(${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(${CLAUDE_SKILL_DIR}/scripts/direct.sh *)')" = true ] && echo true || echo false)"
+assert "C6b no candidate carries a quote" "$(lacks "^CANDIDATE=.*[\"']")"
 assert "C7 never an interpreter wildcard candidate" "$(lacks '^CANDIDATE=Bash\((bash|sh|python3?|node) \*\)$')"
 assert "C8 a git subcommand candidate is narrowed to the subcommand" \
   "$( [ "$(has 'CANDIDATE=Bash(git status *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git log *)')" = true ] && echo true || echo false)"
@@ -137,16 +138,19 @@ assert "D2 a \$(...) body is listed" "$(hasre '^HEAD=git SUB=rev-parse ')"
 assert "D3 the command after an assignment-only segment is listed" "$(hasre '^HEAD=echo ')"
 assert "D4 a ; or && inside quotes splits nothing out" "$(lacks '^HEAD=ls ')"
 assert "D5 gh is narrowed two levels" "$(has 'CANDIDATE=Bash(gh pr create *)')"
-assert "D6 git push is dropped, not offered" \
-  "$( [ "$(has 'DROPPED=Bash(git push *) WHY=outward: pushes to a remote')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(git push')" = true ] && echo true || echo false)"
-assert "D7 git reset is dropped" "$(hasre '^DROPPED=Bash\(git reset \*\) WHY=destructive')"
-assert "D8 rm is dropped" "$(hasre '^DROPPED=Bash\(rm \*\) WHY=destructive')"
-assert "D9 a sudo command is dropped with sudo spelled" "$(hasre '^DROPPED=Bash\(sudo apt-get install \*\) WHY=sudo')"
+# Hazardous commands are review prompts, not drops (#3464 F3): a skill may
+# grant one when running it is what the skill is for.
+assert "D6 git push is a REVIEW row, not a candidate" \
+  "$( [ "$(hasre '^REVIEW=Bash\(git push \*\) WHY=outward: pushes to a remote; grant it only if')" = true ] && [ "$(lacks '^(CANDIDATE|DROPPED)=Bash\(git push')" = true ] && echo true || echo false)"
+assert "D7 git reset is a REVIEW row" "$(hasre '^REVIEW=Bash\(git reset \*\) WHY=destructive')"
+assert "D8 rm is a REVIEW row" "$(hasre '^REVIEW=Bash\(rm \*\) WHY=destructive')"
+assert "D9 a sudo command is a REVIEW row with sudo spelled" "$(hasre '^REVIEW=Bash\(sudo apt-get install \*\) WHY=sudo')"
 assert "D10 inline interpreter code is dropped" "$(hasre '^DROPPED=Bash\(python3 -c \*\) WHY=inline code')"
 assert "D11 a global option before the subcommand is dropped" "$(hasre '^DROPPED=Bash\(git -C \*\) WHY=global option')"
 assert "D9b a linter with subcommands is narrowed to the subcommand" "$( [ "$(has 'CANDIDATE=Bash(ruff check *)')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(ruff \*\)')" = true ] && echo true || echo false)"
-assert "D9c docker run is dropped (any image, any mount)" "$(hasre '^DROPPED=Bash\(docker run \*\) WHY=runs arbitrary code')"
+assert "D9c docker run is a REVIEW row (any image, any mount)" "$(hasre '^REVIEW=Bash\(docker run \*\) WHY=runs arbitrary code in a container')"
 assert "D10b a command runner (xargs) is dropped" "$(hasre '^DROPPED=Bash\(xargs \*\) WHY=runs another command')"
+assert "D10c a runner shown with a fixed command is still dropped as Bash(timeout *)" "$(hasre '^DROPPED=Bash\(timeout \*\) WHY=runs another command')"
 assert "D11a a leading flag that takes no argument is itself a narrow candidate" "$(has 'CANDIDATE=Bash(bun --inspect-brk *)')"
 assert "D11b a bare multi-level CLI is dropped, never Bash(gh *)" \
   "$( [ "$(hasre '^DROPPED=Bash\(gh \*\) WHY=no subcommand')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(gh \*\)')" = true ] && echo true || echo false)"
@@ -156,6 +160,8 @@ assert "D11d a lone word in a prose span is listed but not offered as a grant" \
   "$( [ "$(hasre '^HEAD=type SUB= SUB2= COUNT=1 ')" = true ] && [ "$(hasre '^DROPPED=Bash\(type \*\) WHY=named alone')" = true ] && echo true || echo false)"
 assert "D12 kept candidates still present (positive control)" \
   "$( [ "$(has 'CANDIDATE=Bash(git status *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git commit *)')" = true ] && [ "$(has 'CANDIDATE=Bash(git branch *)')" = true ] && echo true || echo false)"
+dup="$(sed -n 's/^CANDIDATE=//p; s/^\(REVIEW\|DROPPED\)=\(.*\) WHY=.*/\2/p' <<<"$OUT" | sort | uniq -d)"
+assert "D13 no pattern is printed in two of CANDIDATE, REVIEW, DROPPED" "$(is "$dup" "")"
 
 ##########
 # E. --check
@@ -192,28 +198,57 @@ assert "E13 the colon form Bash(git status:*) is matched like the space form" "$
 set_grants "$scr" 'Read, Grep'
 run "$scr" --check
 assert "E14 a skill with no Bash grant passes --check" "$( [ "$RC" = 0 ] && [ "$(field GRANTS)" = 0 ] && echo true || echo false)"
-# A quoted script grant is matched by its unquoted words (#3464 F4).
-set_grants "$scr" 'Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/report.py" *), Bash("${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh" *), Read'
+# A quoted script grant is an ERROR; the unquoted rule is the canonical
+# spelling and matches a quoted invocation (#3464 F4).
+set_grants "$scr" 'Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/report.py" *), Read'
 run "$scr" --check
-assert "E15 a grant in the body's quoted spelling passes --check" "$(is "$RC" 0)"
+assert "E15 a quoted script grant fails as TYPE=quoted_script_grant" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=quoted_script_grant MSG=')" = true ] && echo true || echo false)"
+assert "E15b ... and its words still match the body (no grant_not_in_body)" "$(lacks 'TYPE=grant_not_in_body')"
+set_grants "$scr" 'Bash(${CLAUDE_SKILL_DIR}/scripts/quoted-direct.sh *), Read'
+run "$scr" --check
+assert "E15c an unquoted grant passes against a quoted body invocation" "$(is "$RC" 0)"
 
-# A grant the drop table rejects fails --check even when the body runs it
-# (#3464 F3). The git-workflow fixture shows every one of these commands.
-for g in 'Bash(git push *)' 'Bash(git push --force *)' 'Bash(git reset:*)' 'Bash(rm *)' 'Bash(python3 -c *)' \
-         'Bash(xargs *)' 'Bash(docker run *)' 'Bash(sudo apt-get install *)'; do
+# A hazardous grant the body runs is a WARN, exit 0 (#3464 F3).
+for g in 'Bash(git push *)' 'Bash(git push --force-with-lease *)' 'Bash(git reset:*)' 'Bash(rm *)' \
+         'Bash(docker run *)' 'Bash(sudo apt-get install *)'; do
   set_grants "$gw" "$g, Read"
   run "$gw" --check
-  assert "E16 $g is TYPE=dropped_grant, exit 1" \
-    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=dropped_grant MSG=')" = true ] && echo true || echo false)"
+  assert "E16 $g is a WARN hazardous_grant, exit 0" \
+    "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = WARN ] && [ "$(hasre '^REASON=hazardous_grant: ')" = true ] && [ "$(hasre 'SEVERITY=WARN TYPE=hazardous_grant MSG=')" = true ] && echo true || echo false)"
 done
-set_grants "$gw" 'Bash(git push *), Read'
+assert "E17 a hazardous grant the body runs is not also grant_not_in_body" "$(lacks 'TYPE=grant_not_in_body')"
+assert "E18 WARN output satisfies the contract" "$(validates "$OUT")"
+# A grant that pre-approves arbitrary code is an ERROR, exit 1.
+for g in 'Bash(xargs *)' 'Bash(sudo *)' 'Bash(perl -e *)' 'Bash(timeout 30 *)'; do
+  set_grants "$gw" "$g, Read"
+  run "$gw" --check
+  assert "E16b $g is TYPE=arbitrary_code_grant, exit 1" \
+    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=arbitrary_code_grant MSG=')" = true ] && echo true || echo false)"
+done
+set_grants "$gw" 'Bash(timeout 30 git fetch *), Read'
 run "$gw" --check
-assert "E17 a dropped grant the body runs is not also grant_not_in_body" "$(lacks 'TYPE=grant_not_in_body')"
-assert "E18 dropped_grant output satisfies the contract" "$(validates "$OUT")"
+assert "E16c a runner followed by a fixed command passes" "$(is "$RC" 0)"
+set_grants "$gw" 'Bash(git push *), Bash(xargs *), Read'
+run "$gw" --check
+assert "E16d a mixed ERROR+WARN result is exit 1 with REASON from the ERROR row" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre '^REASON=arbitrary_code_grant: .*\(\+1 more\)$')" = true ] && echo true || echo false)"
+assert "E16e mixed output satisfies the contract" "$(validates "$OUT")"
 # Positive control on the same skill: narrow grants for commands it runs pass.
 set_grants "$gw" 'Bash(git status *), Bash(git commit *), Bash(git branch *), Bash(gh pr create *), Read'
 run "$gw" --check
-assert "E19 narrow grants on the same skill still pass (control)" "$(is "$RC" 0)"
+assert "E19 narrow grants on the same skill still pass (control)" "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = OK ] && echo true || echo false)"
+
+# A multi-level CLI granted with no subcommand is an ERROR (#3464 F2).
+for g in 'Bash(git *)' 'Bash(git:*)' 'Bash(gh *)' 'Bash(docker *)' 'Bash(git -C *)'; do
+  set_grants "$gw" "$g, Read"
+  run "$gw" --check
+  assert "E20 $g is TYPE=no_subcommand, exit 1" \
+    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=no_subcommand MSG=')" = true ] && echo true || echo false)"
+done
+set_grants "$gw" 'Bash(git status *), Read'
+run "$gw" --check
+assert "E21 Bash(git status *) on the same skill passes (pair of E20)" "$(is "$RC" 0)"
 
 ##########
 # G. A lone prose mention never contradicts a candidate (#3464 F1)
@@ -227,21 +262,116 @@ assert "G3 arguments before mention: the command is a candidate" "$(has 'CANDIDA
 assert "G4 ... and not also DROPPED" "$(lacks '^DROPPED=Bash\(identify \*\)')"
 assert "G5 a command only ever named alone is still DROPPED (control)" \
   "$( [ "$(hasre '^DROPPED=Bash\(convert \*\) WHY=named alone')" = true ] && [ "$(lacks '^CANDIDATE=Bash\(convert')" = true ] && echo true || echo false)"
-dup="$(sed -n 's/^CANDIDATE=//p; s/^DROPPED=\(.*\) WHY=.*/\1/p' <<<"$OUT" | sort | uniq -d)"
-assert "G6 no pattern is printed as both CANDIDATE and DROPPED" "$(is "$dup" "")"
+dup="$(sed -n 's/^CANDIDATE=//p; s/^\(REVIEW\|DROPPED\)=\(.*\) WHY=.*/\2/p' <<<"$OUT" | sort | uniq -d)"
+assert "G6 no pattern is printed in two of CANDIDATE, REVIEW, DROPPED" "$(is "$dup" "")"
 
 ##########
-# H. A script grant keeps the body's spelling (#3464 F4)
+# H. A script candidate is unquoted whatever the body's quoting (#3464 F4)
 ##########
 echo "=== H: quoted scripts ==="
-assert "H1 a double-quoted invocation keeps its quotes in the candidate" \
-  "$(has 'CANDIDATE=Bash(bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" *)')"
-assert "H2 the unquoted spelling of the same script is its own candidate" \
-  "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/run.sh *)')"
-assert "H3 a single-quoted invocation keeps its quotes" \
-  "$(has "CANDIDATE=Bash(python3 '\${CLAUDE_SKILL_DIR}/scripts/single.py' *)")"
-assert "H4 each spelling has its own SCRIPT row" "$(is "$(grep -cE '^SCRIPT=.*scripts/run\.sh"? ' <<<"$OUT")" 2)"
+assert "H1 quoted and unquoted invocations share one unquoted candidate" \
+  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/run.sh *)')" = true ] && [ "$(grep -c '^CANDIDATE=.*scripts/run\.sh' <<<"$OUT")" = 1 ] && echo true || echo false)"
+assert "H2 QUOTED= records each spelling on its own SCRIPT row" \
+  "$( [ "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/run.sh INTERP=bash QUOTED=1 COUNT=1 SOURCES=SKILL.md')" = true ] && [ "$(has 'SCRIPT=${CLAUDE_SKILL_DIR}/scripts/run.sh INTERP=bash QUOTED=0 COUNT=1 SOURCES=SKILL.md')" = true ] && echo true || echo false)"
+assert "H3 a single-quoted invocation gets an unquoted candidate" \
+  "$(has 'CANDIDATE=Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/single.py *)')"
+assert "H4 no candidate or SCRIPT row carries a quote" "$(lacks "^(CANDIDATE|SCRIPT)=.*[\"']")"
 assert "H5 edge-case listing satisfies the contract" "$(validates "$OUT")"
+
+##########
+# I. Heads not on the known-command list, in shell-labelled fences (#3464 F1)
+##########
+echo "=== I: unknown heads ==="
+gc="$(stage gcloud-skill)"
+run "$gc"
+assert "I1 a gcloud command is listed, narrowed two levels" "$(has 'HEAD=gcloud SUB=run SUB2=services COUNT=1 SOURCES=SKILL.md')"
+assert "I2 ... with a candidate" "$(has 'CANDIDATE=Bash(gcloud run services *)')"
+assert "I3 a command after a shell keyword is listed; the keyword is not" \
+  "$( [ "$(hasre '^HEAD=gcloud SUB=auth SUB2=print-access-token ')" = true ] && [ "$(lacks '^HEAD=(if|then|fi) ')" = true ] && echo true || echo false)"
+assert "I4 a backslash continuation is one command, a deploy verb a REVIEW row" \
+  "$(hasre '^REVIEW=Bash\(gcloud run deploy \*\) WHY=outward: deploys')"
+assert "I5 a quoted string continued on the next line is not a command" \
+  "$( [ "$(lacks '^HEAD=body ')" = true ] && [ "$(hasre '^HEAD=git SUB=commit ')" = true ] && echo true || echo false)"
+assert "I6 a heredoc body is not a command" \
+  "$( [ "$(lacks '^HEAD=release ')" = true ] && [ "$(hasre '^HEAD=cat ')" = true ] && echo true || echo false)"
+assert "I7 a console prompt line is listed, an output line is not" \
+  "$( [ "$(hasre '^HEAD=mycli ')" = true ] && [ "$(lacks '^HEAD=ready ')" = true ] && echo true || echo false)"
+assert "I8 an unknown head in a prose span stays out of the listing" "$(lacks 'frobnicate')"
+assert "I8b a command after a leading [ test ] is listed" "$(hasre '^HEAD=gcloud SUB=config SUB2=list ')"
+assert "I8c the alternatives of a regex line are not commands" "$(lacks '^HEAD=(fix|chore) ')"
+assert "I8d a key = value line and an array assignment are not commands" "$(lacks '^HEAD=(requires-python|europe-north1-c) ')"
+assert "I9 listing satisfies the contract" "$(validates "$OUT")"
+set_grants "$gc" 'Bash(gcloud run services *), Bash(gcloud auth print-access-token *), Bash(mycli status *), Bash(frobnicate the *), Read'
+run "$gc" --check
+assert "I10 correct grants for unknown heads pass --check, prose span included" "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = OK ] && echo true || echo false)"
+set_grants "$gc" 'Bash(gcloud storage ls *), Read'
+run "$gc" --check
+assert "I11 a gcloud grant the body never shows still fails (control)" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre 'TYPE=grant_not_in_body MSG=Bash\(gcloud storage ls')" = true ] && echo true || echo false)"
+set_grants "$gc" 'Bash(gcloud *), Read'
+run "$gc" --check
+assert "I12 Bash(gcloud *) is TYPE=no_subcommand" "$( [ "$RC" = 1 ] && [ "$(hasre 'TYPE=no_subcommand')" = true ] && echo true || echo false)"
+set_grants "$gc" 'Bash(gcloud run deploy *), Read'
+run "$gc" --check
+assert "I13 a deploy grant the body runs is WARN, exit 0" "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = WARN ] && [ "$(validates "$OUT")" = true ] && echo true || echo false)"
+
+##########
+# J. An unknown head, and commands only in sidecars (#3464 F1)
+##########
+echo "=== J: playwright-cli and sidecars ==="
+pw="$(stage playwright-skill)"
+run "$pw"
+assert "J1 playwright-cli is listed with both lines counted" "$(has 'HEAD=playwright-cli SUB= SUB2= COUNT=2 SOURCES=SKILL.md')"
+assert "J2 ... with a candidate" "$(has 'CANDIDATE=Bash(playwright-cli *)')"
+assert "J3 a command only in a sidecar's bash fence is listed with that source" "$(has 'HEAD=pwsnap SUB= SUB2= COUNT=1 SOURCES=REFERENCE.md')"
+assert "J4 an unknown head in an unlabeled fence stays out of the listing" "$(lacks 'pwreport')"
+set_grants "$pw" 'Bash(playwright-cli open *), Bash(playwright-cli screenshot *), Bash(pwsnap capture *), Bash(pwreport build *), Read'
+run "$pw" --check
+assert "J5 grants for SKILL.md, sidecar-fence and sidecar-unlabeled commands pass" "$(is "$RC" 0)"
+set_grants "$pw" 'Bash(playwright-cli install *), Read'
+run "$pw" --check
+assert "J6 a playwright-cli subcommand the body never shows fails (control)" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre 'TYPE=grant_not_in_body MSG=Bash\(playwright-cli install')" = true ] && echo true || echo false)"
+
+##########
+# K. Table pipes, run-time paths, sudo, runners (#3464 repair round 3)
+##########
+echo "=== K: run-time shapes ==="
+rt="$(stage runtime-skill)"
+run "$rt"
+assert "K1 a command after a table-cell \\| pipe is listed" "$(hasre '^HEAD=wc SUB= SUB2= COUNT=1 ')"
+assert "K2 a script path built by \$(...) is dropped, not a candidate" \
+  "$( [ "$(hasre '^DROPPED=Bash\(bash \$\(git \*\) WHY=built at run time')" = true ] && [ "$(lacks '^CANDIDATE=.*\$\(')" = true ] && echo true || echo false)"
+assert "K3 a script path built by \${{ }} is dropped" "$(hasre '^DROPPED=Bash\(sh \$\{\{ \*\) WHY=built at run time')"
+assert "K4 kept candidates on the same run (control)" \
+  "$( [ "$(has 'CANDIDATE=Bash(find *)')" = true ] && [ "$(hasre '^REVIEW=Bash\(sudo powermetrics \*\) WHY=sudo')" = true ] && echo true || echo false)"
+assert "K5 listing satisfies the contract" "$(validates "$OUT")"
+set_grants "$rt" 'Bash(find *), Bash(wc *), Read'
+run "$rt" --check
+assert "K6 a grant for the command after a table-cell \\| passes" "$(is "$RC" 0)"
+set_grants "$rt" 'Bash(powermetrics *), Read'
+run "$rt" --check
+assert "K7 a grant leaving out the sudo the body shows fails" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre 'TYPE=grant_not_in_body MSG=Bash\(powermetrics')" = true ] && echo true || echo false)"
+set_grants "$rt" 'Bash(sudo powermetrics *), Read'
+run "$rt" --check
+assert "K8 the anchored sudo grant is a WARN, exit 0 (pair of K7)" \
+  "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = WARN ] && [ "$(hasre 'TYPE=hazardous_grant MSG=Bash\(sudo powermetrics')" = true ] && echo true || echo false)"
+set_grants "$rt" 'Bash(timeout 60 ${CLAUDE_SKILL_DIR}/scripts/probe.sh *), Read'
+run "$rt" --check
+assert "K9 a runner before a bundled script is a fixed command, exit 0" "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = OK ] && echo true || echo false)"
+for g in 'Bash(xargs bash *)' 'Bash(sudo sh *)'; do
+  set_grants "$rt" "$g, Read"
+  run "$rt" --check
+  assert "K10 $g is TYPE=arbitrary_code_grant" "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=arbitrary_code_grant ')" = true ] && echo true || echo false)"
+done
+set_grants "$gc" 'Bash(ready to *), Read'
+run "$gc" --check
+assert "K11 a console fence's output line is not a command to grant" \
+  "$( [ "$RC" = 1 ] && [ "$(hasre 'TYPE=grant_not_in_body MSG=Bash\(ready to')" = true ] && echo true || echo false)"
+set_grants "$gc" 'Bash(mycli status *), Read'
+run "$gc" --check
+assert "K12 its prompt line is (pair of K11)" "$(is "$RC" 0)"
 
 ##########
 # F. A missing shared library is exit 2, never a clean or a findings result

@@ -31,4 +31,5 @@ bun --inspect-brk run.ts
 git ls-files | xargs wc -l
 ruff check .
 docker run --rm -v "$(pwd)/docs:/out" img
+timeout 30 git fetch origin
 ```
