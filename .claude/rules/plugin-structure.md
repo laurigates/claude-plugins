@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-09-16
 paths:
   - "**/.claude-plugin/**"
@@ -38,9 +38,10 @@ A skill may ship one or more **dynamic-workflow templates** beside its `SKILL.md
 | Location | `skills/<skill-name>/workflows/` — bundled beside `SKILL.md`, never in `~/.claude/workflows` alone |
 | Name | `<purpose>.workflow.js` |
 | Reachability | **Required**: a `## Workflow harness (template)` section in the sibling `SKILL.md` must reference it. An orphan `.js` is dead weight |
-| Global registration | Only when another harness calls it by name via `workflow('<name>', …)` |
+| `meta` | An `export const meta` literal with a non-empty `name` and `description`, `name` equal to the filename stem (`scripts/check-workflow-js-model.sh`) |
+| Global registration | Only when another harness calls it by name via `workflow('<name>', …)`. The surfaces Claude Code loads by name (`.claude/workflows/`, `~/.claude/workflows/`, a plugin-root `workflows/` directory, a `plugin.json` `workflows` field) are tabled in `.claude/rules/workflow-vs-skill.md` § Layout convention |
 
-Bundling is deliberate: a file in `~/.claude/workflows/` reads as *runnable*, and
+Bundling is deliberate: a registered file reads as *runnable*, and
 these templates are intentionally incomplete — invoking one against empty `args`
 spends real worktree agents (some capable of opening PRs) to discover it was a
 template.

@@ -23,6 +23,7 @@
 #   5.  an unknown argument -> exit 2, nothing scanned
 #   6.  a missing / empty fleet root -> STATUS=OK, exit 0
 #   7.  --module scopes the run
+#   7b. no --fleet-root -> $FOUNDRYVTT_FLEET_ROOT, else the current directory
 #   8.  a derived template with no fleet-policy.toml entry -> ERROR
 #   9.  the repo-local renovate.yml runner (#2708) planted -> ABSENT_PRESENT ERROR
 #   9b. an `absent` entry for a path the scaffold emits -> POLICY_PROBLEM ERROR
@@ -263,6 +264,40 @@ check "7: scoped run exits 0" "0" "$rc"
 check "7: scoped run sees one module" "1" "$(field "$OUT" MODULE_COUNT)"
 check "7: scoped run names only that module" "foundryvtt-fixture-two" \
     "$(field "$OUT" MODULES)"
+
+# --------------------------------------------------------------------------- #
+# 7b. Without --fleet-root the root comes from context (#3308): the
+#     FOUNDRYVTT_FLEET_ROOT env var, else the current directory. It used to be a
+#     hardcoded maintainer checkout path, which on anyone else's machine is a
+#     missing root and therefore a silent STATUS=OK over zero modules (case 6).
+# --------------------------------------------------------------------------- #
+FLEET_REAL="$(cd "$FLEET" && pwd -P)"
+OUT="${WORK}/default-root-env.txt"
+FOUNDRYVTT_FLEET_ROOT="$FLEET" python3 "$CHECKER" --policy "$POLICY" \
+    >"$OUT" 2>"${OUT}.err"
+check "7b: FOUNDRYVTT_FLEET_ROOT supplies the default root" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: env-var root sees both modules" "2" "$(field "$OUT" MODULE_COUNT)"
+
+OUT="${WORK}/default-root-cwd.txt"
+(cd "$FLEET" && env -u FOUNDRYVTT_FLEET_ROOT python3 "$CHECKER" \
+    --policy "$POLICY" >"$OUT" 2>"${OUT}.err")
+check "7b: with no env var the current directory is the root" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: cwd root sees both modules" "2" "$(field "$OUT" MODULE_COUNT)"
+
+# An explicit --fleet-root outranks the env var: point the env var at an empty
+# dir, so an inverted precedence reports zero modules instead of two.
+mkdir -p "${WORK}/env-decoy-fleet"
+OUT="${WORK}/flag-beats-env.txt"
+FOUNDRYVTT_FLEET_ROOT="${WORK}/env-decoy-fleet" python3 "$CHECKER" \
+    --fleet-root "$FLEET" --policy "$POLICY" >"$OUT" 2>"${OUT}.err"
+check "7b: --fleet-root wins over FOUNDRYVTT_FLEET_ROOT" "$FLEET_REAL" \
+    "$(cd "$(field "$OUT" FLEET_ROOT)" 2>/dev/null && pwd -P)"
+check "7b: --fleet-root over the env var sees both modules" "2" \
+    "$(field "$OUT" MODULE_COUNT)"
+check "7b: the help text names no maintainer checkout path" "0" \
+    "$(python3 "$CHECKER" --help | grep -c 'repos/')"
 
 # --------------------------------------------------------------------------- #
 # 8. A template with no policy entry is itself an ERROR

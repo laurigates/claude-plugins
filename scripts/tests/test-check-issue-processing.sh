@@ -16,6 +16,9 @@
 #   H  the failing output satisfies the structured-output contract
 #   I  a prompt that names `gh issue create` only in prose is a filing site
 #   J  a job on the EXEMPT_SITES list is counted as exempt, not checked
+#   K  the session-workflow-capture template without `## Processing` fails
+#   L  a step running scripts/publish-agent-issue.sh is a filing site, and its
+#      env carries the `## Processing` section (#2769)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -176,6 +179,18 @@ run "$tmp/f"
 assert "F feedback template without section exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "F names the feedback template" "$(contains "$OUT" 'TYPE=missing_processing.*issue-format.md')"
 
+# --- K: workflow-capture template without the section ------------------------
+make_project "$tmp/k"
+mkdir -p "$tmp/k/session-plugin/skills/session-workflow-capture/references"
+printf '## What\n## Processing\n- x\n' > "$tmp/k/session-plugin/skills/session-workflow-capture/references/issue-format.md"
+run "$tmp/k"
+assert "K workflow-capture template with section exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "K counts both templates" "$(contains "$OUT" 'ISSUE_TEMPLATES_CHECKED=2')"
+printf '## What\n## Workflow\n' > "$tmp/k/session-plugin/skills/session-workflow-capture/references/issue-format.md"
+run "$tmp/k"
+assert "K workflow-capture template without section exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "K names the workflow-capture template" "$(contains "$OUT" 'TYPE=missing_processing.*session-workflow-capture/references/issue-format.md')"
+
 # --- G: nothing scanned -------------------------------------------------------
 make_project "$tmp/g"
 rm "$tmp/g/.github/workflows/report.yml"
@@ -216,6 +231,39 @@ YAML
 run "$tmp/j"
 assert "J exempt job passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "J exempt job is counted" "$(contains "$OUT" '^SITES_EXEMPT=1$')"
+
+# --- L: a bash step that publishes an agent-written body (#2769) --------------
+# After the split the Claude prompt no longer names `gh issue create`; the
+# filing site is the step that runs scripts/publish-agent-issue.sh, and its
+# `## Processing` text arrives through the step's env. Without this case the
+# check would stop seeing every converted workflow.
+make_project "$tmp/l"
+cat >> "$tmp/l/.github/workflows/report.yml" <<'YAML'
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish
+        env:
+          PROCESSING: |
+            ## Processing
+
+            - **Closes:** next month.
+        run: |
+          bash scripts/publish-agent-issue.sh --repo "$GITHUB_REPOSITORY" \
+            --title "Report" --body-file body.md --processing "$PROCESSING"
+YAML
+run "$tmp/l"
+assert "L publish step with processing passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "L publish step is counted as a site" "$(contains "$OUT" '^SITES_CHECKED=4$')"
+python3 - "$tmp/l/.github/workflows/report.yml" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace("            ## Processing\n\n            - **Closes:** next month.", "            - **Closes:** next month.")
+open(p, "w").write(s)
+PY
+run "$tmp/l"
+assert "L publish step without processing exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "L names the publish site" "$(contains "$OUT" 'TYPE=missing_processing.*report.yml:split:Publish')"
 
 # --- H: structured-output contract --------------------------------------------
 if [ -f "$contract" ]; then

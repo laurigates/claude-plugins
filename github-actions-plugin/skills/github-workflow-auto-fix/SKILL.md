@@ -137,7 +137,7 @@ jobs:
 
       - name: Analyze and fix with Claude
         if: steps.context.outputs.recent_fix_count == '0'
-        uses: anthropics/claude-code-action@v1.0.268
+        uses: anthropics/claude-code-action@v1.0.271
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # One flag per line: scripts/check-workflow-model.sh matches

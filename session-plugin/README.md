@@ -2,8 +2,10 @@
 
 Session bookends for Claude Code: a read-only **spinup** briefing at
 session start, a **wrap** capture pass at session end, a **distill** pass
-for durable learnings, and a **session-end orchestrator** that runs the
-reversible passes at once and asks once for anything outward-facing.
+for durable learnings, a **workflow capture** pass that turns this session's
+Workflow-tool scripts and workflow friction into issues, and a
+**session-end orchestrator** that runs the reversible passes at once and asks
+once for anything outward-facing.
 
 Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/session-plugin-workflow.md)
 (two-speed feedback architecture, decisions D1–D5) and the flow diagram
@@ -15,7 +17,8 @@ Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/s
 |---|---|
 | `session-spinup` | Read-only session-start briefing: open taskwarrior tasks, git state (uncommitted / unpushed / open PRs), optional journal todos |
 | `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, GitHub follow-up issues, and upstream issue/PR candidates (track-for-later or verify-then-file, never blind). Skips anything an open PR/issue already tracks — those resurface via `session-spinup` |
-| `session-end` | Orchestrator: one survey; runs the reversible part of wrap / distill / taskwarrior-sync / blueprint tracker-sync at once, then files feedback issues, then asks **one** question for the rest of the outward-facing items (journal, GitHub filings, `[PROMOTE]` PRs). Never walks the untouched taskwarrior backlog |
+| `session-end` | Orchestrator: one survey; runs the reversible part of wrap / distill / taskwarrior-sync / blueprint tracker-sync at once, files gated workflow-capture issues and feedback issues, then asks **one** question for the rest of the outward-facing items (journal, GitHub filings, `[PROMOTE]` PRs). Never walks the untouched taskwarrior backlog |
+| `session-workflow-capture` | Turns the Workflow-tool scripts this session ran into issues: a reusable pattern becomes a proposal to save or template it (calling repo when repo-specific, the plugins repo when generic), and friction in a workflow becomes a fix request. Generic drafts pass the `check-issue-draft.sh` leak scan and `agent-patterns-plugin:cold-read-gate` before filing; friction in plugin-shipped workflows is filed in `feedback-plugin:feedback-session`'s `session-feedback` shape so its weekly friction review reads it. `--usage` reports how often saved workflows actually run, from the read-only `workflow-capture-survey.sh` collector |
 | `session-distill` | Routes each durable learning from this session to one home — a `.claude/rules/` entry, a justfile recipe, a process capture (project-local `.claude/skills/` or `scripts/`+recipe), or a marketplace plugin PR; driven by the read-only `distill-survey.sh` collector |
 
 `session-end` also references `feedback-plugin:feedback-session` (the
@@ -26,7 +29,7 @@ referenced plugin isn't installed the pass is skipped.
 
 ## Harness compatibility
 
-The four skills carry no `compatibility: claude-code` marker, so harness
+The five skills carry no `compatibility: claude-code` marker, so harness
 adapters that honour that marker list them.
 
 | Harness | Status |
@@ -72,8 +75,8 @@ The Stop nudge is deliberately conservative:
 - stays **silent when the assistant's last message ends with a question
   or proposes a next step** ("Next step", "Want me to", "Should I", …),
   since the session is still mid-flow
-- stays **silent when session-wrap / session-end / session-distill is
-  already in the transcript** — the skill owns the flow; the hook never
+- stays **silent when session-wrap / session-end / session-distill /
+  session-workflow-capture is already in the transcript** — the skill owns the flow; the hook never
   races a pending confirmation
 - requires something to capture into (taskwarrior on PATH, or a
   `.claude/rules/` / justfile surface)

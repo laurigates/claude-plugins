@@ -14,12 +14,16 @@
 # — that convention exists for skill-orchestrated STATUS rollups, and there is no
 # rollup consumer here; the consumer is a prompt.
 #
-# Flagging predicates are unchanged from the inline original. In particular the
-# "Missing Agentic Optimizations" list is NOT gated on `has_bash` — it annotates
-# rather than filters, per `.claude/rules/context-engineering.md` ("**Optional**;
-# keep it where the commands are the payload"), and the summary row in
-# `scheduled-audits.yml` plus the "flagged skills" referent in prompt §2/§3 both
-# depend on the full list.
+# The "Agentic Optimizations" table is OPTIONAL (`.claude/rules/context-engineering.md`
+# § Supersedes: keep it "where the commands are the payload"). So this script no
+# longer lists every skill without one (#3573): it lists only CLI-wrapper skills
+# without one, as an INFO note, using the predicate of
+# `health-plugin:health-agentic-audit` Step 3 — at least half of the skill's fenced
+# shell commands start with the same tool, and that tool is named in the skill's
+# `name` or `description`. "Fenced shell commands" are the non-blank, non-comment,
+# non-continuation lines of ```bash/sh/shell/zsh/console fences, with a leading
+# `$ ` prompt stripped. The workflow prompt reports this list as INFO only; the
+# audit's primary finding is bare CLI commands, which Claude scans for itself.
 #
 # Every `find` prunes `.claude/worktrees` — each agent worktree is a full repo
 # clone, so an unpruned walk is the #2214 timeout class (~26,000 files instead of
@@ -46,16 +50,55 @@ if [ -z "$DATES_FILE" ]; then
 fi
 trap 'rm -f "$DATES_FILE"' EXIT
 
-# Find skills missing Agentic Optimizations table
-MISSING_AGENTIC=""
+# Print "<total> <count> <tool>" for the most common first word among a skill's
+# fenced shell commands; print nothing when it has none. Ties break on the
+# lexically smaller tool so the output is deterministic.
+fenced_tool_stats() {
+  awk '
+    /^[[:space:]]*```/ {
+      if (in_fence) { in_fence = 0; next }
+      lang = $0
+      sub(/^[[:space:]]*`+/, "", lang)
+      sub(/[[:space:]].*$/, "", lang)
+      lang = tolower(lang)
+      shell = (lang == "bash" || lang == "sh" || lang == "shell" || lang == "zsh" || lang == "console")
+      in_fence = 1; cont = 0
+      next
+    }
+    in_fence && shell {
+      line = $0
+      sub(/^[[:space:]]+/, "", line)
+      was_cont = cont
+      cont = (line ~ /[\\]$/)
+      if (was_cont || line == "" || line ~ /^#/) next
+      sub(/^[$][[:space:]]+/, "", line)
+      split(line, w, /[[:space:]]+/)
+      if (w[1] == "") next
+      total++
+      n[w[1]]++
+    }
+    END {
+      best = ""; bc = 0
+      for (t in n) if (n[t] > bc || (n[t] == bc && t < best)) { best = t; bc = n[t] }
+      if (total > 0) print total, bc, best
+    }
+  ' "$1" 2>/dev/null
+}
+
+# Find CLI-wrapper skills without an Agentic Optimizations table (INFO)
+CLI_WRAPPER_NO_TABLE=""
 while IFS= read -r -d '' skill; do
-  if ! grep -qi "agentic optimization" "$skill" 2>/dev/null; then
-    has_bash=$(head -50 "$skill" | grep -m1 "^allowed-tools:" | grep -c "Bash" || true)
-    rel_path="${skill#./}"
-    MISSING_AGENTIC+="- $rel_path (Bash in allowed-tools: $([ "$has_bash" -gt 0 ] && echo yes || echo no))\n"
-  fi
+  grep -qi "agentic optimization" "$skill" 2>/dev/null && continue
+  stats=$(fenced_tool_stats "$skill")
+  [ -n "$stats" ] || continue
+  read -r fence_total fence_top fence_tool <<<"$stats"
+  [ $((fence_top * 2)) -ge "$fence_total" ] || continue
+  skill_meta=$(head -50 "$skill" | grep -E '^(name|description):' || true)
+  grep -qiwF -- "$fence_tool" <<<"$skill_meta" || continue
+  CLI_WRAPPER_NO_TABLE+="- ${skill#./} ($fence_tool)\n"
 done < <(find . -path './.claude/worktrees' -prune -o \
   -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+[ -n "$CLI_WRAPPER_NO_TABLE" ] || CLI_WRAPPER_NO_TABLE="- (none)\n"
 
 # Find stale reviews (>90 days)
 STALE_REVIEWS=""
@@ -99,8 +142,8 @@ TOTAL_SKILLS=$(find . -path './.claude/worktrees' -prune -o \
 {
   echo "Pre-computed data for $TOTAL_SKILLS skills:"
   echo ""
-  echo "## Skills missing Agentic Optimizations table:"
-  echo -e "$MISSING_AGENTIC"
+  echo "## CLI-wrapper skills without an Agentic Optimizations table (INFO):"
+  echo -e "$CLI_WRAPPER_NO_TABLE"
   echo "## Skills with stale reviews (>90 days):"
   echo -e "$STALE_REVIEWS"
   echo "## Stale-review date distribution"

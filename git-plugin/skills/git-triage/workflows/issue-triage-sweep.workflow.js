@@ -1,5 +1,5 @@
 /**
- * issue-triage.workflow.js — a read-only verdict per open issue, across one or
+ * issue-triage-sweep.workflow.js — a read-only verdict per open issue, across one or
  * more repositories, for the backlog sweep in `git-plugin:git-triage`.
  *
  * TEMPLATE, not a script to run verbatim. See the `## Workflow harness

@@ -46,10 +46,10 @@ state_file="$state_dir/$session_id"
 # Skip when an end-of-session skill is already driving the flow this session —
 # either invoked as a slash command (<command-name> tag in the expansion) or
 # via the Skill tool ("skill":"…" in the tool_use input).
-if grep -q 'command-name>[^<]*session-\(wrap\|end\|distill\)' "$transcript" 2>/dev/null; then
+if grep -q 'command-name>[^<]*session-\(wrap\|end\|distill\|workflow-capture\)' "$transcript" 2>/dev/null; then
     exit 0
 fi
-if grep -q '"skill"[[:space:]]*:[[:space:]]*"[^"]*session-\(wrap\|end\|distill\)' "$transcript" 2>/dev/null; then
+if grep -q '"skill"[[:space:]]*:[[:space:]]*"[^"]*session-\(wrap\|end\|distill\|workflow-capture\)' "$transcript" 2>/dev/null; then
     exit 0
 fi
 

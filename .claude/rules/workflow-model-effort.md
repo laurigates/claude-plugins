@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-10-24
+modified: 2026-11-13
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -43,9 +43,10 @@ workflow is a **cost and quality trade**, judged per workflow:
   alias since 2.1.293). The 2026-10 re-evaluation
   (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) rated every invoking
   workflow here *keep* or *needs-test*. The nearest candidates are
-  `release-pr-doc-audit`, `scheduled-audits`, `research-radar` and
-  `skill-splitter` (`plugin-pr-checks` was one until its Claude review was
-  removed, #3199). Each needs a replayed run against the opus output. Lift the
+  `scheduled-audits`, `research-radar` and `skill-splitter`
+  (`plugin-pr-checks` and `release-pr-doc-audit` were candidates until their
+  Claude steps were removed, #3199 and #3205). Each needs a replayed run
+  against the opus output. Lift the
   guard per workflow when a replay passes, not before.
 
 State it plainly when editing: we are not claiming workflows contaminate a
@@ -83,10 +84,12 @@ quality looks off from its declared effort.
 
 | Job shape | Effort | Examples |
 |-----------|--------|----------|
-| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `scheduled-audits`, `release-pr-doc-audit`, `skill-splitter` |
+| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `scheduled-audits`, `skill-splitter` |
 | Structured triage / transformation with light judgment | `medium` | `changelog-review`, `obsidian-cli-changelog`, `research-radar` |
 | Open-ended reasoning (diagnose-and-fix, merge-intent reconciliation) | `medium` | `github-workflow-auto-fix`, `auto-resolve-conflicts` |
 | Interactive / human-facing | `medium` (never `low`; no `--max-turns` cap) | `claude` (@mentions) |
+
+A green run at the chosen effort does not show that effort was needed: effort is a credence good, and arXiv 2610.34491 measures its counterfactual effect on agent tasks for that reason. When raising a workflow's effort, or choosing one off this table's default, replay a few recent runs one level lower and record the pass and cost delta in the workflow's Rationale cell.
 
 `--max-turns` bounds tool-call I/O, not reasoning depth — effort is the depth/cost lever. Re-check the cap when moving a workflow to Fable 5.1: it runs longer agentic turns, so a cap tuned on Opus 4.x can truncate a job that was completing; when a run exits on `max_turns`, use `ai-review-max-turns` (the `is_error` discriminator) before treating it as a task failure.
 
@@ -99,7 +102,6 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 | Workflow | Model + effort | Rationale |
 |----------|----------------|-----------|
 | `scheduled-audits.yml` | `opus` / `low` | Data pre-computed; Claude only formats |
-| `release-pr-doc-audit.yml` | `opus` / `low` | Mechanical compliance; turns are for file reads |
 | `skill-splitter.yml` | `opus` / `low` | Mechanical content split |
 | `research-radar.yml` | `opus` / `medium` | Judging paper relevance is real reasoning |
 | `golden-set-evaluation.yml` | `opus` / `medium` | Cross-model sweep; interpreting the delta is real judgment (`--max-turns 90`, #2688) |

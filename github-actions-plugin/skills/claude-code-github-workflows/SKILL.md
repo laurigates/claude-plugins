@@ -73,7 +73,7 @@ jobs:
           fetch-depth: 1
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1.0.268
+        uses: anthropics/claude-code-action@v1.0.271
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -101,7 +101,7 @@ output:
 
 ```yaml
 - id: scan
-  uses: anthropics/claude-code-action@v1.0.268
+  uses: anthropics/claude-code-action@v1.0.271
   with:
     claude_args: >-
       --json-schema '{"type":"object","properties":{"total_issues":{"type":"integer"}},"required":["total_issues"]}'

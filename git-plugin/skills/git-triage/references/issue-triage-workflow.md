@@ -1,6 +1,6 @@
 # The issue-triage workflow template
 
-`workflows/issue-triage.workflow.js` is a `Workflow` template for a backlog
+`workflows/issue-triage-sweep.workflow.js` is a `Workflow` template for a backlog
 sweep that spans more issues, or more repositories, than one session should
 read in sequence. The framing (what to adapt, what to preserve, the agent
 budget) is the `## Workflow harness (template)` section of

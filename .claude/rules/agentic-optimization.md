@@ -34,7 +34,7 @@ When creating skills for CLI tools, optimize for AI agent consumption.
 | Tool | Compact Flag | Description |
 |------|--------------|-------------|
 | Biome | `--reporter=github` | file:line format |
-| ESLint | `--format=unix` | One line per issue |
+| ESLint | `--format=stylish` | Core default, issues grouped per file |
 | Ruff | `--output-format=github` | GitHub annotations |
 
 ### General

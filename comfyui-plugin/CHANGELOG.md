@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.3...comfyui-plugin-v1.15.4) (2026-11-14)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** report Deleted reason and serialise registry-health runs ([#3672](https://github.com/laurigates/claude-plugins/issues/3672)) ([3aaa56c](https://github.com/laurigates/claude-plugins/commit/3aaa56ce5e317dc26d67bd44b6a0d08949657f8e)), closes [#3671](https://github.com/laurigates/claude-plugins/issues/3671)
+
 ## [1.15.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.2...comfyui-plugin-v1.15.3) (2026-11-09)
 
 

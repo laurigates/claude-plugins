@@ -1,6 +1,7 @@
 # Issue lifecycle: machine-filed and feedback issues
 
-Workflows and the `feedback-session` skill file issues on a schedule. Each one
+Workflows and the `feedback-session` and `session-workflow-capture` skills
+file issues on a schedule or at session end. Each one
 needs a consumer and a close rule, or it stays open and the daily
 issue-resolving Routine either skips it or asks about it (#3346). This page is
 the single statement of who processes each type, what "completed" means, and
@@ -17,6 +18,7 @@ each issue stands alone, so none is grouped under an epic.
 |---|---|---|---|---|
 | `session-feedback` | `feedback-session` ([issue format](../feedback-plugin/skills/feedback-session/references/issue-format.md)) | `friction-learner` reads it weekly as corroboration; the fix comes from the daily Routine or Lauri | A PR that fixes it has merged, or it was closed with a stated reason | When that PR merges (`Fixes #N`) |
 | `positive-feedback` | `feedback-session` | `friction-learner` Step 0 ([agent](../feedback-plugin/agents/friction-learner.md)) | A weekly `friction-learner` PR cites it under `## Fast-loop signal` | `friction-learner` closes it after citing it. It keeps reading positive issues in any state from the last 6 months, so a closed one still guards the behaviour it praises |
+| `workflow-capture` | `session-workflow-capture` ([issue format](../session-plugin/skills/session-workflow-capture/references/issue-format.md)), run by `session-end` or by hand | The daily Routine or Lauri: a pattern issue is a proposal to save or template a Workflow script, a friction issue a fix request for a workflow saved in this repo | A PR adding or changing the workflow has merged, or it was closed with a stated reason | When that PR merges (`Fixes #N`) |
 | `research-radar` | [`research-radar.yml`](../.github/workflows/research-radar.yml) (weekly) | The daily Routine or Lauri | Every candidate has a verdict comment (adopt, or reject with a one-line reason), and every adopted candidate is merged, one PR per target file | When the last adopted candidate merges. Radars are not superseded: each week lists different papers |
 | `agentic-audit`, `infra-compliance`, `blueprint-health`, `audit-liveness`, `docs-index` | [`scheduled-audits.yml`](../.github/workflows/scheduled-audits.yml) (monthly) | Lauri, or an agent asked to act on it | Superseded by the next month's report | The generator closes it when the next month's report opens, and that report carries forward the items still open. A next run that finds nothing closes it too |
 | `golden-set-eval` | [`golden-set-evaluation.yml`](../.github/workflows/golden-set-evaluation.yml) (monthly) | Lauri | Superseded by the next month's sweep | As above |

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.30.1...code-quality-plugin-v1.30.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** replace eslint --format=unix with the core stylish formatter ([#3647](https://github.com/laurigates/claude-plugins/issues/3647)) ([99a8dc4](https://github.com/laurigates/claude-plugins/commit/99a8dc405f43573539bd2356c3fe7a9d4136737c)), closes [#3641](https://github.com/laurigates/claude-plugins/issues/3641)
+* **code-quality-plugin:** skip tests/test-* files in the preflight cue hook ([#3625](https://github.com/laurigates/claude-plugins/issues/3625)) ([27960e0](https://github.com/laurigates/claude-plugins/commit/27960e0c282788eceff1e7e14b78de24fd7f5e24)), closes [#3615](https://github.com/laurigates/claude-plugins/issues/3615)
+
 ## [1.30.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.30.0...code-quality-plugin-v1.30.1) (2026-11-13)
 
 

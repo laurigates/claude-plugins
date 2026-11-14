@@ -7,6 +7,7 @@
 | Which repo do the branch, dirt and PR rows describe? | `GIT_SCOPE=` + `GIT_CONFIDENCE=` in the `GIT` section (`PRS_SCOPE=` / `PRS_CONFIDENCE=` mirror them). `repo` ⇒ the checkout at `PROJECT_DIR`. `workspace-root` ⇒ an undeclared outer repo contains that checkout and the rows describe **it** — name `GIT_ROOT=` when reporting them, and say the cwd sits inside `GIT_NESTED_REPO=`. Never re-run from the workspace root: the collector already did |
 | The cwd is a workspace root holding several checkouts (`IN_GIT=false`) | Read the `CHECKOUTS` and `CHECKOUT_PRS` sections: one `CHECKOUT_<n>_` row set per direct child checkout (#3435). Do not re-run the survey inside each checkout |
 | Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
+| Workflow capture qualify signal (candidate and friction counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |
 | Mark task done by UUID | `task <uuid> done` |
