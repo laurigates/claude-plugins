@@ -53,8 +53,13 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
                                run|exec, ...): grant it only if running it is
                                what the skill is for
   DROPPED=<pattern> WHY=<why>  never grantable as written: inline interpreter
-                               code (python3 -c), a command runner with no fixed
-                               command (xargs, env, timeout), a global option
+                               code (python3 -c, or the inline letter inside an
+                               option cluster: zsh -fc, bash -lc; code read
+                               from stdin: python3 -, sh -s), interpreter
+                               options with no script (bash -e alone; bash -e
+                               script.sh is a candidate), a command runner
+                               with no fixed command (xargs, env, timeout), a
+                               global option
                                before the subcommand (git -C <dir> ...), a
                                multi-level CLI with no subcommand shown (a lone
                                `gh`), a <placeholder> path, a word built at run
@@ -83,12 +88,22 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
   broad_shell_grant     Bash(*) or an interpreter wildcard remains (the lint's
                         classifier, scripts/lib/allowed_tools.py)
   arbitrary_code_grant  a grant that pre-approves arbitrary code the way an
-                        interpreter wildcard does: inline-code flags
-                        (python3 -c, bash -c, node -e, perl -e, ruby -e) or a
+                        interpreter wildcard does: an inline-code flag, alone
+                        or inside a single-dash option cluster (c for sh,
+                        bash, zsh, python, python3; e or p for node; e or E
+                        for perl; e for ruby: Bash(zsh -fc *),
+                        Bash(bash -lc *), Bash(perl -ne *)), a stdin form
+                        (`-` for any of them, s for the shells:
+                        Bash(python3 - *), Bash(sh -s *)), interpreter
+                        options with no script after them (Bash(bash -e *)
+                        admits `bash -e -c '<code>'`; an option that prints
+                        and exits, such as --version, ends the check), a
                         command runner with no fixed command after it (xargs,
                         env, timeout, nohup, watch, eval, exec, sudo, nice,
-                        time), or a runner before a bare interpreter
-                        (Bash(xargs bash *))
+                        time), or a runner before any of these
+                        (Bash(xargs bash *)). The listing drops the same
+                        patterns, from the same table
+                        (INLINE_LETTERS), so it never offers one
   no_subcommand         a multi-level CLI whose subcommands differ in hazard
                         (git gh docker podman kubectl helm terraform tofu npm
                         pnpm yarn bun cargo uv gcloud aws az) granted with no
@@ -223,18 +238,38 @@ TWO_LEVEL = {
     "git": {"stash", "remote", "worktree", "submodule"},
 }
 INTERPRETERS = {"bash", "sh", "zsh", "python", "python3", "node"}
-INLINE_FLAGS = {"-c", "-e", "-p", "--eval", "-"}
-# Inline-code forms that pre-approve arbitrary code (#3464 F3).
-INLINE_CODE = {
-    "bash": {"-c"},
-    "sh": {"-c"},
-    "zsh": {"-c"},
-    "python": {"-c"},
-    "python3": {"-c"},
-    "node": {"-e", "-p", "--eval", "--print"},
-    "perl": {"-e", "-E"},
-    "ruby": {"-e"},
+# Inline-code forms that pre-approve arbitrary code (#3464 F3, round 4 R1/R2):
+# the letters that, anywhere in a single-dash option cluster, make the
+# interpreter run code given on the command line or read from stdin
+# (`bash -lc`, `zsh -fc`, `sh -ec`, `bash -s`, `perl -ne`, `node -pe`). One
+# table serves the listing (grant_words) and --check (grant_class), so the
+# listing drops exactly what --check rejects. `bash -e` (errexit) is not here.
+INLINE_LETTERS = {
+    "bash": "cs",
+    "sh": "cs",
+    "zsh": "cs",
+    "python": "c",
+    "python3": "c",
+    "node": "ep",
+    "perl": "eE",
+    "ruby": "e",
 }
+INLINE_LONG = {"node": {"--eval", "--print"}}
+CLUSTER = re.compile(r"^-[A-Za-z]+$")
+# Options after which the interpreter prints and exits before it runs any code
+# (checked here: bash 5.2, Python 3.13, node 22, perl 5), so a grant ending in
+# one is not open-ended. `bash -n` is not one: `bash -n +n -c 'cmd'` runs cmd.
+EXITING = {"--version", "--help"}
+EXITING_SHORT = {
+    "python": {"-V", "-h"},
+    "python3": {"-V", "-h"},
+    "node": {"-v", "-h"},
+    "perl": {"-v"},
+}
+OPTIONS_ONLY = (
+    "interpreter options with no script: Bash(%s *) also admits the "
+    "interpreter's inline-code flag (-c, -e) after them"
+)
 RUNNERS = {
     "xargs",
     "env",
@@ -644,18 +679,53 @@ def head_name(word: str) -> str:
     return word
 
 
+def inline_flag(interp: str, word: str) -> bool:
+    """`word` makes `interp` run inline or stdin code: `-c`, `-lc`, `-`, `-s`, `-pe`."""
+    if word == "-" or word in INLINE_LONG.get(interp, ()):
+        return True
+    letters = INLINE_LETTERS.get(interp, "")
+    return bool(CLUSTER.match(word)) and any(ch in letters for ch in word[1:])
+
+
+def interpreter_scan(interp: str, rest: list[str]) -> tuple[int, str]:
+    """Read an interpreter's words up to its script.
+
+    Returns (n, kind): kind is "inline" when rest[n - 1] is an inline-code or
+    stdin flag, "operand" when rest[:n] ends at the script (or python's
+    `-m <module>`) or at an option that prints and exits (`--version`), and
+    "options" when every word is an option (n = len(rest)). An option that
+    takes an argument other than `-m` is not known, so in
+    `bash -o pipefail x.sh` the operand read is `pipefail`.
+    """
+    i = 0
+    while i < len(rest):
+        word = rest[i]
+        if inline_flag(interp, word):
+            return i + 1, "inline"
+        if word in EXITING or word in EXITING_SHORT.get(interp, ()):
+            return i + 1, "operand"
+        if not word.startswith("-"):
+            return i + 1, "operand"
+        if word == "-m" and interp.startswith("python") and i + 1 < len(rest):
+            return i + 2, "operand"
+        i += 1
+    return len(rest), "options"
+
+
 def grant_words(toks: list[str]) -> tuple[list[str], str | None]:
     """The words a candidate grant pins, and a reason when it can never be granted."""
     head = toks[0]
-    if head_name(head) in INTERPRETERS:
+    interp = head_name(head)
+    if interp in INLINE_LETTERS:
         if len(toks) == 1:
             return [head], "bare interpreter: with no script it reads code from stdin"
-        t1 = toks[1]
-        if t1 in INLINE_FLAGS:
-            return [head, t1], "inline code: a prefix grant on it admits arbitrary code"
-        if t1 == "-m" and len(toks) > 2:
-            return [head, t1, toks[2]], None
-        return [head, t1], None
+        n, kind = interpreter_scan(interp, toks[1:])
+        words = toks[: n + 1]
+        if kind == "inline":
+            return words, "inline code: a prefix grant on it admits arbitrary code"
+        if kind == "options":
+            return words, OPTIONS_ONLY % " ".join(words)
+        return words, None
     if head in MULTI_LEVEL:
         if len(toks) == 1:
             return [head], NO_SUBCOMMAND % head
@@ -698,16 +768,18 @@ def _runner_arg(word: str) -> bool:
 def grant_class(words: list[str]) -> tuple[str, str] | None:
     """(ARB|HAZ, why) for a grant's words, or None when they are unremarkable."""
     head, rest = head_name(words[0]), words[1:]
-    if head in INTERPRETERS and not rest:
-        return ARB, "interpreter wildcard: Bash(%s *) admits %s -c '<any code>'" % (
-            head,
-            head,
-        )
-    if head in INLINE_CODE and rest and rest[0] in INLINE_CODE[head]:
-        return ARB, "inline code: Bash(%s %s *) runs any code it is given" % (
-            head,
-            rest[0],
-        )
+    if head in INLINE_LETTERS:
+        if not rest:
+            return ARB, (
+                "interpreter wildcard: Bash(%s *) admits %s -c '<any code>'"
+                % (head, head)
+            )
+        n, kind = interpreter_scan(head, rest)
+        shown = " ".join([head] + rest[:n])
+        if kind == "inline":
+            return ARB, "inline code: Bash(%s *) runs any code it is given" % shown
+        if kind == "options":
+            return ARB, OPTIONS_ONLY % shown
     if head in RUNNERS:
         i = 0
         while i < len(rest) and _runner_arg(rest[i]):

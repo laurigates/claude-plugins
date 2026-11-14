@@ -374,6 +374,59 @@ run "$gc" --check
 assert "K12 its prompt line is (pair of K11)" "$(is "$RC" 0)"
 
 ##########
+# L. Inline code in an option cluster, stdin forms, option-only interpreter
+#    words; one per-interpreter table for listing and --check (#3464 round 4)
+##########
+echo "=== L: interpreter flags ==="
+ifl="$(stage interp-flags)"
+run "$ifl"
+assert "L0 listing exits 0" "$(is "$RC" 0)"
+for p in 'zsh -fc' 'bash -lc' 'sh -ec' 'zsh -f -c' 'sh -s' 'bash -s' 'python3 -' 'perl -ne' 'node -pe'; do
+  # Fixed-string matches: the patterns hold regex metacharacters (`-`, `*`).
+  dropped=false; offered=false
+  grep -qF -- "DROPPED=Bash($p *) WHY=inline code" <<<"$OUT" && dropped=true
+  grep -qF -- "CANDIDATE=Bash($p " <<<"$OUT" && offered=true
+  assert "L1 Bash($p *) is DROPPED as inline code, never a CANDIDATE" \
+    "$( [ "$dropped" = true ] && [ "$offered" = false ] && echo true || echo false)"
+done
+assert "L2 bash -e script.sh (errexit) is a candidate pinned to its script" "$(has 'CANDIDATE=Bash(bash -e script.sh *)')"
+assert "L3 bash -e is never DROPPED as inline code" "$(lacks '^DROPPED=Bash\(bash -e \*\) WHY=inline code')"
+assert "L4 a lone bash -e is DROPPED for having no script, and says so" \
+  "$(hasre '^DROPPED=Bash\(bash -e \*\) WHY=interpreter options with no script')"
+assert "L5 near misses stay candidates (control)" \
+  "$( [ "$(has 'CANDIDATE=Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/x.py *)')" = true ] && [ "$(has 'CANDIDATE=Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/report.py *)')" = true ] && [ "$(has 'CANDIDATE=Bash(node --version *)')" = true ] && echo true || echo false)"
+assert "L6 listing satisfies the contract" "$(validates "$OUT")"
+dup="$(sed -n 's/^CANDIDATE=//p; s/^\(REVIEW\|DROPPED\)=\(.*\) WHY=.*/\2/p' <<<"$OUT" | sort | uniq -d)"
+assert "L7 no pattern is printed in two of CANDIDATE, REVIEW, DROPPED" "$(is "$dup" "")"
+# The listing drops exactly what --check rejects: every inline-code or
+# option-only DROPPED row, granted, is an arbitrary_code_grant ERROR.
+listing="$OUT"
+drops="$(sed -n 's/^DROPPED=\(Bash(.*)\) WHY=\(inline code\|interpreter options\).*/\1/p' <<<"$listing")"
+assert "L8 the sweep below has rows to check (positive control)" "$(is "$(grep -c . <<<"$drops")" 10)"
+while IFS= read -r g; do
+  set_grants "$ifl" "$g, Read"
+  run "$ifl" --check
+  assert "L9 listed drop $g is rejected by --check as arbitrary_code_grant" \
+    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=arbitrary_code_grant ')" = true ] && echo true || echo false)"
+done <<<"$drops"
+for g in 'Bash(bash -lc *)' 'Bash(/bin/zsh -fc *)' 'Bash(sh -ec *)' 'Bash(env bash -lc *)' 'Bash(perl -lne *)'; do
+  set_grants "$ifl" "$g, Read"
+  run "$ifl" --check
+  assert "L10 $g is TYPE=arbitrary_code_grant, exit 1" \
+    "$( [ "$RC" = 1 ] && [ "$(hasre 'SEVERITY=ERROR TYPE=arbitrary_code_grant ')" = true ] && echo true || echo false)"
+done
+cands="$(sed -n 's/^CANDIDATE=//p' <<<"$listing" | paste -sd, -)"
+set_grants "$ifl" "$cands, Read"
+run "$ifl" --check
+assert "L11 every listed candidate, granted together, passes --check (pair of L9)" \
+  "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = OK ] && echo true || echo false)"
+for g in 'Bash(bash -e script.sh *)' 'Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *)' 'Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/x.py *)' 'Bash(node --version *)'; do
+  set_grants "$ifl" "$g, Read"
+  run "$ifl" --check
+  assert "L12 near miss $g passes --check" "$( [ "$RC" = 0 ] && [ "$(field STATUS)" = OK ] && echo true || echo false)"
+done
+
+##########
 # F. A missing shared library is exit 2, never a clean or a findings result
 ##########
 echo "=== F: missing library ==="
