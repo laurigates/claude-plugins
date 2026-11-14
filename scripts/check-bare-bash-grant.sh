@@ -204,7 +204,7 @@ for key in sorted(hits):
                        "grants %s; list the commands the skill runs as Bash(<command> *)" % token))
     elif key in base:
         warns.append((kind, path, "",
-                      "grants %s, held by the baseline until the #3464 migration" % token))
+                      "grants %s, held by the baseline until it is migrated (#3668)" % token))
     else:
         errors.append(("new_hit", path, kind,
                        "grants %s, not in the baseline; list the commands the skill runs "

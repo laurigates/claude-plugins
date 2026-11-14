@@ -2,115 +2,14 @@
 # path<TAB>type<TAB>token: full-shell allowed-tools grants that predate
 # the lint and wait for the #3464 migration. Entries may only be removed;
 # rewrite with --update-baseline, which never adds one.
-agent-patterns-plugin/skills/agent-cli-worktree-safety/SKILL.md	bare_bash	Bash
-agent-patterns-plugin/skills/mcp-code-execution/SKILL.md	bare_bash	Bash
-agent-patterns-plugin/skills/plugin-settings/SKILL.md	bare_bash	Bash
 agent-patterns-plugin/skills/tool-result-traps/SKILL.md	broad_shell_grant	Bash(python3 *)
-blueprint-plugin/skills/adr-relationships/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-adr-list/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-adr-validate/SKILL.md	bare_bash	Bash
 blueprint-plugin/skills/blueprint-autonomy-level3/SKILL.md	broad_shell_grant	Bash(bash *)
-blueprint-plugin/skills/blueprint-autopilot/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-claude-md/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-curate-docs/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-derive-plans/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-derive-rules/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-derive-tests/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-development/SKILL.md	bare_bash	Bash
 blueprint-plugin/skills/blueprint-docs-currency/SKILL.md	broad_shell_grant	Bash(bash *)
-blueprint-plugin/skills/blueprint-docs-list/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-execute/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-feature-tracker-status/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-feature-tracker-sync/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-generate-rules/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-init/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-migration/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-promote/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-prp-create/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-prp-execute/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-rules/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-status/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-story-audit/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-story-reconcile/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-sync-ids/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-sync/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-upgrade/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/blueprint-work-order/SKILL.md	bare_bash	Bash
 blueprint-plugin/skills/blueprint-workspace-scan/SKILL.md	broad_shell_grant	Bash(bash *)
-blueprint-plugin/skills/document-detection/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/document-linking/SKILL.md	bare_bash	Bash
-blueprint-plugin/skills/feature-tracking/SKILL.md	bare_bash	Bash
-cloud-plugin/skills/gcp-throwaway-vm/SKILL.md	bare_bash	Bash
-code-quality-plugin/skills/bulk-sweep-classify/SKILL.md	bare_bash	Bash
-code-quality-plugin/skills/code-context-leakage/SKILL.md	bare_bash	Bash
 code-quality-plugin/skills/code-dep-audit/SKILL.md	broad_shell_grant	Bash(bash *)
-code-quality-plugin/skills/code-derived-facts/SKILL.md	bare_bash	Bash
 code-quality-plugin/skills/code-hidden-failures/SKILL.md	broad_shell_grant	Bash(bash *)
-code-quality-plugin/skills/code-license-position/SKILL.md	bare_bash	Bash
-code-quality-plugin/skills/code-lint/SKILL.md	bare_bash	Bash
-code-quality-plugin/skills/code-scaffold-backport/SKILL.md	bare_bash	Bash
-code-quality-plugin/skills/debugging-methodology/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-cli/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-corpus-validation/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-debug-preview/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-image-utils/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-metadata/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-node/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-registry-lifecycle/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-subgraphs-app-mode/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-workflow-json/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfy-workflow-layout/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfyui-node-authoring/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfyui-node-scaffold/SKILL.md	bare_bash	Bash
-comfyui-plugin/skills/comfyui-pack-live-smoke/SKILL.md	bare_bash	Bash
-communication-plugin/skills/google-chat-formatting/SKILL.md	bare_bash	Bash
-component-patterns-plugin/skills/components-version-badge/SKILL.md	bare_bash	Bash
-component-patterns-plugin/skills/version-badge-pattern/SKILL.md	bare_bash	Bash
-configure-plugin/skills/ci-workflows/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-all/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-api-tests/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-cache-busting/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-coverage/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-dead-code/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-docs/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-editor/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-feature-flags/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-formatting/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-github-pages/SKILL.md	bare_bash	Bash
 configure-plugin/skills/configure-instrumentation/SKILL.md	broad_shell_grant	Bash(bash *)
-configure-plugin/skills/configure-integration-tests/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-justfile/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-linting/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-load-tests/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-mcp/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-memory-profiling/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-mise/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-package-management/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-pre-commit/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-readme/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-release-please/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-security/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-select/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-sentry/SKILL.md	bare_bash	Bash
 configure-plugin/skills/configure-status/SKILL.md	broad_shell_grant	Bash(bash *)
-configure-plugin/skills/configure-surface/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-tests/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-ux-testing/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-web-session/SKILL.md	bare_bash	Bash
-configure-plugin/skills/configure-workflows/SKILL.md	bare_bash	Bash
-configure-plugin/skills/go-feature-flag/SKILL.md	bare_bash	Bash
-configure-plugin/skills/openfeature/SKILL.md	bare_bash	Bash
-container-plugin/skills/container-development/SKILL.md	bare_bash	Bash
-container-plugin/skills/go-containers/SKILL.md	bare_bash	Bash
-container-plugin/skills/nodejs-containers/SKILL.md	bare_bash	Bash
-container-plugin/skills/python-containers/SKILL.md	bare_bash	Bash
-container-plugin/skills/skaffold-filesync/SKILL.md	bare_bash	Bash
-container-plugin/skills/skaffold-orbstack/SKILL.md	bare_bash	Bash
-container-plugin/skills/skaffold-testing/SKILL.md	bare_bash	Bash
-css-plugin/skills/lightning-css/SKILL.md	bare_bash	Bash
-css-plugin/skills/unocss/SKILL.md	bare_bash	Bash
-documentation-plugin/skills/docs-latex/SKILL.md	bare_bash	Bash
-documentation-plugin/skills/docs-sync/SKILL.md	bare_bash	Bash
 documentation-plugin/skills/public-export-sanitization/SKILL.md	broad_shell_grant	Bash(bash *)
 evaluate-plugin/skills/evaluate-context-engineering/SKILL.md	broad_shell_grant	Bash(bash *)
 evaluate-plugin/skills/evaluate-context-engineering/SKILL.md	broad_shell_grant	Bash(python3 *)
@@ -128,101 +27,33 @@ finops-plugin/skills/finops-overview/SKILL.md	broad_shell_grant	Bash(bash *)
 finops-plugin/skills/finops-waste/SKILL.md	broad_shell_grant	Bash(bash *)
 finops-plugin/skills/finops-workflows/SKILL.md	broad_shell_grant	Bash(bash *)
 finops-plugin/skills/github-actions-finops/SKILL.md	broad_shell_grant	Bash(bash *)
-foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	bare_bash	Bash
-foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	bare_bash	Bash
-git-plugin/skills/git-branch-pr-workflow/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-commit-push-pr/SKILL.md	broad_shell_grant	Bash(python3 *)
-git-plugin/skills/git-commit-workflow/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-coworker-check/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-derive-docs/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-fork-workflow/SKILL.md	broad_shell_grant	Bash(bash *)
-git-plugin/skills/git-merge-driver/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-merge-hazards/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-pr-feedback/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-pr-sync-check/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-pr/SKILL.md	broad_shell_grant	Bash(bash *)
-git-plugin/skills/git-rebase-patterns/SKILL.md	bare_bash	Bash
-git-plugin/skills/git-repo-detection/SKILL.md	bare_bash	Bash
-git-plugin/skills/git-security-checks/SKILL.md	bare_bash	Bash
-git-plugin/skills/git-stacked-prs/SKILL.md	bare_bash	Bash
 git-plugin/skills/git-triage/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-triage/SKILL.md	broad_shell_grant	Bash(python3 *)
 git-plugin/skills/git-upstream-pr-diverged/SKILL.md	broad_shell_grant	Bash(bash *)
 git-plugin/skills/git-upstream-pr-diverged/SKILL.md	broad_shell_grant	Bash(python3 *)
-git-plugin/skills/github-issue-autodetect/SKILL.md	bare_bash	Bash
-git-plugin/skills/github-labels/SKILL.md	bare_bash	Bash
-git-plugin/skills/release-please-configuration/SKILL.md	bare_bash	Bash
-git-plugin/skills/release-please-pr-workflow/SKILL.md	bare_bash	Bash
-git-plugin/skills/upstream-pr-contribution/SKILL.md	bare_bash	Bash
-git-plugin/skills/worktree-stale-base-merge/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/ai-review-max-turns/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/github-actions-auth-security/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/github-actions-inspection/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/github-actions-mcp-config/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/github-issue-search/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/github-social-preview/SKILL.md	bare_bash	Bash
-github-actions-plugin/skills/multirepo-ci-cd/SKILL.md	bare_bash	Bash
 health-plugin/skills/health-skill-audit/SKILL.md	broad_shell_grant	Bash(python3 *)
 home-assistant-plugin/skills/ha-validate/SKILL.md	broad_shell_grant	Bash(python3 *)
 hooks-plugin/skills/hooks-configuration/SKILL.md	broad_shell_grant	Bash(bash *)
-hooks-plugin/skills/hooks-permission-request-hook/SKILL.md	bare_bash	Bash
-hooks-plugin/skills/hooks-session-end-issue-hook/SKILL.md	bare_bash	Bash
-hooks-plugin/skills/hooks-session-start-hook/SKILL.md	bare_bash	Bash
-kernel-plugin/skills/kernel-list-report/SKILL.md	bare_bash	Bash
-kernel-plugin/skills/kernel-lore-search/SKILL.md	bare_bash	Bash
-kernel-plugin/skills/kernel-repro-harness/SKILL.md	bare_bash	Bash
-kernel-plugin/skills/kernel-source-history/SKILL.md	bare_bash	Bash
 kitty-plugin/skills/kitty-show-image/SKILL.md	broad_shell_grant	Bash(bash *)
-kubernetes-plugin/skills/argocd-login/SKILL.md	bare_bash	Bash
-kubernetes-plugin/skills/helm-chart-development/SKILL.md	bare_bash	Bash
-kubernetes-plugin/skills/helm-debugging/SKILL.md	bare_bash	Bash
-kubernetes-plugin/skills/helm-release-management/SKILL.md	bare_bash	Bash
-kubernetes-plugin/skills/helm-release-recovery/SKILL.md	bare_bash	Bash
-kubernetes-plugin/skills/helm-values-management/SKILL.md	bare_bash	Bash
 langchain-plugin/skills/deep-agents/SKILL.md	broad_shell_grant	Bash(python *)
 langchain-plugin/skills/langchain-development/SKILL.md	broad_shell_grant	Bash(python *)
 langchain-plugin/skills/langgraph-agents/SKILL.md	broad_shell_grant	Bash(python *)
-linux-plugin/skills/linux-disk-usage/SKILL.md	bare_bash	Bash
 macos-plugin/skills/macos-disk-usage/SKILL.md	broad_shell_grant	Bash(bash *)
 macos-plugin/skills/macos-incident-postmortem/SKILL.md	broad_shell_grant	Bash(bash *)
 macos-plugin/skills/macos-performance-benchmark/SKILL.md	broad_shell_grant	Bash(bash *)
-macos-plugin/skills/tui-keybinding-debug/SKILL.md	bare_bash	Bash
-migration-patterns-plugin/skills/dual-write/SKILL.md	bare_bash	Bash
-migration-patterns-plugin/skills/tool-migration-cutover/SKILL.md	bare_bash	Bash
-obsidian-plugin/skills/properties/SKILL.md	bare_bash	Bash
-obsidian-plugin/skills/tasks/SKILL.md	bare_bash	Bash
 project-plugin/skills/project-discovery/SKILL.md	broad_shell_grant	Bash(bash *)
-project-plugin/skills/project-test-loop/SKILL.md	bare_bash	Bash
-project-plugin/skills/project-test-loop/SKILL.md	broad_shell_grant	Bash(bash *)
-prose-plugin/skills/prose-check/SKILL.md	bare_bash	Bash
-python-plugin/skills/basedpyright-type-checking/SKILL.md	bare_bash	Bash
 python-plugin/skills/pytest-advanced/SKILL.md	broad_shell_grant	Bash(python *)
-python-plugin/skills/python-code-quality/SKILL.md	bare_bash	Bash
-python-plugin/skills/python-development/SKILL.md	bare_bash	Bash
-python-plugin/skills/python-packaging/SKILL.md	bare_bash	Bash
-python-plugin/skills/python-testing/SKILL.md	bare_bash	Bash
 python-plugin/skills/ruff-formatting/SKILL.md	broad_shell_grant	Bash(python *)
 python-plugin/skills/ruff-linting/SKILL.md	broad_shell_grant	Bash(python *)
 python-plugin/skills/ty-type-checking/SKILL.md	broad_shell_grant	Bash(python *)
-python-plugin/skills/typer-cli-completion/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-advanced-dependencies/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-project-management/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-python-versions/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-run/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-tool-management/SKILL.md	bare_bash	Bash
-python-plugin/skills/uv-workspaces/SKILL.md	bare_bash	Bash
-python-plugin/skills/vulture-dead-code/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-dist/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-generate/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-llvm-cov/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-machete/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-nextest/SKILL.md	bare_bash	Bash
-rust-plugin/skills/cargo-worktree-builds/SKILL.md	bare_bash	Bash
-rust-plugin/skills/clippy-advanced/SKILL.md	bare_bash	Bash
-rust-plugin/skills/mockito-http-mocking/SKILL.md	bare_bash	Bash
-rust-plugin/skills/rust-development/SKILL.md	bare_bash	Bash
-rust-plugin/skills/rust-installable-cli/SKILL.md	bare_bash	Bash
 session-plugin/skills/session-distill/SKILL.md	broad_shell_grant	Bash(bash *)
 session-plugin/skills/session-end/SKILL.md	broad_shell_grant	Bash(bash *)
 session-plugin/skills/session-spinup/SKILL.md	broad_shell_grant	Bash(bash *)
@@ -233,56 +64,6 @@ taskwarrior-plugin/skills/task-claim/SKILL.md	broad_shell_grant	Bash(bash *)
 taskwarrior-plugin/skills/task-reconcile/SKILL.md	broad_shell_grant	Bash(bash *)
 taskwarrior-plugin/skills/task-release/SKILL.md	broad_shell_grant	Bash(bash *)
 taskwarrior-plugin/skills/task-triage/SKILL.md	broad_shell_grant	Bash(python3 *)
-terraform-plugin/skills/infrastructure-terraform/SKILL.md	bare_bash	Bash
-terraform-plugin/skills/tfc-list-runs/SKILL.md	bare_bash	Bash
-terraform-plugin/skills/tfc-plan-json/SKILL.md	bare_bash	Bash
-terraform-plugin/skills/tfc-run-logs/SKILL.md	bare_bash	Bash
-terraform-plugin/skills/tfc-run-status/SKILL.md	bare_bash	Bash
-terraform-plugin/skills/tfc-workspace-runs/SKILL.md	bare_bash	Bash
-testing-plugin/skills/mutation-testing/SKILL.md	bare_bash	Bash
-testing-plugin/skills/playwright-cli/SKILL.md	bare_bash	Bash
-testing-plugin/skills/playwright-testing/SKILL.md	bare_bash	Bash
-testing-plugin/skills/property-based-testing/SKILL.md	bare_bash	Bash
-testing-plugin/skills/test-focus/SKILL.md	bare_bash	Bash
-testing-plugin/skills/test-quality-analysis/SKILL.md	bare_bash	Bash
-testing-plugin/skills/vitest-testing/SKILL.md	bare_bash	Bash
-tools-plugin/skills/apptainer/SKILL.md	bare_bash	Bash
-tools-plugin/skills/deps-install/SKILL.md	bare_bash	Bash
-tools-plugin/skills/fd-file-finding/SKILL.md	bare_bash	Bash
-tools-plugin/skills/generate-image/SKILL.md	bare_bash	Bash
-tools-plugin/skills/hf-downloads/SKILL.md	bare_bash	Bash
-tools-plugin/skills/justfile-expert/SKILL.md	bare_bash	Bash
-tools-plugin/skills/mermaid-diagrams/SKILL.md	bare_bash	Bash
-tools-plugin/skills/shell-expert/SKILL.md	bare_bash	Bash
-tools-plugin/skills/zsh-gotchas/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/biome-tooling/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-add/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-build/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-debug/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-development/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-install/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-lockfile-update/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-outdated/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-package-manager/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-publish/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-publishing/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/bun-test/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/knip-dead-code/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/nodejs-development/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/typescript-debugging/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/typescript-sentry/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/typescript-strict/SKILL.md	bare_bash	Bash
-typescript-plugin/skills/typescript-temporal/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-add-music/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-beat-glow/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-chapters-youtube/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-frame-review/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-karaoke/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-thumbnail/SKILL.md	bare_bash	Bash
-video-plugin/skills/video-timeline-bar/SKILL.md	bare_bash	Bash
-workflow-orchestration-plugin/skills/workflow-bake-off/SKILL.md	bare_bash	Bash
-workflow-orchestration-plugin/skills/workflow-interrupted-run-recovery/SKILL.md	bare_bash	Bash
 workflow-orchestration-plugin/skills/workflow-preflight/SKILL.md	broad_shell_grant	Bash(bash *)
-workflow-orchestration-plugin/skills/workflow-scale-budget/SKILL.md	bare_bash	Bash
 workflow-orchestration-plugin/skills/workflow-verify-before-filing/SKILL.md	broad_shell_grant	Bash(bash *)
 youtube-plugin/skills/youtube-upload/SKILL.md	broad_shell_grant	Bash(python3 *)
