@@ -5,7 +5,7 @@ reviewed: 2026-03-19
 name: playwright-cli
 description: "Playwright CLI browser automation — navigate, screenshot, fill forms, click. Use when automating browser tasks from the shell; 4-10x more token-efficient than Playwright MCP."
 user-invocable: false
-allowed-tools: Bash(playwright-cli *), Bash(npx playwright-cli *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(playwright-cli goto *), Bash(playwright-cli click *), Bash(playwright-cli dblclick *), Bash(playwright-cli fill *), Bash(playwright-cli type *), Bash(playwright-cli press *), Bash(playwright-cli keydown *), Bash(playwright-cli keyup *), Bash(playwright-cli hover *), Bash(playwright-cli drag *), Bash(playwright-cli select *), Bash(playwright-cli check *), Bash(playwright-cli uncheck *), Bash(playwright-cli upload *), Bash(playwright-cli snapshot *), Bash(playwright-cli screenshot *), Bash(playwright-cli pdf *), Bash(playwright-cli mousemove *), Bash(playwright-cli go-back *), Bash(playwright-cli go-forward *), Bash(playwright-cli reload *), Bash(playwright-cli close *), Bash(playwright-cli close-all *), Bash(playwright-cli kill-all *), Bash(playwright-cli list *), Bash(playwright-cli open), Bash(playwright-cli open --headed), Bash(playwright-cli open --persistent), Bash(playwright-cli --version), Bash(npx playwright-cli --version), Read, Grep, Glob, TodoWrite
 ---
 
 # Playwright CLI
