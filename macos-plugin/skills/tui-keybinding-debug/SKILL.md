@@ -1,9 +1,9 @@
 ---
 name: tui-keybinding-debug
 description: "Debug dead TUI/terminal keybindings — terminal interception (kitty), layout-impossible chords, legacy key aliasing. Use when a configured key does nothing in a TUI, fzf, or shell app."
-allowed-tools: Bash, Read, Grep
+allowed-tools: Bash(kitty +kitten show_key *), Bash(kitty --debug-keyboard), Bash(grep *), Read, Grep
 created: 2026-07-05
-modified: 2026-11-09
+modified: 2026-11-14
 reviewed: 2026-07-05
 ---
 
