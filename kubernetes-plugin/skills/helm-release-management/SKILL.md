@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 name: helm-release-management
 description: "Manage Helm releases — install, upgrade, uninstall, list, inspect, history. Use when the user mentions deploying Helm charts, upgrading releases, or managing Kubernetes deployments."
 user-invocable: false
-allowed-tools: Bash(helm install *), Bash(helm upgrade *), Bash(helm list *), Bash(helm status *), Bash(helm history *), Bash(helm get *), Bash(helm show *), Bash(helm template *), Bash(helm lint *), Bash(helm repo *), Bash(helm search *), Bash(kubectl get *), Bash(kubectl describe *), Read, Grep, Glob
+allowed-tools: Bash(helm install *), Bash(helm upgrade *), Bash(helm list *), Bash(helm status *), Bash(helm history *), Bash(helm get *), Bash(helm show *), Bash(helm template *), Bash(helm lint *), Bash(helm repo add *), Bash(helm repo update *), Bash(helm search *), Bash(kubectl get *), Bash(kubectl describe *), Read, Grep, Glob
 ---
 
 # Helm Release Management
