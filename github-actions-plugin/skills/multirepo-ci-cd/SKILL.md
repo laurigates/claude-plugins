@@ -1,9 +1,9 @@
 ---
 name: multirepo-ci-cd
 description: "Diagnose a CI failure or roll a workflow out across many repos. Use when debugging a red check in a multi-repo org, promoting a shared reusable-*.yml, or re-triggering a PR after a @main fix."
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git fetch *), Bash(git log *), Bash(git pull *), Bash(gh repo list *), Bash(gh api *), Bash(base64 *), Bash(awk *), Bash(gh pr create *), Bash(gh pr update-branch *), Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-11-11
+modified: 2026-11-14
 reviewed: 2026-09-12
 ---
 

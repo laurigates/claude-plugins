@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: github-social-preview
 description: "Generate 1280x640 PNG social preview images for GitHub repos using nano-banana-pro. Use when asked for social preview, Open Graph image, or repo images for social media."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(magick *), Bash(ls *), Read, Grep, Glob
 ---
 
 # GitHub Social Preview Image Generator
