@@ -3,7 +3,7 @@ created: 2026-01-02
 modified: 2026-10-09
 reviewed: 2026-07-27
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
-allowed-tools: Read, Write, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh *), Bash(jq *), Bash(mv *), Bash(date *), Bash(sha256sum *), Bash(cut *), Bash(mktemp *), Bash(printf *), Bash(task bpid.any: status:any export *), Bash(grep *), Glob, AskUserQuestion
+allowed-tools: Read, Write, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh *), Bash(jq *), Bash(mv *), Bash(date *), Bash(sha256sum *), Bash(cut *), Bash(mktemp *), Bash(printf *), Bash(grep *), Glob, AskUserQuestion
 model: sonnet
 name: blueprint-feature-tracker-sync
 ---
