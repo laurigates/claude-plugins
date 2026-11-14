@@ -35,7 +35,19 @@
 #     WARN  dynamic_model / dynamic_effort — the value is an expression, not a
 #                            string literal, so it cannot be verified statically
 #
-#   Per file, from `.claude/rules/workflow-vs-skill.md` § Layout convention:
+#   Per file, bundled and saved alike (Claude Code 2.1.325 loads a saved or
+#   plugin workflow only when its `export const meta` literal has a non-empty
+#   name and description, and names it by meta.name, never by its filename):
+#     ERROR missing_meta          no meta literal with a non-empty name and
+#                                 description (test-analyze.workflow.js shipped
+#                                 without one; registered, it would be skipped)
+#     ERROR meta_name_mismatch    meta.name differs from the filename stem, so the
+#                                 name a run reports does not lead back to the file
+#
+#   Saved workflows (`.claude/workflows/*.js`) are runnable, not templates: they
+#   get the meta and per-agent() checks, not the layout and framing checks below.
+#
+#   Per bundled file, from `.claude/rules/workflow-vs-skill.md` § Layout convention:
 #     ERROR bad_filename          the file is not named `<purpose>.workflow.js`
 #     ERROR missing_sibling_skill the `workflows/` dir has no sibling SKILL.md
 #     ERROR unreachable_workflow  the sibling SKILL.md lacks a
@@ -202,8 +214,9 @@ Usage: check-workflow-js-model.sh [--strict] [--project-dir DIR]
   --project-dir DIR repo root to scan (default: this script's repo)
   -h, --help        show this message
 
-Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js):
-every agent() call pins an opus, fable or sonnet (or inherited) model and an
+Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js)
+and repo-saved workflows (.claude/workflows/*.js): every file carries a meta
+literal whose name matches its filename stem, every agent() call pins an opus, fable or sonnet (or inherited) model and an
 explicit valid effort, and every harness is reachable from a sibling SKILL.md whose framing
 section carries the literal "not a script to run verbatim" and an
 "**Agent budget:** ..." the scale estimator agrees with (an integer when every
@@ -287,7 +300,8 @@ done < <(
     cd "$ROOT_DIR" && find . \
         \( -path '*/.claude/worktrees/*' -o -path '*/node_modules/*' \
            -o -path './dist/*' -o -path '*/.git/*' \) -prune \
-        -o -path '*/skills/*/workflows/*.js' -print 2>/dev/null | sort
+        -o -path '*/skills/*/workflows/*.js' -print \
+        -o -path './.claude/workflows/*.js' -print 2>/dev/null | sort
 )
 
 python_ok=1
@@ -567,15 +581,52 @@ PY
 }
 
 files_scanned=0
+saved_scanned=0
 agent_calls=0
+
+# meta_field <file> <field> — the field's string value from the
+# `export const meta = {...}` literal, or empty. Single and double quotes are
+# tried separately so an apostrophe inside a double-quoted value survives.
+meta_field() {
+    local blk hit
+    # Joined onto one line: a value often sits on the line after its key.
+    blk="$(sed -n '/export[[:space:]]\{1,\}const[[:space:]]\{1,\}meta/,/^}/p' "$1" 2>/dev/null | tr '\n' ' ')"
+    [ -n "$blk" ] || return 0
+    hit="$(grep -oE "(^|[^A-Za-z0-9_])$2[[:space:]]*:[[:space:]]*'[^']*'" <<<"$blk")"
+    [ -n "$hit" ] || hit="$(grep -oE "(^|[^A-Za-z0-9_])$2[[:space:]]*:[[:space:]]*\"[^\"]*\"" <<<"$blk")"
+    hit="${hit%%$'\n'*}"
+    [ -n "$hit" ] || return 0
+    hit="${hit#*:}"
+    sed -E "s/^[[:space:]]*['\"]//; s/['\"]\$//" <<<"$hit"
+}
 
 for js in "${js_files[@]+"${js_files[@]}"}"; do
     [ -f "$js" ] || continue
     files_scanned=$((files_scanned + 1))
     rel="${js#"$ROOT_DIR"/}"
     base="$(basename "$js")"
+
+    # --- meta literal (both kinds) ---
+    meta_name="$(meta_field "$js" name)"
+    meta_desc="$(meta_field "$js" description)"
+    if [ -z "$meta_name" ] || [ -z "$meta_desc" ]; then
+        add_error "TYPE=missing_meta FILE=$rel MSG=no 'export const meta' literal with a non-empty name and description (Claude Code skips such a file as a saved or plugin workflow)"
+    else
+        stem="${base%.js}"; stem="${stem%.workflow}"
+        if [ "$meta_name" != "$stem" ]; then
+            add_error "TYPE=meta_name_mismatch FILE=$rel META_NAME=$meta_name MSG=meta.name must equal the filename stem '$stem' (runs report meta.name, so the stem must lead back to the file)"
+        fi
+    fi
+
+    # Saved workflows are runnable, not templates: no layout or framing checks.
+    is_saved=0
+    case "$rel" in .claude/workflows/*) is_saved=1; saved_scanned=$((saved_scanned + 1)) ;; esac
+
     skill_dir="$(cd "$(dirname "$js")/.." && pwd)"
     skill_md="$skill_dir/SKILL.md"
+    if [ "$is_saved" -eq 1 ]; then
+        :
+    else
 
     # --- Layout: `<purpose>.workflow.js` (workflow-vs-skill.md § Layout) ---
     case "$base" in
@@ -623,6 +674,7 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
                 add_error "TYPE=missing_worktree_clause FILE=$rel MSG=worktree-dispatching template: SKILL.md framing lacks the finalise-stage-only push/PR clause"
             fi
         fi
+    fi
     fi
 
     # --- Per-agent() model/effort ---
@@ -687,6 +739,7 @@ status="OK"
 
 echo "=== WORKFLOW JS MODEL/EFFORT ==="
 echo "FILES_SCANNED=$files_scanned"
+echo "SAVED_SCANNED=$saved_scanned"
 # This guard's corpus is legitimately empty today (zero bundled workflow .js), so
 # an empty scan is CORRECT here and must stay exit 0. But "checked nothing" and
 # "checked everything and it was clean" are not the same claim, and FILES_SCANNED=0

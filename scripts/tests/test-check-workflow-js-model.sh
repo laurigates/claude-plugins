@@ -45,6 +45,12 @@
 #      still counts under the checker's longer parse timeout (N12). A skill
 #      with several templates may declare one '**Agent budget (<file>):**'
 #      line per file, falling back to the bare line (N13-N16, #3265).
+#   S. The meta literal: a file with no `export const meta`, or one without a
+#      description, is ERROR missing_meta; a meta.name that differs from the
+#      filename stem is ERROR meta_name_mismatch; a value on the line after its
+#      key is still read. Saved workflows (.claude/workflows/*.js) are scanned
+#      for meta and agent() tiers but never for SKILL.md framing. Fixtures from
+#      the earlier cases get a meta literal appended by ensure_meta.
 
 set -uo pipefail
 # The checker's estimator timeout is its own default (30s) unless a case pins it.
@@ -126,12 +132,28 @@ mk_js() {
     } > "$dir/workflows/$base"
 }
 
+# ensure_meta <root> — the fixtures above predate the missing_meta check (case
+# S), so a fixture with no meta literal gets one APPENDED (line numbers of the
+# agent() calls the other cases assert on stay put), named after its filename
+# stem. Case S sets NO_AUTO_META=1 to plant the defects itself.
+ensure_meta() {
+    local f stem
+    [ "${NO_AUTO_META:-}" = 1 ] && return 0
+    while IFS= read -r f; do
+        grep -q 'export const meta' "$f" && continue
+        stem="$(basename "$f" .js)"; stem="${stem%.workflow}"
+        printf "\nexport const meta = { name: '%s', description: 'Fixture.' }\n" "$stem" >> "$f"
+    done < <(find "$1" -type f -name '*.js' \( -path '*/workflows/*' \) 2>/dev/null)
+}
+
 run() { # run <root> [extra args…] → exit code, output discarded
+    ensure_meta "$1"
     bash "$CHECK" --project-dir "$1" "${@:2}" >/dev/null 2>&1
     echo $?
 }
 
 out() { # out <root> [extra args…] → stdout+stderr
+    ensure_meta "$1"
     bash "$CHECK" --project-dir "$1" "${@:2}" 2>&1
 }
 
@@ -600,6 +622,7 @@ root=$(mk_root N9)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 mk_top_js "$d" no
 set_budget "$d/SKILL.md" 2
+ensure_meta "$root"   # these cases call the guard directly, not through out()
 STUB="$WORK/stub-bin"
 mkdir -p "$STUB/nonode" "$STUB/crash" "$STUB/cold"
 
@@ -747,6 +770,52 @@ for label in err warn mixed ok; do
     printf '%s\n' "$body" | bash "$CONTRACT" --validate - >/dev/null 2>&1 || rc=$?
     check "R: $label output satisfies the structured-output contract" "0" "$rc"
 done
+
+# ---------------------------------------------------------------------------
+# S. The meta literal and saved workflows. Claude Code loads a saved or plugin
+#    workflow only when `export const meta` has a non-empty name AND description,
+#    and names it by meta.name. test-analyze, blueprint-story-audit and
+#    configure-all-check shipped without one or without a description, and
+#    git-triage's harness was named issue-triage.workflow.js with meta.name
+#    issue-triage-sweep. Each defect is planted; the fixed shape passes.
+# ---------------------------------------------------------------------------
+export NO_AUTO_META=1
+root=$(mk_root S-nometa)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+o=$(out "$root")
+check "S1: no meta literal → ERROR missing_meta" "1" "$(grep -c 'TYPE=missing_meta FILE=demo-plugin/skills/demo-skill/workflows/audit.workflow.js' <<<"$o")"
+check "S1: no meta → --strict exit 1" "1" "$(run "$root" --strict)"
+
+printf "\nexport const meta = {\n  name: 'audit',\n  phases: [{ title: 'A' }],\n}\n" >> "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "S2: meta without description → ERROR missing_meta" "1" "$(grep -c 'TYPE=missing_meta' <<<"$o")"
+
+mk_js "$d" audit.workflow.js opus low
+printf "\nexport const meta = {\n  name: 'audit-sweep',\n  description:\n    'Multi-line value on the next line',\n}\n" >> "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "S3: description on the next line is read (no missing_meta)" "0" "$(grep -c 'TYPE=missing_meta' <<<"$o")"
+check "S3: meta.name differs from the stem → ERROR meta_name_mismatch" "1" "$(grep -c 'TYPE=meta_name_mismatch FILE=demo-plugin/skills/demo-skill/workflows/audit.workflow.js META_NAME=audit-sweep' <<<"$o")"
+
+mk_js "$d" audit.workflow.js opus low
+printf "\nexport const meta = { name: \"audit\", description: \"Don't panic\" }\n" >> "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "S4: single-line double-quoted meta matching the stem passes" "OK" "$(field "$o" STATUS)"
+
+# A saved workflow: scanned for meta and agent() tiers, never for framing.
+root=$(mk_root S-saved)
+mkdir -p "$root/.claude/workflows"
+printf "export const meta = { name: 'saved-flow', description: 'Saved.' }\nconst r = await agent(\`x\`, { label:'x', model:'opus', effort:'low' })\nreturn r\n" > "$root/.claude/workflows/saved-flow.workflow.js"
+o=$(out "$root")
+check "S5: saved workflow counted" "1" "$(field "$o" SAVED_SCANNED)"
+check "S5: saved workflow needs no sibling SKILL.md framing" "OK" "$(field "$o" STATUS)"
+printf "const r = await agent(\`x\`, { label:'x', model:'opus' })\nreturn r\n" > "$root/.claude/workflows/bare.js"
+o=$(out "$root")
+check "S6: saved workflow without meta → ERROR missing_meta" "1" "$(grep -c 'TYPE=missing_meta FILE=.claude/workflows/bare.js' <<<"$o")"
+check "S6: saved workflow agent() still needs effort" "1" "$(grep -c 'TYPE=missing_effort FILE=.claude/workflows/bare.js' <<<"$o")"
+check_absent_framing=$(grep -c 'TYPE=unreachable_workflow\|TYPE=missing_sibling_skill' <<<"$o")
+check "S6: no framing findings for a saved workflow" "0" "$check_absent_framing"
+unset NO_AUTO_META
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]
