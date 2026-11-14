@@ -1,7 +1,7 @@
 ---
 name: kernel-list-report
 description: "Write and send a report to a Linux kernel mailing list: recipients, plain text, git send-email. Use when reporting to linux-xfs, fsdevel or similar."
-allowed-tools: Bash(git send-email *), Bash(git config *), Bash(curl *), Bash(awk *), Bash(grep *), Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(git send-email *), Bash(git config --show-origin --get-regexp *), Bash(curl *), Bash(awk *), Bash(grep *), Read, Write, Edit, Grep, Glob
 created: 2026-11-02
 modified: 2026-11-14
 reviewed: 2026-11-02
