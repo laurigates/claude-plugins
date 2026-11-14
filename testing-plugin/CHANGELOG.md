@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.27.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.27.0...testing-plugin-v3.27.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **testing-plugin,blueprint-plugin,configure-plugin:** add the meta fields bundled workflow templates lacked ([2cfaa15](https://github.com/laurigates/claude-plugins/commit/2cfaa15e81a128f128db2671431a6a9723028a28))
+
 ## [3.27.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.26.0...testing-plugin-v3.27.0) (2026-11-07)
 
 
