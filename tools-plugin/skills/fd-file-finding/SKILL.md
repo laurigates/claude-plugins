@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: fd-file-finding
 description: "fd fast file finding: smart defaults, gitignore-aware, parallel. Use when searching for files by name, extension, or pattern across directories."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(fd *), Read, Grep, Glob
 model: sonnet
 ---
 

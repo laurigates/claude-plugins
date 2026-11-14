@@ -2,10 +2,10 @@
 name: mermaid-diagrams
 description: Render Mermaid diagrams (mmdc) to SVG/PNG/PDF — flowcharts, sequence, ERDs, class, state, Gantt, pie, gitGraph. Use when rendering .mmd or embedding diagrams in GitHub Markdown.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(mmdc *), Bash(npx @mermaid-js/mermaid-cli *), Read, Write, Grep, Glob, TodoWrite
 model: sonnet
 created: 2025-12-26
-modified: 2026-08-15
+modified: 2026-11-14
 reviewed: 2026-04-25
 ---
 

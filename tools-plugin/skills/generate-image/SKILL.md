@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-10-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: "Image generation via Gemini 3 Pro Image: aspect ratio, resolution, reference images. Use when creating artwork, product photos, or mockups with AI."
-allowed-tools: Bash, Read, WebFetch
+allowed-tools: Read, WebFetch
 model: haiku
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>] [--output <path>]
 disable-model-invocation: true

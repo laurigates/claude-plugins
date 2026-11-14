@@ -1,9 +1,9 @@
 ---
 name: hf-downloads
 description: "Hugging Face model downloads without filling root disk — HF_HOME/xet cache redirection, token/gated-repo auth, staging pattern. Use when downloading HF models, hf download errors, ENOSPC during downloads, or GatedRepoError/401s."
-allowed-tools: Bash, Read
+allowed-tools: Bash(hf download *), Bash(mkdir *), Bash(mv *), Bash(cp *), Bash(stat *), Read
 created: 2026-07-05
-modified: 2026-08-16
+modified: 2026-11-14
 reviewed: 2026-07-05
 ---
 
