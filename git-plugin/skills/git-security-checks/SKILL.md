@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-24
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: git-security-checks
 description: "Pre-commit security validation and secret detection via gitleaks. Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh *), Bash(gitleaks *), Bash(pre-commit run *), Bash(pre-commit install *), Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Read
 ---
 
 # Git Security Checks
