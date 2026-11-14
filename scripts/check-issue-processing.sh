@@ -15,8 +15,9 @@
 #     `## Processing` in that prompt (the body template lives there)
 #   - a `run:` step that runs `gh issue create` must write `## Processing`
 # plus:
-#   - feedback-plugin/skills/feedback-session/references/issue-format.md, the
-#     feedback issue template, must contain `## Processing`
+#   - each skill-shipped issue body template in ISSUE_TEMPLATES (the
+#     feedback-session template, the session-workflow-capture template) must
+#     contain `## Processing`; a template absent from the tree is skipped
 #   - every label (and title) on scripts/issue-grouping-exempt.txt, the list of
 #     recurring machine-filed and feedback issues, except `epic`, must be named
 #     in docs/issue-lifecycle.md
@@ -69,6 +70,12 @@ EXEMPT_SITES = {
 
 SCRIPT_TO_ISSUE = "./.github/actions/script-to-issue"
 FEEDBACK_TEMPLATE = "feedback-plugin/skills/feedback-session/references/issue-format.md"
+# Skill-shipped issue body templates. The workflow-capture one files pattern and
+# friction issues into the calling repo or the plugins repo.
+ISSUE_TEMPLATES = [
+    FEEDBACK_TEMPLATE,
+    "session-plugin/skills/session-workflow-capture/references/issue-format.md",
+]
 LIFECYCLE_DOC = "docs/issue-lifecycle.md"
 EXEMPT_LIST = "scripts/issue-grouping-exempt.txt"
 HEADING = re.compile(r"^\s*(?:echo\s+[\"']?)?## Processing\b", re.M)
@@ -135,13 +142,17 @@ for name in workflow_files:
                     f"(who processes it, what completed means, when it closes; see {LIFECYCLE_DOC})",
                 ))
 
-# The feedback issue template.
-fb = os.path.join(root, FEEDBACK_TEMPLATE)
-feedback_checked = os.path.isfile(fb)
-if feedback_checked:
-    if not has_heading(open(fb, encoding="utf-8").read()):
+# The skill-shipped issue body templates.
+feedback_checked = os.path.isfile(os.path.join(root, FEEDBACK_TEMPLATE))
+templates_checked = 0
+for template in ISSUE_TEMPLATES:
+    tpath = os.path.join(root, template)
+    if not os.path.isfile(tpath):
+        continue
+    templates_checked += 1
+    if not has_heading(open(tpath, encoding="utf-8").read()):
         issues.append(("ERROR", "missing_processing",
-                       f"{FEEDBACK_TEMPLATE}: the issue body template has no '## Processing' section"))
+                       f"{template}: the issue body template has no '## Processing' section"))
 
 # Every recurring type on the exempt list is documented.
 exempt_path = os.path.join(root, EXEMPT_LIST)
@@ -180,6 +191,7 @@ print(f"WORKFLOWS_SCANNED={len(workflow_files)}")
 print(f"SITES_CHECKED={sites_checked}")
 print(f"SITES_EXEMPT={exempted}")
 print(f"FEEDBACK_TEMPLATE_CHECKED={str(feedback_checked).lower()}")
+print(f"ISSUE_TEMPLATES_CHECKED={templates_checked}")
 print(f"STATUS={status}")
 if status != "OK":
     first = next(i for i in issues if i[0] == status)

@@ -25,6 +25,7 @@ label fleet-drift
 label config-drift
 label positive-feedback
 label session-feedback
+label workflow-capture
 label audit-liveness
 label docs-index
 label workflow-model-audit
