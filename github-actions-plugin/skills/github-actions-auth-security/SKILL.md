@@ -5,7 +5,7 @@ reviewed: 2026-06-15
 name: github-actions-auth-security
 description: "GitHub Actions auth and security for Claude Code — OIDC, AWS Bedrock, Vertex AI, secrets, permission scoping. Use when setting up workflow authentication or security."
 user-invocable: false
-allowed-tools: Bash(actionlint *), Bash(yq *), Bash(git secrets *), Bash(git verify-commit *), Bash(git log *), Bash(aws sts get-caller-identity *), Bash(aws bedrock list-foundation-models *), Bash(gcloud auth list *), Bash(gcloud projects get-iam-policy *), Bash(gcloud ai models list *), Read, Write, Edit, Grep, Glob, WebFetch
+allowed-tools: Bash(actionlint *), Bash(yq *), Bash(git secrets --scan *), Bash(git verify-commit *), Bash(git log *), Bash(aws sts get-caller-identity *), Bash(aws bedrock list-foundation-models *), Bash(gcloud auth list *), Bash(gcloud projects get-iam-policy *), Bash(gcloud ai models list *), Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # GitHub Actions Authentication and Security
