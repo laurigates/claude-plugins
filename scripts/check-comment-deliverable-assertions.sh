@@ -9,6 +9,8 @@
 # every release PR from 2026-09-01 (4 denials per green run), and the Claude
 # Skill Quality Review step in plugin-pr-checks.yml did it on PR #2664. Neither
 # workflow uploaded the transcript, so the denied call could not even be named.
+# Both Claude steps have since been removed (#3199, #3205); the sweep stays for
+# every remaining and future comment- or issue-delivering step.
 #
 # In scope: a `claude-code-action` step in AUTOMATION mode (it has a `prompt:`)
 # whose `--allowedTools` grants a comment-posting tool — `Bash(gh pr comment`,

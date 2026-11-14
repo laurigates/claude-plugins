@@ -43,9 +43,10 @@ workflow is a **cost and quality trade**, judged per workflow:
   alias since 2.1.293). The 2026-10 re-evaluation
   (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) rated every invoking
   workflow here *keep* or *needs-test*. The nearest candidates are
-  `release-pr-doc-audit`, `scheduled-audits`, `research-radar` and
-  `skill-splitter` (`plugin-pr-checks` was one until its Claude review was
-  removed, #3199). Each needs a replayed run against the opus output. Lift the
+  `scheduled-audits`, `research-radar` and `skill-splitter`
+  (`plugin-pr-checks` and `release-pr-doc-audit` were candidates until their
+  Claude steps were removed, #3199 and #3205). Each needs a replayed run
+  against the opus output. Lift the
   guard per workflow when a replay passes, not before.
 
 State it plainly when editing: we are not claiming workflows contaminate a
@@ -83,7 +84,7 @@ quality looks off from its declared effort.
 
 | Job shape | Effort | Examples |
 |-----------|--------|----------|
-| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `scheduled-audits`, `release-pr-doc-audit`, `skill-splitter` |
+| Mechanical / pre-computed (checklist, compliance enumeration, content split) | `low` | `scheduled-audits`, `skill-splitter` |
 | Structured triage / transformation with light judgment | `medium` | `changelog-review`, `obsidian-cli-changelog`, `research-radar` |
 | Open-ended reasoning (diagnose-and-fix, merge-intent reconciliation) | `medium` | `github-workflow-auto-fix`, `auto-resolve-conflicts` |
 | Interactive / human-facing | `medium` (never `low`; no `--max-turns` cap) | `claude` (@mentions) |
@@ -99,7 +100,6 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 | Workflow | Model + effort | Rationale |
 |----------|----------------|-----------|
 | `scheduled-audits.yml` | `opus` / `low` | Data pre-computed; Claude only formats |
-| `release-pr-doc-audit.yml` | `opus` / `low` | Mechanical compliance; turns are for file reads |
 | `skill-splitter.yml` | `opus` / `low` | Mechanical content split |
 | `research-radar.yml` | `opus` / `medium` | Judging paper relevance is real reasoning |
 | `golden-set-evaluation.yml` | `opus` / `medium` | Cross-model sweep; interpreting the delta is real judgment (`--max-turns 90`, #2688) |
