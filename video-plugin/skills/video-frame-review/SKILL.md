@@ -1,9 +1,9 @@
 ---
 name: video-frame-review
 description: Review a video render frame by frame around an event (beat, lyric change, cut) — full-resolution crops stacked into one image. Use when checking render timing or overlays.
-allowed-tools: Bash, Read
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/frame-review.sh *), Read
 created: 2026-10-29
-modified: 2026-11-09
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 
