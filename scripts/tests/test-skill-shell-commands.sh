@@ -427,6 +427,18 @@ for g in 'Bash(bash -e script.sh *)' 'Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh
 done
 
 ##########
+# M. The docstring states what the anchors rest on and the known limits
+#    (#3464 round 4 R3); --help prints it
+##########
+echo "=== M: documented limits ==="
+run --help
+assert "M1 --help exits 0" "$(is "$RC" 0)"
+assert "M2 the anchors cite the #3634 measurement" \
+  "$( [ "$(hasre '#3634')" = true ] && [ "$(hasre '0dbf67d')" = true ] && [ "$(hasre 'CLAUDE_SKILL_DIR\}/\.\./<sibling>')" = true ] && echo true || echo false)"
+assert "M3 a Known limits list names each limit" \
+  "$( [ "$(hasre '^Known limits')" = true ] && [ "$(hasre 'VAR=\$\(cmd with spaces\)')" = true ] && [ "$(hasre 'gcloud compute instances delete')" = true ] && [ "$(hasre 'SKILL_DIR\}/x\.sh')" = true ] && [ "$(hasre 'npx')" = true ] && [ "$(hasre 'fd -x, ssh, strace')" = true ] && echo true || echo false)"
+
+##########
 # F. A missing shared library is exit 2, never a clean or a findings result
 ##########
 echo "=== F: missing library ==="

@@ -36,7 +36,11 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
       a bundled-script invocation: a path anchored on ${CLAUDE_SKILL_DIR} or
       ${CLAUDE_PLUGIN_ROOT}, run directly or through bash/sh/python3/node/
       uv run/bun. SCRIPT= is the unquoted path; QUOTED=1 says the body quotes
-      it (information only).
+      it (information only). Both variables are anchors because #3634
+      (commit 0dbf67d, headless `claude -p` on Claude Code 2.1.322) measured
+      that the direct ${CLAUDE_SKILL_DIR}/scripts/... form, the
+      ${CLAUDE_PLUGIN_ROOT}/... form and the ${CLAUDE_SKILL_DIR}/../<sibling>/...
+      form each ran without a prompt under the matching grant.
   Every other pattern is printed once, as exactly one of:
   CANDIDATE=<pattern>          a suggested grant, e.g. Bash(git status *) or
                                Bash(bash ${CLAUDE_SKILL_DIR}/scripts/x.sh *).
@@ -123,6 +127,20 @@ DEFAULT OUTPUT (one row per distinct command, sorted):
                         is what the skill is for (house practice grants
                         Bash(git push *) in PR skills and anchored sudo forms
                         in diagnostics skills)
+
+Known limits (both modes; read the body as well):
+  - A VAR=$(cmd with spaces) assignment prefix mis-lists the command after
+    it: `ROOT=$(git rev-parse --show-toplevel) make build` lists `rev-parse`
+    and not `make`.
+  - Hazard verbs are read only in the first two subcommand positions, so
+    `gcloud compute instances delete` gets no REVIEW row.
+  - A path on a variable other than the two anchors (`${SKILL_DIR}/x.sh`) is
+    offered as an ordinary candidate.
+  - Runner wildcards (Bash(npx *), Bash(uvx *), Bash(uv run *),
+    Bash(npm run *), Bash(bun *)) and exec-capable tools (fd -x, ssh, strace,
+    command) pass both the listing and --check.
+  - An interpreter option that takes an argument, other than python's -m, is
+    read as the script: `bash -o pipefail x.sh` gives Bash(bash -o pipefail *).
 
 Usage:
   python3 scripts/skill-shell-commands.py <skill-dir> [--check]
