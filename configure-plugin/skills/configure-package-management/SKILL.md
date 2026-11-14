@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-11-14
 reviewed: 2026-06-01
 description: "Package managers: uv (Python), bun (TypeScript). Use when setting up uv or bun, migrating from pip/npm/yarn/poetry/pipenv, or resolving lockfile conflicts."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(uv init *), Bash(uv add *), Bash(uv sync *), Bash(uv pip list *), Bash(uv --version), Bash(bun install *), Bash(bun add *), Bash(bun pm ls *), Bash(bun --version), AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(uv init *), Bash(uv add *), Bash(uv sync *), Bash(uv pip list --format json), Bash(uv --version), Bash(bun install *), Bash(bun add *), Bash(bun pm ls *), Bash(bun --version), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 argument-hint: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 name: configure-package-management
