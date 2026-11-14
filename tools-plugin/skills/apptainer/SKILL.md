@@ -1,7 +1,7 @@
 ---
 name: apptainer
 description: "Apptainer: run OCI images as rootless batch jobs with --nv GPU passthrough and digest-pinned SIFs. Use when running a CUDA tool without Docker, podman lacks GPU support, or a pull fills root."
-allowed-tools: Bash(apptainer pull *), Bash(apptainer exec *), Bash(mkdir *), Bash(curl *), Bash(jq *), Bash(ls *), Read
+allowed-tools: Bash(apptainer pull *), Bash(mkdir *), Bash(curl *), Bash(jq *), Bash(ls *), Read
 created: 2026-10-23
 modified: 2026-11-14
 reviewed: 2026-10-23
