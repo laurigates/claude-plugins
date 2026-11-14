@@ -1972,11 +1972,21 @@ check "control: a file with the bare '(next bullet)' pointer fails that pin" no 
 # #3396: GitHub rejects a short SHA for --match-head-commit ("Could not coerce
 # value ... to GitObjectID"), so the docs must say the SHA is the full one.
 write_lines "$sandbox/short-sha-skill.md" '`main` merge holds an unreviewed resolution. Pin `--match-head-commit <sha>`; a'
-check "SKILL §6: --match-head-commit is shown taking git rev-parse output" yes \
-    "$(has "$SF" '--match-head-commit "$(git rev-parse <ref>)"')"
+check "SKILL §6: git rev-parse runs as its own call" yes \
+    "$(has "$SF" 'Run `git rev-parse <ref>` as its own call')"
 check "SKILL §6: the full 40-character SHA is required" yes "$(has "$SF" 'full 40-character SHA')"
 check "control: the pre-#3396 §6 line fails the full-SHA pin" no \
     "$(has "$sandbox/short-sha-skill.md" 'full 40-character SHA')"
+
+# #3643: the external-PR merge guard (hooks-plugin) refuses a `gh pr merge` whose
+# arguments hold $(…) or backticks, so §6 must not prescribe a substitution there.
+write_lines "$sandbox/subst-sha-skill.md" '`--match-head-commit "$(git rev-parse <ref>)"`, the full 40-character SHA (GitHub'
+check "SKILL §6: the merge guard is named as the reason for the literal SHA" yes \
+    "$(has "$SF" 'the merge guard refuses `$(…)`')"
+check "SKILL: --match-head-commit is never shown taking a command substitution" yes \
+    "$(yn lacks "$SF" '--match-head-commit "$(')"
+check "control: the pre-#3643 §6 line fails the no-substitution pin" no \
+    "$(yn lacks "$sandbox/subst-sha-skill.md" '--match-head-commit "$(')"
 check "no-force: \$pre is noted as a full SHA that must stay full-length" yes \
     "$(has "$NF" '`headRefOid` is the full 40-character SHA')"
 
