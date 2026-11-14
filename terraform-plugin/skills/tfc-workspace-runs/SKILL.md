@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: tfc-workspace-runs
 description: "List TFC runs across known workspaces (github, sentry, gcp, onelogin, twingate). Use when checking TFC status or listing runs by workspace. Requires TFE_TOKEN."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(curl *), Bash(jq *), Bash(column *), Read
 ---
 
 # Terraform Cloud Workspace Runs

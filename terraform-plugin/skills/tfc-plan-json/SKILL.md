@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: tfc-plan-json
 description: "TFC plan JSON download and analysis. Use when diffing resource changes, inspecting replacements, or feeding plan data downstream. Requires TFE_TOKEN."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(curl *), Bash(jq *), Read
 ---
 
 # Terraform Cloud Plan JSON
