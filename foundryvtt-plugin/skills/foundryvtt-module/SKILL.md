@@ -7,7 +7,7 @@ description: >-
   New FoundryVTT module to a gitops-adopted repo: scaffold, create + seed the
   GitHub repo, open the gitops adoption PR. Use when standing up a new foundry
   module end to end.
-allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py *), Bash(gh repo view *), Bash(git init *), Bash(just check *), Bash(gh api *), Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py *), Bash(gh repo view *), Bash(git init -b main), Bash(just check *), Bash(gh api *), Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 ---
 
 # foundryvtt-module
