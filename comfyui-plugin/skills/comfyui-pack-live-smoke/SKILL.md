@@ -5,7 +5,7 @@ reviewed: 2026-07-07
 name: comfyui-pack-live-smoke
 description: >-
   Live-smoke a ComfyUI pack in a running instance: browser-driven and headless API-driven checks catch frontend/backend bugs unit tests miss. Use when verifying a pack before opening a registry PR.
-allowed-tools: Bash(curl *), Bash(bun run build *), Bash(kill *), Read, Grep, Glob
+allowed-tools: Bash(curl *), Bash(bun run build *), Read, Grep, Glob
 ---
 
 # comfyui-pack-live-smoke
