@@ -3,9 +3,9 @@ name: code-context-leakage
 description: "Audit a repo for names and defaults tied to one person's setup — home paths, personal channels, dated tags, OS-only commands, stale repo names. Use when preparing a project for reuse."
 args: "[pathspec...] [--name <old-name>]... [--config <file>]"
 argument-hint: "[pathspec...] [--name <old-name>] [--config <file>]"
-allowed-tools: Bash, Read, Grep, Edit, AskUserQuestion
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/scan-context-leakage.py *), Bash(find *), Bash(git mv *), Read, Grep, Edit, AskUserQuestion
 created: 2026-11-06
-modified: 2026-11-07
+modified: 2026-11-14
 reviewed: 2026-11-06
 ---
 

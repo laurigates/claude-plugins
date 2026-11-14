@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-14
 reviewed: 2026-08-07
-allowed-tools: Bash, Read, SlashCommand
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh *), Bash(find *), Bash(uv run ruff check *), Bash(uv run ruff format *), Bash(npx eslint *), Bash(npx prettier *), Bash(npx tsc *), Bash(cargo clippy *), Bash(cargo fmt *), Bash(cargo check *), Bash(go vet *), Bash(gofmt *), Bash(pre-commit run *), Bash(npm run lint *), Bash(just lint *), Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
