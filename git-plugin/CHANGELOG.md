@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.74.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.0...git-plugin-v2.74.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **git-plugin:** name git-triage's harness after its meta.name ([2ff559b](https://github.com/laurigates/claude-plugins/commit/2ff559b60579eb606210b84971fa5c0c51d79863))
+* **testing-plugin,blueprint-plugin,configure-plugin:** add the meta fields bundled workflow templates lacked ([2cfaa15](https://github.com/laurigates/claude-plugins/commit/2cfaa15e81a128f128db2671431a6a9723028a28))
+
 ## [2.74.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.73.3...git-plugin-v2.74.0) (2026-11-13)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.8](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.7...configure-plugin-v1.43.8) (2026-11-14)
+
+
+### Bug Fixes
+
+* **testing-plugin,blueprint-plugin,configure-plugin:** add the meta fields bundled workflow templates lacked ([2cfaa15](https://github.com/laurigates/claude-plugins/commit/2cfaa15e81a128f128db2671431a6a9723028a28))
+
 ## [1.43.7](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.6...configure-plugin-v1.43.7) (2026-11-13)
 
 

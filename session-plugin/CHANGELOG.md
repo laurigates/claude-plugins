@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.17.2...session-plugin-v1.18.0) (2026-11-14)
+
+
+### Features
+
+* **session-plugin:** add session-workflow-capture skill ([85f5aa8](https://github.com/laurigates/claude-plugins/commit/85f5aa87a41c2d28838e09219a5d227103fee7d2))
+* **session-plugin:** run workflow capture as a session-end pass ([f8d53d2](https://github.com/laurigates/claude-plugins/commit/f8d53d2c467b8e151c7b62f6a43bee8f5bf074e8))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.17.1...session-plugin-v1.17.2) (2026-11-11)
 
 
