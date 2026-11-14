@@ -13,19 +13,18 @@
 #
 # THE SEMANTIC INVARIANT: across a skill directory's markdown files, every
 # non-blank line of the base revision is still present at the head (as a
-# multiset), and every heading text survives as a heading at some level. The
-# one tolerated change is a line that carried a direction word ("see the table
-# above") and whose pointer, and nothing else, was replaced by a new markdown
-# link, which is what the splitter prompt tells the model to do. A line that
-# merely contains a direction word ("Requires Node 18 or later") gets no
-# tolerance for a change of content, however textually close the new line is.
+# multiset), and every heading text survives as a heading at some level. No
+# changed line is tolerated; added lines are. An earlier version accepted a
+# direction-word line ("see the table above") rewritten to carry a new link,
+# and three rounds of probing each found a content change that tolerance let
+# through, so the splitter now moves text verbatim and adds links as new lines.
 #
 # Guards:
 #   A. a faithful split (section moved to references/, link line added) is OK
 #   B. a moved section that drops one table row is ERROR line_missing
 #   C. a section moved without its heading is ERROR section_missing
 #   D. a section re-levelled in the reference file (### -> ##) is OK
-#   E. a positional pointer rewritten to a link is OK and counted as rewritten
+#   E. the output carries no rewrite count: nothing is tolerated as a rewrite
 #   F. a content line rewritten with no direction word is ERROR line_missing
 #   G. dropping one of two identical lines is ERROR (multiset, not set)
 #   H. deleting lines from a pre-existing REFERENCE.md is ERROR
@@ -37,13 +36,14 @@
 #      compliance job lists this test in its always-on --only set
 #   M. a missing --base or skill dir is a usage error (exit 2)
 #   N. a content change in a line with a direction word is ERROR, including a
-#      change that also adds a link (number, negation, adjective, dropped or
-#      added qualifier) and a change carried in the new link's text, which
-#      may use only words of the base line and of the link's target
+#      change that also adds a link: every probe that passed the former
+#      pointer-rewrite tolerance (a qualifier added or dropped, words moved
+#      into the link text, a changed adjective) is in this list
 #   O. a direction-word line replaced by a dissimilar line is ERROR
-#   P. one added line cannot account for two rewrites (COUNT=1 left over)
-#   Q. the pointer rewrites the prompt asks for (anchor, file link, link text
-#      reusing the line's own words or naming its target) are OK and counted
+#   P. a direction-word line kept verbatim with a new link line added after
+#      it, the way the splitter prompt now asks, is OK
+#   Q. the rewrites the former tolerance accepted (pointer words swapped for
+#      an anchor or file link, nothing else changed) are ERROR
 #   R. a pointer dropped with no link in its place is ERROR
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L can be shown
@@ -103,7 +103,7 @@ Run `demo --fast` to begin.
 | `--deep` | Run every check |
 | `--deep` | Run every check |
 
-See the table above for every flag.
+This table lists every flag.
 
 ### Edge cases
 
@@ -114,7 +114,8 @@ MD
   printf '%s\n' "$r"
 }
 
-# split <repo>: a faithful split, written as the splitter prompt asks.
+# split <repo>: a faithful split, written as the splitter prompt asks: the
+# moved section is copied verbatim and SKILL.md gains a new link line.
 split() {
   local r="$1"
   mkdir -p "$r/$SKILL/references"
@@ -145,7 +146,7 @@ Every flag the demo CLI accepts.
 | `--deep` | Run every check |
 | `--deep` | Run every check |
 
-See the [Full flag reference](#full-flag-reference) table for every flag.
+This table lists every flag.
 
 ### Edge cases
 
@@ -194,9 +195,8 @@ commit "$r"
 out=$(run "$r" --base "$base" "$SKILL"); rc=$?
 assert_eq "D re-levelled heading exits 0" "$rc" "0"
 
-# --- E: positional pointer rewrite is tolerated and counted -----------------
-# (case A already rewrote "the table above"; assert the count here)
-assert_eq "E the pointer rewrite is counted" "$(val "$pass_out" LINES_REWRITTEN)" "1"
+# --- E: no rewrite count ------------------------------------------------------
+if grep -q '^LINES_REWRITTEN=' <<<"$pass_out"; then ko "E the output carries no rewrite count" "$(grep '^LINES_REWRITTEN=' <<<"$pass_out")"; else ok "E the output carries no rewrite count"; fi
 
 # --- F: content line rewritten without a direction word ---------------------
 r=$(new_repo f); base=$(git -C "$r" rev-parse HEAD); split "$r"
@@ -247,7 +247,7 @@ assert_has "J names skill_not_found" "$out" "TYPE=skill_not_found"
 # rewrite_probe <name> <base line> <head line> [<head line 2>]: a repo whose
 # base SKILL.md ends with <base line>, then a head where that appended line is
 # replaced by the head line(s). Literal replacement, so no sed escaping is
-# involved. PROBE_DROP_EARLIER=1 also deletes earlier copies of <base line>.
+# involved.
 rewrite_probe() {
   local r base_line="$2"
   r=$(new_repo "$1")
@@ -255,13 +255,11 @@ rewrite_probe() {
   git -C "$r" add -A && git -C "$r" commit -q -m "probe base"
   shift 2
   python3 - "$r/$SKILL/SKILL.md" "$base_line" "$@" <<'PY'
-import os, sys
+import sys
 p, old, *new = sys.argv[1:]
 text = open(p, encoding="utf-8").read()
 head, sep, tail = text.rpartition("\n" + old + "\n")
 assert sep, old
-if os.environ.get("PROBE_DROP_EARLIER") == "1":
-    head = "\n".join(l for l in head.split("\n") if l != old)
 open(p, "w", encoding="utf-8").write(head + "\n" + "".join(n + "\n" for n in new) + tail)
 PY
   commit "$r"
@@ -269,9 +267,8 @@ PY
 }
 
 # --- N: a content change inside a line that carries a direction word ---------
-# DIRECTION_RE matches common words (later, here, following). The rewrite
-# tolerance must not let a change of meaning through just because the changed
-# line contains one of them and the new line is textually close.
+# The first nine passed or were closed in earlier rounds; the last four passed
+# the token-rule tolerance at b4b74bbdb.
 n=0
 while IFS='|' read -r before after; do
   n=$((n + 1))
@@ -279,7 +276,6 @@ while IFS='|' read -r before after; do
   out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
   assert_eq "N$n content change exits 1: $before" "$rc" "1"
   assert_has "N$n names the original line" "$out" "MSG=$before"
-  assert_eq "N$n nothing counted as rewritten" "$(val "$out" LINES_REWRITTEN)" "0"
 done <<'CASES'
 Requires Node 18 or later.|Requires Node 16 or later.
 Never run `deploy --force` here in production.|Always run `deploy --force` here in production.
@@ -290,6 +286,10 @@ Pin the version shown above before you deploy.|Pin the version shown in [Version
 Requires Node 18 or later.|Requires Node 18 or [older](#versions).
 The following flags are mandatory.|The [optional flags](#flags) are mandatory.
 Never run `deploy --force` here in production.|Never run `deploy --force` [outside staging](#deploy) in production.
+Install the hook (see below).|Install the hook later (see [Install](#install)).
+Use the previous release (see the table below).|Use the release (see the [Releases](#releases) table).
+Run tests before deploy, see below.|Run [deploy](#deploy) tests before.
+The following flags are mandatory.|The [optional flags](#optional-flags) are mandatory.
 CASES
 
 # --- O: a direction-word line replaced by a dissimilar line ------------------
@@ -298,23 +298,20 @@ out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
 assert_eq "O dissimilar replacement exits 1" "$rc" "1"
 assert_has "O names the original line" "$out" "MSG=Pin the version shown above before you deploy."
 
-# --- P: one added line cannot account for two rewrites -----------------------
-# The base carries the pointer line twice (once from new_repo, once appended);
-# the head rewrites it once and drops the other copy.
-r=$(PROBE_DROP_EARLIER=1 rewrite_probe p "See the table above for every flag." "See the [Full flag reference](#full-flag-reference) table for every flag.")
+# --- P: the pointer line is kept and a link line is added -------------------
+r=$(rewrite_probe p "See the table above for every flag." "See the table above for every flag." "For every flag, see [references/flags.md](references/flags.md).")
 out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
-assert_eq "P two rewrites into one added line exits 1" "$rc" "1"
-assert_has "P reports the unabsorbed copy" "$out" "COUNT=1 MSG=See the table above for every flag."
-assert_eq "P exactly one rewrite counted" "$(val "$out" LINES_REWRITTEN)" "1"
+assert_eq "P kept pointer line plus an added link line exits 0" "$rc" "0"
+assert_eq "P STATUS=OK" "$(val "$out" STATUS)" "OK"
 
-# --- Q: pointer rewrites the splitter prompt asks for stay tolerated ---------
+# --- Q: the rewrites the former tolerance accepted are now errors -------------
 q=0
 while IFS='|' read -r before after; do
   q=$((q + 1))
   r=$(rewrite_probe "q$q" "$before" "$after")
   out=$(run "$r" --base "$(git -C "$r" rev-parse HEAD~1)" "$SKILL"); rc=$?
-  assert_eq "Q$q pointer rewrite exits 0: $after" "$rc" "0"
-  assert_eq "Q$q counted as rewritten" "$(val "$out" LINES_REWRITTEN)" "1"
+  assert_eq "Q$q pointer rewrite exits 1: $after" "$rc" "1"
+  assert_has "Q$q names the original line" "$out" "MSG=$before"
 done <<'CASES'
 See the Kill switches table above.|See the [Kill switches](#kill-switches) table.
 The table below lists every exit code.|[references/exit-codes.md](references/exit-codes.md) lists every exit code.
@@ -322,6 +319,7 @@ Use the preceding section's flags (see above).|Use the [Flags](#flags) section's
 The following flags are mandatory.|The [flags](#flags) are mandatory.
 Run the command shown earlier.|Run the command shown in [Setup](#setup).
 The steps below install the hook.|The [Install](references/install.md) steps install the hook.
+See the table above for every flag.|See the [Full flag reference](#full-flag-reference) table for every flag.
 CASES
 
 # --- R: a pointer dropped without a link in its place ------------------------

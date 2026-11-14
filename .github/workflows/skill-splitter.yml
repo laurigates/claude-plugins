@@ -274,16 +274,22 @@ jobs:
                - Every link must resolve (`scripts/check-skill-xrefs.py`), and
                  every new file must be linked; the compliance check fails on a
                  references/ file nothing names (issue #2700).
-               - Rewrite positional pointers ("see above", "the table below",
-                 "the preceding section") in the moved text, and in SKILL.md text
-                 that pointed at what moved, to a named anchor or a file link —
-                 `the [Kill switches](#kill-switches) table`,
-                 `[references/<topic>.md](references/<topic>.md)`. A reference file
-                 is read out of order, so a direction names nothing there, and
-                 `scripts/check-positional-references.sh` fails on any direction
-                 pointer in `references/*.md` and on any SKILL.md that gains one
-                 (`.claude/rules/skill-quality.md` § Point at anchors, not
-                 directions). Change only the pointer words.
+               - Move text verbatim: never edit, reword, or delete a line you
+                 move or keep. The publish step fails the run if any line of the
+                 pre-split skill is missing afterwards
+                 (`scripts/check-split-content-preservation.py`), and that
+                 includes a line whose pointer words you changed. Only add new
+                 lines: titles, one-line descriptions, and link lines.
+               - Leave a section that holds a positional pointer ("see above",
+                 "the table below", "the preceding section") in SKILL.md.
+                 Moved verbatim, the pointer would sit in a `references/*.md`
+                 file, where `scripts/check-positional-references.sh` fails on
+                 any direction pointer (`.claude/rules/skill-quality.md`
+                 § Point at anchors, not directions), and rewriting it is a
+                 changed line.
+               - Where a line kept in SKILL.md pointed at text that moved, keep
+                 that line unchanged and add a new line after it that links the
+                 new file.
 
             d. Commit this skill's changes. Keep the `refactor(split):` subject
                prefix — the publish step rejects any other:
@@ -342,8 +348,8 @@ jobs:
           fi
           # Nothing may be lost in the move (#3016): across each selected skill
           # directory's markdown, every line of the pre-split revision must
-          # survive at HEAD, every heading text must survive as a heading, and
-          # the only tolerated rewrite is a direction pointer turned into a link.
+          # survive at HEAD and every heading text must survive as a heading.
+          # No changed line is tolerated; added lines are allowed.
           # The scope check above reads only committed changes, and the split
           # step holds unrestricted Write/Edit, so the working-tree copy of the
           # checker may have been edited without a commit. Run the pre-split
