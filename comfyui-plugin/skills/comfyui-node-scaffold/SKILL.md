@@ -7,7 +7,7 @@ description: >-
   Local files only: a new ComfyUI node pack tree (TypeScript + bun build,
   CI, release-please, vitest+pytest) on @laurigates/comfy-modal-kit; no GitHub
   repo. Use when generating a new pack's files.
-allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scaffold.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py *), Bash(git init *), Bash(uv sync *), Bash(just check *), Bash(just assets *), Bash(bun run build *), Bash(npm view *), Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scaffold.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py *), Bash(git init -b main), Bash(uv sync *), Bash(just check *), Bash(just assets *), Bash(bun run build *), Bash(npm view *), Read, Write, Edit, Grep, Glob, TodoWrite
 ---
 
 # comfyui-node-scaffold
