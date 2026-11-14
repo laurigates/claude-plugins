@@ -39,7 +39,7 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
 
 ### Anthropic Direct API
 ```yaml
-- uses: anthropics/claude-code-action@v1.0.268
+- uses: anthropics/claude-code-action@v1.0.271
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -57,7 +57,7 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
     aws-region: us-east-1
 
-- uses: anthropics/claude-code-action@v1.0.268
+- uses: anthropics/claude-code-action@v1.0.271
   with:
     claude_args: --bedrock-region us-east-1
 ```
@@ -91,7 +91,7 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
   with:
     credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-- uses: anthropics/claude-code-action@v1.0.268
+- uses: anthropics/claude-code-action@v1.0.271
   with:
     claude_args: |
       --vertex-project-id ${{ secrets.GCP_PROJECT_ID }}
@@ -130,12 +130,12 @@ roles/aiplatform.user
 **Secure Configuration**:
 ```yaml
 # WRONG - Never hardcode!
-- uses: anthropics/claude-code-action@v1.0.268
+- uses: anthropics/claude-code-action@v1.0.271
   with:
     anthropic_api_key: "sk-ant-api03-..."  # gitleaks:allow
 
 # CORRECT - Always use secrets
-- uses: anthropics/claude-code-action@v1.0.268
+- uses: anthropics/claude-code-action@v1.0.271
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
