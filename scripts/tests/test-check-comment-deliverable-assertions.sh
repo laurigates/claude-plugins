@@ -11,7 +11,8 @@
 #
 # Cases:
 #   A. the real repo is clean, and the sweep is non-vacuous (>= 1 step in scope:
-#      release-pr-doc-audit.yml since plugin-pr-checks' skill review went, #3199)
+#      github-workflow-auto-fix.yml since the plugin-pr-checks skill review and
+#      the release-pr-doc-audit.yml Claude step went, #3199 and #3205)
 #   B. a comment-granting automation step with neither → both findings, named
 #   C. the same step with both → clean
 #   D. an assertion placed BEFORE the Claude step does not count

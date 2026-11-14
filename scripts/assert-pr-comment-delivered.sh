@@ -8,11 +8,15 @@
 # plugin-pr-checks.yml on PR #2664 (4 denials, 0 reviews, 0 inline comments).
 # The SDK exits 0 on a denial, so a denied posting call is a green job. This
 # helper is the post-step gate: it counts the comments that appeared on the PR
-# since the Claude step started and fails when there are none.
+# since the Claude step started and fails when there are none. Both of those
+# Claude steps have since been removed (#3199, #3205);
+# scripts/check-comment-deliverable-assertions.sh still requires this gate after
+# any comment-delivering Claude step.
 #
-# Time-bounded on purpose. release-please force-pushes its PR and the audit
-# re-runs on every push, so a heading-carrying comment from a PREVIOUS run sits
-# on the same PR; without the --since bound it would satisfy every later run.
+# Time-bounded on purpose. A workflow can re-run on the same PR (release-please
+# force-pushed its PR and the release audit re-ran on every push), so a
+# heading-carrying comment from a PREVIOUS run sits on the same PR; without the
+# --since bound it would satisfy every later run.
 #
 # Usage:
 #   bash scripts/assert-pr-comment-delivered.sh --repo OWNER/REPO --pr N \
