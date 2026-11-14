@@ -2,9 +2,9 @@
 name: linux-disk-usage
 description: Linux disk-usage forensics and space recovery. Use when a Linux disk is near-full, finding what eats space, or clearing caches, build dirs and model stores.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(df *), Bash(lsblk *), Bash(findmnt *), Bash(swapon *), Bash(mise exec aqua:bootandy/dust@latest -- dust *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh *), Bash(journalctl --disk-usage *), Bash(brew cleanup *), Bash(npm cache clean *), Bash(uv cache clean *), Bash(mise prune *), Bash(go clean *), Bash(cargo clean *), Bash(rsync *), Bash(sha256sum *), Read, Grep, Glob, TodoWrite
 created: 2026-10-30
-modified: 2026-10-30
+modified: 2026-11-14
 reviewed: 2026-10-30
 ---
 
