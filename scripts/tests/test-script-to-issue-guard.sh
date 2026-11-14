@@ -147,8 +147,14 @@ assert "I composite passes the prefix via env, not interpolation" \
 wma="$repo_root/.github/workflows/workflow-model-audit.yml"
 assert "I workflow-model-audit passes its report prefix" \
   "$(grep -q "title-prefix: 'Workflow model/effort audit:'" "$wma" && echo true || echo false)"
-assert "I workflow-model-audit prompt still files that title" \
-  "$(grep -q -- '--title "Workflow model/effort audit: ' "$wma" && echo true || echo false)"
+# Since #2769 the report is filed by the publish step, under the title the
+# guard resolved, so the prefix and the filed title cannot drift apart.
+assert "I workflow-model-audit's guard resolves a title under that prefix" \
+  "$(grep -qF "title: 'Workflow model/effort audit: {month}'" "$wma" && echo true || echo false)"
+assert "I workflow-model-audit's publish step takes the guard's title" \
+  "$(grep -qE '^ +TITLE: \$\{\{ steps\.check_issue\.outputs\.title \}\}$' "$wma" && echo true || echo false)"
+assert "I workflow-model-audit files the report under that title" \
+  "$(grep -qF -- '--title "$TITLE"' "$wma" && grep -qF 'scripts/publish-agent-issue.sh' "$wma" && echo true || echo false)"
 
 # --- J: --current-title (supersede mode, #3346) --------------------------------
 # A monthly report is superseded by the next one: last month's open report must
