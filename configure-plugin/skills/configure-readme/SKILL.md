@@ -3,7 +3,7 @@ created: 2025-12-17
 modified: 2026-11-05
 reviewed: 2026-02-08
 description: "Slim README.md (badges, quick start, docs index) with the detail moved into docs/ pages. Use when creating or auditing a README, splitting a long one, or adding badges."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-readme-links.sh *), Bash(find *), Bash(rg *), Bash(basename *), Bash(git remote -v *), AskUserQuestion, TodoWrite, WebSearch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-readme-links.sh *), Bash(find *), Bash(rg *), Bash(basename *), Bash(git remote -v), AskUserQuestion, TodoWrite, WebSearch
 args: "[--check-only] [--fix] [--badges <shields|custom>] [--no-logo]"
 argument-hint: "[--check-only] [--fix] [--badges <shields|custom>] [--no-logo]"
 name: configure-readme

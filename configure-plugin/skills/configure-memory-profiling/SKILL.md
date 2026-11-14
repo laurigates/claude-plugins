@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Memory profiling with pytest-memray for Python. Use when setting up memory profiling, adding CI memory regression detection, or setting memory thresholds."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(uv add *), Bash(uv run pytest *), Bash(uv run memray *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(uv add *), Bash(uv run pytest *), Bash(uv run memray flamegraph *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 argument-hint: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 name: configure-memory-profiling
