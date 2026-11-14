@@ -25,6 +25,7 @@
 
 export const meta = {
   name: 'blueprint-story-audit',
+  description: 'Audit PRD user stories against code and tests: capability, story and test lanes, a cross-lane join, tiered triage, one report',
   phases: [
     { title: 'discover' },
     { title: 'join' },

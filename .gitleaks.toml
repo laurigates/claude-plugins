@@ -13,6 +13,10 @@ paths = [
   # Test fixtures with intentional fake secrets for workflow validation
   '''test-fixtures/security/secrets/.*''',
 
+  # session-plugin's draft-scanner suite plants fake tokens (GitHub, OpenAI
+  # sk-proj, Anthropic) to prove check-issue-draft.sh catches them
+  '''session-plugin/scripts/tests/test-check-issue-draft\.sh''',
+
   # Documentation referencing secret patterns (not actual secrets)
   '''docs/github-workflows-plan\.md''',
   '''docs/prps/reusable-workflows-phase1-security\.md''',

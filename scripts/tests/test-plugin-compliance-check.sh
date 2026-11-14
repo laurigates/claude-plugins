@@ -370,7 +370,9 @@ SESSION_END_LANES_OK='| Taskwarrior sync | at least one session-linked task |
 
 Run `session-plugin:session-wrap` with `--orchestrated`, then
 `session-plugin:session-distill` with `--orchestrated`, then
+`session-plugin:session-workflow-capture` with `--orchestrated`, then
 `feedback-plugin:feedback-session --confirmed "<findings>"`.
+Feedback files its findings minus any workflow friction already filed.
 
 ### Step 4: One question for the Ask lane
 
@@ -438,6 +440,20 @@ run_check; out_fb="$OUT"; rc_fb="$RC"
 assert_eq "session-end: feedback behind the question exits 1" "$rc_fb" "1"
 assert_contains "session-end: feedback behind the question is named" \
   "$out_fb" "feedback-session --confirmed must run in Step 3 (Act lane)"
+# --- Dropping the workflow-capture hand-off must FAIL ------------------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/session-workflow-capture\` with \`--orchestrated/session-workflow-capture\`}"
+run_check; out_wfc="$OUT"; rc_wfc="$RC"
+assert_eq "session-end: workflow-capture hand-off without --orchestrated exits 1" "$rc_wfc" "1"
+assert_contains "session-end: missing workflow-capture --orchestrated is named" \
+  "$out_wfc" "session-workflow-capture\` with \`--orchestrated"
+# --- Dropping the already-filed exclusion (double filing) must FAIL ---------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/Feedback files its findings minus any workflow friction already filed./}"
+run_check; out_fbl="$OUT"; rc_fbl="$RC"
+assert_eq "session-end: no already-filed exclusion exits 1" "$rc_fbl" "1"
+assert_contains "session-end: missing already-filed exclusion is named" \
+  "$out_fbl" "must retain 'minus any workflow friction'"
 rm -rf "${root:?}/$PLUGIN/skills/session-end"
 make_session_end_skill "$GATE3"
 
@@ -855,6 +871,39 @@ make_named_skill() {
     printf '%s\n' "$3" > "$dir/REFERENCE.md"
   fi
 }
+
+# ---------------------------------------------------------------------------
+# session-workflow-capture: gated filing contract (new session-end pass).
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the skill keeps its collector, the draft
+# scan, the cold-read gate, the session-feedback label for plugin-workflow
+# friction, --body-file filing and the
+# --orchestrated/DEFERRED: contract, and never sets disable-model-invocation
+# (session-end runs it through the Skill tool, #1843). The compliant body exits
+# 0; each mutation exits 1 and is named.
+WFC_OK='Run workflow-capture-survey.sh, scan with check-issue-draft.sh, cold-read
+public drafts with agent-patterns-plugin:cold-read-gate, file with --body-file,
+plugin-workflow friction under the session-feedback label. Under --orchestrated
+return DEFERRED: lines.'
+make_named_skill session-workflow-capture "$WFC_OK"
+run_check; out_wfc_ok="$OUT"; rc_wfc_ok="$RC"
+assert_eq "session-workflow-capture: compliant body exits 0" "$rc_wfc_ok" "0"
+for wfc_token in "check-issue-draft.sh" "cold-read-gate" "session-feedback" "DEFERRED:"; do
+  make_named_skill session-workflow-capture "${WFC_OK//$wfc_token/x}"
+  run_check
+  assert_eq "session-workflow-capture: without $wfc_token exits 1" "$RC" "1"
+  assert_contains "session-workflow-capture: missing $wfc_token is named" "$OUT" "'$wfc_token'"
+done
+wfc_dir="$root/$PLUGIN/skills/session-workflow-capture"
+make_named_skill session-workflow-capture "$WFC_OK"
+awk '{ print } /^allowed-tools: Read$/ { print "disable-model-invocation: true" }' "$wfc_dir/SKILL.md" > "$wfc_dir/SKILL.md.tmp" && mv "$wfc_dir/SKILL.md.tmp" "$wfc_dir/SKILL.md"
+grep -q '^disable-model-invocation: true$' "$wfc_dir/SKILL.md" || { echo "FIXTURE: dmi line not inserted"; exit 1; }
+run_check; out_wfc_dmi="$OUT"; rc_wfc_dmi="$RC"
+assert_eq "session-workflow-capture: disable-model-invocation exits 1" "$rc_wfc_dmi" "1"
+assert_contains "session-workflow-capture: disable-model-invocation is named" \
+  "$out_wfc_dmi" "session-workflow-capture: SKILL.md must NOT set 'disable-model-invocation: true'"
+rm -rf "$wfc_dir"
+
 
 # --- (a) configure-release-please: @v5 is the standard (#2757) --------------
 RP_TOKENS='Token: `create-github-app-token` reading `RELEASE_PLEASE_APP_ID`.

@@ -197,9 +197,27 @@ cq_payload="${cq_new_string}
 ${cq_content}"
 cq_is_structural=0
 
-# Signal 1: key manifest basenames.
+# Signal 1: key manifest basenames — except a version-only Edit (issue #3627).
+# An Edit is version-only when old and new strings are identical after each
+# version token is replaced by `V`. A version token is a dotted number with an
+# optional `-prerelease` tail (`1.1.5`, `2.0.0-rc.1`), or a bare number right
+# after `"`, `^`, `~`, `<`, `>` or `=` (`"1"`, `^2`, `>=3`). So a pin or
+# constraint bump (`=1.1.5` -> `=1.1.6`, `>=3.9` -> `>=3.12`) is silent; a bare
+# number such as `"port": 3000`, or a dot removed from a non-version token
+# (`index.js` -> `indexjs`), still fires. code-lint has no manifest linter, so
+# a version-only edit has nothing to pre-flight. A Write, or an Edit with no
+# old_string, still fires — there is nothing to compare against.
+cq_mask_versions() {
+    printf '%s' "$1" | sed -E 's/[0-9]+(\.[0-9]+)+(-[0-9A-Za-z.]+)?/V/g; s/(["^~<>=])[0-9]+/\1V/g'
+}
 case "$cq_base_name" in
-    plugin.json|marketplace.json|package.json|Cargo.toml|pyproject.toml) cq_is_structural=1 ;;
+    plugin.json|marketplace.json|package.json|Cargo.toml|pyproject.toml)
+        cq_old_string=$(printf '%s' "$cq_input" | jq -r '.tool_input.old_string // empty' 2>/dev/null || echo "")
+        if [ "$cq_tool_name" != "Edit" ] || [ -z "$cq_old_string" ] \
+            || [ "$(cq_mask_versions "$cq_old_string")" != "$(cq_mask_versions "$cq_new_string")" ]; then
+            cq_is_structural=1
+        fi
+        ;;
 esac
 
 # Signal 2: a public-symbol / export line in the edit payload.

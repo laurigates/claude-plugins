@@ -84,7 +84,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   '.task_registry["feature-tracker-sync"].last_completed_at = $now |
    .task_registry["feature-tracker-sync"].last_result = "success" |
    .task_registry["feature-tracker-sync"].context.last_todo_hash = $todo_hash |
-   .task_registry["feature-tracker-sync"].stats.runs_total = ((.task_registry["feature-tracker-sync"].stats.runs_total // 0) + 1) |
    .task_registry["feature-tracker-sync"].stats.items_processed = $processed' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
 ```

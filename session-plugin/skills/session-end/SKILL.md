@@ -15,11 +15,11 @@ One survey, then the reversible work runs immediately and the
 outward-facing work waits for **one** question at the end — so a user who
 starts `/session-end` and walks away comes back to finished work and at
 most one question. This is the orchestrator
-over the five end-of-session passes, which otherwise compete for the wind-down
+over the six end-of-session passes, which otherwise compete for the wind-down
 moment (design decisions D3/D4, `docs/archive/session-plugin-workflow.md`).
 
-The five passes — Wrap, Distill, Feedback, Taskwarrior sync, Blueprint
-tracker-sync — and what each captures are listed in
+The six passes — Wrap, Distill, Workflow capture, Feedback, Taskwarrior sync,
+Blueprint tracker-sync — and what each captures are listed in
 [references/passes.md](references/passes.md).
 
 ## When to Use This Skill
@@ -79,6 +79,14 @@ conceptually only":
 bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary
 ```
 
+For the **Workflow capture** qualify gate, run its collector's summary. It
+counts the Workflow-tool runs this session persisted and degrades to
+`STATUS=SKIP` the same way:
+
+```sh
+bash "${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary
+```
+
 ### Step 2: Qualify each pass and sort its items into two lanes
 
 Apply each skill's own signal filter strictly; **silently skip passes
@@ -89,6 +97,7 @@ failure mode.
 |---|---|
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (Step 1): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
+| Workflow capture | `CAPTURE_CANDIDATE_COUNT` or `FRICTION_SIGNAL_COUNT` ≥ 1 in the workflow-capture summary, or the conversation shows a saved or plugin-bundled workflow costing the session (reruns, a resume, a schema rejection); and either a pattern candidate passes `session-workflow-capture`'s reusability questions or a friction finding has a cause in the conversation. Under `STATUS=SKIP`, judge from the conversation alone |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
 | Taskwarrior sync | `TASK_AVAILABLE=true`, `TASK_STORE_REACHABLE=true`, AND ≥1 **session-linked task**: one this session worked on, created, or made closeable (its `TASK_n_GHID` PR/issue merged or closed, or the conversation shows it done). Open tasks the session never touched — the project backlog, `RECENT_TASK_*` rows from other projects — never qualify the pass; see [Backlog is reported, never walked](#backlog-is-reported-never-walked) |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
@@ -110,8 +119,8 @@ whether it runs now or waits for the one question in Step 4:
 
 | Lane | Items | Why |
 |---|---|---|
-| **Act** — run in Step 3, no question | Feedback issues; taskwarrior annotate / modify / add on session-linked tasks; close a task **with evidence** (merged PR, closed issue, commit on the default branch); Wrap's taskwarrior writes; Distill `[UPDATE]` / `[NEW]` edits in the current repo; Blueprint tracker-sync drain | Undoable (`task undo`, `task <uuid> modify status:pending`, `git restore`), or — for feedback issues — triaged and acted on separately, so filing one decides nothing |
-| **Ask** — confirmed once in Step 4 | Wrap's GitHub follow-up issues, journal writes and upstream candidates; Distill `[PROMOTE]` PRs and `[REDUNDANT]` removals; a task add whose project slug is in doubt; closing a task without evidence | Outward-facing, destructive, or a guess — not `git restore`-able |
+| **Act** — run in Step 3, no question | Feedback issues; Workflow capture issues that passed their gates (a calling-repo draft past the scripted scan; a plugins-repo draft past the scan and the cold-read gate); taskwarrior annotate / modify / add on session-linked tasks; close a task **with evidence** (merged PR, closed issue, commit on the default branch); Wrap's taskwarrior writes; Distill `[UPDATE]` / `[NEW]` edits in the current repo; Blueprint tracker-sync drain | Undoable (`task undo`, `task <uuid> modify status:pending`, `git restore`), or — for feedback and gated workflow-capture issues — triaged and acted on separately, so filing one decides nothing |
+| **Ask** — confirmed once in Step 4 | Wrap's GitHub follow-up issues, journal writes and upstream candidates; Distill `[PROMOTE]` PRs and `[REDUNDANT]` removals; Workflow capture drafts whose cold-read gate failed or could not run; a task add whose project slug is in doubt; closing a task without evidence | Outward-facing, destructive, or a guess — not `git restore`-able |
 
 A task close without evidence is a guess, so it goes in the Ask lane or
 becomes an annotation.
@@ -172,8 +181,15 @@ taskwarrior sync), passing the Step 1 survey so it doesn't re-survey:
 4. `session-plugin:session-distill` with `--orchestrated` — applies
    `[UPDATE]` / `[NEW]` in the current repo and returns `[PROMOTE]` and
    `[REDUNDANT]` proposals as `DEFERRED:` lines.
-5. **Feedback** — `feedback-plugin:feedback-session --confirmed "<findings>"`
-   with the findings collected in Step 1. It files the ones that survive
+5. `session-plugin:session-workflow-capture` with `--orchestrated` — after
+   Distill, so a pattern Distill already proposed is not filed again. Files
+   each draft that passed its gates (friction in plugin-shipped workflows in
+   feedback-session's `session-feedback` shape) and returns the rest as
+   `DEFERRED:` lines carrying each draft's path; a draft the scan blocked
+   twice is reported, never deferred.
+6. **Feedback** — `feedback-plugin:feedback-session --confirmed "<findings>"`
+   with the findings collected in Step 1, minus any workflow friction item 5
+   already filed. It files the ones that survive
    dedup without its own review step. If it cannot resolve the target repo
    without asking, it returns the findings as `DEFERRED:` lines instead. If
    the feedback plugin isn't installed, note it and skip.
@@ -198,6 +214,9 @@ Then run the approved items:
   `agent-patterns-plugin:cold-read-gate` → file; never blind. *Track for
   later* is a `+upstream` taskwarrior task.
 - **Distill `[PROMOTE]`** — the throwaway-clone PR hand-off in session-distill.
+- **Workflow capture deferrals** — file each selected draft from the path its
+  `DEFERRED:` line names (`gh issue create -R <tracker> --body-file <path>`);
+  its scripted scan already passed.
 - **Everything else** — apply as described by its owning skill.
 
 Never end the turn on a freeform "y/n" text question — ending the turn
@@ -212,12 +231,14 @@ One short block: what each pass wrote (tasks touched / closed with UUIDs,
 files edited, issues and PRs filed), which passes were skipped as not
 qualifying, the backlog line, and any `not queried` line.
 
-## Seam: distill vs feedback
+## Seam: distill vs feedback vs workflow capture
 
 "Discovered a better flag / a skill suggested something subtly wrong" →
 **feedback** (issue on claude-plugins). "Found a reusable project
-pattern, rule, or recipe" → **distill** (artifact in this repo). When
-both apply, both run — they write to different places.
+pattern, rule, or recipe" → **distill** (artifact in this repo). "A
+Workflow-tool script worth reusing, or a saved or bundled workflow that
+misbehaved" → **workflow capture** (issue in this repo or the plugins repo).
+When several apply, each runs — they write to different places.
 
 ## Auto-surfacing
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Behaviour test for git-triage's issue-triage.workflow.js, run against a stub
+# Behaviour test for git-triage's issue-triage-sweep.workflow.js, run against a stub
 # runtime (run-issue-triage.mjs). It pins what the template generalised from a
 # one-off multi-repository triage run:
 #   - repositories, clone paths and issues come from args (owner/name#N,
@@ -15,7 +15,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-wf="$here/../../workflows/issue-triage.workflow.js"
+wf="$here/../../workflows/issue-triage-sweep.workflow.js"
 
 command -v node >/dev/null || { echo "SKIP: node not installed"; exit 0; }
 [[ -f "$wf" ]] || { echo "FAIL template missing: $wf"; exit 1; }

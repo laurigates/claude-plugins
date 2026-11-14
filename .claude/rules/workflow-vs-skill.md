@@ -1,7 +1,7 @@
 ---
 created: 2026-07-29
-modified: 2026-11-02
-reviewed: 2026-09-16
+modified: 2026-11-14
+reviewed: 2026-11-14
 paths:
   - "*/skills/**/workflows/*.js"
   - "*/skills/**/SKILL.md"
@@ -176,11 +176,28 @@ alone:
     └── <purpose>.workflow.js
 ```
 
-A file in `~/.claude/workflows/` reads as *runnable*, and these templates are
-deliberately incomplete — invoking one against empty `args` spends real worktree
-agents (some capable of opening PRs) to discover it was a template. Register a
-name in `~/.claude/workflows` **only** when another harness must call it by name
-via `workflow('<name>', …)`.
+A registered file reads as *runnable*, and these templates are deliberately
+incomplete — invoking one against empty `args` spends real worktree agents (some
+capable of opening PRs) to discover it was a template. Register a name **only**
+when another harness must call it by name via `workflow('<name>', …)`
+(`docs/dynamic-workflow-registration.md` holds the one exception).
+
+Where Claude Code 2.1.325 finds a workflow by name, read from its binary:
+
+| Location | Runs as | Loaded when |
+|---|---|---|
+| `.claude/workflows/*.js` in the project (the `/workflows` save dialog's project scope) | `meta.name` | always |
+| `~/.claude/workflows/*.js` | `meta.name` | always |
+| `<plugin-root>/workflows/*.js` | `<plugin>:<meta.name>` | the directory exists and `plugin.json` has no `workflows` field |
+| `plugin.json` `"workflows"`: a path, or a list of directories and `.js` files | `<plugin>:<meta.name>` | replaces the default directory |
+| `<plugin>/skills/<skill>/workflows/*.js` | — | never; a bundled template is reached only through its `SKILL.md` |
+
+Every registered workflow appears in the model's skill listing with its
+`meta.description`, and no meta field hides it. The loader skips a file whose
+`meta` lacks a non-empty `name` or `description`, so
+`scripts/check-workflow-js-model.sh` requires both in every bundled and
+repo-saved file, with `meta.name` equal to the filename stem. No plugin here
+registers through the two plugin rows yet, so they are unexercised (#3684).
 
 **A bundled workflow must be reachable from a `## Workflow harness (template)`
 section in its sibling `SKILL.md`.** An orphan `.js` is dead weight — nothing

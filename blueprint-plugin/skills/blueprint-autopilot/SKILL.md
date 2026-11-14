@@ -3,7 +3,7 @@ name: blueprint-autopilot
 description: Run due blueprint maintenance ambiently at autonomy level 2+. Use when a drift nudge reports blueprint tasks due or suggests /blueprint:autopilot.
 allowed-tools: Read, Glob, Grep, Bash, Task
 created: 2026-07-05
-modified: 2026-10-09
+modified: 2026-11-12
 reviewed: 2026-09-02
 ---
 
@@ -69,8 +69,7 @@ manifest:
 ```bash
 jq --arg task "<task>" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
    '.task_registry[$task].last_completed_at = $ts |
-    .task_registry[$task].last_result = "ok (autopilot)" |
-    .task_registry[$task].stats.runs = ((.task_registry[$task].stats.runs // 0) + 1)' \
+    .task_registry[$task].last_result = "ok (autopilot)"' \
    docs/blueprint/manifest.json > docs/blueprint/manifest.json.tmp \
    && mv docs/blueprint/manifest.json.tmp docs/blueprint/manifest.json
 ```

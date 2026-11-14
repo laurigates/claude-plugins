@@ -8,4 +8,5 @@
 | Stale `enabledPlugins` key in settings.json | Plugin appears enabled but no registry/marketplace entry | `/health:check --scope=registry --fix` |
 | Orphaned `projectPath` | Plugin installed for deleted project | `/health:check --scope=registry --fix` |
 | Invalid settings JSON | Settings file won't load | `/health:check` |
+| Plugin installed under a path containing a space | Step 1a scripts exit 127 (`No such file or directory`) | No spelling is both pre-approved and correct on Claude Code 2.1.322 (#3577): quote the script path and approve each prompt |
 | Missing marketplace enrollment | laurigates/claude-plugins skills unavailable in web sessions | `/configure:claude-plugins --fix` |

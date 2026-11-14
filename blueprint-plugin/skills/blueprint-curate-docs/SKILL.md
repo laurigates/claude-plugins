@@ -5,7 +5,7 @@ argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-12
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---
@@ -108,7 +108,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson created "${ITEMS_CREATED:-0}" \
   '.task_registry["curate-docs"].last_completed_at = $now |
    .task_registry["curate-docs"].last_result = "success" |
-   .task_registry["curate-docs"].stats.runs_total = ((.task_registry["curate-docs"].stats.runs_total // 0) + 1) |
    .task_registry["curate-docs"].stats.items_processed = $processed |
    .task_registry["curate-docs"].stats.items_created = $created' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json

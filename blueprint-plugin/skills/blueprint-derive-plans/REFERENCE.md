@@ -403,7 +403,6 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
    .task_registry["derive-plans"].last_result = "success" |
    .task_registry["derive-plans"].context.commits_analyzed_up_to = $sha |
    .task_registry["derive-plans"].context.commits_analyzed_count = $analyzed |
-   .task_registry["derive-plans"].stats.runs_total = ((.task_registry["derive-plans"].stats.runs_total // 0) + 1) |
    .task_registry["derive-plans"].stats.items_processed = $analyzed |
    .task_registry["derive-plans"].stats.items_created = $created' \
   docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json

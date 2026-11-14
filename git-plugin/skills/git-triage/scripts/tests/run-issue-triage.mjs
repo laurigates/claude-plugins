@@ -1,5 +1,5 @@
-// Run git-triage's issue-triage.workflow.js against a stub runtime and assert on
-// its result. Usage: node run-issue-triage.mjs <issue-triage.workflow.js>
+// Run git-triage's issue-triage-sweep.workflow.js against a stub runtime and assert on
+// its result. Usage: node run-issue-triage.mjs <issue-triage-sweep.workflow.js>
 import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 

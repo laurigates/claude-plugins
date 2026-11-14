@@ -25,6 +25,7 @@
 
 export const meta = {
   name: 'configure-all-check',
+  description: 'One read-only configure check per applicable component, then one synthesized compliance report and fix plan',
   phases: [{ title: 'Check' }, { title: 'Synthesize' }],
 }
 
