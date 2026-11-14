@@ -5,7 +5,8 @@
 # posting nothing: release-pr-doc-audit.yml on every release PR since
 # 2026-09-01, and the Claude Skill Quality Review step on 7 of 8 recent
 # SKILL.md PRs. The helper is the post-step gate that turns that silence into a
-# failed step. This suite EXECUTES it against a stub `gh` on PATH that applies
+# failed step. Both Claude steps are gone now (#3199, #3205); the cases below
+# keep their shapes as fixtures for any future comment-delivering step. This suite EXECUTES it against a stub `gh` on PATH that applies
 # the helper's own `--jq` expression to fixture pages, so the endpoint, the
 # pagination flag and the jq projection are all exercised — not retyped.
 #
