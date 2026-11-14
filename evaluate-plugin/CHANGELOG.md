@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.20.2...evaluate-plugin-v1.21.0) (2026-11-14)
+
+
+### Features
+
+* **evaluate-plugin:** diff a passing and a failing run for variable assertions ([79b9466](https://github.com/laurigates/claude-plugins/commit/79b946644b30f4f70b50e28fd5f5a78ead4639c9)), closes [#3150](https://github.com/laurigates/claude-plugins/issues/3150)
+
 ## [1.20.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.20.1...evaluate-plugin-v1.20.2) (2026-11-10)
 
 
