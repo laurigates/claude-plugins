@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.30.2...code-quality-plugin-v1.30.3) (2026-11-15)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** stop the version mask matching ports, flags and IPs ([74e7631](https://github.com/laurigates/claude-plugins/commit/74e7631448c0bc5f94536c19d7516f412bb643da)), closes [#3642](https://github.com/laurigates/claude-plugins/issues/3642)
+* **repo:** drop command substitutions that void bundled-script grants and guard them marketplace-wide ([#3663](https://github.com/laurigates/claude-plugins/issues/3663)) ([7b76407](https://github.com/laurigates/claude-plugins/commit/7b7640740c4dba42bb4e491f7ca44f1df8b1f720))
+
 ## [1.30.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.30.1...code-quality-plugin-v1.30.2) (2026-11-14)
 
 
