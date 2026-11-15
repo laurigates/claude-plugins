@@ -60,3 +60,14 @@ blueprint_changed_paths() {
             (.tool_input.file_path // .tool_input.notebook_path // empty)
         end' 2>/dev/null
 }
+
+# blueprint_is_registry_path <project-relative-path> — true when the path is
+# in the id-registry engine's scan set: docs/{prds,adrs,prps,trps}/*.md or
+# docs/blueprint/work-orders/*.md, one level deep (ADR-0027 Q4).
+blueprint_is_registry_path() {
+    case "$1" in
+        docs/prds/*/*|docs/adrs/*/*|docs/prps/*/*|docs/trps/*/*|docs/blueprint/work-orders/*/*) return 1 ;;
+        docs/prds/*.md|docs/adrs/*.md|docs/prps/*.md|docs/trps/*.md|docs/blueprint/work-orders/*.md) return 0 ;;
+        *) return 1 ;;
+    esac
+}

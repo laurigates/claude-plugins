@@ -9,8 +9,8 @@
 #
 # Task-kind split (see ADR-0020 and
 # .claude/rules/offload-to-deterministic-substrate.md):
-#   deterministic : sync-ids (id-registry sweep — replays the
-#                   auto-sync-id-registry.sh registration over all documents)
+#   deterministic : sync-ids (id-registry sweep — the --registry-reconcile
+#                   engine the write-time hook also calls, ADR-0027 Q4)
 #   agent-judgment: everything else (adr-validate, feature-tracker-sync,
 #                   story-audit, ...) — surfaced as due, never executed here.
 #
@@ -37,10 +37,15 @@
 # Exit 0 on OK/WARN, 1 on ERROR (parallel-safe).
 #
 # Usage: blueprint-autorun.sh [--project-dir DIR] [--report]
+#        blueprint-autorun.sh --registry-reconcile [--check] [--project-dir DIR]
 #        blueprint-autorun.sh --frontmatter-rows FILE...
 #
+# --registry-reconcile is the one id-registry engine (ADR-0027 Q2/Q4, #3550);
+# see registry_reconcile below. --check reports what it would change, writes
+# nothing, and exits 1 when id_registry is stale.
+#
 # --frontmatter-rows is the one frontmatter parser the write-time hook
-# (hooks/auto-sync-id-registry.sh), the session-start sweep (run_sync_ids) and
+# (through registry_reconcile), the session-start sweep (run_sync_ids) and
 # the sync-ids audit share (ADR-0027 Q1, #3549). It prints one row per file and
 # nothing else; see frontmatter_rows below for the row shape. Level 3 vendors
 # this script as one file, so the parser lives here rather than in a library.
@@ -52,6 +57,7 @@ set -u
 
 usage() {
     printf 'usage: blueprint-autorun.sh [--project-dir DIR] [--report]\n' >&2
+    printf '       blueprint-autorun.sh --registry-reconcile [--check] [--project-dir DIR]\n' >&2
     printf '       blueprint-autorun.sh --frontmatter-rows FILE...\n' >&2
 }
 
@@ -264,8 +270,263 @@ if [ "${1:-}" = "--frontmatter-rows" ]; then
     exit $?
 fi
 
+# registry_reconcile PROJECT_DIR apply|check — the one id-registry engine
+# (ADR-0027 Q2/Q4, #3550). The write-time hook (hooks/blueprint-doc-change.sh),
+# the session-start sweep (run_sync_ids) and the sync-ids audit (--check) all
+# call it, so registration has one implementation.
+#
+#   - Input: every docs/{prds,adrs,prps,trps}/*.md and
+#     docs/blueprint/work-orders/*.md, plus every registered path that exists,
+#     read by one frontmatter_rows pass and one jq call.
+#   - Entries: path, status, title, relates_to and github_issues are derived
+#     from frontmatter and merged into the existing entry, so keys frontmatter
+#     does not carry (implements, ...) survive. created comes from frontmatter,
+#     else the existing value, else is omitted: never from the clock.
+#   - Prune (P1): an entry whose own path exists, in any directory, and whose
+#     frontmatter does not carry the entry's id is removed. Ids compare after
+#     norm() (ADR-012 == ADR-0012). An entry whose path is missing (P2) is never
+#     touched: work orders are git-ignored, checkouts can be sparse.
+#   - Duplicates: the registered path keeps the id while it still carries it,
+#     else the lexically first path. Reported as ACTION=duplicate.
+#   - Counters: last_prd/last_prp/last_trp = max(existing, ids on disk,
+#     registry keys before pruning). They never decrease. last_trp is written
+#     only when it exists or a TRP id is seen.
+#   - Reverse index: rebuilt from every entry's github_issues, listing the
+#     entry and whatever it implements (a work order lists its PRP).
+#   - Write: only when id_registry differs; under an mkdir lock; the new
+#     id_registry is applied to the manifest re-read under the lock (a
+#     concurrent task_registry write survives); per-PID temp file + atomic mv.
+#     No id_registry is created when no document carries an id.
+#   - check: compute and report, never write; exit 1 when a write is due.
+#
+# Output: a === BLUEPRINT REGISTRY RECONCILE === block with DOCS=, CHANGED=,
+# one `  - ACTION=add|update|prune|duplicate ...` row per finding, STATUS=,
+# ISSUE_COUNT=. The body is a subshell, so its cd and traps stay local.
+registry_reconcile() (
+    rr_dir="$1"
+    rr_mode="$2"
+    rr_pid="${BASHPID:-$$}"
+    rr_have_lock=0
+    rr_manifest=""
+    rr_lock=""
+    rr_tmp=""
+
+    rr_finish() {
+        # rr_finish <status> <issue_count> [reason]
+        printf 'STATUS=%s\n' "$1"
+        [ "$1" != "OK" ] && [ -n "${3:-}" ] && printf 'REASON=%s\n' "$3"
+        printf 'ISSUE_COUNT=%s\n' "$2"
+        printf '=== END BLUEPRINT REGISTRY RECONCILE ===\n'
+    }
+    # shellcheck disable=SC2329,SC2317  # invoked indirectly by the EXIT trap
+    rr_cleanup() {
+        [ -n "$rr_tmp" ] && rm -f "$rr_tmp" "${rr_tmp}.result"
+        if [ "$rr_have_lock" = 1 ]; then
+            rm -f "${rr_lock}/pid"
+            rmdir "$rr_lock" 2>/dev/null
+        fi
+        return 0
+    }
+    trap rr_cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+
+    printf '=== BLUEPRINT REGISTRY RECONCILE ===\n'
+    printf 'MODE=%s\n' "$rr_mode"
+    if ! cd "$rr_dir" 2>/dev/null; then
+        printf 'CHANGED=false\n'
+        rr_finish ERROR 1 "project_dir_unreadable: ${rr_dir}"
+        return 1
+    fi
+    if [ -f docs/blueprint/manifest.json ]; then
+        rr_manifest="docs/blueprint/manifest.json"
+    elif [ -f docs/blueprint/.manifest.json ]; then
+        rr_manifest="docs/blueprint/.manifest.json"
+    else
+        printf 'REGISTRY=no_manifest\nDOCS=0\nCHANGED=false\n'
+        rr_finish OK 0
+        return 0
+    fi
+    if ! command -v jq >/dev/null 2>&1; then
+        printf 'REGISTRY=jq_unavailable\nDOCS=0\nCHANGED=false\n'
+        rr_finish OK 0
+        return 0
+    fi
+    rr_lock="${rr_manifest}.lock.d"
+    rr_tmp="${rr_manifest}.reconcile.${rr_pid}"
+
+    # Serialise writers. A lock whose owner is gone (SIGKILL) is taken over.
+    if [ "$rr_mode" = "apply" ]; then
+        rr_tries=0
+        until mkdir "$rr_lock" 2>/dev/null; do
+            rr_owner=$(cat "${rr_lock}/pid" 2>/dev/null)
+            if [ -n "$rr_owner" ] && ! kill -0 "$rr_owner" 2>/dev/null; then
+                rm -f "${rr_lock}/pid"
+                rmdir "$rr_lock" 2>/dev/null
+                continue
+            fi
+            rr_tries=$((rr_tries + 1))
+            if [ "$rr_tries" -ge 300 ]; then
+                printf 'CHANGED=false\n'
+                rr_finish ERROR 1 "lock_timeout: ${rr_lock} held for 15 s"
+                return 1
+            fi
+            sleep 0.05
+        done
+        rr_have_lock=1
+        printf '%s\n' "$rr_pid" > "${rr_lock}/pid"
+    fi
+
+    # Scan set plus every registered path that exists, deduplicated.
+    rr_files=()
+    while IFS= read -r -d '' rr_f; do
+        rr_files+=("$rr_f")
+    done < <(
+        {
+            find docs/prds docs/adrs docs/prps docs/trps docs/blueprint/work-orders \
+                -maxdepth 1 -type f -name '*.md' -print0 2>/dev/null
+            jq -r '(.id_registry.documents // {}) | objects | .[] | objects | .path | strings' \
+                "$rr_manifest" 2>/dev/null \
+                | while IFS= read -r rr_p; do
+                    [ -n "$rr_p" ] && [ -f "$rr_p" ] && printf '%s\0' "$rr_p"
+                done
+        } | LC_ALL=C sort -zu
+    )
+    rr_rows=""
+    if [ "${#rr_files[@]}" -gt 0 ]; then
+        rr_rows=$(frontmatter_rows "${rr_files[@]}")
+    fi
+
+    # One jq call computes the new id_registry and the findings. Rows arrive
+    # on stdin (an argument would hit the 128 KiB per-argument limit).
+    # shellcheck disable=SC2016  # jq program text, not shell expansions
+    if ! printf '%s\n' "$rr_rows" | jq -R -s \
+            --arg reconcile_compute 1 \
+            --slurpfile manifest_doc "$rr_manifest" \
+            'def norm: ascii_upcase
+                 | if test("^[A-Z]+-[0-9]+$")
+                   then capture("^(?<p>[A-Z]+)-0*(?<n>[0-9]*)$") | .p + "-" + (if .n == "" then "0" else .n end)
+                   else . end;
+             def cnum($p): ascii_upcase | select(test("^" + $p + "-[0-9]+$")) | ltrimstr($p + "-") | tonumber;
+             def scan_path: test("^docs/(prds|adrs|prps|trps)/[^/]+\\.md$|^docs/blueprint/work-orders/[^/]+\\.md$");
+             def lst($s): ($s // "") | split("\u001e") | map(select(length > 0));
+             ($manifest_doc[0]) as $doc
+             | ($doc.id_registry // null) as $old
+             | [split("\n")[] | select(length > 0) | split("\u001f")
+                | {path: .[0], id: (if .[1] == "1" then .[2] else "" end),
+                   status: (.[3] // ""), title: (.[4] // ""), created: (.[5] // ""),
+                   rel: lst(.[6]), gh: (lst(.[7]) | map(ltrimstr("#") | tonumber? // empty))}] as $all
+             | ($all | map({key: .path, value: .id}) | from_entries) as $fm_id
+             | ($all | map(select(.id != "" and (.path | scan_path))) | sort_by(.path)) as $scan
+             | if ($old | type) != "object" and ($scan | length) == 0 then
+                 {changed: false, registry: $old, docs: 0, findings: []}
+               else
+                 (if ($old | type) == "object" then $old
+                  else {last_prd: 0, last_prp: 0, documents: {}, github_issues: {}} end) as $base
+                 | (($base.documents // {}) | if type == "object" then . else {} end) as $docs0
+                 | ($docs0 | keys_unsorted | map({k: ., n: norm})) as $keyn
+                 | reduce ($scan | group_by(.id | norm))[] as $g ({docs: $docs0, findings: []};
+                     ($g[0].id | norm) as $n
+                     | ([$keyn[] | select(.n == $n) | .k] | sort) as $ek
+                     | ($g | map(.path)) as $gpaths
+                     | ([$ek[] | select((($docs0[.] | objects | .path) // null) as $p
+                                        | ($gpaths | index($p)) != null)] | first) as $kmatch
+                     | ($kmatch // $ek[0] // $g[0].id) as $key
+                     | (if $kmatch != null
+                        then ($docs0[$kmatch].path) as $rp | ($g | map(select(.path == $rp)) | first)
+                        else $g[0] end) as $w
+                     | (($docs0[$key] | objects) // {}) as $e
+                     | ($e + {path: $w.path,
+                              title: (if $w.title == "" then "untitled" else $w.title end),
+                              status: (if $w.status == "" then "unknown" else $w.status end),
+                              relates_to: $w.rel,
+                              github_issues: $w.gh}
+                        | if $w.created != "" then .created = $w.created else . end) as $new
+                     | .docs[$key] = $new
+                     | .findings += (if $e == {} then [{action: "add", id: $key, path: $w.path}]
+                                     elif $e != $new then [{action: "update", id: $key, path: $w.path,
+                                         fields: ([$new | keys[] | select($e[.] != $new[.])] | join(","))}]
+                                     else [] end)
+                     | .findings += (if ($g | length) > 1
+                                     then [{action: "duplicate", id: $key, kept: $w.path,
+                                            dropped: ([$gpaths[] | select(. != $w.path)] | join(","))}]
+                                     else [] end))
+                 | ([.docs | to_entries[]
+                     | select((.value | objects | .path | strings) as $p
+                              | ($fm_id | has($p)) and (($fm_id[$p] | norm) != (.key | norm)))
+                     | {action: "prune", id: .key, path: .value.path, has: $fm_id[.value.path]}]) as $pruned
+                 | ($pruned | map(.id)) as $pids
+                 | .docs |= with_entries(select(.key as $k | ($pids | index($k)) == null))
+                 | . as $st
+                 | ([$st.docs | to_entries[] | (.value | objects) as $v
+                     | (($v.github_issues // []) | if type == "array" then .[] else empty end) as $i
+                     | ([.key] + (($v.implements // []) | if type == "array" then . else [.] end))[]
+                     | {issue: ($i | tostring | ltrimstr("#")), id: .}]
+                    | group_by(.issue) | sort_by(.[0].issue | tonumber? // 0)
+                    | map({key: .[0].issue, value: (map(.id) | unique)}) | from_entries) as $rev
+                 | (reduce ("PRD", "PRP", "TRP") as $p ($base;
+                      ("last_" + ($p | ascii_downcase)) as $ck
+                      | ([(($base[$ck] | numbers) // 0)]
+                         + [$docs0 | keys[] | cnum($p)] + [$scan[].id | cnum($p)] | max) as $mx
+                      | if has($ck) or $mx > 0 then .[$ck] = $mx else . end)
+                    | .documents = $st.docs | .github_issues = $rev) as $new_reg
+                 | {changed: ($new_reg != $old), registry: $new_reg, docs: ($scan | length),
+                    findings: ($st.findings + $pruned)}
+               end' > "${rr_tmp}.result"; then
+        printf 'CHANGED=false\n'
+        rr_finish ERROR 1 "compute_failed: jq could not reconcile ${rr_manifest}"
+        return 1
+    fi
+
+    rr_report=$(jq -r '
+        "DOCS=\(.docs)",
+        "CHANGED=\(.changed)",
+        "FINDING_COUNT=\(.findings | length)",
+        (.findings[] |
+          if .action == "prune" then "  - ACTION=prune ID=\(.id) PATH=\(.path) HAS=\(.has)"
+          elif .action == "update" then "  - ACTION=update ID=\(.id) PATH=\(.path) FIELDS=\(.fields)"
+          elif .action == "duplicate" then "  - ACTION=duplicate ID=\(.id) KEPT=\(.kept) DROPPED=\(.dropped)"
+          else "  - ACTION=add ID=\(.id) PATH=\(.path)" end)' "${rr_tmp}.result" 2>/dev/null)
+    printf '%s\n' "$rr_report"
+    rr_changed=false
+    case "$rr_report" in
+        *CHANGED=true*) rr_changed=true ;;
+    esac
+    rr_dups=$(grep -c '^  - ACTION=duplicate' <<<"$rr_report")
+
+    if [ "$rr_mode" = "check" ]; then
+        if [ "$rr_changed" = true ]; then
+            rr_finish ERROR 1 "registry_drift: id_registry differs from what the engine derives (run --registry-reconcile)"
+            return 1
+        fi
+        if [ "$rr_dups" -gt 0 ]; then
+            rr_finish WARN "$rr_dups" "duplicate_id: ${rr_dups} id(s) claimed by more than one document"
+            return 0
+        fi
+        rr_finish OK 0
+        return 0
+    fi
+
+    if [ "$rr_changed" = true ]; then
+        # Re-read the live manifest now, under the lock, and replace only
+        # id_registry, so a write to any other key made meanwhile survives.
+        if ! { jq --slurpfile reconciled "${rr_tmp}.result" '.id_registry = $reconciled[0].registry' \
+                   "$rr_manifest" > "$rr_tmp" && mv "$rr_tmp" "$rr_manifest"; }; then
+            rr_finish ERROR 1 "write_failed: could not replace ${rr_manifest}"
+            return 1
+        fi
+    fi
+    if [ "$rr_dups" -gt 0 ]; then
+        rr_finish WARN "$rr_dups" "duplicate_id: ${rr_dups} id(s) claimed by more than one document"
+        return 0
+    fi
+    rr_finish OK 0
+    return 0
+)
+
 project_dir="."
 run_mode="apply"
+reconcile_check=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -281,6 +542,14 @@ while [ $# -gt 0 ]; do
             run_mode="report"
             shift
             ;;
+        --registry-reconcile)
+            run_mode="reconcile"
+            shift
+            ;;
+        --check)
+            reconcile_check=1
+            shift
+            ;;
         *)
             printf 'blueprint-autorun.sh: unknown argument: %s\n' "$1" >&2
             usage
@@ -288,6 +557,24 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+if [ "$reconcile_check" = 1 ] && [ "$run_mode" != "reconcile" ]; then
+    printf 'blueprint-autorun.sh: --check needs --registry-reconcile\n' >&2
+    usage
+    exit 2
+fi
+
+# --registry-reconcile runs at every autonomy level: the write-time hook calls
+# it and gates on BLUEPRINT_SKIP_HOOKS itself. The session-start sweep reaches
+# the same engine through run_sync_ids, behind the autonomy >= 1 gate below.
+if [ "$run_mode" = "reconcile" ]; then
+    if [ "$reconcile_check" = 1 ]; then
+        registry_reconcile "$project_dir" check
+    else
+        registry_reconcile "$project_dir" apply
+    fi
+    exit $?
+fi
 
 section_open() { printf '=== BLUEPRINT AUTORUN ===\n'; }
 section_close() { printf '=== END BLUEPRINT AUTORUN ===\n'; }
@@ -356,7 +643,6 @@ iso_to_epoch() {
 }
 
 now_epoch=$(date -u +%s)
-now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 is_deterministic() {
     case "$1" in
@@ -365,109 +651,23 @@ is_deterministic() {
     esac
 }
 
-# Replay the auto-sync-id-registry.sh registration over every blueprint
-# document. Registry completeness only (path/status/title/counters) — the
-# relates_to/github_issues cross-refs are the write-time PostToolUse hook's
-# job and existing values are preserved by the merge.
-#
-# Works on a copy and replaces the manifest only when .id_registry differs:
-# jq re-serialises the whole file, so an unconditional write would reformat a
-# hand-edited manifest on every session start and leave the tree dirty.
-#
-# The body is a subshell ( ... ), not a brace group, so the cleanup traps
-# below are scoped to the process that creates and owns the work copy and can
-# never replace a trap in the calling shell. `$$` is the top-level script's
-# PID even here (bash keeps $$ across subshells); it only names the file.
-#
-# Killed mid-sweep (the SessionStart probe's 5 s hook timeout does this on
-# big repos, #3169), the EXIT/INT/TERM traps remove the work copy and its
-# .tmp. The live manifest is only ever replaced by an atomic mv, so a kill
-# leaves it either untouched or fully updated. SIGKILL cannot be trapped.
+# The session-start sweep: the registry engine over the whole tree
+# (ADR-0027 Q4, #3550). The write-time hook calls the same engine, so the two
+# triggers cannot register a document two ways. The engine writes only when
+# id_registry differs, under its lock, by atomic mv; a run killed mid-sweep
+# leaves the manifest untouched (its traps remove the lock and temp files).
 #
 # Prints "<docs_seen> <changed:true|false>".
-run_sync_ids() (
-    local docs_seen=0
-    local work="${manifest}.autorun.$$"
-
-    # shellcheck disable=SC2329,SC2317  # invoked indirectly by the EXIT trap
-    sync_ids_cleanup() { rm -f "$work" "${work}.tmp"; }
-    trap sync_ids_cleanup EXIT
-    # Exit with the conventional 128+signal status so the run still dies;
-    # the EXIT trap then performs the cleanup.
-    trap 'exit 130' INT
-    trap 'exit 143' TERM
-
-    cp "$manifest" "$work" || return 1
-
-    # One frontmatter_rows pass (one awk process) reads every document; one jq
-    # call then registers every row carrying an id. The per-document loop this
-    # replaced forked awk, grep/sed/tr per field and one jq read-modify-write
-    # per document; at 88 documents that took 6.3 s, past the probe's 5 s hook
-    # budget (#3169). Row fields: see frontmatter_rows.
-    local rows
-    local -a scan_files=()
-    local scan_file
-    while IFS= read -r -d '' scan_file; do
-        scan_files+=("$scan_file")
-    done < <(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
-                  "${project_dir}/docs/blueprint/work-orders" \
-                  -maxdepth 1 -type f -name '*.md' -print0 2>/dev/null)
-    rows=$(frontmatter_rows "${scan_files[@]}" | awk -F'\037' '$3 != ""')
-
-    if [ -n "$rows" ]; then
-        docs_seen=$(printf '%s\n' "$rows" | wc -l | tr -d ' ')
-    elif ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
-        # No document carries an id and there is no registry: creating an
-        # empty one would dirty every fresh clone of such a consumer (#3548).
-        rm -f "$work"
-        printf '0 false'
-        return 0
-    fi
-
-    if ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
-        if ! { jq '. + {"id_registry": {"last_prd": 0, "last_prp": 0, "documents": {}, "github_issues": {}}}' \
-                   "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
-            rm -f "$work" "${work}.tmp"
-            return 1
-        fi
-    fi
-
-    if ! { printf '%s\n' "$rows" | jq -R -s \
-             --arg pfx "${project_dir}/" \
-             --arg now "$now_iso" \
-             --slurpfile manifest_doc "$work" \
-             'def or_default($d): if . == "" then $d else . end;
-              def counter($prefix): ltrimstr($prefix) | tonumber? // 0;
-              [split("\n")[] | select(length > 0) | split("\u001f")] as $rows
-              | reduce $rows[] as $r ($manifest_doc[0];
-                  ($r[2]) as $id
-                  | .id_registry.documents[$id] =
-                      ((.id_registry.documents[$id]
-                        // {"created": ($r[5] | or_default($now)), "relates_to": [], "github_issues": []})
-                       + {path: ($r[0] | ltrimstr($pfx)),
-                          status: ($r[3] | or_default("unknown")),
-                          title: ($r[4] | or_default("untitled"))})
-                  | if ($id | startswith("PRD-")) then
-                      .id_registry.last_prd = ([.id_registry.last_prd // 0, ($id | counter("PRD-"))] | max)
-                    elif ($id | startswith("PRP-")) then
-                      .id_registry.last_prp = ([.id_registry.last_prp // 0, ($id | counter("PRP-"))] | max)
-                    else . end)' \
-             > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
-        rm -f "$work" "${work}.tmp"
-        return 1
-    fi
-
-    local changed=true
-    if [ "$(jq -S '.id_registry' "$work" 2>/dev/null)" = "$(jq -S '.id_registry' "$manifest" 2>/dev/null)" ]; then
-        changed=false
-        rm -f "$work"
-    else
-        mv "$work" "$manifest" || { rm -f "$work"; return 1; }
-    fi
-
-    printf '%s %s' "$docs_seen" "$changed"
+run_sync_ids() {
+    local rr_out rr_rc docs_seen changed
+    rr_out=$(registry_reconcile "$project_dir" apply)
+    rr_rc=$?
+    [ "$rr_rc" -eq 0 ] || return 1
+    docs_seen=$(sed -n 's/^DOCS=//p' <<<"$rr_out" | head -n 1)
+    changed=$(sed -n 's/^CHANGED=//p' <<<"$rr_out" | head -n 1)
+    printf '%s %s' "${docs_seen:-0}" "${changed:-false}"
     return 0
-)
+}
 
 # Run state is never written here (ADR-0027 Q3, #3548). A deterministic task
 # keeps none: the tracked manifest changes only when id_registry does, so a

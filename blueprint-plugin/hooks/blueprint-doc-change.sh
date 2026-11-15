@@ -6,7 +6,11 @@
 # to a project-relative path, and hands every path under docs/ to the per-file
 # handlers as a Write-shaped payload:
 #
-#   auto-sync-id-registry.sh   id_registry entry for PRD/ADR/PRP/WO documents
+#   blueprint-autorun.sh --registry-reconcile
+#                              the one id-registry engine (ADR-0027 Q4, #3550),
+#                              called ONCE per tool call when any changed path,
+#                              existing or deleted, is a PRD/ADR/PRP/TRP/WO
+#                              document. Runs at every autonomy level.
 #   sync-feature-tracker.sh    tracker last_updated/statistics (autonomy >= 1)
 #   validate-frontmatter.sh    schema check of PRD/ADR/PRP documents; ERRORs are
 #                              returned to Claude as additionalContext (a nudge:
@@ -49,14 +53,15 @@ cd "$ROOT" || exit 0
 [ -f docs/blueprint/manifest.json ] || exit 0
 
 schema_errors=""
+registry_due=0
 while IFS= read -r changed; do
     rel=$(blueprint_relpath "$changed" "$ROOT")
     case "$rel" in
         docs/*) ;;
         *) continue ;;
     esac
+    blueprint_is_registry_path "$rel" && registry_due=1
     payload=$(jq -nc --arg f "$rel" '{tool_name: "Write", tool_input: {file_path: $f}}')
-    printf '%s' "$payload" | bash "${HOOK_DIR}/auto-sync-id-registry.sh" || true
     printf '%s' "$payload" | bash "${HOOK_DIR}/sync-feature-tracker.sh" || true
 
     case "$rel" in
@@ -71,6 +76,11 @@ ${errors}
             ;;
     esac
 done < <(blueprint_changed_paths "$INPUT")
+
+# One whole-tree reconcile covers every changed document, deletions included.
+if [ "$registry_due" = 1 ]; then
+    bash "${HOOK_DIR}/../scripts/blueprint-autorun.sh" --registry-reconcile --project-dir "$ROOT" >/dev/null 2>&1 || true
+fi
 
 if [ -n "$schema_errors" ]; then
     detail=$(printf '%s' "$schema_errors" | head -n 20)

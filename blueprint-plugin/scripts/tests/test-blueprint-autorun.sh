@@ -234,8 +234,8 @@ assert_contains "I: second run finds nothing to change" "STATE=ran DOCS=1 CHANGE
 [ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] \
     && ok "I: an unchanged reconcile leaves the manifest byte-identical" \
     || notok "I: an unchanged reconcile rewrote the manifest"
-leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
-[ "$leftover" = "0" ] && ok "I: no work copy left behind" || notok "I: $leftover work copies left behind"
+leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.reconcile.*' -o -name 'manifest.json.lock.d' | wc -l | tr -d ' ')
+[ "$leftover" = "0" ] && ok "I: no lock or temp file left behind" || notok "I: $leftover lock/temp files left behind"
 rm -rf "$sb"
 
 # ---- Test J: reconcile respects level 0 and --report ----
@@ -256,18 +256,18 @@ rm -rf "$sb"
 
 # ---- Test K: a killed sweep leaves no work copy behind (#3169) ----
 # The SessionStart probe runs the autorun under a 5 s hook timeout; on a big
-# repo the sweep outlives it and the harness kills the run. The work copy
-# (manifest.json.autorun.<pid>) must not survive the kill.
+# repo the sweep outlives it and the harness kills the run. The engine's lock
+# (manifest.json.lock.d) and temp files must not survive the kill (#3550).
 #
-# Deterministic: a PATH-stubbed jq parks inside the batched registration call
-# (the only jq call carrying `--arg pfx`) until a release file appears, so
+# Deterministic: a PATH-stubbed jq parks inside the engine's compute call
+# (the only jq call carrying `--arg reconcile_compute`) until a release file appears, so
 # the run is provably mid-sweep when the signal lands — no timing sleeps.
 real_jq=$(command -v jq)
 stub_dir=$(make_sandbox)
 cat > "$stub_dir/jq" <<'EOF'
 #!/usr/bin/env bash
 for a in "$@"; do
-    if [ "$a" = "pfx" ]; then
+    if [ "$a" = "reconcile_compute" ]; then
         : > "$STUB_MARK"
         i=0
         while [ ! -f "$STUB_RELEASE" ] && [ "$i" -lt 200 ]; do
@@ -323,9 +323,8 @@ run_killed_sweep() {
         rm -rf "$sb"
         return
     fi
-    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
-    [ "$leftover" != "0" ] && ok "K($label): work copy exists mid-sweep (test reaches the window)" \
-        || notok "K($label): no work copy mid-sweep — test no longer exercises the window"
+    [ -d "$sb/docs/blueprint/manifest.json.lock.d" ] && ok "K($label): lock held mid-sweep (test reaches the window)" \
+        || notok "K($label): no lock mid-sweep — test no longer exercises the window"
     if [ "$target" = "group" ]; then
         kill -TERM -- "-$pid" 2>/dev/null
     else
@@ -336,9 +335,9 @@ run_killed_sweep() {
     wait "$pid" 2>/dev/null
     wait_for_group_exit "$pid"
     : > "$sb/release"
-    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
-    [ "$leftover" = "0" ] && ok "K($label): no work copy left behind after SIGTERM" \
-        || notok "K($label): $leftover work copies left behind after SIGTERM"
+    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.reconcile.*' -o -name 'manifest.json.lock.d' | wc -l | tr -d ' ')
+    [ "$leftover" = "0" ] && ok "K($label): no lock or temp file left behind after SIGTERM" \
+        || notok "K($label): $leftover lock/temp files left behind after SIGTERM"
     "$real_jq" -e . "$sb/docs/blueprint/manifest.json" >/dev/null 2>&1 \
         && ok "K($label): live manifest is still valid JSON" \
         || notok "K($label): live manifest is not valid JSON"
@@ -359,9 +358,11 @@ rm -rf "$stub_dir"
 # them in one jq call. Pin the registry it must produce, field for field, on
 # a fixture covering each per-document rule the old loop applied: first
 # `key:` line wins, `title:` falls back to the first `# ` heading, then
-# "untitled"; missing status -> "unknown"; missing created -> run time; no id
-# or no frontmatter -> skipped; an existing entry keeps created/relates_to/
-# github_issues; last_prd/last_prp take the max numeric suffix.
+# "untitled"; missing status -> "unknown"; no id or no frontmatter -> skipped;
+# last_prd/last_prp take the max numeric suffix. Since the engine (#3550):
+# missing created -> omitted, never the clock; an existing entry keeps its
+# created when frontmatter has none; relates_to/github_issues are derived
+# from frontmatter, and the reverse index is rebuilt from the entries.
 sb=$(make_sandbox)
 write_manifest "$sb" 1 true daily null
 mf="$sb/docs/blueprint/manifest.json"
@@ -388,11 +389,11 @@ printf -- '# ADR index\n\nTemplate:\n\n```markdown\n---\nid: ADR-NNNN\ntitle: "A
 out=$(bash "$AUTORUN" --project-dir "$sb")
 assert_contains "L: sweep registered the six id-bearing docs" "STATE=ran DOCS=6 CHANGED=true" "$out"
 expected='{
-  "github_issues": {"7": "PRD-0003"},
+  "github_issues": {},
   "last_prd": 10,
   "last_prp": 7,
   "documents": {
-    "PRD-0003": {"created": "2020-01-01", "relates_to": ["ADR-0001"], "github_issues": [7],
+    "PRD-0003": {"created": "2026-01-02", "relates_to": [], "github_issues": [],
                  "path": "docs/prds/0003-search.md", "status": "Accepted", "title": "Search"},
     "PRD-0010": {"created": "2026-02-03", "relates_to": [], "github_issues": [],
                  "path": "docs/prds/0010 spaced name.md", "status": "Draft", "title": "Ten from heading"},
@@ -400,14 +401,13 @@ expected='{
                  "path": "docs/prps/0007-prp.md", "status": "Ready", "title": "Tab\there \"quoted\" \\back"},
     "PRP-0002": {"created": "2026-03-05", "relates_to": [], "github_issues": [],
                  "path": "docs/prps/0002-prp.md", "status": "unknown", "title": "untitled"},
-    "ADR-0001": {"created": "RUNTIME", "relates_to": [], "github_issues": [],
+    "ADR-0001": {"relates_to": [], "github_issues": [],
                  "path": "docs/adrs/0001-adr.md", "status": "Accepted", "title": "First heading"},
-    "WO-001": {"created": "RUNTIME", "relates_to": [], "github_issues": [],
+    "WO-001": {"relates_to": [], "github_issues": [],
                "path": "docs/blueprint/work-orders/001-wo.md", "status": "open", "title": "WO heading"}
   }
 }'
-actual=$("$real_jq" -S '.id_registry
-    | .documents |= with_entries(if (.value.created | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")) then .value.created = "RUNTIME" else . end)' "$mf")
+actual=$("$real_jq" -S '.id_registry' "$mf")
 if [ "$actual" = "$(printf '%s' "$expected" | "$real_jq" -S .)" ]; then
     ok "L: id_registry matches the per-document registration semantics"
 else
@@ -467,11 +467,11 @@ assert_contains "O: new document registered" "STATE=ran DOCS=2 CHANGED=true" "$o
 [ "$("$real_jq" -S 'del(.id_registry)' "$sb/before.json")" = "$("$real_jq" -S 'del(.id_registry)' "$(mf_of "$sb")")" ] \
     && ok "O: a registering run changes only .id_registry" || notok "O: a registering run changed more than .id_registry"
 
-# Forced sweep failure: the registration jq call (the one carrying --arg pfx) fails.
+# Forced sweep failure: the engine's compute jq call (the one carrying --arg reconcile_compute) fails.
 fail_dir=$(make_sandbox)
 cat > "$fail_dir/jq" <<'EOF'
 #!/usr/bin/env bash
-for a in "$@"; do [ "$a" = "pfx" ] && exit 5; done
+for a in "$@"; do [ "$a" = "reconcile_compute" ] && exit 5; done
 exec "$REAL_JQ" "$@"
 EOF
 chmod +x "$fail_dir/jq"
@@ -611,6 +611,231 @@ for view_label in sweep hook; do
         && ok "N($view_label): frontmatter comment line is not the title" || notok "N($view_label): ADR-9009 title wrong"
 done
 rm -rf "$sb_sweep" "$sb_hook"
+
+
+# ---- Test R: the --registry-reconcile engine (ADR-0027 Q2/Q4, #3550) ----
+# One engine for the write-time hook and the session-start sweep. Pins the
+# P1 prune (path exists, frontmatter does not carry the id), the P2 keep
+# (path missing), counters that never decrease, created never from the clock,
+# the rebuilt reverse index, duplicate resolution, determinism and --check.
+reconcile() {
+    # reconcile <dir> [--check] — runs the engine, prints its output
+    local d="$1"
+    shift
+    bash "$AUTORUN" --registry-reconcile "$@" --project-dir "$d"
+}
+set_registry() {
+    # set_registry <dir> <id_registry-json>
+    local mf="$1/docs/blueprint/manifest.json"
+    "$real_jq" --argjson r "$2" '.id_registry = $r' "$mf" > "$mf.new" && mv "$mf.new" "$mf"
+}
+reg_keys() { "$real_jq" -c '.id_registry.documents | keys' "$1/docs/blueprint/manifest.json"; }
+reg_get() { "$real_jq" -c "$2" "$1/docs/blueprint/manifest.json"; }
+
+# R1: the issue's scenario fixture.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+mkdir -p "$sb/docs/adrs" "$sb/docs/prps" "$sb/docs/trps"
+printf -- '---\nid: ADR-0099\nstatus: Accepted\ncreated: 2026-01-19\n---\n# Re-ided\n' > "$sb/docs/adrs/0019-reid.md"
+printf -- '---\nstatus: Accepted\ncreated: 2026-01-21\n---\n# Id removed\n' > "$sb/docs/adrs/0021-noid.md"
+printf -- '# ADR index\n\n```markdown\n---\nid: ADR-NNNN\n---\n```\n' > "$sb/docs/adrs/README.md"
+printf -- '---\nid: TRP-001\nstatus: Draft\ncreated: 2026-02-01\n---\n# A TRP\n' > "$sb/docs/trps/x.md"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 5, "github_issues": {},
+  "documents": {
+    "ADR-0012": {"path": "docs/adrs/0012-deleted.md", "title": "Deleted", "status": "Accepted"},
+    "ADR-0019": {"path": "docs/adrs/0019-reid.md", "title": "Re-ided", "status": "Accepted"},
+    "ADR-0021": {"path": "docs/adrs/0021-noid.md", "title": "Id removed", "status": "Accepted"},
+    "ADR-NNNN": {"path": "docs/adrs/README.md", "title": "ADR-NNNN: Title", "status": "Proposed"},
+    "PRP-009": {"path": "docs/prps/009-missing.md", "title": "Missing", "status": "Ready"},
+    "TRP-001": {"path": "docs/trps/x.md", "title": "A TRP", "status": "Draft"}}}'
+out=$(reconcile "$sb")
+assert_contains "R1: engine reports a change" "CHANGED=true" "$out"
+keys=$(reg_keys "$sb")
+[ "$keys" = '["ADR-0012","ADR-0099","PRP-009","TRP-001"]' ] \
+    && ok "R1: P1 pruned ADR-0019/ADR-0021/ADR-NNNN, kept P2 ADR-0012/PRP-009, registered ADR-0099" \
+    || notok "R1: registry keys are $keys"
+assert_contains "R1: the prune is reported" "ACTION=prune ID=ADR-NNNN PATH=docs/adrs/README.md" "$out"
+[ "$(reg_get "$sb" '.id_registry.last_prp')" -ge 9 ] && ok "R1: last_prp raised over the retained PRP-009" || notok "R1: last_prp is $(reg_get "$sb" '.id_registry.last_prp')"
+[ "$(reg_get "$sb" '.id_registry.last_trp // 0')" -ge 1 ] && ok "R1: last_trp counts TRP-001" || notok "R1: last_trp is $(reg_get "$sb" '.id_registry.last_trp')"
+[ "$(reg_get "$sb" '.id_registry.last_prd')" = "0" ] && ok "R1: last_prd unchanged" || notok "R1: last_prd changed"
+# Counters never decrease, even when nothing on disk or in the registry reaches them.
+set_registry "$sb" "$(reg_get "$sb" '.id_registry | .last_prd = 40')"
+reconcile "$sb" >/dev/null
+[ "$(reg_get "$sb" '.id_registry.last_prd')" = "40" ] && ok "R1: a counter above every id never decreases" || notok "R1: last_prd decreased"
+rm -rf "$sb"
+
+# R2: zero padding — `id: ADR-012` registered under ADR-0012 is the same id.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+mkdir -p "$sb/docs/adrs"
+printf -- '---\nid: ADR-012\nstatus: Accepted\ncreated: 2026-01-12\n---\n# Padded\n' > "$sb/docs/adrs/0012-padded.md"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 0, "github_issues": {},
+  "documents": {"ADR-0012": {"path": "docs/adrs/0012-padded.md", "title": "Padded", "status": "Accepted", "created": "2026-01-12", "relates_to": [], "github_issues": []}}}'
+reconcile "$sb" >/dev/null
+[ "$(reg_keys "$sb")" = '["ADR-0012"]' ] && ok "R2: ADR-012 under ADR-0012 is neither pruned nor duplicated" || notok "R2: keys $(reg_keys "$sb")"
+rm -rf "$sb"
+
+# R3: a WO entry whose (git-ignored) file is absent keeps its stored fields,
+# and the rebuilt reverse index still lists its PRP under the issue.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+mkdir -p "$sb/docs/prps"
+printf -- '---\nid: PRP-003\nstatus: Ready\ncreated: 2026-01-03\ngithub-issues: [42, "#43"]\nrelates-to:\n  - ADR-0001\n---\n# PRP three\n' > "$sb/docs/prps/003-prp.md"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 3, "github_issues": {"42": ["WO-001", "PRP-003"]},
+  "documents": {"WO-001": {"path": "docs/blueprint/work-orders/001-task.md", "title": "Task", "implements": ["PRP-003"], "github_issues": [42], "created": "2026-01-04"}}}'
+reconcile "$sb" >/dev/null
+[ "$(reg_get "$sb" '.id_registry.documents["WO-001"] | [.implements, .github_issues]')" = '[["PRP-003"],[42]]' ] \
+    && ok "R3: the absent WO entry keeps implements and github_issues" || notok "R3: WO entry $(reg_get "$sb" '.id_registry.documents["WO-001"]')"
+[ "$(reg_get "$sb" '.id_registry.github_issues["42"]')" = '["PRP-003","WO-001"]' ] \
+    && ok "R3: the reverse index lists the WO and its PRP under the issue" || notok "R3: reverse index 42 = $(reg_get "$sb" '.id_registry.github_issues["42"]')"
+[ "$(reg_get "$sb" '.id_registry.documents["PRP-003"] | [.relates_to, .github_issues]')" = '[["ADR-0001"],[42,43]]' ] \
+    && ok "R3: cross-refs are derived from frontmatter" || notok "R3: PRP-003 cross-refs $(reg_get "$sb" '.id_registry.documents["PRP-003"]')"
+[ "$(reg_get "$sb" '.id_registry.github_issues["43"]')" = '["PRP-003"]' ] && ok "R3: the reverse index carries the derived issue" || notok "R3: reverse index 43 missing"
+rm -rf "$sb"
+
+# R4: created comes from frontmatter, else the existing value, never the clock.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+mkdir -p "$sb/docs/adrs"
+printf -- '---\nid: ADR-0001\nstatus: Accepted\n---\n# No created\n' > "$sb/docs/adrs/0001-a.md"
+printf -- '---\nid: ADR-0002\nstatus: Accepted\n---\n# Kept created\n' > "$sb/docs/adrs/0002-b.md"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 0, "github_issues": {},
+  "documents": {"ADR-0002": {"path": "docs/adrs/0002-b.md", "title": "Kept created", "status": "Accepted", "created": "2020-02-02"}}}'
+reconcile "$sb" >/dev/null
+[ "$(reg_get "$sb" '.id_registry.documents["ADR-0001"] | has("created")')" = "false" ] \
+    && ok "R4: no created in frontmatter or registry -> created omitted" || notok "R4: created set from the clock"
+[ "$(reg_get "$sb" '.id_registry.documents["ADR-0002"].created')" = '"2020-02-02"' ] \
+    && ok "R4: an existing created is kept" || notok "R4: existing created replaced"
+rm -rf "$sb"
+
+# R5: duplicates — the registered path wins while it still carries the id,
+# else the lexically first path; both cases are reported.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+mkdir -p "$sb/docs/adrs"
+printf -- '---\nid: ADR-0005\nstatus: Accepted\n---\n# A\n' > "$sb/docs/adrs/0005-a.md"
+printf -- '---\nid: ADR-0005\nstatus: Accepted\n---\n# B\n' > "$sb/docs/adrs/0005-b.md"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 0, "github_issues": {},
+  "documents": {"ADR-0005": {"path": "docs/adrs/0005-b.md", "title": "B", "status": "Accepted", "foreign": "kept"}}}'
+out=$(reconcile "$sb")
+[ "$(reg_get "$sb" '.id_registry.documents["ADR-0005"] | [.path, .foreign]')" = '["docs/adrs/0005-b.md","kept"]' ] \
+    && ok "R5: the registered path keeps a duplicated id; foreign keys survive" || notok "R5: entry $(reg_get "$sb" '.id_registry.documents["ADR-0005"]')"
+assert_contains "R5: the duplicate is reported" "ACTION=duplicate ID=ADR-0005 KEPT=docs/adrs/0005-b.md DROPPED=docs/adrs/0005-a.md" "$out"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 0, "github_issues": {}, "documents": {}}'
+reconcile "$sb" >/dev/null
+[ "$(reg_get "$sb" '.id_registry.documents["ADR-0005"].path')" = '"docs/adrs/0005-a.md"' ] \
+    && ok "R5: an unregistered duplicate resolves to the lexically first path" || notok "R5: got $(reg_get "$sb" '.id_registry.documents["ADR-0005"].path')"
+rm -rf "$sb"
+
+# R6: determinism — two copies of one stale tree, built in opposite file
+# orders, give byte-identical manifests; a second reconcile is a no-op.
+build_stale_tree() {
+    # build_stale_tree <dir> <forward|reverse>
+    local d="$1" order="$2" n list
+    write_manifest "$d" 1 true on-change null
+    mkdir -p "$d/docs/adrs" "$d/docs/prds"
+    list="1 2 3 4 5 6 7 8"
+    [ "$order" = reverse ] && list="8 7 6 5 4 3 2 1"
+    for n in $list; do
+        printf -- '---\nid: ADR-000%s\nstatus: Accepted\ngithub-issues: [%s]\n---\n# ADR %s\n' "$n" "$((n % 3 + 10))" "$n" > "$d/docs/adrs/000$n-x.md"
+    done
+    printf -- '---\nid: PRD-0002\nstatus: Draft\n---\n# PRD\n' > "$d/docs/prds/p.md"
+    set_registry "$d" '{"last_prd": 1, "last_prp": 0, "github_issues": {"10": "ADR-0003"},
+      "documents": {"ADR-0004": {"path": "docs/adrs/0004-x.md", "title": "Old", "status": "Draft"},
+                    "ADR-0042": {"path": "docs/adrs/0001-x.md", "title": "Stale key", "status": "Draft"}}}'
+}
+sb=$(make_sandbox); sb2=$(make_sandbox)
+build_stale_tree "$sb" forward
+build_stale_tree "$sb2" reverse
+reconcile "$sb" >/dev/null
+reconcile "$sb2" >/dev/null
+cmp -s "$sb/docs/blueprint/manifest.json" "$sb2/docs/blueprint/manifest.json" \
+    && ok "R6: two copies of one stale tree reconcile to byte-identical manifests" \
+    || notok "R6: manifests differ: $(diff "$sb/docs/blueprint/manifest.json" "$sb2/docs/blueprint/manifest.json" | head -10)"
+cp "$sb/docs/blueprint/manifest.json" "$sb/before.json"
+out=$(reconcile "$sb")
+assert_contains "R6: a second reconcile finds nothing to change" "CHANGED=false" "$out"
+cmp -s "$sb/before.json" "$sb/docs/blueprint/manifest.json" && ok "R6: a second reconcile leaves the bytes alone" || notok "R6: a second reconcile rewrote the manifest"
+rm -rf "$sb" "$sb2"
+
+# R7: --check reports drift without writing and exits 1; exits 0 once clean.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+set_registry "$sb" '{"last_prd": 0, "last_prp": 0, "github_issues": {}, "documents": {}}'
+cp "$sb/docs/blueprint/manifest.json" "$sb/before.json"
+out=$(reconcile "$sb" --check); rc=$?
+[ "$rc" -eq 1 ] && ok "R7: --check exits 1 on drift" || notok "R7: --check exit $rc on drift"
+assert_contains "R7: --check names the unregistered document" "ACTION=add ID=ADR-0001 PATH=docs/adrs/0001-test.md" "$out"
+cmp -s "$sb/before.json" "$sb/docs/blueprint/manifest.json" && ok "R7: --check writes nothing" || notok "R7: --check wrote the manifest"
+reconcile "$sb" >/dev/null
+reconcile "$sb" --check >/dev/null; rc=$?
+[ "$rc" -eq 0 ] && ok "R7: --check exits 0 on a reconciled tree" || notok "R7: --check exit $rc on a reconciled tree"
+rm -rf "$sb"
+
+# R8: no id_registry and no id-bearing document: nothing is created.
+sb=$(make_sandbox)
+write_manifest "$sb" 0 true on-change null
+mkdir -p "$sb/docs/adrs"
+printf '# Notes\n' > "$sb/docs/adrs/README.md"
+cp "$sb/docs/blueprint/manifest.json" "$sb/before.json"
+reconcile "$sb" >/dev/null
+cmp -s "$sb/before.json" "$sb/docs/blueprint/manifest.json" && ok "R8: no id_registry is created without id-bearing documents" || notok "R8: the engine created an id_registry"
+rm -rf "$sb"
+
+# R9: a task_registry write made while a reconcile computes survives: the new
+# id_registry is applied to the manifest re-read under the lock. A PATH-stubbed
+# jq parks inside the compute call (the one carrying --arg reconcile_compute).
+park_dir=$(make_sandbox)
+cat > "$park_dir/jq" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do
+    if [ "$a" = "reconcile_compute" ]; then
+        : > "$STUB_MARK"
+        i=0
+        while [ ! -f "$STUB_RELEASE" ] && [ "$i" -lt 200 ]; do sleep 0.1; i=$((i + 1)); done
+        break
+    fi
+done
+exec "$REAL_JQ" "$@"
+EOF
+chmod +x "$park_dir/jq"
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+PATH="$park_dir:$PATH" REAL_JQ="$real_jq" STUB_MARK="$sb/mark" STUB_RELEASE="$sb/release" \
+    bash "$AUTORUN" --registry-reconcile --project-dir "$sb" >/dev/null 2>&1 &
+rpid=$!
+if wait_for_file "$sb/mark"; then
+    [ -d "$sb/docs/blueprint/manifest.json.lock.d" ] && ok "R9: the reconcile holds the mkdir lock while it computes" || notok "R9: no lock held during the compute"
+    mf="$sb/docs/blueprint/manifest.json"
+    "$real_jq" '.task_registry["adr-validate"].last_result = "concurrent"' "$mf" > "$mf.cw" && mv "$mf.cw" "$mf"
+    : > "$sb/release"
+    wait "$rpid"
+    [ "$(reg_get "$sb" '.task_registry["adr-validate"].last_result')" = '"concurrent"' ] \
+        && ok "R9: a concurrent task_registry write survives the reconcile" || notok "R9: the concurrent task_registry write was lost"
+    [ "$(reg_get "$sb" '.id_registry.documents["ADR-0001"].path')" = '"docs/adrs/0001-test.md"' ] \
+        && ok "R9: the reconcile still registered the document" || notok "R9: document not registered"
+    [ ! -e "$sb/docs/blueprint/manifest.json.lock.d" ] && ok "R9: the lock is released" || notok "R9: lock left behind"
+    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.reconcile.*' | wc -l | tr -d ' ')
+    [ "$leftover" = "0" ] && ok "R9: no temp file left behind" || notok "R9: $leftover temp files left behind"
+else
+    notok "R9: the reconcile never reached its compute call"
+    : > "$sb/release"
+    wait "$rpid"
+fi
+rm -rf "$sb" "$park_dir"
+
+# R10: the session-start sweep is the engine — the sweep and a direct
+# reconcile of identical trees produce identical manifests.
+sb=$(make_sandbox); sb2=$(make_sandbox)
+build_stale_tree "$sb" forward
+build_stale_tree "$sb2" forward
+bash "$AUTORUN" --project-dir "$sb" >/dev/null
+reconcile "$sb2" >/dev/null
+cmp -s "$sb/docs/blueprint/manifest.json" "$sb2/docs/blueprint/manifest.json" \
+    && ok "R10: run_sync_ids delegates to the engine" || notok "R10: sweep and engine differ"
+rm -rf "$sb" "$sb2"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
