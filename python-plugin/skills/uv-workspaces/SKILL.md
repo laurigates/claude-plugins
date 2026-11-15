@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-02-12
 name: uv-workspaces
 description: Manage multi-package Python projects with uv workspaces. Use when the user mentions uv workspaces, Python monorepo, shared lockfiles, or member dependencies.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv sync *), Bash(uv lock *), Bash(uv build *), Bash(uv add *), Bash(uv init *), Read, Grep, Glob
 ---
 
 # UV Workspaces

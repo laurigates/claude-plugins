@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-metadata
 description: >-
   Extract/analyze ComfyUI metadata embedded in output files - PNG tEXt, WebP EXIF, MP4/WebM container, .latent safetensors. Use when figuring out what prompt/settings produced a file, or comparing runs.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(jq *), Bash(ffmpeg *), Bash(magick *), Read, Grep, Glob
 ---
 
 # ComfyUI output metadata

@@ -17,7 +17,10 @@
 #   C. REFERENCE.md's pipefail section prescribes the assignment capture form,
 #      says the inline substitution loses the producer's status, no longer
 #      offers `<<<"$(...)"` as a right form, states the errexit-suspension
-#      limit, and shows a capture with an explicit status check
+#      limit, and shows a capture with an explicit status check: a plain
+#      assignment inside a function, declared by its own `local` line (not
+#      `local v=$(cmd)`, not at top level), plus the capture-inside-the-function
+#      and `local`-status prose (#3642)
 #   D. SKILL.md's pipefail guideline names the assignment capture form
 set -uo pipefail
 
@@ -128,8 +131,55 @@ assert "C5: section offers no grep -q <<<\"\$(cmd)\" form as code (found: ${inli
 # shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution
 assert "C6: section says set -e is suspended in a function called from if/||" \
   "$(grep -qi 'suspends `set -e` inside a function' <<<"$(tr '\n' ' ' <<<"$section")" && echo true || echo false)"
-assert "C7: a code example checks the capture's status on the assignment (VAR=\$(cmd) || ...)" \
-  "$(grep -Eq '^[^#]*[A-Za-z_][A-Za-z0-9_]*=\$\(.*\)[[:space:]]*\|\|' <<<"$section_code" && echo true || echo false)"
+# C7 needs the checked capture INSIDE a function body, as a plain assignment
+# with the variable declared by its own `local` line: `local v=$(cmd) || ...`
+# tests the status of `local` (always 0), and a capture at top level is not the
+# case the errexit-suspension limit is about (#3642).
+# checked_captures <code> prints each `VAR=$(…) ||` line that sits in a
+# function body as a plain assignment whose VAR has its own `local VAR` line
+# earlier in the same body.
+checked_captures() {
+  awk '
+    /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*\(\)[[:space:]]*\{[[:space:]]*$/ { depth = 1; split("", locals); next }
+    depth && /^[[:space:]]*\}/ { depth = 0; next }
+    !depth { next }
+    /^[[:space:]]*local[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*$/ {
+      v = $0; sub(/^[[:space:]]*local[[:space:]]+/, "", v); sub(/[[:space:]]*$/, "", v); locals[v] = 1; next
+    }
+    /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\$\(.*\)[[:space:]]*\|\|/ {
+      v = $0; sub(/^[[:space:]]*/, "", v); sub(/=.*/, "", v)
+      if (v in locals) print
+    }
+  ' <<<"$1"
+}
+# shellcheck disable=SC2016  # the fixtures are literal shell text, not expanded here
+c7_good='f() {
+  local names
+  names=$(cmd) || exit 1
+}'
+# shellcheck disable=SC2016
+c7_local_assign='f() {
+  local names=$(cmd) || exit 1
+}'
+# shellcheck disable=SC2016
+c7_top_level='names=$(cmd) || exit 1
+f() {
+  grep -q x <<<"$names"
+}'
+assert "C7a: checked_captures accepts a local-declared capture checked inside a function" \
+  "$([ -n "$(checked_captures "$c7_good")" ] && echo true || echo false)"
+assert "C7b: checked_captures rejects 'local v=\$(cmd) || ...'" \
+  "$([ -z "$(checked_captures "$c7_local_assign")" ] && echo true || echo false)"
+assert "C7c: checked_captures rejects a capture checked at top level" \
+  "$([ -z "$(checked_captures "$c7_top_level")" ] && echo true || echo false)"
+assert "C7: a code example checks the capture's status on a plain assignment inside a function (local VAR; VAR=\$(cmd) || ...)" \
+  "$([ -n "$(checked_captures "$section_code")" ] && echo true || echo false)"
+# shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution
+assert "C8: section says to capture inside the function, not once at the top" \
+  "$(grep -qi 'Capture inside the function' <<<"$(tr '\n' ' ' <<<"$section")" && echo true || echo false)"
+# shellcheck disable=SC2016
+assert "C9: section says 'local v=\$(cmd)' returns the status of local" \
+  "$(grep -q 'returns the status of `local`' <<<"$(tr '\n' ' ' <<<"$section")" && echo true || echo false)"
 
 # --- D. SKILL.md -----------------------------------------------------------
 # shellcheck disable=SC2016  # the backticks are literal markdown, not a substitution

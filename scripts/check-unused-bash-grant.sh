@@ -9,8 +9,8 @@
 # The house standard for a skill that does run shell is narrow
 # `Bash(<command> *)` patterns, not a bare `Bash` (decided on #2839; see
 # `.claude/rules/agentic-permissions.md`, which owns the grant model). This
-# script does not flag a bare `Bash` in a skill that runs shell; migrating those
-# and linting them is #3464.
+# script does not flag a bare `Bash` in a skill that runs shell; that is
+# scripts/check-bare-bash-grant.sh, a ratchet while #3464 migrates them.
 #
 # Deliberately NOT `plugin-compliance-check.sh`'s `check_bash_patterns()`: CI runs
 # that whole script under `|| true` (plugin-pr-checks.yml), so it is advisory *by
@@ -219,9 +219,12 @@ for sf in "${grantees[@]}"; do
 done | sort -u > "$scan_list"
 
 # --- Stage 3: classify ---------------------------------------------------------
-# Known commands. A skill "runs shell" when a fence line or inline span STARTS
-# with one of these (optionally behind `sudo`, an `ENV=val` prefix, or `$ `).
-KNOWN_CMDS='git|gh|glab|bash|sh|zsh|fish|source|export|cd|pushd|popd|python|python3|uv|uvx|pip|pipx|node|npm|npx|bun|bunx|yarn|pnpm|deno|cargo|rustup|go|gofmt|make|just|task|docker|podman|nerdctl|kubectl|helm|kustomize|skaffold|argocd|terraform|tofu|tflint|ansible|vagrant|jq|yq|rg|fd|sed|awk|grep|egrep|find|ls|cat|head|tail|cut|sort|uniq|wc|tr|xargs|tee|diff|patch|cp|mv|rm|mkdir|rmdir|touch|ln|chmod|chown|stat|realpath|basename|dirname|pwd|echo|printf|read|test|curl|wget|ssh|scp|rsync|tar|unzip|zip|gzip|gunzip|openssl|base64|shasum|sha256sum|md5sum|date|sleep|env|which|type|command|pytest|tox|nox|ruff|black|mypy|ty|basedpyright|vulture|biome|eslint|prettier|oxlint|oxfmt|tsc|vitest|jest|playwright|cypress|knip|stylua|shellcheck|shfmt|actionlint|gitleaks|trufflehog|semgrep|bandit|pre-commit|mise|asdf|brew|apt|apt-get|systemctl|launchctl|defaults|osascript|pmset|powermetrics|ps|top|kill|pkill|lsof|netstat|ss|ip|ifconfig|dig|nslookup|ping|traceroute|nmap|d2|mmdc|ffmpeg|magick|convert|identify|odiff|comfy|obsidian|telegram-notify|telegram-ask|telegram-poll|hyperfine|watch|tmux|kitty|open|code|nvim|vim'
+# A skill "runs shell" when a fence line or inline span STARTS with a known
+# command (optionally behind `sudo`, an `ENV=val` prefix, or `$ `). The command
+# list and the recognition functions live in scripts/lib/shell-commands.awk,
+# shared with scripts/skill-shell-commands.py (#3464) so "runs shell" means the
+# same thing to both. Resolved from BASH_SOURCE like the parser above.
+shell_lib="$script_self_dir/lib/shell-commands.awk"
 
 report="$(mktemp)" || exit 1
 [ -n "$report" ] || exit 1
@@ -230,69 +233,47 @@ trap 'rm -f "$scan_list" "$report"' EXIT
 # FAIL CLOSED on a missing/broken parser. Without this the parse yields no rows,
 # every grantee looks inert, and the check reports a false finding for all of
 # them — a false-positive storm is far worse than a hard error.
-if [ ! -x "$helper" ] && [ ! -f "$helper" ]; then
+for needed in "$helper" "$shell_lib"; do
+  [ -f "$needed" ] && continue
   echo "STATUS=ERROR"
   # REASON= goes through the same collapse + 180-char cut as every other path:
-  # $helper is an absolute path of unbounded length.
-  echo "REASON=$(printf 'missing_helper: markdown parser not found at %s' "$helper" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  # the path is absolute and of unbounded length.
+  echo "REASON=$(printf 'missing_helper: markdown parser not found at %s' "$needed" | tr -s '[:space:]' ' ' | cut -c1-180)"
   # The missing_helper row below IS a finding, so it is counted (ISSUE_COUNT must
   # equal the ISSUES: rows).
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
-  echo "  - SEVERITY=ERROR TYPE=missing_helper MSG=markdown parser not found at $helper"
+  echo "  - SEVERITY=ERROR TYPE=missing_helper MSG=markdown parser not found at $needed"
   echo "=== END UNUSED BASH GRANT ==="
   exit 1
-fi
+done
+
+# The per-skill rollup program; the recognition functions it calls come from
+# $shell_lib. `read -d ''` rather than an inline heredoc inside `<( )`: the body
+# holds a backtick, which bash 3.2 scans for even under a quoted delimiter.
+IFS= read -r -d '' UNUSED_GRANT_AWK <<'AWK' || true
+function skilldir(p,   m) {
+  # everything up to and including .../skills/<name>
+  if (match(p, /^.*\/skills\/[^\/]+/)) return substr(p, RSTART, RLENGTH)
+  return p
+}
+$1 == "fence_line" {
+  # shell-ish language OR an UNLABELED fence (empty info string)
+  if (is_shell_lang($4) && is_command($5)) used[skilldir($2)] = 1
+  next
+}
+$1 == "inline_code" {
+  if ($6 == "1") { used[skilldir($2)] = 1; next }   # is_bang: a !`...` Context command
+  if (is_command($7)) used[skilldir($2)] = 1
+  next
+}
+END { for (d in used) print d }
+AWK
 
 # One parse pass over the whole set (923ms for 410 files at corpus scale).
 "$helper" --types fence_line,inline_code --files-from "$scan_list" 2>/dev/null \
-  | awk -F'\t' -v cmds="$KNOWN_CMDS" '
-    function skilldir(p,   m) {
-      # everything up to and including .../skills/<name>
-      if (match(p, /^.*\/skills\/[^\/]+/)) return substr(p, RSTART, RLENGTH)
-      return p
-    }
-    function strip(s) {
-      sub(/^[[:space:]]+/, "", s)
-      sub(/^\$[[:space:]]+/, "", s)          # a "$ cmd" prompt line
-      sub(/^sudo[[:space:]]+/, "", s)
-      while (s ~ /^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+/)   # ENV=val prefixes
-        sub(/^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+/, "", s)
-      return s
-    }
-    function is_command(s) {
-      s = strip(s)
-      if (s == "") return 0
-      if (s ~ /^#/) return 0                  # comment
-      if (s ~ /^\//) return 0                 # a /slash:command (or an absolute path used as prose)
-      if (s ~ /^\.\//) return 1               # ./script.sh
-      if (s ~ /^\.venv\//) return 1           # .venv/bin/python
-      if (s ~ /^\.[a-zA-Z0-9_-]+\//) return 1 # any dot-dir-relative executable
-      # An executable reached through a PLACEHOLDER or variable path prefix. Docs
-      # routinely write the interpreter that way and it is still a real command:
-      #   <venv>/bin/python -c "..."      (comfy-subgraphs-app-mode)
-      #   ${CLAUDE_SKILL_DIR}/scripts/x.sh
-      #   ~/bin/tool
-      if (s ~ /^<[^>]+>\//) return 1
-      if (s ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?\//) return 1
-      if (s ~ /^~\//) return 1
-      return (s ~ ("^(" cmds ")([[:space:]]|$)"))
-    }
-    $1 == "fence_line" {
-      lang = tolower($4)
-      # shell-ish language OR an UNLABELED fence (empty info string)
-      if (lang == "" || lang ~ /^(bash|sh|shell|zsh|console|shell-session|shellsession|fish|command|terminal)$/) {
-        if (is_command($5)) used[skilldir($2)] = 1
-      }
-      next
-    }
-    $1 == "inline_code" {
-      if ($6 == "1") { used[skilldir($2)] = 1; next }   # is_bang: a !`…` Context command
-      if (is_command($7)) used[skilldir($2)] = 1
-      next
-    }
-    END { for (d in used) print d }
-  ' | sort -u > "$report"
+  | awk -F'\t' -f "$shell_lib" -f <(printf '%s\n' "$UNUSED_GRANT_AWK") \
+  | sort -u > "$report"
 
 # --- Stage 4: report -----------------------------------------------------------
 issues=0

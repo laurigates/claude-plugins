@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: uv-advanced-dependencies
 description: "Advanced uv dependencies: Git deps, path deps, editable installs, groups, extras, custom indexes. Use when the user mentions git+https deps, editable installs, or private indexes."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv add *), Bash(uv sync *), Bash(uv pip compile *), Read, Grep, Glob
 ---
 
 # UV Advanced Dependencies

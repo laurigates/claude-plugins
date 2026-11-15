@@ -112,7 +112,7 @@ HEAD=<branch>` lines from its output. If `STACK_PARENT=true`, this PR is the
 parent of a stack. To re-probe on demand:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --base origin/main
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --base origin/main
 ```
 
 ### Merge rules for stacked PRs

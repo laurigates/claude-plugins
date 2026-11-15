@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.15](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.14...project-plugin-v1.21.15) (2026-11-15)
+
+
+### Bug Fixes
+
+* **repo:** drop command substitutions that void bundled-script grants and guard them marketplace-wide ([#3663](https://github.com/laurigates/claude-plugins/issues/3663)) ([7b76407](https://github.com/laurigates/claude-plugins/commit/7b7640740c4dba42bb4e491f7ca44f1df8b1f720))
+
 ## [1.21.14](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.13...project-plugin-v1.21.14) (2026-11-14)
 
 

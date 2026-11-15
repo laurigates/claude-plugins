@@ -3,7 +3,7 @@ name: blueprint-docs-currency
 description: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, finding docs a staged change affects, promoting research, or landing an ADR.
 allowed-tools: Bash(bash *), Read, Grep, Glob, TodoWrite
 created: 2026-04-24
-modified: 2026-09-23
+modified: 2026-11-13
 reviewed: 2026-09-23
 ---
 
@@ -82,7 +82,7 @@ not the sidecar.
 Before committing, run the bounded sweep over the staged diff:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/docs-dependency-sweep.sh" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/docs-dependency-sweep.sh"
 ```
 
 It names the hand-written docs that may describe what the commit

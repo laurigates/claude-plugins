@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-08-25
+modified: 2026-11-13
 reviewed: 2026-06-10
 description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/configure-ux-testing.sh *), Bash(find *), Bash(bun add *), Bash(bunx playwright install *), Bash(bunx playwright test *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--a11y] [--visual]"
 argument-hint: "[--check-only] [--fix] [--a11y] [--visual]"
 name: configure-ux-testing
@@ -72,7 +72,7 @@ Run the detection script to scan the project for Playwright / axe-core signals
 and the playwright MCP-server entry:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/configure-ux-testing.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-ux-testing.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines

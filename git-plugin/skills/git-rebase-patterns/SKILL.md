@@ -2,9 +2,9 @@
 name: git-rebase-patterns
 description: "Advanced git rebase — linear history, stacked PRs, --update-refs, --onto. Use when rebasing branches, cleaning history, managing PR stacks, or fixing merge-heavy branches."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(git rebase *), Bash(git fetch *), Bash(git switch *), Bash(git pull *), Bash(git log *), Bash(git merge *), Bash(git add *), Bash(git commit *), Bash(git reflog), Read
 created: 2026-01-30
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-01-30
 ---
 

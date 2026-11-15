@@ -2,11 +2,11 @@
 name: docs-latex
 description: Convert Markdown to LaTeX with TikZ and compile to PDF. Use when wanting a presentation-quality PDF, a professional report with diagrams, or print-ready documentation.
 args: <file> [--no-compile] [--visualizations] [--report-type=roadmap|lifecycle|general]
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(pdflatex *), Bash(find *), Bash(which *), Bash(stat *), Read, Write, Edit, Grep, Glob, TodoWrite
 argument-hint: path/to/document.md
 disable-model-invocation: true
 created: 2026-02-08
-modified: 2026-06-18
+modified: 2026-11-14
 reviewed: 2026-02-08
 ---
 

@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-debug-preview
 description: >-
   ComfyUI debug/preview nodes: show text/numbers/JSON/tensor shapes, image previews, counts, VRAM/CPU telemetry, timing. Use when inspecting a value mid-graph without changing it.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # ComfyUI debug & preview

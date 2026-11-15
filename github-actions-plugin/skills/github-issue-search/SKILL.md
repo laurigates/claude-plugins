@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: github-issue-search
 description: "Search GitHub issues for solutions and workarounds. Use when encountering errors with OSS libraries, finding upstream bug workarounds, or researching known issues."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # GitHub Issue Search for Solutions

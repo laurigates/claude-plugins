@@ -2,11 +2,11 @@
 name: hooks-session-end-issue-hook
 description: Configure a Stop hook that surfaces unfinished todos at session end. Use when you want deferred work automatically flagged for GitHub issue creation.
 args: "[--no-verify]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(jq *), Bash(gh auth status *), TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"
 disable-model-invocation: true
 created: 2026-02-27
-modified: 2026-09-02
+modified: 2026-11-14
 compatibility: claude-code
 reviewed: 2026-09-02
 ---

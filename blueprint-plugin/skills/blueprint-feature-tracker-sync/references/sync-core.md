@@ -14,7 +14,7 @@ fixed decision table WITH the never-downgrade guard (`EVIDENCE_FLIPPED=`,
 `COMPLETION_PERCENTAGE=`). It writes the backfilled tracker in place:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir "$HOME"
 ```
 
 ## Both `features` shapes

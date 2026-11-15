@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2026-06-03
 description: "Whole-repo audit of .github/workflows/ — baseline workflows the project type is missing, and stale action pins. Use when reviewing a repo's CI as a set or bumping outdated action versions."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(git remote get-url *), Bash(rg *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-workflows

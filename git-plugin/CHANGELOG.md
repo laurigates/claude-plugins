@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.74.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.1...git-plugin-v2.74.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* **repo:** drop command substitutions that void bundled-script grants and guard them marketplace-wide ([#3663](https://github.com/laurigates/claude-plugins/issues/3663)) ([7b76407](https://github.com/laurigates/claude-plugins/commit/7b7640740c4dba42bb4e491f7ca44f1df8b1f720))
+
+
+### Documentation
+
+* **git-plugin:** scope the gh --app createdBy claim and drop "verbatim" ([5c8c27d](https://github.com/laurigates/claude-plugins/commit/5c8c27df4146bdf5c30d707b97a547338287e04a)), closes [#3642](https://github.com/laurigates/claude-plugins/issues/3642)
+
 ## [2.74.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.0...git-plugin-v2.74.1) (2026-11-14)
 
 

@@ -1,9 +1,9 @@
 ---
 created: 2025-02-03
-modified: 2026-11-04
+modified: 2026-11-14
 reviewed: 2026-04-25
 description: Version badge with build-info tooltip (version, commit, changelog). Use when adding version display to app header/footer for Next.js, Nuxt, SvelteKit, Vite, React, Vue, or Svelte.
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--location <header|footer|custom>]"
 argument-hint: "[--check-only] [--location <header|footer|custom>]"
 name: components-version-badge

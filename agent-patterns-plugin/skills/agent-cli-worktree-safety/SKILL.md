@@ -1,10 +1,10 @@
 ---
 created: 2026-09-02
-modified: 2026-10-02
+modified: 2026-11-14
 reviewed: 2026-09-02
 name: agent-cli-worktree-safety
 description: Data-loss invariants for a CLI that runs an agent SDK in a git worktree then force-removes it. Use when building or reviewing such a CLI, or when an agent run reports "no changes" after writing files.
-allowed-tools: Glob, Grep, Read, Edit, Write, Bash
+allowed-tools: Glob, Grep, Read, Edit, Write
 model: opus
 compatibility: claude-code
 ---

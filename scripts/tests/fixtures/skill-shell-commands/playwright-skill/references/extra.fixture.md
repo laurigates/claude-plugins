@@ -1,0 +1,5 @@
+# Reports
+
+```
+pwreport build out/
+```

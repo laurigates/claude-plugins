@@ -2,9 +2,9 @@
 name: dual-write
 description: Dual-write pattern for safe data store transitions. Use when planning DB migrations, switching storage backends, or reviewing code writing to multiple systems simultaneously.
 user-invocable: false
-allowed-tools: Read, Grep, Glob, Edit, Write, Bash, TodoWrite
+allowed-tools: Read, Grep, Glob, Edit, Write, TodoWrite
 created: 2026-02-18
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-02-18
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: blueprint-autopilot
 description: Run due blueprint maintenance ambiently at autonomy level 2+. Use when a drift nudge reports blueprint tasks due or suggests /blueprint:autopilot.
-allowed-tools: Read, Glob, Grep, Bash, Task
+allowed-tools: Read, Glob, Grep, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-autorun.sh *), Bash(jq *), Bash(date *), Bash(mv *), Bash(gh issue list *), Bash(gh label create *), Task
 created: 2026-07-05
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-09-02
 ---
 

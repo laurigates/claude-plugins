@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.19.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.19.0...workflow-orchestration-plugin-v1.19.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **repo:** drop command substitutions that void bundled-script grants and guard them marketplace-wide ([#3663](https://github.com/laurigates/claude-plugins/issues/3663)) ([7b76407](https://github.com/laurigates/claude-plugins/commit/7b7640740c4dba42bb4e491f7ca44f1df8b1f720))
+* **workflow-orchestration-plugin:** fetch the PR head before the ancestry test ([2d261c0](https://github.com/laurigates/claude-plugins/commit/2d261c0aacbba494e52b56b8709c78934b2c0216)), closes [#3642](https://github.com/laurigates/claude-plugins/issues/3642)
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.18.0...workflow-orchestration-plugin-v1.19.0) (2026-11-13)
 
 
