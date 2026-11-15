@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.22.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.1...hooks-plugin-v2.22.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **repo:** take maintainer-specific paths and owners in shipped skills from context ([#3656](https://github.com/laurigates/claude-plugins/issues/3656)) ([5f547a1](https://github.com/laurigates/claude-plugins/commit/5f547a1e00fcf7ec31dcea25fcfc1fdd5db02976))
+
+## [2.22.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.0...hooks-plugin-v2.22.1) (2026-11-14)
+
+
+### Documentation
+
+* **hooks-plugin:** list the files a new hook touches under Extending ([#3651](https://github.com/laurigates/claude-plugins/issues/3651)) ([bf24364](https://github.com/laurigates/claude-plugins/commit/bf243642d2b1ec74424c6bf209f4b51aac6d2a0e))
+
 ## [2.22.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.21.0...hooks-plugin-v2.22.0) (2026-11-13)
 
 

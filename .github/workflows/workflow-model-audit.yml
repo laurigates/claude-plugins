@@ -40,18 +40,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # Provisioning stays in THIS file because the attach site does: Claude runs
-      # `gh issue create --label "workflow-model-audit,maintenance"` from the
-      # prompt below. `scripts/check-workflow-labels.sh` verifies that pairing
-      # per file, so moving this into the composite would leave the prompt's
-      # attach site unprovisioned as far as the guard can see.
+      # Provisioning stays in THIS file because the attach site does: the
+      # "Publish the workflow-model audit issue" step below runs
+      # `publish-agent-issue.sh --label "workflow-model-audit,maintenance"`.
+      # `scripts/check-workflow-labels.sh` verifies that pairing per file, so
+      # moving this into the composite would leave that attach site
+      # unprovisioned as far as the guard can see.
       - name: Ensure the workflow-model-audit label exists
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Was `2>/dev/null || true`, which swallows genuine auth failures and
-          # so let a broken label step stay invisible until `gh issue create
-          # --label` hard-failed on the last line of the job. `--force` is
+          # so let a broken label step stay invisible until the issue create
+          # hard-failed on the last line of the job. `--force` is
           # create-or-update and exits 0, so it is just as idempotent, but a real
           # failure surfaces here instead.
           gh label create workflow-model-audit \
@@ -60,7 +61,7 @@ jobs:
             --description "Monthly re-evaluation of each Claude workflow's model/effort choice" \
             --force
 
-      # Guard-only: Claude opens the issue itself further down, so the composite
+      # Guard-only: the publish step further down files the issue, so the composite
       # only reports whether one is already open. `force: 'false'` because the
       # step above already provisioned the label. `supersede` (#3346): only this
       # month's report blocks the run; last month's is carried forward and
@@ -175,9 +176,13 @@ jobs:
           # satisfy scripts/check-workflow-model.sh.
           # Read-only gh access so Claude can sample each workflow's actual
           # output (issues/PRs/comments it produced), not just its run status.
-          # Plus issue-create so Claude opens the audit issue itself
-          # (research-radar.yml pattern): the claude-code-action step exposes no
-          # `result` output, so the old downstream gh-create step never fired (#1774).
+          # Claude writes the report; it does not publish it (#2769). The
+          # claude-code-action step exposes no `result` output (#1774), so the
+          # body travels as a FILE: Claude writes
+          # workflow-model-audit-issue-body.md and the "Publish the
+          # workflow-model audit issue" step files it. When Claude ran the
+          # create with labels and an assignee itself, a failed assignment
+          # after the create could make it retry and file twice (#2720).
           #
           # That boundary belongs in `--allowedTools`. It used to sit in
           # `additional_permissions:`, but that input takes a GitHub permissions
@@ -188,15 +193,19 @@ jobs:
           # audit needed more than 25 turns even before counting the denials.
           # Deltas from the inert list:
           #   - Every tool carried over verbatim.
-          #   - Bash(date *) + Bash(cat *) ADDED: the final `gh issue create`
-          #     snippet in the prompt uses `date +%Y-%m` and a `cat` heredoc body.
+          #   - Bash(date *) + Bash(cat *) were ADDED for the final issue-create
+          #     snippet and DROPPED with it (#2769), along with
+          #     Bash(gh issue create *).
+          #   - Edit(./workflow-model-audit-issue-body.md) ADDED (#2769): file
+          #     permission rules are Edit(path) rules for Write as well, so this
+          #     grants writing the one body file and nothing else.
           #   - TodoWrite ADDED: opts the session into the task-list tools
           #     (TaskCreate/TaskUpdate/TaskList) on Opus 4.8+/Sonnet 5/Fable
           #     (2.1.233+, see .claude/rules/agentic-permissions.md); needed
           #     to track a per-workflow sweep across ~10 workflows.
           #   - mcp__github_ci ADDED so the `actions: read` grant below is live.
-          #   - No write tool and no Bash(git *): "Do NOT edit any files or
-          #     workflows" is now enforced, not just asserted.
+          #   - No unscoped write tool and no Bash(git *): "Do NOT edit any
+          #     repository file" is enforced, not just asserted.
           #
           # MEASURED 2026-09-08 (#2493, run 34234073610 — the first post-fix
           # scheduled run). It went red on
@@ -209,7 +218,7 @@ jobs:
           # `gh issue list`) in a `for` loop or appended `; echo ...`, which
           # matches no grant because `Bash(...)` is a PREFIX match — see the
           # "Tool-call shape" section of the prompt below, which generalises the
-          # rule the `gh issue create` snippet already carried. The fourth
+          # rule the old issue-create snippet already carried. The fourth
           # needed `grep`/`head`, hence:
           #   - Bash(grep *) + Bash(head *) ADDED: the audit greps the workflow
           #     files for model/effort/max-turns lines and truncates the hits.
@@ -222,7 +231,7 @@ jobs:
             --model opus
             --effort medium
             --max-turns 60
-            --allowedTools "Read,Grep,Glob,TodoWrite,Bash(gh run list *),Bash(gh run view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh api *),Bash(grep *),Bash(head *),Bash(date *),Bash(cat *),mcp__github_ci"
+            --allowedTools "Read,Grep,Glob,TodoWrite,Edit(./workflow-model-audit-issue-body.md),Bash(gh run list *),Bash(gh run view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh api *),Bash(grep *),Bash(head *),mcp__github_ci"
           # Claude reads Actions run health, so its token needs the Actions
           # scope as a real permissions map (paired with `actions: read` in the
           # job permissions block above).
@@ -232,8 +241,10 @@ jobs:
             You are auditing whether each Claude-invoking GitHub workflow in this
             repository uses the right --model/--effort for its job. Read
             .claude/rules/workflow-model-effort.md for the standard and the
-            canonical per-workflow table. Do NOT edit any files or workflows —
-            your ONLY side effect is creating one GitHub issue (see the end).
+            canonical per-workflow table. Do NOT edit any repository file —
+            your ONLY output is the report body, written to
+            `workflow-model-audit-issue-body.md` (see the end). A later
+            workflow step files it as the issue.
 
             ## Tool-call shape (applies to EVERY Bash call, not just the last)
 
@@ -324,44 +335,54 @@ jobs:
             section when the file does not exist. The workflow closes last
             month's report after yours is filed.
 
-            Then create the issue yourself with `gh issue create` (your only
-            side effect — do not edit any repo files). Compute the month with
-            `date +%Y-%m` and reproduce this title/labels exactly:
+            Finally, use the Write tool to write the report body to
+            `workflow-model-audit-issue-body.md` in the repository root, as
+            your last action. Write the body only: the workflow sets the issue
+            title (`${{ steps.check_issue.outputs.title }}`), its labels and its
+            assignee, and appends the `## Processing` section. Do not try to
+            open the issue yourself. Use this shape:
 
-            Run these as TWO separate Bash calls, per the "Tool-call shape"
-            rules above: the second must BEGIN with `gh issue create`, because
-            the allowlist grants `Bash(gh issue create *)` as a prefix match.
-
-            ```bash
-            date -u +%Y-%m    # note the value, e.g. 2026-08
-            ```
-
-            ```bash
-            gh issue create \
-              --title "Workflow model/effort audit: <the value from above>" \
-              --label "workflow-model-audit,maintenance" \
-              --assignee laurigates \
-              --body "$(cat <<'EOF'
-            ## Workflow model/effort audit: <YYYY-MM>
+            ```markdown
+            ## ${{ steps.check_issue.outputs.title }}
 
             (summary table, Config drift section, prioritized Recommendations)
 
             ### Carried forward from #<N>
             - (still-open recommendations from last month's report; omit this section when there was none)
+            ```
 
+      # The bash half of the split (#2769): find or create the issue once,
+      # then apply and read back its labels and assignee
+      # (scripts/publish-agent-issue.sh). It runs after a failed Claude step
+      # too, so a step that wrote the body and then overran its turn budget
+      # still gets its report filed; `!cancelled()` rather than `always()`, so
+      # a cancelled run publishes nothing. A missing body fails this step, the
+      # same signal the assertion below gives.
+      - name: Publish the workflow-model audit issue
+        id: publish
+        if: ${{ !cancelled() && steps.audit.outcome != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.check_issue.outputs.title }}
+          PROCESSING: |
             ## Processing
 
             - **Processed by:** Lauri, or an agent asked to act on this report.
             - **Completed means:** superseded by next month's audit. Apply or file each recommendation that needs work before then; one that needs longer gets its own issue.
             - **Closes:** automatically when next month's audit opens, which carries forward whatever is still open. See `docs/issue-lifecycle.md`.
-            EOF
-            )"
-            ```
+        run: |
+          bash scripts/publish-agent-issue.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TITLE" \
+            --body-file workflow-model-audit-issue-body.md \
+            --label "workflow-model-audit,maintenance" \
+            --assignee laurigates \
+            --processing "$PROCESSING"
 
       # The transcript is the raw SDK message stream. The action redacts it only
       # on the way into the step summary (format-turns.ts:185/:437 and run.ts:141
-      # at v1), not in the file it writes. None of the tools granted above is
-      # path-scoped — `Bash(cat *)` can read /proc/self/environ, where the CLI's
+      # at v1), not in the file it writes. `Read`, granted above, is not
+      # path-scoped — it can read /proc/self/environ, where the CLI's
       # children inherit the OAuth token — so before the file leaves the runner
       # the job's own tokens are scrubbed by literal value and the token shapes
       # the action's redactSecrets() knows are scrubbed by pattern. Public-repo
@@ -422,11 +443,12 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      # The issue is this job's only output, and the SDK exits 0 when the
-      # `gh issue create` call is denied, so without this step a run that files
-      # nothing is green (#2731). `always()` still reports a Claude step that
-      # failed without filing; a skipped Claude step (an open report already
-      # exists) is not a missed deliverable.
+      # The issue is this job's only output, and the SDK exits 0 when a tool
+      # call is denied, so without this step a run that files nothing could be
+      # green (#2731). It counts what GitHub holds, independently of the
+      # publish step's own read-back. `always()` still reports a Claude step
+      # that failed without writing a body; a skipped Claude step (an open
+      # report already exists) is not a missed deliverable.
       - name: Assert the workflow-model audit issue was filed
         if: always() && steps.audit.outcome != 'skipped'
         env:
@@ -436,14 +458,15 @@ jobs:
           if ! bash scripts/assert-issue-filed.sh \
             --repo "$GITHUB_REPOSITORY" --label workflow-model-audit --since "$SINCE" \
             --title-prefix 'Workflow model/effort audit:'; then
-            echo "::error title=Workflow-model audit filed no issue::No 'Workflow model/effort audit:' issue labelled workflow-model-audit appeared during this run. Read the uploaded claude-execution transcript for the denied tool calls."
+            echo "::error title=Workflow-model audit filed no issue::No 'Workflow model/effort audit:' issue labelled workflow-model-audit appeared during this run. Read the publish step's output, then the uploaded claude-execution transcript for the denied tool calls."
             exit 1
           fi
 
       # Last month's report is superseded once this month's is filed (#3346).
-      # The script closes nothing when this month's report is missing.
+      # The script closes nothing when this month's report is missing. Gated on
+      # the publish step, the one that files the report.
       - name: Close the superseded report
-        if: steps.audit.outcome == 'success' && steps.check_issue.outputs.previous != ''
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' && steps.check_issue.outputs.previous != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           CURRENT_TITLE: ${{ steps.check_issue.outputs.title }}

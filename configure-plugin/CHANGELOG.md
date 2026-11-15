@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.43.9](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.8...configure-plugin-v1.43.9) (2026-11-14)
+
+
+### Bug Fixes
+
+* **repo:** take maintainer-specific paths and owners in shipped skills from context ([#3656](https://github.com/laurigates/claude-plugins/issues/3656)) ([5f547a1](https://github.com/laurigates/claude-plugins/commit/5f547a1e00fcf7ec31dcea25fcfc1fdd5db02976))
+
+## [1.43.8](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.7...configure-plugin-v1.43.8) (2026-11-14)
+
+
+### Bug Fixes
+
+* **testing-plugin,blueprint-plugin,configure-plugin:** add the meta fields bundled workflow templates lacked ([2cfaa15](https://github.com/laurigates/claude-plugins/commit/2cfaa15e81a128f128db2671431a6a9723028a28))
+
 ## [1.43.7](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.6...configure-plugin-v1.43.7) (2026-11-13)
 
 

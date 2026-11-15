@@ -164,7 +164,12 @@ else:
 # counting reads would flag call sites that cannot fail. It would also drag in
 # prose ("omit the --label flag", "e.g. gh issue list --label LABEL"), which is
 # how an earlier revision of this guard reported `flag` and `LABEL` as labels.
-CREATE_RE = re.compile(r"gh\s+(?:issue|pr)\s+create\b")
+#
+# scripts/publish-agent-issue.sh is a create too (#2769): it files the body a
+# Claude step wrote and attaches its `--label` value afterwards, with the same
+# comma-separated shape as gh. Leaving it out would drop every workflow moved
+# to the write-then-publish split out of this guard's view.
+CREATE_RE = re.compile(r"gh\s+(?:issue|pr)\s+create\b|scripts/publish-agent-issue\.sh\b")
 LABEL_VALUE_RE = re.compile(r"--label[=\s]+(\"[^\"]*\"|'[^']*'|[^\s\\]+)")
 
 # Labels are PROVISIONED via `gh label create <name>`. The name is always the

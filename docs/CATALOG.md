@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-50 plugins, 473 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+50 plugins, 474 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -29,7 +29,7 @@
 | [linux-plugin](../linux-plugin/) | 1 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores |
 | [obsidian-plugin](../obsidian-plugin/) | 21 | 0 | Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks |
 | [project-plugin](../project-plugin/) | 7 | 0 | Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows |
-| [session-plugin](../session-plugin/) | 4 | 0 | Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation |
+| [session-plugin](../session-plugin/) | 5 | 0 | Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture |
 | [software-design-plugin](../software-design-plugin/) | 6 | 0 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode |
 
 ## Languages

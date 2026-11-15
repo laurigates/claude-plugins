@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.8](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.7...health-plugin-v1.24.8) (2026-11-14)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** replace eslint --format=unix with the core stylish formatter ([#3647](https://github.com/laurigates/claude-plugins/issues/3647)) ([99a8dc4](https://github.com/laurigates/claude-plugins/commit/99a8dc405f43573539bd2356c3fe7a9d4136737c)), closes [#3641](https://github.com/laurigates/claude-plugins/issues/3641)
+
 ## [1.24.7](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.6...health-plugin-v1.24.7) (2026-11-13)
 
 

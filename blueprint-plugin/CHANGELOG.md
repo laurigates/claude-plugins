@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.51.9](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.8...blueprint-plugin-v3.51.9) (2026-11-14)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** name only manifest-enabled tasks in structural cue ([#3673](https://github.com/laurigates/claude-plugins/issues/3673)) ([aeac3d3](https://github.com/laurigates/claude-plugins/commit/aeac3d37ba87fb9cf7680faa813957e63667dc98)), closes [#3648](https://github.com/laurigates/claude-plugins/issues/3648)
+
+## [3.51.8](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.7...blueprint-plugin-v3.51.8) (2026-11-14)
+
+
+### Bug Fixes
+
+* **testing-plugin,blueprint-plugin,configure-plugin:** add the meta fields bundled workflow templates lacked ([2cfaa15](https://github.com/laurigates/claude-plugins/commit/2cfaa15e81a128f128db2671431a6a9723028a28))
+
 ## [3.51.7](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.6...blueprint-plugin-v3.51.7) (2026-11-13)
 
 

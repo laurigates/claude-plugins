@@ -39,9 +39,9 @@ export const END_TASK_CUE =
   " Also mention that a taskwarrior state-sync pass looks worth offering.";
 
 /** An end-of-session skill that owns the flow once it is running. */
-export const END_SKILL = /session-(wrap|end|distill)/;
+export const END_SKILL = /session-(wrap|end|distill|workflow-capture)/;
 /** A read of one of those skills' SKILL.md, the way a binding loads a skill search_skills returned. */
-export const END_SKILL_FILE = /session-(wrap|end|distill)\/SKILL\.md$/;
+export const END_SKILL_FILE = /session-(wrap|end|distill|workflow-capture)\/SKILL\.md$/;
 
 /** The Stop hook's `reason`, verbatim, with or without the taskwarrior cue. */
 export function endNudgeReason(taskCue: boolean): string {

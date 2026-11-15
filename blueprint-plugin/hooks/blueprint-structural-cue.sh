@@ -136,6 +136,33 @@ esac
 
 [ "$is_structural" -eq 0 ] && exit 0
 
+# --- Which blueprint tasks may the cue name? (#3648) ---
+# A repo can disable a task in docs/blueprint/manifest.json
+# (task_registry.<task>.enabled: false); naming it would recommend a command the
+# repo has turned off. Only an explicit `false` drops a task. No manifest, no
+# jq, an unparsable manifest, or no task_registry all keep both names, so the
+# cue degrades to its pre-#3648 text rather than to silence.
+cue_tasks="derive-plans adr-validate"
+project_dir="${CLAUDE_PROJECT_DIR:-}"
+if [ -z "$project_dir" ]; then
+    project_dir=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null || echo "")
+fi
+project_dir="${project_dir:-$PWD}"
+manifest_path="${project_dir}/docs/blueprint/manifest.json"
+if [ -f "$manifest_path" ] && command -v jq >/dev/null 2>&1; then
+    if registry_tasks=$(jq -r '
+            (try .task_registry catch null) as $reg
+            | ["derive-plans", "adr-validate"]
+            | map(select((try $reg[.].enabled catch null) != false))
+            | join(" ")' "$manifest_path" 2>/dev/null); then
+        cue_tasks="$registry_tasks"
+    fi
+fi
+
+# Every task the cue could name is disabled: say nothing. Exit before the dedup
+# marker so a suppressed cue does not use up the session's one cue.
+[ -z "$cue_tasks" ] && exit 0
+
 # --- Dedup: one cue per session ---
 # BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR is the test seam.
 cache_dir="${BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR:-${HOME}/.cache/blueprint-structural-cue}"
@@ -146,7 +173,12 @@ if [ -n "$session_id" ]; then
     touch "$marker" 2>/dev/null || true
 fi
 
-cue="Structural change detected (manifest / public API). Consider /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current."
+case "$cue_tasks" in
+    "derive-plans adr-validate") cue_commands="/blueprint:derive-plans or /blueprint:adr-validate" ;;
+    "derive-plans") cue_commands="/blueprint:derive-plans" ;;
+    *) cue_commands="/blueprint:adr-validate" ;;
+esac
+cue="Structural change detected (manifest / public API). Consider ${cue_commands} to keep PRDs/ADRs current."
 
 # Block-with-reason channel (see the header): hooks.json sets continueOnBlock so
 # the turn continues with the reason fed back to the model. Deliberately does NOT

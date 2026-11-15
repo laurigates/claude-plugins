@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.58.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.0...agent-patterns-plugin-v2.58.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **repo:** take maintainer-specific paths and owners in shipped skills from context ([#3656](https://github.com/laurigates/claude-plugins/issues/3656)) ([5f547a1](https://github.com/laurigates/claude-plugins/commit/5f547a1e00fcf7ec31dcea25fcfc1fdd5db02976))
+
+## [2.58.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.5...agent-patterns-plugin-v2.58.0) (2026-11-14)
+
+
+### Features
+
+* **agent-patterns-plugin:** make meta-local-notes re-verify an inferred rule's source ([d5eb355](https://github.com/laurigates/claude-plugins/commit/d5eb355282eea60c883bad159cc1b6c7b15211c0)), closes [#3150](https://github.com/laurigates/claude-plugins/issues/3150)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** name bundled briefs as a dispatch mistake ([b0110bd](https://github.com/laurigates/claude-plugins/commit/b0110bdc77b35264d5334991a066fe8263d5dc4b)), closes [#3150](https://github.com/laurigates/claude-plugins/issues/3150)
+
 ## [2.57.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.4...agent-patterns-plugin-v2.57.5) (2026-11-13)
 
 

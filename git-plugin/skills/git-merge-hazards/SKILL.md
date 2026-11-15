@@ -125,13 +125,13 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 
 ## 6. A serial merge chain merges commits nobody verified
 
-`gh pr update-branch` and a retarget (`gh pr edit --base`) re-run
-`pull_request` workflows, so a branch-writing bot's post-review commits merge
-unread. Before each merge, refuse any post-review commit but GitHub's
-update-branch merge (2+ parents, committer `noreply@github.com`); your own
-`main` merge holds an unreviewed resolution. Pin
-`--match-head-commit "$(git rev-parse <ref>)"`, the full 40-character SHA (GitHub
-rejects a short one); a PR changing that bot goes last. See [references/serial-merge-chain.md](references/serial-merge-chain.md).
+`gh pr update-branch` and `gh pr edit --base` rerun `pull_request` workflows,
+so a branch-writing bot's post-review commits land unread. Before each merge,
+refuse post-review commits but GitHub's update-branch merge (2+ parents,
+committer `noreply@github.com`); your own `main` merge is an unreviewed
+resolution. Run `git rev-parse <ref>` as its own call; paste the
+full 40-character SHA into `--match-head-commit`
+(the merge guard refuses `$(…)`). A PR changing that bot goes last. See [references/serial-merge-chain.md](references/serial-merge-chain.md).
 
 ## Merge shepherd
 

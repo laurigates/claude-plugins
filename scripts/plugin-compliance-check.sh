@@ -946,7 +946,11 @@ check_skill_body() {
     # is reported not walked; (3) the no-second-prompt contract reaches the
     # sub-skills (--orchestrated to wrap/distill, --confirmed to feedback);
     # (4) feedback files in the Act lane — its issues are triaged separately,
-    # so asking first only stalls the run (Lauri's decision on PR #3371).
+    # so asking first only stalls the run (Lauri's decision on PR #3371);
+    # (5) the workflow-capture pass runs --orchestrated, and the feedback pass
+    # skips the workflow friction it already filed, so plugin-workflow friction
+    # is filed once (Lauri's decision, 2026-11-14: gated workflow-capture
+    # issues file in the Act lane).
     if [ "$skill_name" = "session-end" ]; then
       act_line=$(grep -n '^### Step 3: Run the Act lane' "$skill_file" | head -1 | cut -d: -f1)
       ask_line=$(grep -n '^### Step 4: One question' "$skill_file" | head -1 | cut -d: -f1)
@@ -964,20 +968,38 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: feedback-session --confirmed must run in Step 3 (Act lane), not wait for the Step 4 question (feedback issues are triaged separately)")
         has_errors=true
       fi
-      for token in "Backlog is reported, never walked" "session-wrap\` with \`--orchestrated" "session-distill\` with \`--orchestrated" "feedback-session --confirmed"; do
+      for token in "Backlog is reported, never walked" "session-wrap\` with \`--orchestrated" "session-distill\` with \`--orchestrated" "session-workflow-capture\` with \`--orchestrated" "minus any workflow friction" "feedback-session --confirmed"; do
         if ! grep -qF -- "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (single-question contract with the sub-skills)")
           has_errors=true
         fi
       done
     fi
-    if [ "$skill_name" = "session-wrap" ] || [ "$skill_name" = "session-distill" ]; then
+    if [ "$skill_name" = "session-wrap" ] || [ "$skill_name" = "session-distill" ] || [ "$skill_name" = "session-workflow-capture" ]; then
       for token in "--orchestrated" "DEFERRED:"; do
         if ! grep -qF -- "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (session-end defers outward items instead of a second prompt)")
           has_errors=true
         fi
       done
+    fi
+    # Regression guard (session-workflow-capture, new pass): a public draft is
+    # filed only after the scripted scan AND the cold-read gate; plugin-workflow
+    # friction carries feedback-session's session-feedback label rather than a
+    # second label the weekly friction review cannot see; and the skill stays
+    # model-invocable, because session-end runs it through the Skill tool
+    # (the #1843 failure mode).
+    if [ "$skill_name" = "session-workflow-capture" ]; then
+      for token in "workflow-capture-survey.sh" "check-issue-draft.sh" "cold-read-gate" "session-feedback" "--body-file"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (gated filing contract: collector, scan, cold read, feedback hand-off)")
+          has_errors=true
+        fi
+      done
+      if grep -Eq '^disable-model-invocation:[[:space:]]*true' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must NOT set 'disable-model-invocation: true' — session-end invokes it via the Skill tool (issue #1843)")
+        has_errors=true
+      fi
     fi
     if [ "$skill_name" = "feedback-session" ] && ! grep -qF -- "--confirmed" "$skill_file"; then
       issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '--confirmed' (session-end's single question already confirmed the set)")
@@ -1409,6 +1431,28 @@ check_skill_body() {
       # Re-inlining the delegated procedure is the regression this guards.
       if grep -qF 'transient import block alongside the existing' <<<"$skill_corpus_text"; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar re-inlines the delegated gitops procedure — defer to comfyui-plugin:comfy-node Phases 3-5 (#2142)")
+        has_errors=true
+      fi
+    fi
+    # Regression (#3308): the end-to-end pipelines resolve <owner> from context,
+    # but the scaffolds default --publisher to one maintainer's account. A
+    # scaffold invocation without --publisher writes that account into the
+    # generated manifest URLs (FoundryVTT module.json url/manifest/download),
+    # so the repo is created under <owner> while the module installs from a
+    # repo that does not exist; the scaffold's own --verify gate checks only
+    # the URL suffix and misses it. Every `scaffold.py --name` line must pass
+    # --publisher. Keyed on the skill name alone (each is unique in the repo),
+    # so the self-test can exercise it from its fixture plugin. The standalone
+    # foundryvtt-module-scaffold skill is covered too: its examples omitted
+    # --publisher and named the maintainer account as the default (#3308).
+    if [ "$skill_name" = "foundryvtt-module" ] || [ "$skill_name" = "comfy-node" ] \
+      || [ "$skill_name" = "foundryvtt-module-scaffold" ]; then
+      scaffold_lines="$(grep -E 'scaffold\.py .*--name ' "$skill_file" || true)"
+      if [ -z "$scaffold_lines" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md lost its 'scaffold.py --name' invocation; the --publisher guard has nothing to check (#3308)")
+        has_errors=true
+      elif grep -qvF -- '--publisher' <<<"$scaffold_lines"; then
+        issues+=("❌ ${plugin}/${skill_name}: a 'scaffold.py --name' invocation omits --publisher <owner>, so the scaffold's default owner lands in the generated repo URLs (#3308)")
         has_errors=true
       fi
     fi

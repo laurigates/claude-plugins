@@ -57,6 +57,12 @@
 #                     exit 1 (10). Unchanged Banned -> no comment, exit 1 (11). An
 #                     issue with no marker yet -> one comment (12). A failed issue
 #                     lookup fails the run without opening a duplicate (13).
+#   14. Deleted with a status_reason -> body prints "- Registry reason: ..."; with
+#                     none (case 5) no reason bullet at all (#3671).
+#   15. Deleted where /install returns the deleted version -> no fallback claim
+#                     beside the same version (#3671).
+#   16. The workflow has a top-level concurrency group registry-health that
+#                     queues rather than cancels (#3671).
 #
 # Requires python3 and jq; SKIPs cleanly when unavailable.
 
@@ -570,6 +576,80 @@ CASE_DIR="${WORK}/list-fail"
 rc="$(run_case 0.1.33)"
 check "13: a failed issue lookup fails the run" "1" "$([ "$rc" != "0" ] && echo 1 || echo 0)"
 check "13: ...without opening a duplicate issue" "0" "$(gh_called 'issue create')"
+
+# --------------------------------------------------------------------------- #
+# 14. Deleted with a status_reason — the registry's reason reaches the body
+#     (#3671). registry-backend deletes a version itself, with "Node zip file
+#     doesn't exist", when the upload never landed; that reason is the only sign
+#     the deletion was automatic rather than a moderation or owner action.
+# --------------------------------------------------------------------------- #
+fixture deleted-reason \
+    '[{"version":"0.2.4","status":"NodeVersionStatusDeleted","createdAt":"2026-09-30T00:00:00Z","status_reason":"Node zip file doesn'"'"'t exist"},
+      {"version":"0.2.3","status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}]' \
+    '{"version":"0.2.3","deprecated":false,"status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.2.3"}}'
+CASE_DIR="${WORK}/deleted-reason"
+rc="$(run_case 0.2.4)"
+check "14: Deleted with a reason still exits 1" "1" "$rc"
+check "14: the body carries the registry's reason" "1" \
+    "$(body_has "- Registry reason: Node zip file doesn't exist")"
+check "14: ...still with no scan-findings header" "0" "$(body_has 'Scan findings')"
+# Control on case 5: an empty status_reason prints no reason bullet at all.
+CASE_DIR="${WORK}/deleted"
+check "14: Deleted with no status_reason prints no Registry reason bullet" "0" \
+    "$(body_has 'Registry reason')"
+
+# --------------------------------------------------------------------------- #
+# 15. Deleted where /install still resolves to the deleted version (#3671): the
+#     impact line must not claim a fallback while naming the same version.
+# --------------------------------------------------------------------------- #
+fixture deleted-same \
+    '[{"version":"0.2.4","status":"NodeVersionStatusDeleted","createdAt":"2026-09-30T00:00:00Z"},
+      {"version":"0.2.3","status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}]' \
+    '{"version":"0.2.4","deprecated":false,"status":"NodeVersionStatusDeleted","createdAt":"2026-09-30T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.2.3"}}'
+CASE_DIR="${WORK}/deleted-same"
+rc="$(run_case 0.2.4)"
+check "15: Deleted resolving to itself still exits 1" "1" "$rc"
+check "15: the body names the version /install resolves to" "1" \
+    "$(body_has 'resolves to **`0.2.4`**')"
+check "15: ...and does NOT claim installs fall back" "0" "$(body_has 'fall back')"
+check "15: ...and says /install still serves the deleted version" "1" \
+    "$(body_has 'the deleted version itself')"
+
+# --------------------------------------------------------------------------- #
+# 16. Concurrency (#3671): a workflow_run post-publish poll overlapping the daily
+#     schedule could both read "no matching marker" and both comment. A top-level
+#     concurrency group that queues (never cancels) serialises them.
+# --------------------------------------------------------------------------- #
+CONC_OUT="$(python3 - "$SCAFFOLD" <<'PY'
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("scaffold", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+try:
+    import yaml
+    doc = yaml.safe_load(mod.REGISTRY_HEALTH_YML)
+    print(json.dumps(doc.get("concurrency"), sort_keys=True))
+except ImportError:
+    # No PyYAML: read the unindented block textually.
+    lines = mod.REGISTRY_HEALTH_YML.splitlines()
+    try:
+        i = lines.index("concurrency:")
+    except ValueError:
+        print("null"); sys.exit(0)
+    out = {}
+    for l in lines[i + 1:]:
+        if not l.startswith(" "):
+            break
+        k, _, v = l.strip().partition(":")
+        v = v.split("#")[0].strip()
+        out[k] = {"false": False, "true": True}.get(v, v)
+    print(json.dumps(out, sort_keys=True))
+PY
+)"
+check "16: the workflow has a top-level registry-health concurrency group that queues" \
+    '{"cancel-in-progress": false, "group": "registry-health"}' "$CONC_OUT"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

@@ -1,6 +1,6 @@
 ---
 created: 2026-02-02
-modified: 2026-11-03
+modified: 2026-11-13
 reviewed: 2026-04-29
 description: "Pre-built Claude PR scans as claude-*.yml callers of the reusable security, quality and a11y workflows. Use when adding OWASP, secret, code-smell or WCAG review to pull requests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -111,6 +111,12 @@ Example: `claude-security-secrets.yml`
 Exception: the merge-method caller is `merge-method.yml` with `name: "PR: Merge method"`, since it calls no Claude model. Copy it from [REFERENCE.md](REFERENCE.md) rather than the generic caller template; it needs no secret, so skip Step 4 for it.
 
 **Display name convention**: The workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted because YAML treats `:` as a key separator). For these reusable callers, `Claude:` is the right domain. See `.claude/rules/workflow-naming.md` for the canonical rule and active domains. Example: `name: "Claude: Security secrets"`.
+
+**Workflow source**: the reusable workflows are published in `laurigates/.github`
+for any repository to call, and the templates use that repo by default. When
+the project's organization keeps its own copy (a fork, or an org `.github` repo
+with the same `reusable-*.yml` files), substitute its `owner/repo` and ref in
+every `uses:` line.
 
 Use the caller workflow template:
 

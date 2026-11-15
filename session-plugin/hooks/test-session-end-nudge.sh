@@ -223,6 +223,18 @@ output=$(run_hook_output "sess-distill-running" "$REPO_WITH_RULES" "$TRANSCRIPT"
 assert_silent "Skill-tool-invoked session-distill suppresses the nudge" "$output"
 rm -f "$TRANSCRIPT"
 
+TRANSCRIPT=$(make_transcript 10 "wrap up for the day")
+printf '{"role":"assistant","content":[{"type":"tool_use","name":"Skill","input":{"skill":"session-plugin:session-workflow-capture"}}]}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-wfcap-running" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "Skill-tool-invoked session-workflow-capture suppresses the nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+TRANSCRIPT=$(make_transcript 10 "wrap up for the day")
+printf '{"role":"user","content":"<command-name>/session-plugin:session-workflow-capture</command-name> expanded skill body"}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-wfcap-slash" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "slash-invoked session-workflow-capture suppresses the nudge" "$output"
+rm -f "$TRANSCRIPT"
+
 # ── surface gate ─────────────────────────────────────────────────────────────
 echo ""
 echo "surface gate (no taskwarrior, no distillable surface):"

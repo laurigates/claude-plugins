@@ -164,7 +164,7 @@ After per-item actions, emit a structured summary:
 
 ## Workflow harness (template)
 
-`workflows/issue-triage.workflow.js` ships beside this skill.
+`workflows/issue-triage-sweep.workflow.js` ships beside this skill.
 **It is a TEMPLATE to adapt, not a script to run verbatim.** Read it, then rewrite it for the
 work in front of you.
 

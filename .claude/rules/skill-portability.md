@@ -52,7 +52,10 @@ as written goes in the config's `[allow]` section as
 The baseline holds the hits that predate this rule (31 files at landing) and
 only goes down. The per-plugin sweep under #3308 classifies each one with
 `code-quality-plugin:bulk-sweep-classify`, then neutralizes it or allowlists
-it with a reason. Do not add new entries to the baseline.
+it with a reason. That sweep emptied the baseline, so the check reports `OK`
+on a clean tree; the file stays, header only, because `--update-baseline`
+re-seeds a missing baseline from every current hit. Do not add new entries to
+the baseline.
 
 ## Related
 

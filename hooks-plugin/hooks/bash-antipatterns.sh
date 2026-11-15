@@ -465,7 +465,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # mean teaching the parser about shell state it cannot see.
     #
     # Deliberately NOT a blanket "the command mentions /tmp somewhere" test: that
-    # would exempt `cd ~/repos/x && sed -i '' 's/a/b/' f.py 2>/tmp/log`, a repo
+    # would exempt `cd ~/src/x && sed -i '' 's/a/b/' f.py 2>/tmp/log`, a repo
     # edit whose only /tmp is a log redirect, which must keep blocking.
     #
     # Scanned view is COMMAND_SHELL_ONLY (heredoc bodies and trailing `#` comments

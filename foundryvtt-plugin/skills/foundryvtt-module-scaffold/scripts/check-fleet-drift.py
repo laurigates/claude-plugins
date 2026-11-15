@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Report drift between the generated FoundryVTT modules and the scaffold.
 
-`scaffold.py` generates the module repos. The files it emits drift over time
+`scaffold.py` generates the module repos; this script reads them from the fleet
+root (`--fleet-root`, else `$FOUNDRYVTT_FLEET_ROOT`, else the current
+directory). The files it emits drift over time
 and nothing reported it (#2761): the duplicate Renovate runner of #2708 sat in
 generated modules until it was found by hand.
 
@@ -36,6 +38,7 @@ import argparse
 import contextlib
 import importlib.util
 import io
+import os
 import sys
 import tomllib
 from collections import defaultdict
@@ -45,8 +48,14 @@ from typing import Any
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCAFFOLD_PY = SKILL_DIR / "scaffold.py"
 DEFAULT_POLICY = SKILL_DIR / "fleet-policy.toml"
-# The FoundryVTT workspace the scaffold's own docs run it from.
-DEFAULT_FLEET_ROOT = Path.home() / "repos" / "laurigates" / "foundryvtt-dev"
+# The fleet root comes from context: --fleet-root, else $FOUNDRYVTT_FLEET_ROOT,
+# else the current directory (where the module clones sit side by side).
+FLEET_ROOT_ENV = "FOUNDRYVTT_FLEET_ROOT"
+
+
+def default_fleet_root() -> Path:
+    return Path(os.environ.get(FLEET_ROOT_ENV) or ".")
+
 
 # Never treated as a module directory. `.claude/worktrees/` holds full repo
 # clones (#1492, #1548) and `dist/` is build output; walking either would
@@ -267,11 +276,12 @@ def emit_issue_body(
             print(f"- `{rel}`")
         print()
 
-    # The DEFAULT fleet root, not the swept one: in CI that is a throwaway
-    # clone directory that does not exist on a reader's machine.
+    # Not the swept root: in CI that is a throwaway clone directory, and pasting
+    # it would give a reader a path that does not exist on their machine.
     print("---\n")
     print(
-        "Reproduce locally (defaults to `~/repos/laurigates/foundryvtt-dev`):\n\n```\n"
+        "Reproduce locally from the directory holding your module clones (or pass "
+        f"`--fleet-root`, or set `{FLEET_ROOT_ENV}`):\n\n```\n"
         "python3 foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/check-fleet-drift.py\n"
         "```\n"
     )
@@ -299,8 +309,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fleet-root",
         type=Path,
-        default=DEFAULT_FLEET_ROOT,
-        help="directory holding the module repos (default: ~/repos/laurigates/foundryvtt-dev)",
+        default=None,
+        help=(
+            f"directory holding the module repos (default: ${FLEET_ROOT_ENV}, "
+            "else the current directory)"
+        ),
     )
     parser.add_argument(
         "--module",
@@ -328,7 +341,11 @@ def main(argv: list[str] | None = None) -> int:
     # (#2057).
     args = parser.parse_args(argv)
 
-    fleet_root = args.fleet_root.expanduser()
+    fleet_root = (
+        args.fleet_root.expanduser()
+        if args.fleet_root
+        else default_fleet_root().expanduser().resolve()
+    )
     policy, policy_problems = load_policy(args.policy.expanduser())
     module = load_scaffold()
     templates = derive_invariant_templates(module)

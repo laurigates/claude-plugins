@@ -288,7 +288,12 @@
       "suite": "configure-plugin/configure-readme",
       "case": "rdm-001",
       "expect": "pass",
-      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Title | ✅ PASS |\n| Badges | ❌ MISSING |\n| Installation | ✅ PASS |\n| License | ❌ MISSING |"
+      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Title | ✅ PASS |\n| Badges | ❌ MISSING |\n| Installation | ✅ PASS |\n| License | ❌ MISSING |",
+      "note": "check-only report; the trace shows only reads and the README on disk is untouched",
+      "trace_file": "rdm-001-readonly.trace.json",
+      "workspace_setup": [
+        "printf '# widget-cli\\n\\nA small CLI.\\n\\n## Installation\\n\\nnpm install -g widget-cli\\n' > README.md"
+      ]
     },
     {
       "suite": "configure-plugin/configure-readme",
@@ -461,6 +466,189 @@
       "fails_on": "absent_regex",
       "note": "a fabricated verdict for a skill that does not exist",
       "output": "Verdict: `clear`. The reader could tell when to invoke zq-query-runner and could carry out its first step."
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-001",
+      "expect": "fail",
+      "fails_on": "tool_called",
+      "note": "the report is fine, but the trace shows a Write to README.md in check-only mode",
+      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Title | ✅ PASS |\n| Badges | ❌ MISSING |\n| Installation | ✅ PASS |\n| License | ❌ MISSING |",
+      "trace_file": "rdm-001-wrote.trace.json",
+      "workspace_setup": [
+        "printf '# widget-cli\\n\\nA small CLI.\\n\\n## Installation\\n\\nnpm install -g widget-cli\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-001",
+      "expect": "fail",
+      "fails_on": "file_regex",
+      "note": "no Write or Edit call, but the README on disk changed (a shell edit): only the workspace check sees it",
+      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Title | ✅ PASS |\n| Badges | ❌ MISSING |\n| Installation | ✅ PASS |\n| License | ❌ MISSING |",
+      "trace_file": "rdm-001-readonly.trace.json",
+      "workspace_setup": [
+        "printf '# widget-cli\\n\\nA small CLI.\\n\\n## Installation\\n\\nnpm install -g widget-cli\\n' > README.md",
+        "printf '\\n## License\\n\\nMIT\\n' >> README.md"
+      ]
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-004",
+      "expect": "pass",
+      "note": "flags the detail sections for docs/ pages and leaves the README and tree untouched",
+      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Features | MOVE → docs/usage.md |\n| Tech Stack | MOVE → docs/architecture.md |\n| Project Structure | MOVE → docs/development.md |\n| Development | MOVE → docs/development.md |",
+      "workspace_setup": [
+        "printf '# tool\\n\\nA tool.\\n\\n## Features\\n\\n- Fast\\n\\n## Tech Stack\\n\\n| Runtime | Rust |\\n\\n## Installation\\n\\ncargo install tool\\n\\n## Project Structure\\n\\nsrc/\\n\\n## Development\\n\\ncargo test\\n\\n## License\\n\\nMIT\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-004",
+      "expect": "fail",
+      "fails_on": "file_exists",
+      "note": "the report is fine, but a docs/ page was written in check-only mode",
+      "output": "README compliance (check-only, no files changed):\n\n| Features | MOVE → docs/usage.md |\n| Tech Stack | MOVE → docs/architecture.md |",
+      "workspace_setup": [
+        "printf '# tool\\n\\nA tool.\\n\\n## Features\\n\\n- Fast\\n\\n## Tech Stack\\n\\n| Runtime | Rust |\\n\\n## Installation\\n\\ncargo install tool\\n\\n## Project Structure\\n\\nsrc/\\n\\n## Development\\n\\ncargo test\\n\\n## License\\n\\nMIT\\n' > README.md",
+        "mkdir -p docs",
+        "printf '# Usage\\n\\n- Fast\\n' > docs/usage.md"
+      ]
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-005",
+      "expect": "pass",
+      "note": "a slim README for the Rust stack, written to disk",
+      "output": "Wrote README.md (slim shape) for ferrite.",
+      "workspace_setup": [
+        "printf '# ferrite\\n\\n[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)\\n\\nA small CLI.\\n\\n## Quick start\\n\\n```bash\\ncargo install ferrite\\n```\\n\\n## Documentation\\n\\n| Page | Covers |\\n|---|---|\\n| [docs/usage.md](docs/usage.md) | Commands |\\n\\n## License\\n\\nMIT\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-005",
+      "expect": "fail",
+      "fails_on": "file_absent_regex",
+      "note": "the README on disk keeps a Features and a Development section instead of moving them to docs/",
+      "output": "Wrote README.md for ferrite.",
+      "workspace_setup": [
+        "printf '# ferrite\\n\\n[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)\\n\\n## Features\\n\\n- Fast\\n\\n## Installation\\n\\ncargo install ferrite\\n\\n## Development\\n\\ncargo test\\n\\n## License\\n\\nMIT\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-001",
+      "expect": "pass",
+      "note": "CHANGELOG.md groups the feat and fix commits and no tracked file changed",
+      "output": "Wrote CHANGELOG.md from 3 commits (1 feature, 1 fix; the chore commit is left out).",
+      "workspace_setup": [
+        "git init -q",
+        "printf 'print(1)\\n' > app.py",
+        "git add app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -m 'chore: initial commit'",
+        "printf 'print(2)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'feat(cli): add --json output'",
+        "printf 'print(3)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'fix(parser): handle empty input'",
+        "printf '# Changelog\\n\\n## Unreleased\\n\\n### Features\\n\\n- **cli:** add --json output\\n\\n### Bug Fixes\\n\\n- **parser:** handle empty input\\n' > CHANGELOG.md"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-001",
+      "expect": "fail",
+      "fails_on": "file_regex",
+      "note": "the changelog names only the feature: the fix commit is missing from the file on disk",
+      "output": "Wrote CHANGELOG.md.",
+      "workspace_setup": [
+        "git init -q",
+        "printf 'print(1)\\n' > app.py",
+        "git add app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -m 'chore: initial commit'",
+        "printf 'print(2)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'feat(cli): add --json output'",
+        "printf 'print(3)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'fix(parser): handle empty input'",
+        "printf '# Changelog\\n\\n## Unreleased\\n\\n### Features\\n\\n- add --json output\\n' > CHANGELOG.md"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-001",
+      "expect": "fail",
+      "fails_on": "run_command",
+      "note": "the changelog is right, but a tracked source file was also edited",
+      "output": "Wrote CHANGELOG.md.",
+      "workspace_setup": [
+        "git init -q",
+        "printf 'print(1)\\n' > app.py",
+        "git add app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -m 'chore: initial commit'",
+        "printf 'print(2)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'feat(cli): add --json output'",
+        "printf 'print(3)\\n' > app.py",
+        "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q -am 'fix(parser): handle empty input'",
+        "printf '# Changelog\\n\\n## Unreleased\\n\\n### Features\\n\\n- **cli:** add --json output\\n\\n### Bug Fixes\\n\\n- **parser:** handle empty input\\n' > CHANGELOG.md",
+        "printf 'print(4)\\n' > app.py"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-002",
+      "expect": "pass",
+      "note": "README.md written from the package metadata and its public function",
+      "output": "Updated README.md for tallyho.",
+      "workspace_setup": [
+        "printf '[project]\\nname = \"tallyho\"\\nversion = \"0.1.0\"\\n' > pyproject.toml",
+        "mkdir -p src/tallyho",
+        "printf 'def tally(words):\\n    return {}\\n' > src/tallyho/__init__.py",
+        "printf '# tallyho\\n\\nCount how often each word appears.\\n\\n## Install\\n\\n```bash\\npip install tallyho\\n```\\n\\n## Usage\\n\\n```python\\nfrom tallyho import tally\\ntally([\"a\", \"b\", \"a\"])  # {\"a\": 2, \"b\": 1}\\n```\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-002",
+      "expect": "fail",
+      "fails_on": "file_absent_regex",
+      "note": "the README installs with npm: the wrong ecosystem for a pyproject.toml project",
+      "output": "Updated README.md for tallyho.",
+      "workspace_setup": [
+        "printf '[project]\\nname = \"tallyho\"\\nversion = \"0.1.0\"\\n' > pyproject.toml",
+        "mkdir -p src/tallyho",
+        "printf 'def tally(words):\\n    return {}\\n' > src/tallyho/__init__.py",
+        "printf '# tallyho\\n\\n## Install\\n\\nnpm install tallyho\\n\\n## Usage\\n\\ntally(words)\\n' > README.md"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-003",
+      "expect": "pass",
+      "note": "honest refusal and no changelog on disk",
+      "output": "I can't generate CHANGELOG.md from git history: this directory is not a git repository, so there are no commits to read. I can run git init, or write a CHANGELOG.md with an empty Unreleased section.",
+      "workspace_setup": [
+        "printf 'print(1)\\n' > app.py"
+      ]
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-003",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "a fabricated release section for a project with no history",
+      "output": "Generated CHANGELOG.md:\n\n## [1.0.0] - 2026-01-01\n\n### Features\n\n- Initial release"
+    },
+    {
+      "suite": "documentation-plugin/docs-generate",
+      "case": "dg-003",
+      "expect": "fail",
+      "fails_on": "file_absent_regex",
+      "note": "says there is no history, but wrote a versioned changelog anyway: only the workspace check sees it",
+      "output": "This directory is not a git repository, so there are no commits to read.",
+      "workspace_setup": [
+        "printf 'print(1)\\n' > app.py",
+        "printf '# Changelog\\n\\n## 0.1.0\\n\\n- Initial release\\n' > CHANGELOG.md"
+      ]
     }
   ]
 }

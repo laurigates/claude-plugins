@@ -1,6 +1,6 @@
 ---
 created: 2026-05-09
-modified: 2026-07-18
+modified: 2026-11-13
 compatibility: claude-code
 reviewed: 2026-05-09
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git mv *), Bash(diff *), Bash(rm *), AskUserQuestion, TodoWrite
@@ -18,7 +18,7 @@ name: meta-promote
 | Use this skill when... | Use a different skill when... |
 |---|---|
 | Two or more sibling `.claude/` scopes hold rules/skills/commands with the same name or topic, and you want to decide whether to lift them up to a shared parent | You want to copy a *project's* config into your *user-global* config (use `meta-assimilate`) |
-| A portfolio root (e.g. `~/repos/`) has children whose configs overlap and you want to promote the common kernel | You want to review existing agent configs for security and frontmatter completeness without changing scopes (use `meta-audit`) |
+| A portfolio root (a directory holding many repo checkouts) has children whose configs overlap and you want to promote the common kernel | You want to review existing agent configs for security and frontmatter completeness without changing scopes (use `meta-audit`) |
 | You suspect a rule is duplicated across sibling repos and want a structured promotion / extraction / keep-scoped decision per file | You want to author a brand-new skill from scratch (use `custom-agent-definitions`) |
 
 ## Context
