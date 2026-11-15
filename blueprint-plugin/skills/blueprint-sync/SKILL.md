@@ -5,7 +5,7 @@ reviewed: 2026-08-09
 description: "Check for stale generated content and offer regeneration or promotion. Use when syncing blueprint after PRD changes, or reconciling .claude/rules/ drift."
 args: "[--dry-run]"
 argument-hint: "--dry-run to preview sync status without modifying files"
-allowed-tools: Read, Bash, Glob, AskUserQuestion
+allowed-tools: Read, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh *), Bash(cat *), Bash(jq *), Bash(sha256sum *), Bash(cut *), Glob, AskUserQuestion
 name: blueprint-sync
 ---
 

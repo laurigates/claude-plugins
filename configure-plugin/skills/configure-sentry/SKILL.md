@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2026-07-05
 description: "Sentry error tracking setup. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload for frontend, Next.js, Node, or Python."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(rg *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|nextjs|python|node>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|nextjs|python|node>]"
 name: configure-sentry

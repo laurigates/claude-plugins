@@ -1,11 +1,11 @@
 ---
 created: 2025-12-17
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
 argument-hint: "[--non-interactive|-y]"
-allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh *), Bash(jq *), Bash(ls *), Glob, AskUserQuestion
 name: blueprint-upgrade
 ---
 

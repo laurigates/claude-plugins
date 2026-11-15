@@ -2,10 +2,10 @@
 name: debugging-methodology
 description: Debugging for memory, performance, and system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling, finding lock contention, or reasoning about races.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(perf report *), Bash(perf top *), Bash(lsof *), Bash(pmap *), Bash(ss *), Bash(netstat *), Bash(tcpdump *), Read, Grep, Glob
 model: opus
 created: 2025-12-27
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-04-25
 ---
 

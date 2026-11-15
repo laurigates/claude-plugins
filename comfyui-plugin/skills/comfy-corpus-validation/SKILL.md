@@ -1,11 +1,11 @@
 ---
 created: 2026-07-14
-modified: 2026-07-14
+modified: 2026-11-14
 reviewed: 2026-07-14
 name: comfy-corpus-validation
 description: >-
   Verify ComfyUI sampler/scheduler facts: source-of-truth ladder, measured sigma curves, coverage gaps. Use when writing or auditing sampler corpus metadata.
-allowed-tools: Bash, Read, Grep, Glob, Write, Edit
+allowed-tools: Bash(just corpus-check *), Read, Grep, Glob, Write, Edit
 ---
 
 # comfy-corpus-validation

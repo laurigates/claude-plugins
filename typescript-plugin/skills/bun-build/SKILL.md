@@ -1,10 +1,10 @@
 ---
 description: "Bun build: bundle or compile JS/TS to production bundle or standalone binary. Use when the user wants to bundle, compile, or build for browser/bun/node target."
 args: <entry> [--compile] [--minify]
-allowed-tools: Bash, Read
+allowed-tools: Bash(bun build *), Read
 argument-hint: ./src/index.ts [--compile] [--minify]
 created: 2025-12-20
-modified: 2026-07-28
+modified: 2026-11-14
 reviewed: 2025-12-20
 name: bun-build
 ---

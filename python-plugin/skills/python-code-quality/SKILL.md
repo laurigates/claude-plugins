@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-29
+modified: 2026-11-14
 reviewed: 2026-05-29
 name: python-code-quality
 description: Python code quality with ruff and ty. Use when the user mentions ruff, ty, linting, formatting, type checking, or Python code style.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # Python Code Quality

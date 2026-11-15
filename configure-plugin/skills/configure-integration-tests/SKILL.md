@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Integration testing: Supertest, pytest, Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating from unit tests."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(bun add *), Bash(uv add *), Bash(bun test *), Bash(pytest *), Bash(docker compose -f docker-compose.test.yml up *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 argument-hint: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 name: configure-integration-tests

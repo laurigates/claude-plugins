@@ -1,11 +1,11 @@
 ---
 created: 2026-01-30
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-05-22
 description: Derive Claude rules from git commit history. Use when extracting implicit decisions from commits or codifying code-style, testing, and API-design rules.
 args: "[--since DATE] [--scope SCOPE]"
 argument-hint: "--since 2024-01-01 for date range, --scope api for specific area"
-allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+allowed-tools: Read, Write, Glob, Grep, Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(find *), Bash(grep *), Bash(sed *), Bash(sort *), Bash(uniq *), Bash(mkdir *), Bash(jq *), Bash(date *), Bash(mv *), AskUserQuestion, Task
 model: opus
 name: blueprint-derive-rules
 ---

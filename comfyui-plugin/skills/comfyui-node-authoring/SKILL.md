@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-08-04
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfyui-node-authoring
 description: >-
   ComfyUI frontend/backend authoring facts: hiding/serializing widgets, DOM event isolation, endpoints, tooltip lookup, canvas hit-testing, sourcemap verification. Use when writing or patching a custom node's code.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(grep *), Bash(head *), Read, Grep, Glob
 ---
 
 # comfyui-node-authoring

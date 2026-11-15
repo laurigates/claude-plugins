@@ -2,9 +2,9 @@
 name: UnoCSS
 description: UnoCSS atomic CSS engine for on-demand utility classes. Use when setting up utility-first CSS, configuring presets (wind3/wind4, icons, typography), or integrating with Vite.
 user-invocable: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(unocss *), Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2026-02-13
-modified: 2026-02-13
+modified: 2026-11-14
 reviewed: 2026-02-13
 ---
 

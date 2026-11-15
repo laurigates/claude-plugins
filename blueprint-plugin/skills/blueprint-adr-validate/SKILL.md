@@ -5,7 +5,7 @@ reviewed: 2026-07-26
 description: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions.
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
-allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion
+allowed-tools: Read, Bash(find *), Bash(ls *), Bash(wc *), Bash(grep *), Bash(head *), Bash(sed *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/generate-adr-index.sh *), Bash(jq *), Bash(date *), Bash(mv *), Glob, Grep, Edit, AskUserQuestion
 name: blueprint-adr-validate
 ---
 

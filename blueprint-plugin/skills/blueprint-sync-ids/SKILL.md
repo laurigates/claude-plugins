@@ -5,7 +5,7 @@ reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
 argument-hint: "--dry-run to preview changes, --link-issues to create GitHub issues for orphans"
-allowed-tools: Read, Write, Edit, Glob, Bash, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/blueprint-sync-ids.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh *), Bash(jq *), Bash(gh issue create *), AskUserQuestion
 model: sonnet
 name: blueprint-sync-ids
 ---

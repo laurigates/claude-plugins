@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "API contract testing: Pact, OpenAPI validation, JSON Schema/Zod. Use when adding consumer/provider contract tests or detecting breaking API changes in CI."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(bun add *), Bash(uv add *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--type <pact|openapi|schema>]"
 argument-hint: "[--check-only] [--fix] [--type <pact|openapi|schema>]"
 name: configure-api-tests

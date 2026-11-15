@@ -2,9 +2,9 @@
 name: Lightning CSS
 description: Lightning CSS transpilation, bundling, and minification. Use when configuring CSS in Vite, replacing PostCSS/autoprefixer, setting browser targets, or enabling CSS modules.
 user-invocable: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(lightningcss *), Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2026-02-13
-modified: 2026-02-13
+modified: 2026-11-14
 reviewed: 2026-02-13
 ---
 
