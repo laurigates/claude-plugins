@@ -2,9 +2,9 @@
 name: typescript-debugging
 description: Modern TypeScript/JavaScript debugging with Bun — inspector flags, debug.bun.sh, VSCode launch.json, memory profiling, heap analysis. Use when setting up interactive debugging, investigating leaks, CPU profiling with `--cpu-prof`, or sourcemaps.
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(bun --inspect test *), Bash(bun --inspect-brk test *), Bash(bun build *), Bash(lsof *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-01-22
 ---
 

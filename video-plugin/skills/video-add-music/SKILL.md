@@ -1,9 +1,9 @@
 ---
 name: video-add-music
 description: Mux a song under a video with ffmpeg, keeping its chapters and copying the picture. Use when adding music or a soundtrack to an MP4 without re-encoding video.
-allowed-tools: Bash, Read
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/add-music.sh *), Bash(ffmpeg *), Bash(ffprobe *), Bash(wc *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

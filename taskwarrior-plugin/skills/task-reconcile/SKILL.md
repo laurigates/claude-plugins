@@ -5,7 +5,7 @@ args: "[--apply] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(gh issue *), Bash(gh pr *), Bash(jq *), Bash(bash *), Bash(git rev-parse *), Read, TodoWrite
 argument-hint: optional --apply to close (default dry-run preview)
 created: 2026-06-20
-modified: 2026-11-02
+modified: 2026-11-13
 reviewed: 2026-07-02
 ---
 
@@ -63,7 +63,7 @@ Run the shared project resolver (handles `--project` / `--all` / git-toplevel /
 cwd, with no stderr-emitting git probes):
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/resolve-project.sh" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/resolve-project.sh"
 ```
 
 Read `PROJECT=` from the output. GitHub mode must be on (an authenticated `gh`
@@ -75,7 +75,7 @@ cleanly if not.
 Run the reconcile script **without** `--apply` to classify every linked task:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --project=PROJECT --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --project=PROJECT
 ```
 
 It emits one `TASK ...` line per linked task with its `refs` count, `upstream`
@@ -103,7 +103,7 @@ options to proceed, review the table again, or cancel.
 On confirmation, re-run with `--apply`:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --apply --project=PROJECT --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --apply --project=PROJECT
 ```
 
 Each closed task is annotated with the reason (`reconcile: PR #45 merged`).

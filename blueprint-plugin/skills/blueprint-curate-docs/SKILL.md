@@ -2,10 +2,10 @@
 description: Library gotchas from official docs, researched into a .claude/rules/lib-<name>.md rule. Use when recording a dependency's pitfalls or a codebase pattern for PRP reuse.
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
-allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
+allowed-tools: Read, Write, Glob, Bash(find *), Bash(grep *), Bash(head *), Bash(ls *), Bash(jq *), Bash(date *), Bash(mv *), WebFetch, WebSearch, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---

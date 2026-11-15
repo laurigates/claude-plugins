@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Feature flags with OpenFeature and providers (GOFF, flagd, LaunchDarkly). Use when setting up the SDK, configuring a relay proxy, or adding flag test helpers."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(npm install *), Bash(uv add *), Bash(go get *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"
 argument-hint: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"
 name: configure-feature-flags

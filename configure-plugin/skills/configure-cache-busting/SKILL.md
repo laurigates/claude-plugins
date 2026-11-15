@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Cache-busting for Next.js and Vite: content hashing, CDN cache headers. Use when adding Vercel/Cloudflare cache headers or auditing static asset caching."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"
 argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"
 name: configure-cache-busting

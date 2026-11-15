@@ -1,9 +1,9 @@
 ---
 name: worktree-stale-base-merge
 description: "Merging a PR from a parallel worktree-agent branch, or any branch cut from an older main. Use when deciding whether a green CI check still means anything after sibling branches have landed."
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gh pr list *), Bash(git cherry *), Bash(git merge-tree *), Bash(git fetch *), Bash(git merge-base *), Bash(git rev-parse *), Bash(gh pr update-branch *), Bash(git log *), Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-10-26
+modified: 2026-11-14
 reviewed: 2026-09-12
 ---
 

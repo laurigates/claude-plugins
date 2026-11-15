@@ -1,11 +1,11 @@
 ---
 created: 2026-11-02
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-11-02
 name: cargo-dist
 description: "cargo-dist (dist) release binaries for a Rust CLI. Use when setting up dist-workspace.toml, pairing dist with release-please, or publishing a Homebrew formula."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(dist generate *), Bash(find *), Read, Write, Edit, Grep, Glob, AskUserQuestion, TodoWrite
 ---
 
 # cargo-dist — Release Binaries for a Rust CLI

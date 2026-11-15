@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2026-07-05
 description: "Set up .pre-commit-config.yaml: hooks for the project type at current revs. Use when installing pre-commit in a repo, auditing stale hook revs, or migrating to pre-commit."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(pre-commit install *), Bash(pre-commit autoupdate *), Bash(pre-commit validate-config *), Bash(grep *), Bash(sed *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 name: configure-pre-commit

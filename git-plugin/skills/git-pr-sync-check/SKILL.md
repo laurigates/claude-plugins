@@ -5,7 +5,7 @@ args: "[--project-dir <path>]"
 argument-hint: "[--project-dir <path>]"
 allowed-tools: Bash(bash *), Bash(git fetch *), Bash(git rev-list *), Bash(git status *), Bash(git branch *), Bash(gh pr view *), Read, TodoWrite
 created: 2026-06-17
-modified: 2026-08-21
+modified: 2026-11-13
 reviewed: 2026-06-17
 ---
 
@@ -50,7 +50,7 @@ Run this check, then act on the verdict.
 ### Step 1: Run the detection script
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/check-pr-sync.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/check-pr-sync.sh
 ```
 
 The script emits a structured block (per
@@ -87,7 +87,7 @@ commits.
 | Context | Command |
 |---------|---------|
 | One-line verdict | `bash scripts/check-pr-sync.sh \| awk -F= '/^VERDICT=/{print $2}'` |
-| Full structured block | `bash scripts/check-pr-sync.sh --project-dir "$(pwd)"` |
+| Full structured block | `bash scripts/check-pr-sync.sh` |
 | Behind count only | `bash scripts/check-pr-sync.sh \| awk -F= '/^BEHIND=/{print $2}'` |
 
 ## Related Skills

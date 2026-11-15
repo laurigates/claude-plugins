@@ -70,6 +70,10 @@ usage() {
 #   - an unquoted ` #` starts a comment; matching quotes are removed (`''`
 #     inside single quotes is one quote, `\"` inside double quotes is a quote);
 #     trailing whitespace is trimmed;
+#   - a plain id, status, title or created value continues on more-indented
+#     lines, each folded in with one space, until a ` #` comment, a list item
+#     or a less-indented line; a blank line inside is skipped, not kept as
+#     the newline YAML would fold it to;
 #   - relates-to and github-issues are read as block (`- x`) or flow (`[x, y]`)
 #     lists;
 #   - an empty title falls back to the first `# ` heading of the body (outside
@@ -160,6 +164,23 @@ frontmatter_rows() {
             if (substr(s, 1, 1) == "[") return flow_list(s)
             return scalar(s)
         }
+        function set_field(key, v) {
+            if (key == "id") id = v
+            else if (key == "status") status = v
+            else if (key == "title") title = v
+            else if (key == "created") created = v
+        }
+        # Whether the value after `key:` is a plain scalar a following
+        # indented line may continue: empty, or opening with a comment, or
+        # unquoted text that no ` #` comment has already ended.
+        function plain_open(s,    c) {
+            s = ltrim(s)
+            if (s == "") return 1
+            c = substr(s, 1, 1)
+            if (c == "#") return 1
+            if (index("\"" SQ "[{|>&*!", c)) return 0
+            return !match(s, /[ \t]#/)
+        }
         function add_item(key, v) {
             if (v == "") return
             if (key == "relates-to") rel = rel (rel == "" ? "" : "\036") v
@@ -208,7 +229,7 @@ frontmatter_rows() {
             emit()
             emit_empty_until(FILENAME)
             doc = FILENAME
-            has_fm = 0; state = 2; in_fence = any_fence = 0; inlist = ""
+            has_fm = 0; state = 2; in_fence = any_fence = 0; inlist = ""; cont = ""
             id = status = title = created = rel = gh = ""
             body_heading = any_heading = ""
             split("", seen)
@@ -222,7 +243,25 @@ frontmatter_rows() {
             gsub(/\r/, "", line)
             if (state == 1) {
                 heading_scan(line)
-                if (trim(line) == "---") { state = 2; inlist = ""; next }
+                if (trim(line) == "---") { state = 2; inlist = ""; cont = ""; next }
+                # A more-indented line continues the plain scalar of the
+                # last scalar key; YAML folds the line break to one space.
+                # A ` #` comment ends it; a blank line keeps it open (YAML
+                # folds that to a newline, which a row cannot carry).
+                if (cont != "") {
+                    if (line ~ /^[ \t]+[^ \t]/ && ltrim(line) !~ /^(#|-([ \t]|$))/) {
+                        v = ltrim(line)
+                        stop = match(v, /[ \t]#/)
+                        if (stop) v = substr(v, 1, RSTART - 1)
+                        v = rtrim(v)
+                        cval = (cval == "" ? v : cval " " v)
+                        set_field(cont, cval)
+                        if (stop) cont = ""
+                        next
+                    }
+                    if (line ~ /^[ \t]*$/) next
+                    cont = ""
+                }
                 if (inlist != "") {
                     if (line ~ /^[ \t]*-([ \t]|$)/) {
                         v = line; sub(/^[ \t]*-/, "", v)
@@ -238,10 +277,11 @@ frontmatter_rows() {
                 rest = substr(line, length(key) + 2)
                 if (key in seen) next
                 seen[key] = 1
-                if (key == "id") id = scalar(rest)
-                else if (key == "status") status = scalar(rest)
-                else if (key == "title") title = scalar(rest)
-                else if (key == "created") created = scalar(rest)
+                if (key == "id" || key == "status" || key == "title" || key == "created") {
+                    cval = scalar(rest)
+                    set_field(key, cval)
+                    if (plain_open(rest)) cont = key
+                }
                 else if (key == "relates-to" || key == "github-issues") {
                     v = ltrim(rest)
                     if (v == "" || substr(v, 1, 1) == "#") inlist = key

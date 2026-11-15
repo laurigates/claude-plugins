@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-11-04
+modified: 2026-11-13
 reviewed: 2026-10-29
 name: git-fork-workflow
 description: "Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
@@ -18,7 +18,7 @@ Run this first to detect the upstream remote, compute ahead/behind via
 runs no mutations):
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/git-fork-workflow.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/git-fork-workflow.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. It emits `IS_FORK`,

@@ -2,9 +2,9 @@
 name: bun-package-manager
 description: Fast JavaScript package management with Bun — install, add, remove, update. Use when installing all deps, adding/removing packages, running `bun update`/`outdated`, managing workspaces, doing a `--frozen-lockfile` CI install, or debugging conflicts.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bun install *), Bash(bun add *), Bash(bun remove *), Bash(bun update *), Bash(bun outdated *), Bash(bun why *), Bash(bun pm ls *), Read, Grep, Glob, TodoWrite
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2025-12-20
 ---
 

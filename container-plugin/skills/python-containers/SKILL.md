@@ -1,11 +1,11 @@
 ---
 created: 2026-01-15
-modified: 2026-09-02
+modified: 2026-11-14
 reviewed: 2026-01-15
 name: python-containers
 description: "Python container optimization — slim images (not Alpine), virtualenv, multi-stage, pip/poetry/uv, musl gotchas (1GB to ~120MB). Use when working with Python containers or optimizing image sizes."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
+allowed-tools: Bash(docker build *), Bash(docker images *), Bash(docker history *), Bash(head *), Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 
 # Python Container Optimization

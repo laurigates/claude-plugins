@@ -1,9 +1,9 @@
 ---
 name: zsh-gotchas
 description: "Zsh expansions that rewrite a command: $VAR:word, leading =, no word splitting, `path` tied to PATH, bare `local`. Use when a zsh command gives a wrong result, dumps variables or a tool seems missing."
-allowed-tools: Bash, Read
+allowed-tools: Read
 created: 2026-09-21
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-09-21
 ---
 

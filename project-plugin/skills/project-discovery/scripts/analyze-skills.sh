@@ -2,6 +2,7 @@
 # Skill Script Opportunity Analyzer
 # Scans all plugin skills and identifies candidates for supporting scripts.
 # Usage: bash analyze-skills.sh [repo-root] [plugin-name] [--funnel]
+#   repo-root defaults to the git toplevel (else the working directory).
 #
 # Default mode evaluates: bash block count, workflow phases, context-gathering
 # patterns, existing scripts, and skill size. Outputs structured recommendations.
@@ -34,6 +35,15 @@ for arg in "$@"; do
     *) positional+=("$arg") ;;
   esac
 done
+if [ "${#positional[@]}" -eq 0 ]; then
+  # No repo-root argument: scan the git toplevel. cd there and scan "." rather
+  # than passing the absolute path, so the .claude/worktrees prune below cannot
+  # match the root when it is itself an agent worktree (#2219). Callers used to
+  # pass "$(git rev-parse --show-toplevel)", and a $(…) on a bundled-script line
+  # voids the skill's pre-approved grant (#3640).
+  repo_top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -n "$repo_top" ]; then cd "$repo_top" || exit 1; fi
+fi
 REPO_ROOT="${positional[0]:-.}"
 SPECIFIC_PLUGIN="${positional[1]:-}"
 

@@ -1,10 +1,10 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: bun-lockfile-update
 description: "Bun lockfile update (bun.lock): bun update, regeneration, security audits. Use when updating dependencies, resolving lockfile conflicts, or regenerating bun.lock."
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(bun update *), Bash(bun install *), Bash(bun outdated *), Bash(bun audit *), Bash(bun pm ls *), Bash(bun test *), Bash(bun run build *), Bash(bun run lint *), Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git checkout *), Read, Grep, Glob
 ---
 
 # Bun Lockfile Update

@@ -5,7 +5,7 @@ args: "[--max-depth N] [--dry-run]"
 argument-hint: "--dry-run to preview without writing; --max-depth sets search depth (default 4)"
 allowed-tools: Bash(bash *), Read, Glob
 created: 2026-04-12
-modified: 2026-06-18
+modified: 2026-11-13
 reviewed: 2026-04-12
 ---
 
@@ -53,7 +53,6 @@ emits a structured summary:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/workspace-scan.sh" \
-  --project-dir "$(pwd)" \
   --max-depth 4 $ARGUMENTS
 ```
 

@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: cargo-llvm-cov
 description: "cargo-llvm-cov: Rust code coverage with LLVM instrumentation. Use when measuring coverage, enforcing thresholds, generating reports, or integrating codecov/coveralls."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(cargo llvm-cov *), Bash(cargo +nightly llvm-cov *), Bash(cargo clean *), Read, Grep, Glob
 ---
 
 # cargo-llvm-cov - Code Coverage with LLVM

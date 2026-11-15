@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-11-04
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: cargo-machete
 description: "cargo-machete: detect unused Rust dependencies. Use when auditing Cargo.toml, optimizing build times, or cleaning up dependency bloat."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(cargo machete *), Bash(cargo check *), Bash(cargo test *), Bash(cargo +nightly udeps *), Bash(find *), Read, Grep, Glob
 ---
 
 # cargo-machete - Unused Dependency Detection

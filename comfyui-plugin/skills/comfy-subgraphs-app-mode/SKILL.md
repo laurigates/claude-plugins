@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-subgraphs-app-mode
 description: >-
   ComfyUI Subgraphs, Subgraph Blueprints, and App Mode: creating/publishing subgraphs, why Blueprint instances are snapshots not live refs, turning a workflow into a form UI. Use when deciding how to package a workflow stage.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # comfy-subgraphs-app-mode

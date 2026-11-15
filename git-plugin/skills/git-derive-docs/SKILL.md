@@ -1,6 +1,6 @@
 ---
 created: 2026-01-24
-modified: 2026-06-18
+modified: 2026-11-13
 reviewed: 2026-06-10
 allowed-tools: Bash(bash *), Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
@@ -57,7 +57,7 @@ Run the data-gathering script once. It aggregates file-naming patterns
 doc coverage (`DOCS_*`):
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/git-derive-docs.sh" --home-dir "$HOME" --project-dir "$(pwd)" --depth "$DEPTH" --since "$SINCE"
+bash "${CLAUDE_SKILL_DIR}/scripts/git-derive-docs.sh" --home-dir "$HOME" --depth "$DEPTH" --since "$SINCE"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. Pass `--since` (precedence) or

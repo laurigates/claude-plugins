@@ -1,11 +1,11 @@
 ---
 created: 2026-01-15
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: github-issue-autodetect
 description: "Fixes/Closes/Refs keywords for a change: match the staged diff against open issues by path, label and title. Use when deciding which issue a change closes before its message is written."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, mcp__github__list_issues, mcp__github__get_issue
+allowed-tools: Bash(git diff *), Bash(gh issue list *), Bash(gh issue view *), Bash(jq *), Read, Grep, Glob, mcp__github__list_issues, mcp__github__get_issue
 ---
 
 # GitHub Issue Auto-Detection

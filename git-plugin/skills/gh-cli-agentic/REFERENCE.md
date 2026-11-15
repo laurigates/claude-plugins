@@ -62,12 +62,16 @@ repository's open-issue count.
 form: it is the same filter. In gh's source (`pkg/cmd/issue/list/list.go`, read
 at the v2.89.0 tag), `--app <name>` sets the author option to `app/<name>`, and
 `http.go` sends that value as the GraphQL `createdBy` filter, the same path
-`--author "app/github-actions"` takes.
+`--author "app/github-actions"` takes. That `createdBy` path is gh's plain
+listing only: with `--search`, `--label` or `--milestone`, `issueList()` in
+`list.go` calls `searchIssues()` instead, and the author goes out as an
+`author:` search qualifier. Both flags still produce the same value there, but
+whether that qualifier finds the bot's issues was not tested.
 
 Observed 2026-11-10 by an agent writing a workflow lookup; the three commands
-were not re-run when this section was written, and the spellings may differ
-across gh versions. Check `--json author` output once before relying on the
-exact string.
+were not re-run when this section was written, nor was the jq filter run
+against a repository, and the spellings may differ across gh versions. Check
+`--json author` output once before relying on the exact string.
 
 ## GitHub URL Resolution
 

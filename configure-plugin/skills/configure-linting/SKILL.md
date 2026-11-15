@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Set up linters (Biome, Ruff, Clippy) and wire them into pre-commit and CI. Use when a repo has no linter config, migrating ESLint to Biome, or auditing lint rules."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(bun add *), Bash(bun remove *), Bash(npm install *), Bash(uv add *), Bash(uv remove *), Bash(cargo clippy *), Bash(jq *), Bash(grep *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"
 argument-hint: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"
 name: configure-linting

@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-23
+modified: 2026-11-14
 reviewed: 2025-12-16
 name: property-based-testing
 description: "Property-based testing with fast-check (TS/JS) and Hypothesis (Python). Use when generating test data, finding edge cases, testing properties, or writing QuickCheck-style tests."
 user-invocable: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(bunx vitest *), Bash(uv run pytest *), Bash(pytest *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
 # Property-Based Testing

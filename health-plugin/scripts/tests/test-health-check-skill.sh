@@ -121,20 +121,29 @@ done
 # span's own closing backtick is not read as a substitution.
 invocation_re='bash \$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}/[A-Za-z0-9_./-]*\.sh'
 span_open_re='(`+)$'
-# has_substitution <line>: succeed when the line's bundled-script invocation
-# carries a $(…) or backtick command substitution.
+# has_substitution <line>: succeed when ANY bundled-script invocation on the
+# line carries a $(…) or backtick command substitution. Every invocation is
+# inspected, not only the first: a table row can hold a clean span before a
+# broken one (#3642). The marketplace-wide equivalent is
+# scripts/check-voided-script-grant.sh (#3640).
 has_substitution() {
-  local line_text="$1" prefix_text rest_text cmd_text delim=""
-  [[ "$line_text" =~ $invocation_re ]] || return 1
-  prefix_text="${line_text%%"${BASH_REMATCH[0]}"*}"
-  rest_text="${line_text#"$prefix_text"}"
-  [[ "${prefix_text% }" =~ $span_open_re ]] && delim="${BASH_REMATCH[1]}"
-  if [ -n "$delim" ]; then
-    cmd_text="${rest_text%%"$delim"*}"
-  else
-    cmd_text="$rest_text"
-  fi
-  [[ "$cmd_text" == *'$('* || "$cmd_text" == *'`'* ]]
+  local line_text="$1" prefix_text rest_text cmd_text delim match_text
+  while [[ "$line_text" =~ $invocation_re ]]; do
+    delim=""
+    match_text="${BASH_REMATCH[0]}"
+    prefix_text="${line_text%%"$match_text"*}"
+    rest_text="${line_text#"$prefix_text"}"
+    [[ "${prefix_text% }" =~ $span_open_re ]] && delim="${BASH_REMATCH[1]}"
+    if [ -n "$delim" ]; then
+      cmd_text="${rest_text%%"$delim"*}"
+    else
+      cmd_text="$rest_text"
+    fi
+    [[ "$cmd_text" == *'$('* || "$cmd_text" == *'`'* ]] && return 0
+    # Continue after this invocation's path.
+    line_text="${rest_text#"$match_text"}"
+  done
+  return 1
 }
 
 # Fixtures: the detector must flag both substitution forms in both contexts
@@ -144,6 +153,8 @@ subst_flag=(
   'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "`pwd`"'
   '| x | `bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --project-dir "$(pwd)"` |'
   '| x | `` bash ${CLAUDE_PLUGIN_ROOT}/skills/s/scripts/fix.sh --project-dir `pwd` `` |'
+  # The substitution sits on the SECOND invocation of the line (#3642, #3634 item).
+  '| x | `bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME"` or `bash ${CLAUDE_SKILL_DIR}/scripts/check-hooks.sh --project-dir "$(pwd)"` |'
 )
 subst_clean=(
   'bash ${CLAUDE_SKILL_DIR}/scripts/check-plugins.sh --home-dir "$HOME"'

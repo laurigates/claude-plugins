@@ -10,7 +10,7 @@ and run: `prepare_run.sh` as in item 1 of the subagent branch in
 ```
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/rollout_headless.sh \
   --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \
-  --plugin-dir "$(pwd)/<plugin-name>" --model haiku --max-budget-usd 0.25
+  --plugin-dir <plugin-name> --model haiku --max-budget-usd 0.25
 ```
 Omit `--plugin-dir` for the baseline. It writes `transcript.md`, `trace.json`,
 `workspace/` and `timing.json` into `$RUN_DIR` and prints a `=== HEADLESS ROLLOUT ===`

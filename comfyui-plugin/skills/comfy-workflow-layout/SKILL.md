@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-10-10
+modified: 2026-11-14
 reviewed: 2026-07-07
 name: comfy-workflow-layout
 description: >-
   Auto-layout a ComfyUI workflow JSON with a layered DAG algorithm. Use when a workflow's nodes overlap, are messy or cramped, or were imported and need tidying before use.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(mv *), Read, Grep, Glob
 model: haiku
 effort: low
 ---

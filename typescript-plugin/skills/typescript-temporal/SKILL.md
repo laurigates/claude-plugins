@@ -1,11 +1,11 @@
 ---
 created: 2026-09-29
-modified: 2026-09-29
+modified: 2026-11-14
 reviewed: 2026-09-29
 name: typescript-temporal
 description: "Temporal API for TS/JS dates and times. Use when parsing, formatting or comparing dates, computing today, time zones, durations or working days."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
+allowed-tools: Glob, Grep, Read, Bash(bunx tsc *), Bash(bun test *), Bash(rg *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Temporal for Dates and Times

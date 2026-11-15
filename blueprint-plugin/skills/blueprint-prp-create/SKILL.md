@@ -2,10 +2,10 @@
 description: Create a PRP (Product Requirement Prompt) with research, context, and validation gates. Use when planning a feature packet for subagent execution with TDD and confidence scoring.
 args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
-allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
+allowed-tools: Read, Write, Glob, Bash(find *), Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh *), Bash(ls *), Bash(wc *), WebFetch, WebSearch, Task, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-02-14
 name: blueprint-prp-create
 ---

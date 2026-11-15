@@ -4,7 +4,7 @@ modified: 2026-11-15
 reviewed: 2026-08-09
 description: "Move generated artifact to custom layer to preserve manual edits. Use when promoting a generated rule, preserving .claude/rules/ changes, or stopping sync warnings."
 args: "[skill-name|command-name]"
-allowed-tools: Read, Write, Bash, AskUserQuestion
+allowed-tools: Read, Write, Bash(jq *), AskUserQuestion
 argument-hint: "Name of the skill or command to promote"
 name: blueprint-promote
 ---
