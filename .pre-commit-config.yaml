@@ -46,6 +46,18 @@ repos:
         files: '(SKILL|skill)\.md$'
         exclude: '^\.claude/'
         pass_filenames: true
+      - id: check-voided-script-grant
+        name: no $(…) or backtick on a bundled-script line (voids its grant, #3640)
+        entry: ./scripts/check-voided-script-grant.sh
+        language: script
+        files: '^([^/]+-plugin/(skills|agents)/.*\.md|scripts/(check-voided-script-grant\.sh|lib/extract-md-elements\.py))$'
+        pass_filenames: false
+      - id: check-voided-script-grant-test
+        name: voided-script-grant guard regression
+        entry: ./scripts/tests/test-check-voided-script-grant.sh
+        language: script
+        files: '^scripts/(check-voided-script-grant\.sh|lib/extract-md-elements\.py|tests/test-check-voided-script-grant\.sh)$'
+        pass_filenames: false
       - id: check-driver-freshness
         name: check configure-repo driver freshness
         entry: bash ./scripts/check-driver-freshness.sh
@@ -263,7 +275,7 @@ repos:
         name: golden-set eval suites validate and their probes bite (#2144)
         entry: bash ./evaluate-plugin/scripts/tests/test-golden-set-evals.sh
         language: system
-        files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|run_trigger_evals\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/gc-00[0-9]-[a-z-]+\.(txt|trace\.json))|[^/]+-plugin/skills/[^/]+/evals\.json)$'
+        files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|run_trigger_evals\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/(gc|rdm)-00[0-9]-[a-z-]+\.(txt|trace\.json))|[^/]+-plugin/skills/[^/]+/evals\.json)$'
         pass_filenames: false
       # The grader and fixture-engine suites were named test_*.sh until #2795,
       # so the runner's test-*.sh glob never ran them. `Test: Skill scripts` now

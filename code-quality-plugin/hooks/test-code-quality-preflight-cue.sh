@@ -92,7 +92,10 @@ for cq_b2_case in \
   'plugin.json|"version": "2.0.0-rc.1"|"version": "2.0.0-rc.2"' \
   'marketplace.json|"version": "1.28.2"|"version": "1.28.3"' \
   'pyproject.toml|requires-python = ">=3.9"|requires-python = ">=3.12"' \
-  'Cargo.toml|serde = "1"|serde = "2"'; do
+  'Cargo.toml|serde = "1"|serde = "2"' \
+  'package.json|"node": ">=20"|"node": ">=22"' \
+  'pyproject.toml|"numpy==1.26.4",|"numpy==2.1.0",' \
+  'package.json|"react": "^18.2.0"|"react": "^19.0.0"'; do
   cq_b2_idx=$((cq_b2_idx + 1))
   IFS='|' read -r cq_b2_name cq_b2_old cq_b2_new <<< "$cq_b2_case"
   echo "--- Test (b): version-only ${cq_b2_name} edit is silent (#3627) ---"
@@ -113,7 +116,11 @@ for cq_b3_case in \
   'package.json|"version": "1.2.3"|"version": "1.2.3",\n  "type": "module"' \
   'package.json|"port": 3000|"port": 30001' \
   'package.json|"main": "index.js"|"main": "indexjs"' \
-  'Cargo.toml|edition = "2021"|edition = "2021" # 2024'; do
+  'Cargo.toml|edition = "2021"|edition = "2021" # 2024' \
+  'package.json|"port": "3000"|"port": "30001"' \
+  'package.json|"dev": "vite --port=3000"|"dev": "vite --port=30001"' \
+  'package.json|"test": "jest --maxWorkers=2"|"test": "jest --maxWorkers=8"' \
+  'package.json|"host": "127.0.0.1"|"host": "0.0.0.0"'; do
   cq_b3_idx=$((cq_b3_idx + 1))
   IFS='|' read -r cq_b3_name cq_b3_old cq_b3_new <<< "$cq_b3_case"
   cq_b3_new="${cq_b3_new//\\n/$'\n'}"

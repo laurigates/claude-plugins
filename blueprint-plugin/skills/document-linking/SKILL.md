@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-11-12
+modified: 2026-11-13
 reviewed: 2026-04-25
 name: document-linking
 description: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking docs, finding orphans, auto-assigning IDs, or validating cross-doc references.
@@ -138,7 +138,10 @@ ensure_document_id() {
   if [ -z "$existing_id" ]; then
     # Generate and assign new ID
     case "$type" in
-      PRD|PRP) new_id=$(bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind "$type") ;;
+      # Run as its own command (a $(…) capture voids the script's grant):
+      #   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRD
+      # then use the ID it prints as new_id.
+      PRD|PRP) new_id="<ID printed by blueprint-next-id.sh>" ;;
       ADR) new_id=$(get_adr_id "$file") ;;
     esac
 

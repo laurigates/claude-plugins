@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.0...agent-patterns-plugin-v2.58.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **repo:** take maintainer-specific paths and owners in shipped skills from context ([#3656](https://github.com/laurigates/claude-plugins/issues/3656)) ([5f547a1](https://github.com/laurigates/claude-plugins/commit/5f547a1e00fcf7ec31dcea25fcfc1fdd5db02976))
+
 ## [2.58.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.57.5...agent-patterns-plugin-v2.58.0) (2026-11-14)
 
 

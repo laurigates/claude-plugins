@@ -1,6 +1,6 @@
 ---
 created: 2026-07-05
-modified: 2026-07-05
+modified: 2026-11-13
 reviewed: 2026-07-05
 description: "Observability instrumentation: OpenTelemetry traces/metrics, structured logging, Sentry. Use when wiring telemetry, tracing, or logging into a repo."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash *), Bash(npm *), Bash(bun *), Bash(uv *), AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
@@ -52,7 +52,7 @@ Execute this instrumentation compliance check:
 ### Step 1: Run the detection script
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/configure-instrumentation.sh" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-instrumentation.sh"
 ```
 
 The script emits `OTEL_SDK=`, `OTEL_INIT=`, `OTEL_ENV=`, `STRUCTURED_LOGGER=`,
@@ -135,7 +135,7 @@ configuration, and metrics-endpoint patterns, see [REFERENCE.md](REFERENCE.md).
 
 | Context | Command |
 |---------|---------|
-| Quick posture check | `bash "${CLAUDE_SKILL_DIR}/scripts/configure-instrumentation.sh" --project-dir "$(pwd)"` |
+| Quick posture check | `bash "${CLAUDE_SKILL_DIR}/scripts/configure-instrumentation.sh"` |
 | Full compliance check | `/configure:instrumentation --check-only` |
 | Auto-fix everything | `/configure:instrumentation --fix` |
 | Logging only | `/configure:instrumentation --type logging` |

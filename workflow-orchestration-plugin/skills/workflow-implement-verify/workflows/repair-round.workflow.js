@@ -221,9 +221,12 @@ ${common(ctx)}
 Before any other work, read the branch's PR state (an open PR can merge while its verifier runs, and a reused branch name lists PRs of earlier work):
   gh pr list -R ${ctx.repo} --head ${u.branch} --state all --json number,state,headRefOid
 The list holds every PR ever opened from this branch name, so read every entry. An OPEN entry wins → continue.
-A MERGED or CLOSED entry counts only when it carries this branch's commits: its headRefOid is the branch tip or an ancestor of it
-  (git -C ${ctx.root} fetch origin -q; git -C ${ctx.root} merge-base --is-ancestor <headRefOid> ${u.branch} exits 0, testing origin/${u.branch} when there is no local ${u.branch};
-  a headRefOid git does not have counts as not an ancestor). One that fails the test is earlier work on a reused name: ignore it.
+A MERGED or CLOSED entry counts only when it carries this branch's commits: its headRefOid and the branch tip lie on one line of history.
+  First fetch the PR head, which this clone may lack (pushed from another clone, then the branch deleted on merge):
+  git -C ${ctx.root} fetch origin -q; git -C ${ctx.root} fetch origin -q pull/<number>/head.
+  The entry counts when git -C ${ctx.root} merge-base --is-ancestor <headRefOid> ${u.branch} or git -C ${ctx.root} merge-base --is-ancestor ${u.branch} <headRefOid>
+  exits 0, testing origin/${u.branch} when there is no local ${u.branch}. If the fetch fails, the entry counts: a PR head you cannot read is not safe to ignore.
+  One that fails the test is earlier work on a reused name: ignore it.
 No PR yet, or only ignored entries → continue.
 Only when no entry is OPEN and a MERGED or CLOSED entry counts → stop: commit nothing and return status "blocked" with the PR number and state in blockers.
 The orchestrator decides whether the findings become a new unit cut from ${ctx.base}; do not open a PR or push.
@@ -428,8 +431,9 @@ ${JSON.stringify(finalisePlan, null, 1)}
 
 For each entry, in order:
 1. gh pr list --head <branch> --state all --json number,state,headRefOid, and read every entry. An OPEN entry wins → continue.
-   Otherwise a MERGED or CLOSED entry whose headRefOid is head_sha or an ancestor of it (git merge-base --is-ancestor <headRefOid> <head_sha> exits 0;
-   a headRefOid git does not have counts as not an ancestor) → "skipped" (a merged branch cannot take new commits). One that fails the test is earlier work on a reused branch name: ignore it.
+   Otherwise fetch each MERGED or CLOSED entry's head, which this clone may lack (git fetch origin -q pull/<number>/head). An entry whose headRefOid
+   and head_sha lie on one line of history (git merge-base --is-ancestor <headRefOid> <head_sha> or git merge-base --is-ancestor <head_sha> <headRefOid> exits 0),
+   or whose head cannot be fetched → "skipped" (a merged branch cannot take new commits). One that fails the test is earlier work on a reused branch name: ignore it.
 2. git fetch origin <branch>. If origin/<branch> does not exist, the branch was never pushed (for example a FIX_NEEDED row from implement-verify): skip this check, push in step 3, and record "pushed" with detail "branch created — no PR open". Otherwise git log --oneline origin/<branch>..<head_sha> must list only new commits on top of the remote tip; if the remote moved or the history diverged, record "skipped" with the reason; do not rebase or force.
 3. git push origin <head_sha>:refs/heads/<branch>.
 4. If pr_body_note is non-empty, append it to the PR body (gh pr edit --body-file).

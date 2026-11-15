@@ -18,7 +18,8 @@ FAIL=0
 
 # Throwaway fake repo: one real skill, plus an identical worktree-clone copy
 # that the analyzer must prune rather than double-count.
-REPO=$(mktemp -d)
+REPO=$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }
+[ -n "$REPO" ] || { echo 'empty sandbox dir' >&2; exit 1; }
 trap 'rm -rf "$REPO"' EXIT
 mkdir -p "$REPO/demo-plugin/skills/demo"
 printf '# Demo skill\n\nReal skill in the working tree.\n' \
@@ -59,7 +60,8 @@ echo "=== TEST: --funnel bins script-less skills; STRONG wins over interactive (
 # naive precedence got wrong): a skill carrying an AskUserQuestion confirmation
 # step is NOT skipped when it also shows a strong procedural signal — every v1
 # candidate had a descoped interactive step. STRONG must win over SKIP_INTERACTIVE.
-FREPO=$(mktemp -d)
+FREPO=$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }
+[ -n "$FREPO" ] || { echo 'empty sandbox dir' >&2; exit 1; }
 trap 'rm -rf "$REPO" "$FREPO"' EXIT
 
 # (a) Strong + interactive: AskUserQuestion present AND >=2 data-processing pipes.
@@ -109,6 +111,21 @@ assert_eq "rollup STATUS is OK" "OK" "$(echo "$FOUT" | grep -E '^STATUS=' | cut 
 # ISSUE_COUNT is the LLM residue (STRONG+WEAK); here exactly the one STRONG skill.
 assert_eq "rollup ISSUE_COUNT equals the residue (1 STRONG, 0 WEAK)" \
   "1" "$(echo "$FOUT" | grep -E '^ISSUE_COUNT=' | cut -d= -f2)"
+
+echo ""
+echo "=== TEST: no repo-root argument scans the git toplevel (#3640) ==="
+# project-skill-scripts used to pass "$(git rev-parse --show-toplevel …)". A
+# $(…) on a bundled-script line voids its pre-approved grant, so the script
+# resolves the toplevel itself. The repo sits under a .claude/worktrees/ path
+# so an absolute-root prune (#2219) would scan nothing.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+TOP="$REPO/host/.claude/worktrees/wf_test"
+mkdir -p "$TOP/demo-plugin/skills/demo/sub"
+printf '# Demo skill\n\nReal skill.\n' > "$TOP/demo-plugin/skills/demo/SKILL.md"
+git -C "$TOP" init -q
+NOARG_OUT=$(cd "$TOP/demo-plugin/skills/demo/sub" && bash "$SCRIPT")
+assert_eq "no-arg run from a subdirectory counts the toplevel's skill" \
+  "1" "$(echo "$NOARG_OUT" | grep -E '^TOTAL_SKILLS=' | head -1 | cut -d= -f2)"
 
 echo ""
 echo "PASS=$PASS"
