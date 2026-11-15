@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-11-13
+modified: 2026-11-15
 reviewed: 2026-10-26
 ---
 
@@ -64,6 +64,7 @@ Shared `args` (both templates):
 | `setup` | worktree bootstrap commands (`bun install --frozen-lockfile`, …) | `[]` |
 | `skills`, `decisions`, `contract` | skills to name, user decisions to relay verbatim, a binding design doc path | — |
 | `trailer` | lines every commit message must end with (session-specific, so the caller supplies it) | none |
+| `issueRead` | how implementers and verifiers read an issue and its comments | `gh issue view <n> --comments` |
 | `repairRounds` | `1` or `0`. A second round is a separate `repair-round` run | `1` |
 | `land` | `implement-verify`: `pr` or `local`; `repair-round`: `push` or `local` | `pr` / `push` |
 
@@ -81,6 +82,10 @@ repository yet, so a cross-repository `FIX_NEEDED` row needs its own `repair-rou
 that unit's `repo` and `root` as the run-level values.
 
 `repair-round` units: `{ id, branch, base?, findings: [{ id?, severity, where?, text | problem, fix? }], brief?, gates? }`.
+
+Without the `gh` CLI (a cloud session), pass the GitHub MCP wording, such as
+`issueRead: 'mcp__github__issue_read, methods get and get_comments'`, and `land: 'local'`; the main
+session then pushes and opens the PRs ([references/landing.md](references/landing.md#sessions-without-the-gh-cli)).
 
 ## Result rows
 
