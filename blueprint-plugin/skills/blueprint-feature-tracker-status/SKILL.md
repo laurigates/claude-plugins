@@ -53,7 +53,7 @@ Execute this status workflow:
    **cache** of the features collection — so verify it before quoting it:
 
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh"
    ```
 
    On `STATUS=ERROR` with `TYPE=statistics_divergence` rows, display the

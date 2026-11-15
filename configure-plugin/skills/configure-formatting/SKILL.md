@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-13
 reviewed: 2026-08-25
 description: "Set up formatters (Biome, Ruff format, rustfmt) with pre-commit and CI format checks. Use when a repo has no formatter, replacing Prettier or Black, or unifying monorepo style."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -63,7 +63,7 @@ Run the detection script to scan the project for formatter config files,
 script/hook/CI presence, and a recommendation over the detected booleans:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/configure-formatting.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-formatting.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
