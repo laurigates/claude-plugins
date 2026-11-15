@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-11-13
+modified: 2026-11-15
 reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
@@ -100,13 +100,28 @@ Parse `STATUS=` and `ISSUES:` from the output:
   of one kind share a frontmatter id. Renumber one before assigning anything.
 - `REGISTRY_PRESENT` is `true` only when the manifest has `id_registry` with a
   `documents` map; when `false`, every registry check is skipped (counts `0`).
+  Documents under `docs/{prds,adrs,prps,trps}/` and `docs/blueprint/work-orders/`
+  are compared by the id-registry engine
+  (`blueprint-autorun.sh --registry-reconcile --check`, which writes nothing);
+  the rows are what the engine would change on its next reconcile:
+  - `REGISTRY_ID_ABSENT` / `registry_id_absent` (ERROR): the entry's path exists
+    but its frontmatter does not carry the id (`HAS=` is what it carries) — a
+    junk entry or the old key of a re-id'd document. The engine prunes it.
   - `REGISTRY_UNREGISTERED` / `unregistered` (WARN): the id is not in
     `documents`. Add it in Step 7.
-  - `REGISTRY_ID_PATH_MISMATCH` / `id_path_mismatch` (ERROR): the registry holds
-    this path under another id (`REGISTRY=`) or this id under another path
-    (`REGISTRY_PATH=`). A swapped pair is two rows.
+  - `REGISTRY_ID_PATH_MISMATCH` / `id_path_mismatch` (ERROR): the id is
+    registered under another path (`REGISTRY_PATH=`); outside the engine's scan
+    set, also the path registered under another id (`REGISTRY=`). A swapped
+    pair is two rows.
+  - `REGISTRY_FIELD_DRIFT` / `registry_field_drift` (INFO): derived fields
+    (`FIELDS=`) differ from frontmatter; the engine refreshes them.
   - `REGISTRY_PATH_MISSING` / `registry_path_missing` (ERROR): a `documents`
-    `path` not on disk.
+    `path` not on disk. Step 7a removes the entry once git confirms the deletion.
+  - `REGISTRY_PATH_IGNORED` / `registry_path_ignored` (INFO): the missing path
+    is git-ignored (work orders) or outside a sparse checkout. Keep the entry.
+  - `ADR_NUMBER_RESERVED` / `adr_number_reserved` (INFO): a deleted ADR's entry.
+    Keep it: it is the only thing reserving the number
+    (`/blueprint:adr-validate`'s registry check; there is no ADR counter).
   - `COUNTER_STALE` / `counter_stale` (WARN): a `last_*` counter is below the
     highest id of its kind on disk (`MAX_ON_DISK=`). Raise it before Step 7.
 - `GH_ISSUE_MAPPINGS` and `MANIFEST_PRESENT` summarise the reverse-index build
@@ -152,6 +167,38 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-next-id.sh" --kind PRP
 1. Derive ID from filename: `003-task.md` → `WO-003`
 2. Insert into frontmatter
 3. Add to manifest `documents`
+
+### Step 7a: Remove entries of deleted documents (unless `--dry-run`)
+
+The engine never removes an entry whose path is missing, because the path may
+exist in another clone. For each `registry_path_missing` row (`ID=`, `PATH=`),
+ask with `AskUserQuestion` whether to remove the entry, listing every row in
+one question. Run this for each confirmed row, with `ID`, `REG_PATH` and
+`MANIFEST` set:
+
+```bash
+# registry-removal:begin
+# Removes the entry only when git records REG_PATH as deleted; never an ADR
+# entry (it reserves the number); never touches last_* counters.
+if [ -n "$(git log -1 --diff-filter=D --format=%h -- "$REG_PATH" 2>/dev/null)" ]; then
+  jq --arg id "$ID" '
+    if ($id | ascii_upcase | startswith("ADR-")) then
+      error("ADR entries reserve their number; keep \($id)")
+    else
+      del(.id_registry.documents[$id])
+      | .id_registry.github_issues |= ((. // {})
+          | map_values(if type == "array" then map(select(. != $id)) else . end)
+          | with_entries(select(.value != [])))
+    end' "$MANIFEST" > "$MANIFEST.removal" \
+    && mv "$MANIFEST.removal" "$MANIFEST" \
+    || { rm -f "$MANIFEST.removal"; echo "KEPT: $ID"; }
+else
+  echo "KEPT: $ID — git records no deletion of $REG_PATH"
+fi
+# registry-removal:end
+```
+
+Report each `KEPT:` line in Step 11.
 
 ### Step 8: Extract Titles and Links
 

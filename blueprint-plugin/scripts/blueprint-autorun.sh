@@ -300,8 +300,12 @@ fi
 #   - check: compute and report, never write; exit 1 when a write is due.
 #
 # Output: a === BLUEPRINT REGISTRY RECONCILE === block with DOCS=, CHANGED=,
-# one `  - ACTION=add|update|prune|duplicate ...` row per finding, STATUS=,
-# ISSUE_COUNT=. The body is a subshell, so its cd and traps stay local.
+# one row per finding, STATUS=, ISSUE_COUNT=. Rows (the sync-ids audit parses
+# them, #3552):
+#   - ACTION=add ID=<id> PATH=<path>
+#   - ACTION=update ID=<id> PATH=<path> FIELDS=<a,b> WAS=<previous path>
+#   - ACTION=prune ID=<id> PATH=<path> HAS=<id the frontmatter carries>
+#   - ACTION=duplicate ID=<id> KEPT=<path> DROPPED=<paths> The body is a subshell, so its cd and traps stay local.
 registry_reconcile() (
     rr_dir="$1"
     rr_mode="$2"
@@ -445,7 +449,8 @@ registry_reconcile() (
                      | .docs[$key] = $new
                      | .findings += (if $e == {} then [{action: "add", id: $key, path: $w.path}]
                                      elif $e != $new then [{action: "update", id: $key, path: $w.path,
-                                         fields: ([$new | keys[] | select($e[.] != $new[.])] | join(","))}]
+                                         fields: ([$new | keys[] | select($e[.] != $new[.])] | join(",")),
+                                         was: (($e.path | strings) // "")}]
                                      else [] end)
                      | .findings += (if ($g | length) > 1
                                      then [{action: "duplicate", id: $key, kept: $w.path,
@@ -484,7 +489,7 @@ registry_reconcile() (
         "FINDING_COUNT=\(.findings | length)",
         (.findings[] |
           if .action == "prune" then "  - ACTION=prune ID=\(.id) PATH=\(.path) HAS=\(.has)"
-          elif .action == "update" then "  - ACTION=update ID=\(.id) PATH=\(.path) FIELDS=\(.fields)"
+          elif .action == "update" then "  - ACTION=update ID=\(.id) PATH=\(.path) FIELDS=\(.fields) WAS=\(.was)"
           elif .action == "duplicate" then "  - ACTION=duplicate ID=\(.id) KEPT=\(.kept) DROPPED=\(.dropped)"
           else "  - ACTION=add ID=\(.id) PATH=\(.path)" end)' "${rr_tmp}.result" 2>/dev/null)
     printf '%s\n' "$rr_report"
