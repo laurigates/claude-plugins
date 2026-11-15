@@ -1,9 +1,9 @@
 ---
 name: workflow-scale-budget
 description: Size a Workflow script's agent count before running it, or tally a finished run's agents and tokens. Use when authoring or proposing a Workflow fan-out, or asking what a run used.
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh *), Bash(gh api rate_limit *), Read, Grep, Glob, TodoWrite
 created: 2026-09-29
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-09-29
 ---
 

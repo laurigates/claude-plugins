@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-11-14
 reviewed: 2025-12-16
 description: "Code docs: TSDoc, JSDoc, pydoc, rustdoc, TypeDoc, MkDocs, Sphinx. Use when setting up docstrings, configuring a docs generator, or enforcing doc coverage in CI."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(npm install *), Bash(bun add *), Bash(uv add *), Bash(typedoc *), Bash(ruff check *), Bash(cargo doc *), Bash(mkdocs build *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--type <typescript|javascript|python|rust>] [--generator <typedoc|sphinx|mkdocs|rustdoc>]"
 argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--type <typescript|javascript|python|rust>] [--generator <typedoc|sphinx|mkdocs|rustdoc>]"
 name: configure-docs

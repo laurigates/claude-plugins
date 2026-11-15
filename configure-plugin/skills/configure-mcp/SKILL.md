@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-03
+modified: 2026-11-14
 reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(jq *), Bash(sort *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--core] [--server <name>]"
 argument-hint: "[--check-only] [--fix] [--core] [--server <name>]"
 name: configure-mcp

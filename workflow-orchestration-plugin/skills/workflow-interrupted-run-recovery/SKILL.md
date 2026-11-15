@@ -2,9 +2,9 @@
 name: workflow-interrupted-run-recovery
 description: "Recover a Workflow run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs already opened. Use when a run reports agents_error after a session limit, kill, or crash."
 user-invocable: false
-allowed-tools: Bash, Read, Glob, Grep
+allowed-tools: Bash(gh pr list *), Bash(gh issue list *), Bash(git fetch *), Bash(git branch -r *), Bash(git worktree list *), Bash(git worktree prune *), Bash(grep *), Read, Glob, Grep
 created: 2026-09-08
-modified: 2026-09-08
+modified: 2026-11-14
 reviewed: 2026-09-08
 ---
 

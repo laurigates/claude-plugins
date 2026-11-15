@@ -77,7 +77,7 @@ This section is the single record of the skill grant model. `auto-mode.md` and `
 | `Bash(bash *)`, `Bash(sh *)` | Any `bash -c '<script>'` by prefix match, so nearly as much as a bare `Bash`. Avoid |
 | `Bash` | Every shell command. Non-conforming |
 
-About 220 skills still carry a bare `Bash` (an awk pass over each tracked plugin `SKILL.md`'s one-line `allowed-tools`, 2026-11-06). They migrate under #3464, which also adds the lint; until then, do not add new ones. The skills reference does not say whether auto mode's broad-rule drop applies to a skill's turn grant, so do not rely on it either way.
+No tracked plugin skill carries a bare `Bash` since #3464 (`BARE_BASH_HITS=0` from `scripts/check-bare-bash-grant.sh`, 2026-11-14). That lint fails a new bare `Bash` or interpreter wildcard, and holds the 65 interpreter wildcards that remain in its baseline until #3668 migrates them. `python3 scripts/skill-shell-commands.py <skill-dir>` lists the commands a skill shows as candidate grants, and its `--check` verifies the grants a skill carries. The skills reference does not say whether auto mode's broad-rule drop applies to a skill's turn grant, so do not rely on it either way.
 
 ### The other defect: a `Bash` grant in a skill with no shell to run
 
@@ -283,8 +283,10 @@ Not `Bash(bash *)`: it prefix-matches any `bash -c '<script>'`, so it pre-approv
 
 Scripts live in `skills/<skill-name>/scripts/` and are invoked via:
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME"
 ```
+
+**No `$(…)` or backtick substitution on the invocation line.** It voids the anchored grant: the call prompts (measured on 2.1.322, #3577). Let the script default the value instead (`--project-dir` to the working directory). `scripts/check-voided-script-grant.sh` enforces it (#3640).
 
 #### When to Use Scripts vs Granular Patterns
 

@@ -1,9 +1,9 @@
 ---
 name: video-chapters-youtube
 description: MP4 chapters to YouTube description chapter lines (0:00 first, 3+ chapters, each 10 s+, short runs merged). Use when writing a video's YouTube description.
-allowed-tools: Bash, Read
+allowed-tools: Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/chapters_youtube.py *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

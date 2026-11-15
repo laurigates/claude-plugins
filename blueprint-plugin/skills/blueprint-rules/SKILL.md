@@ -3,7 +3,7 @@ created: 2025-12-17
 modified: 2026-11-15
 reviewed: 2026-02-09
 description: "Rule files in .claude/rules/: add, edit, list, or validate paths: frontmatter. Use when adding a path-scoped rule file, listing which rules load, or fixing rule globs."
-allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, AskUserQuestion
 name: blueprint-rules
 ---
 

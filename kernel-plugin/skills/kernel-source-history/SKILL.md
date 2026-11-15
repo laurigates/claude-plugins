@@ -1,9 +1,9 @@
 ---
 name: kernel-source-history
 description: "Kernel source at a tag: diff functions across releases and for-next. Use when citing kernel line numbers or checking a path changed upstream."
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(curl *), Bash(awk *), Bash(md5 *), Bash(gh api *), Read, Grep, Glob
 created: 2026-11-02
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-11-02
 ---
 

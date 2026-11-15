@@ -5,7 +5,7 @@ allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-surv
 argument-hint: "--dry-run | --orchestrated | --plugins-repo owner/name | --usage"
 args: "[--dry-run] [--orchestrated] [--plugins-repo <owner/name>] [--usage [--all-projects]]"
 created: 2026-11-14
-modified: 2026-11-14
+modified: 2026-11-15
 reviewed: 2026-11-14
 ---
 
@@ -47,7 +47,7 @@ Execute this capture. A public draft files only after both Step 5 gates pass.
 ### Step 1: Survey the session's workflow runs
 
 ```sh
-bash "${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-survey.sh" --session-id "${CLAUDE_SESSION_ID}"
 ```
 
 It lists every script the harness persisted this session, each run's agent
@@ -123,7 +123,7 @@ project it happened in.
    mentioned. The scan has no rule for those, only the deny file.
 
    ```sh
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/check-issue-draft.sh" --draft <file> --audience <public|project> --target-repo <owner/name> --project-dir "$(pwd)" --deny-file <terms-file>
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/check-issue-draft.sh" --draft <file> --audience <public|project> --target-repo <owner/name> --deny-file <terms-file>
    ```
 
    `STATUS=ERROR`: rewrite the flagged lines and scan once more; a second

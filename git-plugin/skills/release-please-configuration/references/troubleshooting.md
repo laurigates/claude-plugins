@@ -1,6 +1,6 @@
 # Monorepo Troubleshooting
 
-Moved verbatim from `SKILL.md`. Read when one package's release PR is missing, its extra file carries the wrong version, or a merged grouped release PR was never tagged and every run aborts.
+Moved from `SKILL.md`; the Recovery section opens with a new two-line pointer to the cause, and the rest is unchanged. Read when one package's release PR is missing, its extra file carries the wrong version, or a merged grouped release PR was never tagged and every run aborts.
 
 ## Monorepo Troubleshooting
 

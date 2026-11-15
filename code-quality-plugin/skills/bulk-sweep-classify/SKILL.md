@@ -1,9 +1,9 @@
 ---
 name: bulk-sweep-classify
 description: "Classify every regex match before a bulk find-replace/syntax-modernization sweep — four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
-allowed-tools: Bash, Read, Grep, Edit
+allowed-tools: Bash(git grep *), Bash(sort *), Bash(ast-grep *), Read, Grep, Edit
 created: 2026-07-05
-modified: 2026-11-06
+modified: 2026-11-14
 reviewed: 2026-07-06
 ---
 

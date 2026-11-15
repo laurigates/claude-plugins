@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: tfc-run-logs
 description: "Retrieve plan and apply logs from Terraform Cloud runs. Use when debugging failed plans/applies or reviewing TFC run output. Requires TFE_TOKEN."
 user-invocable: false
-allowed-tools: Bash, Read
+allowed-tools: Bash(curl *), Bash(jq *), Bash(sed *), Read
 ---
 
 # Terraform Cloud Run Logs

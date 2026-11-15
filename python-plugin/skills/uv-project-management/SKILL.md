@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: uv-project-management
 description: Python project setup, deps, and lockfiles with uv. Use when the user mentions uv, creating Python projects, managing dependencies, lockfiles, or pyproject.toml.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv init *), Bash(uv add *), Bash(uv remove *), Bash(uv lock *), Bash(uv sync *), Bash(uv run pytest *), Read, Grep, Glob
 ---
 
 # UV Project Management

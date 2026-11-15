@@ -1,11 +1,11 @@
 ---
 created: 2026-01-15
-modified: 2026-09-24
+modified: 2026-11-14
 reviewed: 2026-01-15
 name: nodejs-containers
 description: "Node.js container optimization — Alpine, multi-stage builds, node_modules caching, BuildKit mounts (900MB to ~100MB). Use when working with Node.js containers or optimizing image sizes."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
+allowed-tools: Bash(docker build *), Bash(docker images *), Bash(docker history *), Bash(head *), Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 
 # Node.js Container Optimization

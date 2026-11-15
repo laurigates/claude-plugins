@@ -1,10 +1,10 @@
 ---
 description: "Bun add: install a package, add dev dependency, pin exact version, or target a workspace. Use when the user wants to add/install a specific package with bun."
 args: <package> [--dev] [--exact]
-allowed-tools: Bash, Read
+allowed-tools: Bash(bun add *), Bash(bun why *), Read
 argument-hint: package-name [--dev] [--exact]
 created: 2025-12-20
-modified: 2026-09-24
+modified: 2026-11-14
 reviewed: 2026-09-24
 name: bun-add
 ---

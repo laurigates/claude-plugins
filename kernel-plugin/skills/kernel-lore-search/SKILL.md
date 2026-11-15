@@ -1,9 +1,9 @@
 ---
 name: kernel-lore-search
 description: "Search kernel mailing lists via lore git mirrors. Use when checking prior art before a report, verifying a quote, or finding a sent message."
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(git ls-remote *), Bash(git clone *), Bash(git fetch *), Bash(git log *), Bash(git show *), Bash(grep *), Read, Grep, Glob
 created: 2026-11-02
-modified: 2026-11-02
+modified: 2026-11-14
 reviewed: 2026-11-02
 ---
 

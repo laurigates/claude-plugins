@@ -1,11 +1,11 @@
 ---
 created: 2026-07-29
-modified: 2026-07-29
+modified: 2026-11-14
 reviewed: 2026-07-29
 name: cargo-generate
 description: "cargo-generate: scaffold a project from a git template repo. Use when bootstrapping a Rust or Bevy project from a template, or authoring one."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(cargo generate *), Bash(diff *), Read, Write, Edit, Grep, Glob, TodoWrite
 ---
 
 # cargo-generate — Project Scaffolding from Git Templates

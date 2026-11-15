@@ -1,9 +1,9 @@
 ---
 name: code-license-position
 description: Check a vendor's licence FAQ and discussion threads before calling a LICENSE restriction a blocker. Use when a model or dependency licence seems to forbid use.
-allowed-tools: Bash, Read, WebFetch, Grep, TodoWrite
+allowed-tools: Bash(curl *), Bash(jq *), Bash(grep *), Bash(gh api *), Read, WebFetch, Grep, TodoWrite
 created: 2026-09-29
-modified: 2026-09-29
+modified: 2026-11-14
 reviewed: 2026-09-29
 ---
 

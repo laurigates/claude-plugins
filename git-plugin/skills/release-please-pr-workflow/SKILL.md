@@ -1,11 +1,11 @@
 ---
 created: 2026-01-09
-modified: 2026-11-12
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
 user-invocable: false
-allowed-tools: Bash, Read, TodoWrite
+allowed-tools: Bash(gh pr *), Read, TodoWrite
 ---
 
 # Release-Please PR Workflow

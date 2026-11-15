@@ -1,9 +1,9 @@
 ---
 created: 2026-06-14
-modified: 2026-07-28
+modified: 2026-11-14
 reviewed: 2026-07-28
 description: "Surface doc-drift gate: scaffold surf.toml + hubs, wire the SHA-pinned pre-commit/Action. Use when adding a docs-governed-like-code CI gate."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(git ls-remote *), Bash(surf lint *), Bash(surf check *), AskUserQuestion, TodoWrite, WebFetch
 args: "[--check-only] [--fix] [--pin <tag>]"
 argument-hint: "[--check-only] [--fix] [--pin v0.8.0]"
 name: configure-surface

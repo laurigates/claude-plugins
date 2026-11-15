@@ -1,9 +1,9 @@
 ---
 name: video-beat-glow
 description: Beat-synced edge glow for a video — beat tracking from a song, glow render, and a browser tuner page for the look. Use when making a video's edges pulse to music.
-allowed-tools: Bash, Read
+allowed-tools: Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/glow_tuner.py *), Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beat_glow.py *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

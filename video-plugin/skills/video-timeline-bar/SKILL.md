@@ -1,9 +1,9 @@
 ---
 name: video-timeline-bar
 description: Chapter timeline bar under every frame and a title card crossfaded onto a video. Use when making a chaptered demo video seekable at a glance, or adding a title card.
-allowed-tools: Bash, Read
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/title-card.sh *), Bash(uv run -q --no-project --with pillow==13.0.0 --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/timeline_bar.py *), Bash(ffprobe *), Bash(wc *), Read
 created: 2026-10-29
-modified: 2026-10-29
+modified: 2026-11-14
 reviewed: 2026-10-29
 ---
 

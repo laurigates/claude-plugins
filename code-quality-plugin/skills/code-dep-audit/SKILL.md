@@ -5,7 +5,7 @@ args: "[--type <security|outdated|licenses|all>] [--fix]"
 argument-hint: --type security to check vulnerabilities, --type outdated for updates
 allowed-tools: Bash(bash *), Bash(npm audit *), Bash(npx *), Bash(pip-audit *), Bash(cargo audit *), Bash(pip *), Bash(uv *), Bash(cargo *), Read, Grep, Glob, TodoWrite
 created: 2026-04-10
-modified: 2026-08-25
+modified: 2026-11-13
 reviewed: 2026-06-10
 ---
 
@@ -40,7 +40,7 @@ Execute this dependency audit workflow:
 Run the extracted audit script — it detects the package ecosystem, dispatches the matching audit tool, and parses severity / outdated / license-denylist counts into a structured rollup:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/code-dep-audit.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/code-dep-audit.sh" --home-dir "$HOME"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. The script emits `ECOSYSTEM=`, `AUDIT_TOOL=`, `VULN_CRITICAL/HIGH/MEDIUM/LOW`, `OUTDATED_COUNT=`, `LICENSE_ISSUES=`, and an `ISSUES:` block flagging GPL/AGPL licenses (problematic in proprietary projects). When `AUDIT_TOOL_AVAILABLE=false`, the ecosystem's audit tool is missing — run it via the command in `AUDIT_TOOL=` if installed, otherwise suggest `/configure:security`.

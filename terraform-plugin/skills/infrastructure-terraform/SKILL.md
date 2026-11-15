@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: infrastructure-terraform
 description: "Terraform IaC: HCL, state management, modules, plan-apply workflows. Use when the user mentions Terraform, HCL, terraform plan/apply, tfstate, or IaC provisioning."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite
+allowed-tools: Glob, Grep, Read, Bash(terraform init *), Bash(terraform plan *), Bash(terraform validate *), Bash(terraform fmt *), Bash(terraform show *), Bash(terraform graph *), Bash(terraform state list *), Bash(terraform state show *), Bash(terraform state pull *), Bash(tflint *), Bash(tfsec *), Bash(checkov *), Bash(dot *), Edit, Write, TodoWrite
 ---
 
 # Infrastructure Terraform

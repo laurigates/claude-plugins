@@ -1,11 +1,11 @@
 ---
 created: 2026-01-02
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: feature-tracking
 description: Track feature implementation against requirements with hierarchical FR codes and TODO.md sync. Use when linking features to PRDs or recalculating completion stats.
 user-invocable: false
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(jq *), Bash(uv run --quiet --script ${CLAUDE_PLUGIN_ROOT}/scripts/check-schema.py *), TodoWrite
 ---
 
 # Feature Tracking Skill

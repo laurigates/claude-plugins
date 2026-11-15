@@ -1,11 +1,11 @@
 ---
 created: 2026-03-04
-modified: 2026-09-22
+modified: 2026-11-14
 reviewed: 2026-09-22
 name: tasks
 description: "Obsidian tasks via CLI: list open tasks, filter by file/status, toggle or complete checklist items. Use when user mentions Obsidian tasks, todos, or checklists."
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(obsidian tasks *), Bash(obsidian task *), Bash(obsidian daily:append *), Read, Grep, Glob
 ---
 
 # Obsidian Task Management

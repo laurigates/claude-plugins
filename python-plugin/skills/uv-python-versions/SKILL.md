@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-11-14
 reviewed: 2026-04-25
 name: uv-python-versions
 description: Install and manage Python interpreter versions with uv. Use when the user mentions installing Python versions, .python-version, uv python, or managing CPython/PyPy.
 user-invocable: false
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(uv python install), Bash(uv python list), Bash(uv python list --only-installed), Bash(uv python list --verbose), Bash(uv python find), Bash(uv venv *), Bash(uv init *), Read, Grep, Glob
 ---
 
 # UV Python Version Management

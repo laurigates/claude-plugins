@@ -2,9 +2,9 @@
 name: skaffold-filesync
 description: "Skaffold file sync — copy changed files to containers without rebuilding. Use when optimizing the dev loop, configuring sync rules, or the user mentions hot reload or fast iteration."
 user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(skaffold dev *), Bash(skaffold build *), Bash(grep *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-21
-modified: 2026-10-21
+modified: 2026-11-14
 reviewed: 2026-04-25
 ---
 
