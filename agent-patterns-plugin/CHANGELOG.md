@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.1...agent-patterns-plugin-v2.58.2) (2026-11-15)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** make the 6,162 lower bound conditional ([85d9844](https://github.com/laurigates/claude-plugins/commit/85d984431eaf287f5967e8594b1a3dac473ac4d7)), closes [#3642](https://github.com/laurigates/claude-plugins/issues/3642)
+
 ## [2.58.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.0...agent-patterns-plugin-v2.58.1) (2026-11-14)
 
 

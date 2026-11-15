@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.51.10](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.9...blueprint-plugin-v3.51.10) (2026-11-15)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** fold multi-line plain scalars in the frontmatter parser ([85ea8d9](https://github.com/laurigates/claude-plugins/commit/85ea8d997b25528051ada6f16c2bb7a3bde6bc35)), closes [#3642](https://github.com/laurigates/claude-plugins/issues/3642)
+* **repo:** drop command substitutions that void bundled-script grants and guard them marketplace-wide ([#3663](https://github.com/laurigates/claude-plugins/issues/3663)) ([7b76407](https://github.com/laurigates/claude-plugins/commit/7b7640740c4dba42bb4e491f7ca44f1df8b1f720))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** give blueprint-feature-tracker-status an Execution spine ([#3664](https://github.com/laurigates/claude-plugins/issues/3664)) ([1767934](https://github.com/laurigates/claude-plugins/commit/1767934c728f3d0824624dd427becffc7fcaff5c)), closes [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+* **blueprint-plugin:** give blueprint-sync an Execution spine with step headings ([#3665](https://github.com/laurigates/claude-plugins/issues/3665)) ([f89ea38](https://github.com/laurigates/claude-plugins/commit/f89ea38d207e2e86f29c17ae8deb330a9b1c9f63)), closes [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+
 ## [3.51.9](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.8...blueprint-plugin-v3.51.9) (2026-11-14)
 
 
