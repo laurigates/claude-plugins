@@ -57,8 +57,9 @@ The generated `publish.yml` builds `web/dist/` then publishes via
   per node; publishing moves that pointer to the new version. A version that gets
   **Flagged** (review) stays in the registry and stays installable — `/install`
   returns the newest non-Banned version (measured for Flagged and Banned; a
-  Deleted version is expected to be skipped too) — but drops out of the
-  Active-only listing (`latest_version`). A **Banned** version makes installs
+  Deleted version is expected to be skipped too). The listing's `latest_version`
+  can still show the Flagged version: comfyui-gallery-loader's listed 0.1.33
+  with `status: NodeVersionStatusFlagged` on 2026-11-14. A **Banned** version makes installs
   fall back to an older one; a **Deleted** version is expected to do the same,
   not yet verified against `/install`. Publishing a fresh good version re-points
   Active forward.

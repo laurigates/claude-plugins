@@ -63,6 +63,14 @@
 #                     beside the same version (#3671).
 #   16. The workflow has a top-level concurrency group registry-health that
 #                     queues rather than cancels (#3671).
+#   17. Flagged + phantom repeated against an unchanged marker -> exit 1, no
+#                     repeat comment: the phantom stays a failure (#3675).
+#   18. Flagged whose listing latest_version is the declared version -> no
+#                     Discoverability bullet (#3675).
+#   19. Flagged whose listing shows another version -> the bullet names it,
+#                     without claiming latest_version counts only Active (#3675).
+#   20. A higher Deleted or Banned version is not a phantom (/install never
+#                     resolves to one); a higher Pending one still is (#3675).
 #
 # Requires python3 and jq; SKIPs cleanly when unavailable.
 
@@ -255,7 +263,7 @@ check "2: the body does NOT claim installs fall back to an older version" "0" \
 check "2: the body reports the version /install resolves to" "1" \
     "$(body_has 'resolves to **`0.1.33`**')"
 check "2: the body states installs are unaffected" "1" "$(body_has 'Installs are unaffected')"
-check "2: the body names the real consequence (Active-only listing)" "1" \
+check "2: the body names the listing consequence (latest_version shows another version)" "1" \
     "$(body_has 'latest_version')"
 check "2: scan findings are still reported" "1" "$(body_has 'web/dist/index.js')"
 
@@ -650,6 +658,93 @@ PY
 )"
 check "16: the workflow has a top-level registry-health concurrency group that queues" \
     '{"cancel-in-progress": false, "group": "registry-health"}' "$CONC_OUT"
+
+# --------------------------------------------------------------------------- #
+# 17. Flagged + phantom, repeat run with an unchanged marker (#3675). problem
+#     stays "flagged" when a phantom outranks the declared version, so the
+#     unchanged-Flagged exit 0 used to hide the phantom on every repeat run while
+#     the body told the reader to release above it.
+# --------------------------------------------------------------------------- #
+fixture flagged-phantom \
+    '[{"version":"0.1.33","status":"NodeVersionStatusFlagged","createdAt":"2026-09-28T10:46:18Z"},
+      {"version":"0.1.40","status":"NodeVersionStatusActive","createdAt":"2026-10-01T00:00:00Z"}]' \
+    '{"version":"0.1.40","deprecated":false,"status":"NodeVersionStatusActive","createdAt":"2026-10-01T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.1.40"}}'
+CASE_DIR="${WORK}/flagged-phantom"
+rc="$(run_case 0.1.33)"
+check "17: control: the first Flagged+phantom alert exits 1" "1" "$rc"
+check "17: control: its marker records the phantom" "1" \
+    "$(grep -c '^<!-- registry-health ver=0.1.33 problem=flagged phantom=0.1.40 -->$' \
+        "${CASE_DIR}/log/body.md" 2>/dev/null || true)"
+mkdir -p "${WORK}/flagged-phantom-repeat" \
+    && cp -R "${WORK}/flagged-phantom/fixture" "${WORK}/flagged-phantom-repeat/fixture"
+open_issue flagged-phantom-repeat 142 "${WORK}/flagged-phantom/log/body.md"
+CASE_DIR="${WORK}/flagged-phantom-repeat"
+rc="$(run_case 0.1.33)"
+check "17: an unchanged Flagged verdict with a phantom still fails the run" "1" "$rc"
+check "17: ...and posts no repeat comment" "0" "$(gh_called 'issue comment')"
+check "17: ...and does not end with the still-flagged warning" "0" \
+    "$(grep -c '::warning::release 0.1.33 is still flagged' "${CASE_DIR}/log/stdout" 2>/dev/null || true)"
+
+# --------------------------------------------------------------------------- #
+# 18-19. Flagged Discoverability bullet (#3675). The listing's latest_version can
+#     show the Flagged version itself (comfyui-gallery-loader, 2026-11-14: 0.1.33,
+#     NodeVersionStatusFlagged), so the bullet prints only when the listing shows
+#     a different version, and never claims latest_version counts only Active.
+# --------------------------------------------------------------------------- #
+fixture flagged-listed-same \
+    '[{"version":"0.1.33","status":"NodeVersionStatusFlagged","createdAt":"2026-09-28T10:46:18Z"}]' \
+    '{"version":"0.1.33","deprecated":false,"status":"NodeVersionStatusFlagged","createdAt":"2026-09-28T10:46:18Z"}' \
+    '{"latest_version":{"version":"0.1.33","status":"NodeVersionStatusFlagged"}}'
+CASE_DIR="${WORK}/flagged-listed-same"
+rc="$(run_case 0.1.33)"
+check "18: Flagged listed as latest still exits 1" "1" "$rc"
+check "18: control: the body was written" "1" "$(body_has '**Flagged**')"
+check "18: listing latest_version equal to the declared version omits Discoverability" "0" \
+    "$(body_has 'Discoverability')"
+
+fixture flagged-listed-older \
+    '[{"version":"0.1.33","status":"NodeVersionStatusFlagged","createdAt":"2026-09-28T10:46:18Z"},
+      {"version":"0.1.32","status":"NodeVersionStatusActive","createdAt":"2026-08-27T00:00:00Z"}]' \
+    '{"version":"0.1.33","deprecated":false,"status":"NodeVersionStatusFlagged","createdAt":"2026-09-28T10:46:18Z"}' \
+    '{"latest_version":{"version":"0.1.32"}}'
+CASE_DIR="${WORK}/flagged-listed-older"
+rc="$(run_case 0.1.33)"
+check "19: a listing that shows another version keeps the Discoverability bullet" "1" \
+    "$(body_has 'Discoverability')"
+check "19: ...naming the listed version" "1" "$(body_has 'shows **`0.1.32`** rather than `0.1.33`')"
+check "19: ...without the 'counts only Active' claim" "0" "$(body_has 'counts only Active')"
+
+# --------------------------------------------------------------------------- #
+# 20. Phantom detection counts only versions /install can resolve to (#3675).
+#     registry-backend's versions endpoint applies no status filter when no
+#     `statuses` param is sent, and deletion is a status (DeleteNodeVersion sets
+#     NodeVersionStatusDeleted), so Deleted and Banned versions are listed.
+#     GetLatestNodeVersion, behind /install, picks only Active, Flagged and
+#     Pending. A higher Deleted or Banned version is therefore not a phantom.
+# --------------------------------------------------------------------------- #
+fixture phantom-unresolvable \
+    '[{"version":"0.2.5","status":"NodeVersionStatusBanned","createdAt":"2026-10-05T00:00:00Z"},
+      {"version":"0.2.4","status":"NodeVersionStatusDeleted","createdAt":"2026-09-30T00:00:00Z"},
+      {"version":"0.2.3","status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}]' \
+    '{"version":"0.2.3","deprecated":false,"status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.2.3"}}'
+CASE_DIR="${WORK}/phantom-unresolvable"
+rc="$(run_case 0.2.3)"
+check "20: higher Deleted/Banned versions are not phantoms: Active declared exits 0" "0" "$rc"
+check "20: ...and sets a success status" "success" "$(state)"
+check "20: ...and writes no issue body" "0" "$([ -f "${CASE_DIR}/log/body.md" ] && echo 1 || echo 0)"
+
+# Control: a higher Pending version IS one /install resolves to, so it is a phantom.
+fixture phantom-pending \
+    '[{"version":"0.2.4","status":"NodeVersionStatusPending","createdAt":"2026-09-30T00:00:00Z"},
+      {"version":"0.2.3","status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}]' \
+    '{"version":"0.2.4","deprecated":false,"status":"NodeVersionStatusPending","createdAt":"2026-09-30T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.2.3"}}'
+CASE_DIR="${WORK}/phantom-pending"
+rc="$(run_case 0.2.3)"
+check "20: control: a higher Pending version is still reported as a phantom" "phantom-ahead: v0.2.3" "$(desc)"
+check "20: control: ...and fails the run" "1" "$rc"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
