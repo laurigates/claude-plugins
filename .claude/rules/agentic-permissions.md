@@ -79,6 +79,11 @@ This section is the single record of the skill grant model. `auto-mode.md` and `
 
 No tracked plugin skill carries a bare `Bash` since #3464 (`BARE_BASH_HITS=0` from `scripts/check-bare-bash-grant.sh`, 2026-11-14). That lint fails a new bare `Bash` or interpreter wildcard, and holds the 65 interpreter wildcards that remain in its baseline until #3668 migrates them. `python3 scripts/skill-shell-commands.py <skill-dir>` lists the commands a skill shows as candidate grants, and its `--check` verifies the grants a skill carries. The skills reference does not say whether auto mode's broad-rule drop applies to a skill's turn grant, so do not rely on it either way.
 
+Two traps when writing a narrow grant (both found on #3670):
+
+- **A wildcard after a print-only flag still admits other verbs.** The tool's argument parser decides what follows the fixed words: `bun --version exec '<cmd>'` ran the command, `just --dry-run --command <cmd>` ran it, and `git remote -v set-url origin <url>` changed the remote. When the body runs the command with no further arguments, grant it exactly, with no wildcard: `Bash(bun --version)`, `Bash(git remote -v)`, `Bash(git init -b main)`. Probe the tool before trusting a prefix that reads as read-only.
+- **A colon followed by a space inside a grant breaks the frontmatter.** `Bash(task bpid.any: status:any export *)` starts a YAML mapping in the unquoted `allowed-tools` value. `skill-shell-commands.py --check` does not parse YAML and passes it; `just lint-compliance` fails it, so run that before pushing a grant change.
+
 ### The other defect: a `Bash` grant in a skill with no shell to run
 
 A skill that grants `Bash` in any form while its body runs no shell advertises a capability it never exercises and pre-approves commands nothing in it needs.
