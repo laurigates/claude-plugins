@@ -1,10 +1,10 @@
 ---
 description: "Identify GitHub Actions waste — skipped runs, bot triggers, missing concurrency — and suggest fixes. Use when CI costs are high or workflows run too often."
 args: "[repo]"
-allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/waste-analysis.sh *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
 created: 2025-01-30
-modified: 2026-06-18
+modified: 2026-11-16
 reviewed: 2026-04-25
 name: finops-waste
 ---
@@ -38,7 +38,7 @@ Identify GitHub Actions waste patterns and provide actionable fix suggestions. A
 **1. Run API-based waste analysis:**
 
 ```bash
-bash "${SKILL_DIR}/scripts/waste-analysis.sh" "$REPO"
+bash ${CLAUDE_SKILL_DIR}/scripts/waste-analysis.sh "$REPO"
 ```
 
 **2. Workflow file analysis (requires local filesystem):**
@@ -175,7 +175,7 @@ By bot:
 |---------|---------|
 | Skipped runs count | `gh run list --limit 100 --json conclusion --jq '[.[] | select(.conclusion=="skipped")] | length'` |
 | Failed runs (compact) | `gh run list --limit 50 --status failure --json name,createdAt` |
-| Workflow file check | `bash "${SKILL_DIR}/scripts/waste-analysis.sh" "$REPO"` |
+| Workflow file check | `bash ${CLAUDE_SKILL_DIR}/scripts/waste-analysis.sh "$REPO"` |
 | Check concurrency in file | `grep -l "concurrency:" .github/workflows/*.yml` |
 | Bot-triggered runs | `gh run list --limit 100 --json actor,conclusion --jq '[.[] | select(.actor.login | test("\\[bot\\]"))] | length'` |
 

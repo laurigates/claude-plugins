@@ -114,47 +114,58 @@ if [ -f "$state_file" ]; then
 fi
 
 # --- Detect the test command --------------------------------------------------
+# A detected runner is held as an argument array (test_argv), never as a string
+# a shell re-parses, and --pattern is appended to it as exactly one argument.
+# The pattern used to be concatenated into a string and eval'd, so `;`, `$(…)`
+# or a backtick in a test name ran as a command (issue #3676).
+test_argv=()
 detect_test_command() {
   local dir="$1"
-  if [ -n "$test_cmd_override" ]; then
-    printf '%s' "$test_cmd_override"
-    return 0
-  fi
   if [ -f "$dir/package.json" ] && grep -qE '"test"[[:space:]]*:' "$dir/package.json"; then
-    printf '%s' "npm test"
-    return 0
+    test_argv=(npm test); return 0
   fi
   if [ -f "$dir/pyproject.toml" ] || [ -f "$dir/pytest.ini" ] || [ -f "$dir/setup.cfg" ] || [ -f "$dir/tox.ini" ]; then
-    printf '%s' "pytest"
-    return 0
+    test_argv=(pytest); return 0
   fi
   if [ -f "$dir/Cargo.toml" ]; then
-    printf '%s' "cargo test"
-    return 0
+    test_argv=(cargo test); return 0
   fi
   if [ -f "$dir/go.mod" ]; then
-    printf '%s' "go test ./..."
-    return 0
+    test_argv=(go test ./...); return 0
   fi
   if [ -f "$dir/Makefile" ] && grep -qE '^test:' "$dir/Makefile"; then
-    printf '%s' "make test"
-    return 0
+    test_argv=(make test); return 0
   fi
   return 1
 }
 
-test_cmd="$(detect_test_command "$project_dir")" \
-  || emit_setup_error "no test command detected (checked package.json, pytest/pyproject, Cargo.toml, go.mod, Makefile) — pass --test-cmd or configure it in CLAUDE.md"
+pattern_args=()
+[ -n "$pattern" ] && pattern_args=("$pattern")
 
-# Append the caller-supplied pattern to the detected command, if any.
-full_cmd="$test_cmd"
-[ -n "$pattern" ] && full_cmd="$test_cmd $pattern"
+if [ -n "$test_cmd_override" ]; then
+  # --test-cmd is an arbitrary command by design, so it runs through `bash -c`.
+  # With a pattern, "$@" carries the pattern in as one positional argument; the
+  # pattern text itself is never parsed by a shell.
+  if [ -n "$pattern" ]; then
+    run_argv=(bash -c "$test_cmd_override \"\$@\"" run-test-cycle "${pattern_args[@]}")
+  else
+    run_argv=(bash -c "$test_cmd_override")
+  fi
+  cmd_display="$test_cmd_override"
+else
+  detect_test_command "$project_dir" \
+    || emit_setup_error "no test command detected (checked package.json, pytest/pyproject, Cargo.toml, go.mod, Makefile) — pass --test-cmd or configure it in CLAUDE.md"
+  run_argv=("${test_argv[@]}" "${pattern_args[@]}")
+  cmd_display="${test_argv[*]}"
+fi
+# Report the pattern shell-quoted so the printed command is unambiguous.
+[ -n "$pattern" ] && cmd_display="$cmd_display $(printf '%q' "$pattern")"
 
 # --- Run the suite ------------------------------------------------------------
 output_log="$(mktemp)"
 trap 'rm -f "$output_log"' EXIT
 
-( cd "$project_dir" && eval "$full_cmd" ) >"$output_log" 2>&1
+( cd "$project_dir" && "${run_argv[@]}" ) >"$output_log" 2>&1
 test_exit=$?
 
 # --- Compute a stable failure signature ---------------------------------------
@@ -231,7 +242,7 @@ fi
 # --- Emit structured result ---------------------------------------------------
 echo "=== TEST CYCLE ==="
 echo "VERDICT=$verdict"
-echo "TEST_COMMAND=$full_cmd"
+echo "TEST_COMMAND=$cmd_display"
 echo "TEST_EXIT=$test_exit"
 echo "CYCLE=$this_cycle"
 echo "MAX_CYCLES=$max_cycles"

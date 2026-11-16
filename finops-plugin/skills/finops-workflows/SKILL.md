@@ -1,10 +1,10 @@
 ---
 description: "Analyze workflow runs — frequency, duration, success rates, efficiency. Use when investigating slow CI, high failure rates, or run patterns over time."
 args: "[repo] [--created RANGE]"
-allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs-org.sh *), Read, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo). Use --created for date range. Use org mode for org-wide analysis.
 created: 2025-01-30
-modified: 2026-10-10
+modified: 2026-11-16
 reviewed: 2026-04-25
 name: finops-workflows
 model: haiku
@@ -41,7 +41,7 @@ Analyze GitHub Actions workflow runs for a repository - frequency, duration, suc
 ### Per-repo analysis (default)
 
 ```bash
-bash "${SKILL_DIR}/scripts/workflow-runs.sh" $ARGS
+bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs.sh $ARGS
 ```
 
 ### Org-wide analysis
@@ -49,7 +49,7 @@ bash "${SKILL_DIR}/scripts/workflow-runs.sh" $ARGS
 When the user requests org-wide analysis, use the org script:
 
 ```bash
-bash "${SKILL_DIR}/scripts/workflow-runs-org.sh" $ARGS
+bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs-org.sh $ARGS
 ```
 
 ## Output Format
@@ -98,8 +98,8 @@ Deploy:
 | Recent runs (compact) | `gh run list --workflow <name> --limit 20 --json status,conclusion,createdAt` |
 | Failed runs only | `gh run list --status failure --limit 10 --json name,createdAt,url` |
 | Run timing (JSON) | `gh api "/repos/{owner}/{repo}/actions/runs?per_page=50" --jq '.workflow_runs[] | {name,created_at,updated_at,conclusion}'` |
-| Compact per-repo analysis | `bash "${SKILL_DIR}/scripts/workflow-runs.sh" $ARGS` |
-| Org-wide analysis | `bash "${SKILL_DIR}/scripts/workflow-runs-org.sh" $ARGS` |
+| Compact per-repo analysis | `bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs.sh $ARGS` |
+| Org-wide analysis | `bash ${CLAUDE_SKILL_DIR}/scripts/workflow-runs-org.sh $ARGS` |
 
 ## Post-actions
 

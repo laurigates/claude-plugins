@@ -1,11 +1,11 @@
 ---
 created: 2026-08-27
-modified: 2026-11-14
+modified: 2026-11-16
 reviewed: 2026-08-27
 name: prose-check
 description: "Self-evaluate outward-bound prose against the house rubric — the three tics, end-on-the-fact, TL;DR footer. Use when drafting a PR body, issue body, doc, rule, or commit body before it ships."
 args: "[path to the draft] [--kind doc|answer|ticket]"
-allowed-tools: Read, Edit, Grep, Glob
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prose-check.sh *), Read, Edit, Grep, Glob
 argument-hint: <path to the draft> [--kind doc|answer|ticket]
 ---
 
@@ -47,7 +47,7 @@ the repo root pins the derived copy against drift.
 ## Execution
 
 ```bash
-prose-plugin/skills/prose-check/scripts/prose-check.sh --kind doc path/to/draft.md
+bash ${CLAUDE_SKILL_DIR}/scripts/prose-check.sh --kind doc path/to/draft.md
 ```
 
 | Flag | Effect |
@@ -112,7 +112,7 @@ automatically after a `Write`/`Edit` of a `.md` file and before
 
 | Context | Approach |
 |---|---|
-| One draft file | `prose-check.sh --kind <kind> <file>`; read the rollup, open sections only if `ISSUE_COUNT` > 0 |
+| One draft file | `bash ${CLAUDE_SKILL_DIR}/scripts/prose-check.sh --kind <kind> <file>`; read the rollup, open sections only if `ISSUE_COUNT` > 0 |
 | Many files | pass them all in one invocation — the script batches and reports per file |
 | Tool missing | check the `*_AVAILABLE=false` line before concluding a document is clean |
 | Pre-commit / CI | add `--strict` to turn candidates into a non-zero exit |
