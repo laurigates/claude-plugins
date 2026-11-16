@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/laurigates/claude-plugins/compare/video-plugin-v2.0.0...video-plugin-v2.0.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **repo:** narrow the bare Bash grant in 221 skills and lint full-shell grants ([#3670](https://github.com/laurigates/claude-plugins/issues/3670)) ([bc95ec9](https://github.com/laurigates/claude-plugins/commit/bc95ec96842b386f5c0ce2ff3e105fd5189c97b1))
+
 ## [2.0.0](https://github.com/laurigates/claude-plugins/compare/video-plugin-v1.1.0...video-plugin-v2.0.0) (2026-11-09)
 
 

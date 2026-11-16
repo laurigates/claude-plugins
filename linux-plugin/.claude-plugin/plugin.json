@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "linux-plugin",
-  "version": "1.1.0",
-  "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, and laptop battery drain measurement while off, suspended or idle",
+  "version": "1.1.1",
+  "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores, and laptop battery drain measurement while off, suspended or idle",
   "author": {
     "name": "Lauri Gates"
   },

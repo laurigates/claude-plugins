@@ -309,6 +309,38 @@ OUT=$(run2 --usage --all-projects)
 check "E usage counts past a corrupt line" "$OUT" "CALLS_BY_NAME=1"
 check "E usage emits ISSUE_COUNT" "$OUT" "ISSUE_COUNT=0"
 
+# === TEST F: only the installed plugin version counts ================================
+# The cache keeps old versions; scanning it whole counted one template per version.
+P3="$SANDBOX/p3"; H3="$SANDBOX/h3"; C3="$H3/.claude/plugins/cache"; SID3="44444444-4444-4444-4444-444444444444"
+mkdir -p "$P3" "$H3/.claude/projects/-x/$SID3/workflows/scripts"
+for v in 1.9.0 1.10.0; do
+  mkdir -p "$C3/mkt/plug/$v/skills/s/workflows"
+  printf "export const meta = { name: 'tpl3', description: '%s' }\nreturn await agent('t', {})\n" "$v" > "$C3/mkt/plug/$v/skills/s/workflows/tpl3.workflow.js"
+done
+printf "export const meta = { name: 'old-only', description: 'x' }\nreturn 1\n" > "$C3/mkt/plug/1.9.0/skills/s/workflows/old-only.workflow.js"
+# The project is a source checkout of the same template: one name, one count.
+mkdir -p "$P3/plug/skills/s/workflows"
+cp "$C3/mkt/plug/1.10.0/skills/s/workflows/tpl3.workflow.js" "$P3/plug/skills/s/workflows/tpl3.workflow.js"
+run3() { WORKFLOW_CAPTURE_PROJECTS_DIR="$H3/.claude/projects" WORKFLOW_CAPTURE_PLUGIN_CACHE="$C3" \
+           bash "$COLLECTOR" --home-dir "$H3" --project-dir "$P3" "$@"; }
+OUT=$(run3 --session-id "$SID3")
+check "F newest version (1.10.0 sorts after 1.9.0)" "$OUT" "BUNDLED_TEMPLATE_COUNT=1"
+check_absent "F old version's template not listed" "$OUT" "old-only"
+check_absent "F no row from the old version" "$OUT" "/1.9.0/"
+# A registry pin wins over the newest cached version.
+mkdir -p "$H3/.claude/plugins"
+printf '{"version":2,"plugins":{"plug@mkt":[{"scope":"user","installPath":"%s"},{"scope":"project","projectPath":"%s","installPath":"%s"}]}}\n' \
+  "$C3/mkt/plug/1.10.0" "$P3" "$C3/mkt/plug/1.9.0" > "$H3/.claude/plugins/installed_plugins.json"
+OUT=$(run3 --session-id "$SID3")
+check "F project-scope registry entry wins" "$OUT" "BUNDLED_TEMPLATE_COUNT=2"
+check "F registry version's template listed" "$OUT" "KNOWN_1=bundled|old-only||$C3/mkt/plug/1.9.0/skills/s/workflows/old-only.workflow.js"
+# Another project: the user-scope entry applies.
+P4="$SANDBOX/p4"; mkdir -p "$P4"
+OUT=$(WORKFLOW_CAPTURE_PROJECTS_DIR="$H3/.claude/projects" WORKFLOW_CAPTURE_PLUGIN_CACHE="$C3" \
+        bash "$COLLECTOR" --home-dir "$H3" --project-dir "$P4" --session-id "$SID3")
+check "F user-scope entry for another project" "$OUT" "BUNDLED_TEMPLATE_COUNT=1"
+check_absent "F user scope skips the project pin" "$OUT" "old-only"
+
 echo ""
 echo "workflow-capture-survey: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
