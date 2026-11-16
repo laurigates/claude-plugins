@@ -33,7 +33,8 @@ and loads any `*.js` from `.claude/workflows/` (project) and
 | | `WORKFLOW_n_MATCH_REPO` | The repository that ships the matched workflow: the owning plugin's `plugin.json` `repository`, the calling repo for a project-saved workflow, `none` for user scope |
 | | `WORKFLOW_n_SIGNALS` | `reran` (more than one run), `unfinished_agents`, `resumed`, `adapted_known`; `none` otherwise |
 | | `WORKFLOW_n_AGENT_SITES`, `WORKFLOW_n_PHASE_CALLS` | `agent(` and `phase(` call sites in the latest script |
-| `KNOWN WORKFLOWS` | `KNOWN_n` | `scope\|meta.name\|owning repo\|path`. Scopes: `project`, `user`, `plugin` (plugin-root `workflows/`), `bundled` (`*/skills/*/workflows/*.js`, plugin cache or the project tree) |
+| `KNOWN WORKFLOWS` | `KNOWN_n` | `scope\|meta.name\|owning repo\|path`, one row per scope and name. Scopes: `project`, `user`, `plugin` (plugin-root `workflows/`), `bundled` (`*/skills/*/workflows/*.js` in an installed plugin or the project tree) |
+| | `SAVED_*_COUNT`, `PLUGIN_REGISTERED_COUNT`, `BUNDLED_TEMPLATE_COUNT` | Distinct names per scope. Plugins are read only at the version Claude Code loads: the `installPath` in `~/.claude/plugins/installed_plugins.json` (a project-scope entry for this project first, else the user entry), or the newest cached version when the registry cannot be read. The cache keeps every old version, so scanning it whole would count each template once per version |
 | `SUMMARY` | `CAPTURE_CANDIDATE_COUNT` | Workflows whose origin is `authored` or `adapted` |
 | | `FRICTION_SIGNAL_COUNT` | Workflows with at least one signal |
 
