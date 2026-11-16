@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.17](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.16...project-plugin-v1.21.17) (2026-11-16)
+
+
+### Bug Fixes
+
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.21.16](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.15...project-plugin-v1.21.16) (2026-11-16)
 
 

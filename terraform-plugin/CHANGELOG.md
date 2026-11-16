@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.13](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.12...terraform-plugin-v1.7.13) (2026-11-16)
+
+
+### Bug Fixes
+
+* **terraform-plugin:** skip the apply-guard test when ast-grep is absent ([#3707](https://github.com/laurigates/claude-plugins/issues/3707)) ([48db1bb](https://github.com/laurigates/claude-plugins/commit/48db1bbb33bc93d46a1101f417e308ecfe5fe9a8)), closes [#3660](https://github.com/laurigates/claude-plugins/issues/3660)
+
 ## [1.7.12](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.11...terraform-plugin-v1.7.12) (2026-11-16)
 
 

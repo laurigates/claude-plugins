@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.5...comfyui-plugin-v1.15.6) (2026-11-16)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** keep a phantom version visible behind an unchanged Flagged verdict in registry-health ([#3694](https://github.com/laurigates/claude-plugins/issues/3694)) ([6540029](https://github.com/laurigates/claude-plugins/commit/6540029d89f1c3c157a1752c5eeac612ead38268)), closes [#3675](https://github.com/laurigates/claude-plugins/issues/3675) [#2994](https://github.com/laurigates/claude-plugins/issues/2994)
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.15.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.4...comfyui-plugin-v1.15.5) (2026-11-16)
 
 
