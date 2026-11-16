@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.1...session-plugin-v1.18.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* **session-plugin:** count only installed plugin versions in the workflow-capture survey ([#3711](https://github.com/laurigates/claude-plugins/issues/3711)) ([e92de12](https://github.com/laurigates/claude-plugins/commit/e92de12374c816df5e09535a6f8694415d36b8bd)), closes [#3685](https://github.com/laurigates/claude-plugins/issues/3685)
+
 ## [1.18.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.0...session-plugin-v1.18.1) (2026-11-15)
 
 

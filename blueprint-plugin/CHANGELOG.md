@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.51.11](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.10...blueprint-plugin-v3.51.11) (2026-11-16)
+
+
+### Bug Fixes
+
+* **repo:** narrow the bare Bash grant in 221 skills and lint full-shell grants ([#3670](https://github.com/laurigates/claude-plugins/issues/3670)) ([bc95ec9](https://github.com/laurigates/claude-plugins/commit/bc95ec96842b386f5c0ce2ff3e105fd5189c97b1))
+
 ## [3.51.10](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.9...blueprint-plugin-v3.51.10) (2026-11-15)
 
 
