@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-11-14
+modified: 2026-11-15
 reviewed: 2026-02-09
 description: "Rule files in .claude/rules/: add, edit, list, or validate paths: frontmatter. Use when adding a path-scoped rule file, listing which rules load, or fixing rule globs."
 allowed-tools: Read, Write, Edit, Glob, AskUserQuestion
@@ -28,196 +28,137 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
 
 Project rules override user-level rules. Path-specific rules load conditionally when working on matching files.
 
-**Steps**:
+## Execution
 
-1. **Check blueprint status**:
-   - Read `docs/blueprint/manifest.json`
-   - Check if modular rules are enabled
-   - If not enabled, offer to enable:
-     ```
-     Use AskUserQuestion:
-     question: "Modular rules are not enabled. Would you like to enable them?"
-     options:
-       - "Yes, create .claude/rules/ structure" → enable and continue
-       - "No, use single CLAUDE.md" → exit
-     ```
+Execute this rule-management workflow. Steps 1 and 2 always run; Step 2 picks one action, which runs its own step (3, 4–5, 6, 7 or 8); Steps 9–11 close every action.
 
-2. **Determine action** (use AskUserQuestion):
-   ```
-   question: "What would you like to do with modular rules?"
-   options:
-     - "List existing rules" → show project and user-level rules
-     - "Add a new rule" → create new rule file
-     - "Edit existing rule" → modify rule
-     - "Generate rules from PRDs" → auto-generate from requirements
-     - "Manage user-level rules" → personal rules in ~/.claude/rules/
-     - "Sync rules with CLAUDE.md" → bidirectional sync
-     - "Validate rules" → check for issues
-   ```
+### Step 1: Check blueprint status
 
-3. **List existing rules**:
-   - Scan `.claude/rules/` recursively for `.md` files
-   - Scan `~/.claude/rules/` for user-level rules
-   - Parse frontmatter for `paths` field (if scoped)
-   - Display:
-     ```
-     📜 Modular Rules
+- Read `docs/blueprint/manifest.json`
+- Check if modular rules are enabled
+- If not enabled, offer to enable:
+  ```
+  Use AskUserQuestion:
+  question: "Modular rules are not enabled. Would you like to enable them?"
+  options:
+    - "Yes, create .claude/rules/ structure" → enable and continue
+    - "No, use single CLAUDE.md" → exit
+  ```
 
-     User-Level Rules (~/.claude/rules/ — personal, all projects):
-     - preferences.md - Personal coding style
-     - workflow.md - Personal workflow habits
+### Step 2: Determine action (use AskUserQuestion)
 
-     Project Global Rules (apply to all files):
-     - development.md - TDD workflow and conventions
-     - testing.md - Test requirements
+```
+question: "What would you like to do with modular rules?"
+options:
+  - "List existing rules" → show project and user-level rules
+  - "Add a new rule" → create new rule file
+  - "Edit existing rule" → modify rule
+  - "Generate rules from PRDs" → auto-generate from requirements
+  - "Manage user-level rules" → personal rules in ~/.claude/rules/
+  - "Sync rules with CLAUDE.md" → bidirectional sync
+  - "Validate rules" → check for issues
+```
 
-     Path-Specific Rules (apply to specific paths):
-     - frontend/react.md - paths: ["src/components/**/*.{ts,tsx}"]
-     - backend/api.md - paths: ["src/api/**/*.ts"]
+### Step 3: List existing rules
 
-     Total: 6 rules (2 user-level, 2 global, 2 path-specific)
-     ```
+- Scan `.claude/rules/` recursively for `.md` files
+- Scan `~/.claude/rules/` for user-level rules
+- Parse frontmatter for `paths` field (if scoped)
+- Display the rules grouped by level, in the layout in [references/list-display.md](references/list-display.md)
 
-4. **Add a new rule** (use AskUserQuestion):
-   ```
-   question: "What type of rule would you like to create?"
-   options:
-     - "Development workflow" → development.md template
-     - "Testing requirements" → testing.md template
-     - "Code style/conventions" → code-style.md template
-     - "Architecture patterns" → architecture.md template
-     - "Language-specific" → prompt for language
-     - "Framework-specific" → prompt for framework
-     - "Custom" → blank template with guidance
-   ```
+### Step 4: Add a new rule (use AskUserQuestion)
 
-   Then ask:
-   ```
-   question: "Should this rule apply to all files or specific paths?"
-   options:
-     - "All files (global)" → no paths frontmatter
-     - "Specific file patterns" → prompt for glob patterns
-   ```
+```
+question: "What type of rule would you like to create?"
+options:
+  - "Development workflow" → development.md template
+  - "Testing requirements" → testing.md template
+  - "Code style/conventions" → code-style.md template
+  - "Architecture patterns" → architecture.md template
+  - "Language-specific" → prompt for language
+  - "Framework-specific" → prompt for framework
+  - "Custom" → blank template with guidance
+```
 
-5. **Rule file templates**:
+Then ask:
+```
+question: "Should this rule apply to all files or specific paths?"
+options:
+  - "All files (global)" → no paths frontmatter
+  - "Specific file patterns" → prompt for glob patterns
+```
 
-   **Global rule template**:
-   ```markdown
-   # {Rule Name}
+### Step 5: Write the rule file from its template
 
-   ## Overview
-   {Brief description of when this rule applies}
+Write the rule from the global or the scoped (`paths` frontmatter) template in [references/rule-templates.md](references/rule-templates.md), which also lists suggested locations and `paths:` patterns for common rule types. Brace expansion is supported in `paths`: `*.{ts,tsx}` matches both `.ts` and `.tsx` files.
 
-   ## Requirements
-   - {Requirement 1}
-   - {Requirement 2}
+### Step 6: Generate rules from PRDs
 
-   ## Examples
-   {Code examples if applicable}
-   ```
+- Read all PRDs in `docs/prds/`
+- Extract key requirements and constraints
+- Group by domain (testing, architecture, coding standards)
+- Generate rule files:
+  - `rules/from-prd-testing.md` - Test requirements from PRDs
+  - `rules/from-prd-architecture.md` - Architecture decisions
+  - `rules/from-prd-conventions.md` - Coding conventions
 
-   **Scoped rule template** (with `paths` frontmatter):
-   ```markdown
-   ---
-   paths:
-     - "src/components/**/*.{ts,tsx}"
-   ---
+### Step 7: Sync rules with CLAUDE.md
 
-   # {Rule Name}
+- Parse existing CLAUDE.md sections
+- Compare with rules in `.claude/rules/`
+- Offer sync options:
+  ```
+  question: "How would you like to sync?"
+  options:
+    - "CLAUDE.md → rules (split into modular files)"
+    - "Rules → CLAUDE.md (consolidate)"
+    - "Merge both (combine unique content)"
+  ```
 
-   ## Overview
-   {Brief description - applies only to matched paths}
+### Step 8: Validate rules
 
-   ## Requirements
-   - {Requirement 1}
-   - {Requirement 2}
-   ```
+- Check for syntax errors in frontmatter
+- Validate glob patterns in `paths` field
+- Check for conflicting rules
+- Warn about overly broad or narrow scopes
+- Report in the layout in [references/validation-report.md](references/validation-report.md)
 
-   Brace expansion is supported: `*.{ts,tsx}` matches both `.ts` and `.tsx` files.
-   Glob patterns follow standard syntax: `**` for recursive, `*` for single level.
+### Step 9: Update manifest
 
-6. **Generate rules from PRDs**:
-   - Read all PRDs in `docs/prds/`
-   - Extract key requirements and constraints
-   - Group by domain (testing, architecture, coding standards)
-   - Generate rule files:
-     - `rules/from-prd-testing.md` - Test requirements from PRDs
-     - `rules/from-prd-architecture.md` - Architecture decisions
-     - `rules/from-prd-conventions.md` - Coding conventions
+- Add created/modified rules to `generated_artifacts.rules`
+- Update `updated_at` timestamp
 
-7. **Sync rules with CLAUDE.md**:
-   - Parse existing CLAUDE.md sections
-   - Compare with rules in `.claude/rules/`
-   - Offer sync options:
-     ```
-     question: "How would you like to sync?"
-     options:
-       - "CLAUDE.md → rules (split into modular files)"
-       - "Rules → CLAUDE.md (consolidate)"
-       - "Merge both (combine unique content)"
-     ```
+### Step 10: Report
 
-8. **Validate rules**:
-   - Check for syntax errors in frontmatter
-   - Validate glob patterns in `paths` field
-   - Check for conflicting rules
-   - Warn about overly broad or narrow scopes
-   - Report:
-     ```
-     ✅ Rule Validation
+```
+✅ Rule management complete!
 
-     Checked: 4 rules
-     Valid: 4
-     Warnings: 1
-       - frontend/react.md: paths pattern may be too broad
+{Action summary}
 
-     No errors found.
-     ```
+Current rules: {count} files
+- Global: {count}
+- Scoped: {count}
 
-9. **Update manifest**:
-   - Add created/modified rules to `generated_artifacts.rules`
-   - Update `updated_at` timestamp
+Run `/blueprint:status` to see full configuration.
+```
 
-10. **Report**:
-    ```
-    ✅ Rule management complete!
+### Step 11: Prompt for next action (use AskUserQuestion)
 
-    {Action summary}
+```
+question: "Rules updated. What would you like to do next?"
+options:
+  - label: "Update CLAUDE.md (Recommended)"
+    description: "Regenerate overview to reflect rule changes"
+  - label: "Add another rule"
+    description: "Create additional domain-specific rules"
+  - label: "Check blueprint status"
+    description: "Run /blueprint:status to see full configuration"
+  - label: "I'm done for now"
+    description: "Exit - rules are active immediately"
+```
 
-    Current rules: {count} files
-    - Global: {count}
-    - Scoped: {count}
-
-    Run `/blueprint:status` to see full configuration.
-    ```
-
-11. **Prompt for next action** (use AskUserQuestion):
-    ```
-    question: "Rules updated. What would you like to do next?"
-    options:
-      - label: "Update CLAUDE.md (Recommended)"
-        description: "Regenerate overview to reflect rule changes"
-      - label: "Add another rule"
-        description: "Create additional domain-specific rules"
-      - label: "Check blueprint status"
-        description: "Run /blueprint:status to see full configuration"
-      - label: "I'm done for now"
-        description: "Exit - rules are active immediately"
-    ```
-
-    **Based on selection:**
-    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
-    - "Add another rule" → Restart at step 4 (Add a new rule)
-    - "Check blueprint status" → Run `/blueprint:status`
-    - "I'm done" → Exit
-
-**Common Rule Patterns**:
-
-| Rule Type | Suggested Path | Scope Pattern |
-|-----------|---------------|---------------|
-| React components | `rules/frontend/react.md` | `["**/*.{tsx,jsx}"]` |
-| API handlers | `rules/backend/api.md` | `["src/{api,routes}/**/*"]` |
-| Database models | `rules/backend/models.md` | `["src/{models,db}/**/*"]` |
-| Test files | `rules/testing.md` | `["**/*.{test,spec}.*"]` |
-| Documentation | `rules/docs.md` | `["**/*.md", "docs/**/*"]` |
-| Config files | `rules/config.md` | `["*.config.{js,ts,mjs}", ".env*"]` |
+**Based on selection:**
+- "Update CLAUDE.md" → Run `/blueprint:claude-md`
+- "Add another rule" → Restart at step 4 (Add a new rule)
+- "Check blueprint status" → Run `/blueprint:status`
+- "I'm done" → Exit
