@@ -106,6 +106,37 @@ rm -rf "$mk"; rm -f "$sf"
 pass "Makefile test target detected as 'make test'"
 
 # -----------------------------------------------------------------------------
+# Case 6b: --pattern is data, never shell (issue #3676). The pattern used to be
+# appended to the command string and eval'd, so `x; touch <marker>` ran touch.
+# Checked against a detected runner (Makefile) and against --test-cmd, plus a
+# check that the pattern reaches the command as exactly one argument.
+# -----------------------------------------------------------------------------
+inj="$(mktemp -d)"
+printf 'test:\n\t@true\n' > "$inj/Makefile"
+marker_dir="$(mktemp -d)"
+sf="$(mktemp -u)"
+bash "$driver" --project-dir "$inj" --state-file "$sf" \
+  --pattern "x; touch $marker_dir/pwned-detected" >/dev/null 2>&1
+[ -e "$marker_dir/pwned-detected" ] && fail "--pattern with ';' ran a command against the detected runner (eval injection, #3676)"
+rm -f "$sf"
+bash "$driver" --test-cmd "true" --project-dir "$inj" --state-file "$sf" \
+  --pattern "x; touch $marker_dir/pwned-testcmd" >/dev/null 2>&1
+[ -e "$marker_dir/pwned-testcmd" ] && fail "--pattern with ';' ran a command when combined with --test-cmd (#3676)"
+rm -f "$sf"
+bash "$driver" --test-cmd "true" --project-dir "$inj" --state-file "$sf" \
+  --pattern "\$(touch $marker_dir/pwned-subst)" >/dev/null 2>&1
+[ -e "$marker_dir/pwned-subst" ] && fail "--pattern with \$(...) ran a command (#3676)"
+rm -f "$sf"
+out="$(bash "$driver" --test-cmd 'printf "[%s]\n"' --project-dir "$inj" --state-file "$sf" --pattern 'a b; c')"
+grep -qxF '[a b; c]' <<<"$out" || fail "--pattern must reach the command as exactly one argument, got:\n$out"
+rm -f "$sf"
+# Control: a normal run with a pattern still goes GREEN.
+out="$(bash "$driver" --test-cmd "true" --project-dir "$inj" --state-file "$sf" --pattern "some_test")"
+[ "$(verdict_of "$out")" = "GREEN" ] || fail "control: --test-cmd true with a pattern should be GREEN, got:\n$out"
+rm -rf "$inj" "$marker_dir"; rm -f "$sf"
+pass "--pattern is passed as one argument, never evaluated (#3676)"
+
+# -----------------------------------------------------------------------------
 # Case 7: SKILL.md semantic guard — the declared args stay wired into the body.
 # Protects against a bulk edit reverting to argument-less prose (the #1920 gap).
 # -----------------------------------------------------------------------------

@@ -4,7 +4,7 @@ args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Optional test pattern to focus on; --max-cycles <N> to cap iterations (default 10)"
 allowed-tools: Read, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh *), Bash(find *), Bash(grep *)
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-16
 reviewed: 2026-09-02
 name: project-test-loop
 ---
@@ -39,6 +39,11 @@ Parse these from `$ARGUMENTS`:
 Also pass `--test-cmd "<command>"` to the driver to override auto-detection when
 the project's test command is configured in `CLAUDE.md` / `.claude/rules/` and
 not one of the auto-detected shapes.
+
+The test pattern is passed to the test command as one argument and is never
+interpreted by a shell. `--test-cmd` runs an arbitrary shell command by design
+(decided in #3676): it is the project's own test command, so pass only a command
+you would run yourself.
 
 ## Execution
 
