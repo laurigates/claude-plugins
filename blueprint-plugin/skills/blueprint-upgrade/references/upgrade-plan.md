@@ -4,7 +4,7 @@
 Blueprint Upgrade
 
 Current version: v{current}
-Target version: v3.4.0
+Target version: v3.5.0
 
 Major changes in v3.0:
 - Blueprint state moves from .claude/blueprints/ to docs/blueprint/
@@ -30,6 +30,12 @@ Major changes in v3.4:
   2 quiet autopilot / 3 scheduled pipeline), interaction_mode, work_orders
 - task_registry auto_run/schedule contract becomes executable
   (scripts/blueprint-autorun.sh + SessionStart probe)
+
+Major changes in v3.5:
+- One id-registry engine (`blueprint-autorun.sh --registry-reconcile`) for
+  the write-time hook and the session-start sweep: cross-refs derived from
+  frontmatter, stale entries on existing paths pruned, counters never decrease
+- Level 3: the vendored `.github/blueprint/blueprint-autorun.sh` is re-copied
 
 (For v2.0 changes when upgrading from v1.x:)
 - PRDs, ADRs, PRPs move to docs/ (project documentation)

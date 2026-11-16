@@ -55,11 +55,15 @@ issue_count=0
 issues_list=""
 has_error=0
 
+has_warn=0
+
 add_issue() {
-  # $1 severity, $2 type, $3 key/value detail
+  # $1 severity (ERROR|WARN|INFO), $2 type, $3 key/value detail. INFO rows are
+  # listed and counted but never raise STATUS above OK.
   issues_list="${issues_list}  - SEVERITY=$1 TYPE=$2 $3"$'\n'
   issue_count=$((issue_count + 1))
   [ "$1" = "ERROR" ] && has_error=1
+  [ "$1" = "WARN" ] && has_warn=1
   return 0
 }
 
@@ -314,6 +318,11 @@ echo "GH_ISSUE_MAPPINGS=${gh_issue_mappings}"
 echo "REGISTRY_PRESENT=${registry_present}"
 
 reg_unregistered=0; reg_mismatch=0; reg_missing=0; counter_stale=0
+reg_id_absent=0; reg_field_drift=0; reg_ignored=0; adr_reserved=0
+# The id-registry engine's scan set (blueprint-autorun.sh registry_reconcile).
+# Documents in it are compared by the engine; any other frontmatter row (an
+# ADR in docs/adr/) keeps the by-path/by-id comparison below.
+engine_scan_re='^docs/(prds|adrs|prps|trps)/[^/]+\.md$|^docs/blueprint/work-orders/[^/]+\.md$'
 if [ "$registry_present" = true ]; then
   # Registry rows: id<TAB>path. The path is empty for an entry that records
   # none; such an entry still registers its id, it just cannot be path-checked.
@@ -324,7 +333,56 @@ if [ "$registry_present" = true ]; then
          then (.value.path | ltrimstr("./")) else "" end) ]
     | @tsv' "$manifest" 2>/dev/null)"
 
-  # A document's frontmatter id against the registry entry for its path.
+  # What the engine would change (ADR-0027 Q2, #3552). `--check` writes
+  # nothing; its rows are mapped onto the audit's vocabulary:
+  #   prune  -> ERROR registry_id_absent: the entry's path exists but its
+  #             frontmatter does not carry the id (junk ADR-NNNN from an index
+  #             README, the old key of a re-id'd document). by_path keeps one
+  #             id per path, so the comparison this replaced missed both.
+  #   add    -> WARN unregistered
+  #   update -> ERROR id_path_mismatch when the path moves, else INFO
+  #             registry_field_drift (derived fields the engine refreshes)
+  engine_out="$(bash "$autorun_bin" --registry-reconcile --check --project-dir "$project_dir" 2>&1)"
+  if ! grep -q '^=== END BLUEPRINT REGISTRY RECONCILE ===$' <<<"$engine_out" \
+     || grep -q '^REASON=compute_failed' <<<"$engine_out"; then
+    add_issue ERROR registry_engine_failed "MSG=blueprint-autorun.sh --registry-reconcile --check gave no result"
+  fi
+  while IFS= read -r e_line; do
+    case "$e_line" in
+      "  - ACTION=prune "*)
+        e_id="$(sed -E 's/^  - ACTION=prune ID=(.*) PATH=.* HAS=.*$/\1/' <<<"$e_line")"
+        e_path="$(sed -E 's/^  - ACTION=prune ID=.* PATH=(.*) HAS=.*$/\1/' <<<"$e_line")"
+        e_has="$(sed -E 's/^.* HAS=(.*)$/\1/' <<<"$e_line")"
+        reg_id_absent=$((reg_id_absent + 1))
+        add_issue ERROR registry_id_absent "ID=${e_id} PATH=${e_path} HAS=${e_has:-none}"
+        ;;
+      "  - ACTION=add "*)
+        e_id="$(sed -E 's/^  - ACTION=add ID=(.*) PATH=.*$/\1/' <<<"$e_line")"
+        e_path="$(sed -E 's/^  - ACTION=add ID=.* PATH=(.*)$/\1/' <<<"$e_line")"
+        reg_unregistered=$((reg_unregistered + 1))
+        add_issue WARN unregistered "DOC=${e_path} KIND=$(printf '%s' "${e_id%%-*}" | tr '[:lower:]' '[:upper:]') ID=${e_id}"
+        ;;
+      "  - ACTION=update "*)
+        e_id="$(sed -E 's/^  - ACTION=update ID=(.*) PATH=.* FIELDS=.* WAS=.*$/\1/' <<<"$e_line")"
+        e_path="$(sed -E 's/^  - ACTION=update ID=.* PATH=(.*) FIELDS=.* WAS=.*$/\1/' <<<"$e_line")"
+        e_fields="$(sed -E 's/^.* FIELDS=(.*) WAS=.*$/\1/' <<<"$e_line")"
+        e_was="$(sed -E 's/^.* WAS=(.*)$/\1/' <<<"$e_line")"
+        case ",${e_fields}," in
+          *,path,*)
+            reg_mismatch=$((reg_mismatch + 1))
+            add_issue ERROR id_path_mismatch "DOC=${e_path} HAS=${e_id} REGISTRY_PATH=${e_was:-none}"
+            ;;
+          *)
+            reg_field_drift=$((reg_field_drift + 1))
+            add_issue INFO registry_field_drift "ID=${e_id} FIELDS=${e_fields}"
+            ;;
+        esac
+        ;;
+    esac
+  done <<<"$engine_out"
+
+  # A document outside the engine's scan set: its frontmatter id against the
+  # registry entry for its path.
   while IFS=$'\t' read -r r_sev r_type r_detail; do
     [ -n "${r_sev:-}" ] || continue
     case "$r_type" in
@@ -332,12 +390,13 @@ if [ "$registry_present" = true ]; then
       id_path_mismatch) reg_mismatch=$((reg_mismatch + 1)) ;;
     esac
     add_issue "$r_sev" "$r_type" "$r_detail"
-  done < <(awk -F'\t' "$AWK_NORM"'
+  done < <(awk -F'\t' -v scanre="$engine_scan_re" "$AWK_NORM"'
     FNR == NR {
       if ($1 != "") { by_id[norm($1)] = $2; if ($2 != "") by_path[$2] = $1 }
       next
     }
     $3 != "frontmatter" { next }
+    $4 ~ scanre { next }
     {
       kind = $1; id = $2; p = $4
       if (p in by_path) {
@@ -355,7 +414,14 @@ if [ "$registry_present" = true ]; then
       }
     }' <(printf '%s\n' "$reg_rows") <(printf '%s' "$id_rows"))
 
-  # A registry entry whose path is not on disk.
+  # A registry entry whose path is not on disk. The engine never prunes these
+  # (P2): a path can be absent from one clone and present in another.
+  #   git-ignored, or skip-worktree in a sparse checkout -> INFO registry_path_ignored
+  #   an ADR -> INFO adr_number_reserved: the entry is the only thing reserving
+  #     the number (check-adr-numbers.sh Check 3; there is no ADR counter)
+  #   anything else -> ERROR registry_path_missing (see the SKILL.md removal step)
+  in_git=false
+  git -C "$project_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 && in_git=true
   while IFS=$'\t' read -r m_id m_path; do
     [ -n "${m_id:-}" ] || continue
     [ -n "${m_path:-}" ] || continue
@@ -363,7 +429,16 @@ if [ "$registry_present" = true ]; then
       /*) m_abs="$m_path" ;;
       *) m_abs="${project_dir}/${m_path}" ;;
     esac
-    if [ ! -e "$m_abs" ]; then
+    [ -e "$m_abs" ] && continue
+    if [ "$in_git" = true ] \
+       && { git -C "$project_dir" check-ignore -q -- "$m_path" 2>/dev/null \
+            || [ "$(git -C "$project_dir" ls-files -t -- "$m_path" 2>/dev/null | cut -c1)" = "S" ]; }; then
+      reg_ignored=$((reg_ignored + 1))
+      add_issue INFO registry_path_ignored "ID=${m_id} PATH=${m_path}"
+    elif printf '%s' "$m_id" | grep -qiE '^ADR-[0-9]+$'; then
+      adr_reserved=$((adr_reserved + 1))
+      add_issue INFO adr_number_reserved "ID=${m_id} PATH=${m_path}"
+    else
       reg_missing=$((reg_missing + 1))
       add_issue ERROR registry_path_missing "ID=${m_id} PATH=${m_path}"
     fi
@@ -392,11 +467,15 @@ fi
 echo "REGISTRY_UNREGISTERED=${reg_unregistered}"
 echo "REGISTRY_ID_PATH_MISMATCH=${reg_mismatch}"
 echo "REGISTRY_PATH_MISSING=${reg_missing}"
+echo "REGISTRY_ID_ABSENT=${reg_id_absent}"
+echo "REGISTRY_FIELD_DRIFT=${reg_field_drift}"
+echo "REGISTRY_PATH_IGNORED=${reg_ignored}"
+echo "ADR_NUMBER_RESERVED=${adr_reserved}"
 echo "COUNTER_STALE=${counter_stale}"
 
 if [ "$has_error" -eq 1 ]; then
   audit_status="ERROR"
-elif [ "$issue_count" -gt 0 ]; then
+elif [ "$has_warn" -eq 1 ]; then
   audit_status="WARN"
 fi
 

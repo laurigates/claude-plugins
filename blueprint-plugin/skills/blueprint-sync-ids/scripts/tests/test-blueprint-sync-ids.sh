@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015  # file-level: `[ -n "$d" ] && [ -d "$d" ] || fail` is the mktemp guard idiom; fail exits
 # Regression test for blueprint-sync-ids.sh (issue #1553).
 # Plants a fixture doc tree under a mktemp project dir and asserts the
 # semantic invariants: an ADR whose frontmatter id (ADR-0007) disagrees
@@ -23,8 +24,10 @@ fi
 
 [ -f "$audit_script" ] || fail "blueprint-sync-ids.sh not found at $audit_script"
 
-proj="$(mktemp -d)"
-home="$(mktemp -d)"
+proj="$(mktemp -d)" || fail "mktemp failed"
+[ -n "$proj" ] && [ -d "$proj" ] || fail "bad sandbox dir"
+home="$(mktemp -d)" || fail "mktemp failed"
+[ -n "$home" ] && [ -d "$home" ] || fail "bad sandbox dir"
 trap 'rm -rf "$proj" "$home"' EXIT
 
 mkdir -p "${proj}/docs/prds" "${proj}/docs/adrs" "${proj}/docs/prps" \
@@ -103,7 +106,8 @@ grep -q "^MANIFEST_PRESENT=true$" <<<"$out" \
 pass "reverse github_issues index built from manifest registry"
 
 # Counter-case: a clean tree (no mismatch, no missing ids) exits 0 / STATUS=OK.
-proj2="$(mktemp -d)"
+proj2="$(mktemp -d)" || fail "mktemp failed"
+[ -n "$proj2" ] && [ -d "$proj2" ] || fail "bad sandbox dir"
 mkdir -p "${proj2}/docs/adrs"
 cat > "${proj2}/docs/adrs/0001-ok.md" <<'MD'
 ---
@@ -204,15 +208,18 @@ grep -q "^REGISTRY_PRESENT=true$" <<<"$out3" \
   || fail "expected REGISTRY_PRESENT=true, got:\n$out3"
 grep -q "^REGISTRY_ID_PATH_MISMATCH=2$" <<<"$out3" \
   || fail "expected REGISTRY_ID_PATH_MISMATCH=2 for the swapped pair, got:\n$out3"
-grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/openfeature-integration-prp.md HAS=PRP-008 REGISTRY=PRP-009" <<<"$out3" \
-  || fail "expected id_path_mismatch for openfeature (HAS=PRP-008 REGISTRY=PRP-009), got:\n$out3"
-grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/hierarchy-aware-duplicate-detection.md HAS=PRP-009 REGISTRY=PRP-008" <<<"$out3" \
-  || fail "expected id_path_mismatch for hierarchy (HAS=PRP-009 REGISTRY=PRP-008), got:\n$out3"
+# The engine (#3552) names the path each id is registered under now.
+grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/openfeature-integration-prp.md HAS=PRP-008 REGISTRY_PATH=docs/prps/hierarchy-aware-duplicate-detection.md" <<<"$out3" \
+  || fail "expected id_path_mismatch for openfeature (HAS=PRP-008, registered at hierarchy), got:\n$out3"
+grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/hierarchy-aware-duplicate-detection.md HAS=PRP-009 REGISTRY_PATH=docs/prps/openfeature-integration-prp.md" <<<"$out3" \
+  || fail "expected id_path_mismatch for hierarchy (HAS=PRP-009, registered at openfeature), got:\n$out3"
 pass "a swapped registry id<->path pair is an ERROR on both docs"
 
-# Unregistered documents: ADR-003, ADR-004 and both PRP-010 docs.
-grep -q "^REGISTRY_UNREGISTERED=4$" <<<"$out3" \
-  || fail "expected REGISTRY_UNREGISTERED=4, got:\n$out3"
+# Unregistered documents: ADR-003, ADR-004 (docs/adr/, outside the engine's
+# scan set) and PRP-010 once — the engine registers one of a duplicated pair;
+# the duplicate itself is the duplicate_id row.
+grep -q "^REGISTRY_UNREGISTERED=3$" <<<"$out3" \
+  || fail "expected REGISTRY_UNREGISTERED=3, got:\n$out3"
 grep -q "SEVERITY=WARN TYPE=unregistered DOC=docs/adr/ADR-003-tiles.md KIND=ADR ID=ADR-003" <<<"$out3" \
   || fail "expected ADR-003 reported unregistered, got:\n$out3"
 echo "$out3" | grep "TYPE=unregistered" | grep -qE "ADR-001-progressive-rendering|discovery.md" \
@@ -292,5 +299,121 @@ grep -q "ADR-NNNN" <<<"$out5" && fail "fenced template in README reported as an 
 grep -q "^ADR_WITH_ID=1$" <<<"$out5" || fail "expected ADR_WITH_ID=1, got:\n$out5"
 grep -q "^ADR_FRONTMATTER_ONLY=0$" <<<"$out5" || fail "expected ADR_FRONTMATTER_ONLY=0, got:\n$out5"
 pass "a fenced id template in an index README is not read as an ADR"
+
+# ==============================================================================
+# #3552 — the audit reports what the id-registry engine would change.
+# ==============================================================================
+skill_md="${script_dir}/../../SKILL.md"
+adr_numbers="${script_dir}/../../../blueprint-adr-validate/scripts/check-adr-numbers.sh"
+proj6="$(mktemp -d)" || fail "mktemp failed"
+[ -n "$proj6" ] && [ -d "$proj6" ] || fail "bad sandbox dir"
+proj6="$(cd -P -- "$proj6" && pwd -P)" || fail "cannot resolve sandbox dir"
+trap 'rm -rf "$proj" "$home" "$proj3" "$proj4" "$proj5" "$proj6"' EXIT
+mkdir -p "${proj6}/docs/adrs" "${proj6}/docs/prps" "${proj6}/docs/blueprint/work-orders"
+printf -- '---\nid: ADR-0099\nstatus: Accepted\n---\n# Re-ided\n' > "${proj6}/docs/adrs/0099-reid.md"
+printf -- '---\nid: PRP-001\nstatus: Ready\n---\n# PRP one\n' > "${proj6}/docs/prps/001-one.md"
+# shellcheck disable=SC2016  # literal markdown fence
+printf -- '# ADR index\n\n```markdown\n---\nid: ADR-NNNN\n---\n```\n' > "${proj6}/docs/adrs/README.md"
+printf 'docs/blueprint/work-orders/\n' > "${proj6}/.gitignore"
+git -C "$proj6" init -q
+git -C "$proj6" add -- .gitignore docs
+git -C "$proj6" -c user.name=t -c user.email=t@example.invalid commit -q -m fixture
+cat > "${proj6}/docs/blueprint/manifest.json" <<'JSON'
+{
+  "id_registry": {
+    "last_prd": 0,
+    "last_prp": 1,
+    "documents": {
+      "ADR-NNNN": { "path": "docs/adrs/README.md", "title": "ADR-NNNN: Title", "status": "Proposed" },
+      "ADR-0019": { "path": "docs/adrs/0099-reid.md", "title": "Re-ided", "status": "Accepted" },
+      "ADR-0099": { "path": "docs/adrs/0099-reid.md", "title": "Re-ided", "status": "Accepted", "relates_to": [], "github_issues": [] },
+      "PRP-001": { "path": "docs/prps/001-one.md", "title": "PRP one", "status": "Ready", "relates_to": [], "github_issues": [] },
+      "WO-001": { "path": "docs/blueprint/work-orders/001-task.md", "title": "Task", "implements": ["PRP-001"], "github_issues": [4] }
+    },
+    "github_issues": { "4": ["PRP-001", "WO-001"] }
+  }
+}
+JSON
+out6="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj6" 2>&1)"
+grep -q "SEVERITY=ERROR TYPE=registry_id_absent ID=ADR-NNNN" <<<"$out6" \
+  || fail "expected registry_id_absent for the planted ADR-NNNN, got:\n$out6"
+pass "a planted junk ADR-NNNN -> README.md entry is ERROR registry_id_absent"
+grep -q "SEVERITY=ERROR TYPE=registry_id_absent ID=ADR-0019 PATH=docs/adrs/0099-reid.md HAS=ADR-0099" <<<"$out6" \
+  || fail "expected ADR-0019 registry_id_absent (path carries ADR-0099), got:\n$out6"
+grep -q "registry_id_absent ID=ADR-0099" <<<"$out6" && fail "ADR-0099 carries its id and must not be reported:\n$out6"
+pass "two ids sharing one path: the one the frontmatter does not carry is registry_id_absent"
+grep -q "SEVERITY=INFO TYPE=registry_path_ignored ID=WO-001 PATH=docs/blueprint/work-orders/001-task.md" <<<"$out6" \
+  || fail "expected INFO registry_path_ignored for the git-ignored WO, got:\n$out6"
+grep -q "TYPE=registry_path_missing ID=WO-001" <<<"$out6" && fail "a git-ignored WO path must not be registry_path_missing:\n$out6"
+pass "a git-ignored, absent WO entry is INFO registry_path_ignored"
+grep -q "^REGISTRY_ID_ABSENT=2$" <<<"$out6" || fail "expected REGISTRY_ID_ABSENT=2, got:\n$out6"
+grep -q "^STATUS=ERROR$" <<<"$out6" || fail "expected STATUS=ERROR, got:\n$out6"
+validate_contract "engine drift" "$out6"
+
+# A deleted ADR keeps its entry (it reserves the number): INFO, not ERROR.
+printf -- '---\nid: ADR-0012\nstatus: Accepted\n---\n# Twelve\n' > "${proj6}/docs/adrs/0012-twelve.md"
+printf -- '---\nid: PRP-009\nstatus: Ready\n---\n# Nine\n' > "${proj6}/docs/prps/009-nine.md"
+git -C "$proj6" add -- docs/adrs/0012-twelve.md docs/prps/009-nine.md
+git -C "$proj6" -c user.name=t -c user.email=t@example.invalid commit -q -m add
+git -C "$proj6" rm -q -- docs/adrs/0012-twelve.md docs/prps/009-nine.md
+git -C "$proj6" -c user.name=t -c user.email=t@example.invalid commit -q -m delete
+cat > "${proj6}/docs/blueprint/manifest.json" <<'JSON'
+{
+  "id_registry": {
+    "last_prd": 0,
+    "last_prp": 9,
+    "documents": {
+      "ADR-0012": { "path": "docs/adrs/0012-twelve.md", "title": "Twelve", "status": "Accepted" },
+      "PRP-001": { "path": "docs/prps/001-one.md", "title": "PRP one", "status": "Ready", "relates_to": [], "github_issues": [] },
+      "PRP-009": { "path": "docs/prps/009-nine.md", "title": "Nine", "status": "Ready", "github_issues": [7] }
+    },
+    "github_issues": { "7": ["PRP-009"] }
+  }
+}
+JSON
+out7="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj6" 2>&1)"
+grep -q "SEVERITY=INFO TYPE=adr_number_reserved ID=ADR-0012" <<<"$out7" \
+  || fail "expected INFO adr_number_reserved for the deleted ADR-0012, got:\n$out7"
+grep -q "SEVERITY=ERROR TYPE=registry_path_missing ID=PRP-009" <<<"$out7" \
+  || fail "expected ERROR registry_path_missing for the deleted PRP-009, got:\n$out7"
+pass "a deleted ADR is INFO adr_number_reserved; a deleted PRP stays ERROR registry_path_missing"
+
+# The documented removal step, extracted from SKILL.md (never retyped here).
+removal="$(sed -n '/^# registry-removal:begin$/,/^# registry-removal:end$/p' "$skill_md")"
+[ -n "$removal" ] || fail "SKILL.md has no '# registry-removal:begin' ... ':end' block"
+run_removal() { # <id> <path>
+  (cd "$proj6" && ID="$1" REG_PATH="$2" MANIFEST=docs/blueprint/manifest.json bash -c "$removal") >/dev/null 2>&1
+}
+run_removal PRP-009 docs/prps/009-nine.md
+mf6="${proj6}/docs/blueprint/manifest.json"
+[ "$(jq -r '.id_registry.documents | has("PRP-009")' "$mf6")" = "false" ] \
+  || fail "the removal step did not remove the deleted PRP-009"
+[ "$(jq -r '.id_registry.last_prp' "$mf6")" = "9" ] || fail "the removal step changed last_prp"
+[ "$(jq -c '.id_registry.github_issues' "$mf6")" = "{}" ] || fail "the removal step left PRP-009 in github_issues"
+pass "the documented removal removes a deleted PRP-009, drops it from github_issues, keeps last_prp"
+run_removal ADR-0012 docs/adrs/0012-twelve.md
+[ "$(jq -r '.id_registry.documents | has("ADR-0012")' "$mf6")" = "true" ] \
+  || fail "the removal step removed an ADR entry"
+run_removal PRP-001 docs/prps/never-deleted.md
+[ "$(jq -r '.id_registry.documents | has("PRP-001")' "$mf6")" = "true" ] \
+  || fail "the removal step removed an entry whose path git never recorded as deleted"
+leftover="$(find "${proj6}/docs/blueprint" -name 'manifest.json.*' | wc -l | tr -d ' ')"
+[ "$leftover" = "0" ] || fail "the removal step left $leftover temp files"
+pass "the removal step never removes an ADR entry or an entry git does not record as deleted"
+if [ -f "$adr_numbers" ]; then
+  printf -- '---\nid: ADR-0012\nstatus: Proposed\n---\n# New twelve\n' > "${proj6}/docs/adrs/0012-new-claim.md"
+  out8="$(bash "$adr_numbers" --project-dir "$proj6" 2>&1)"
+  grep -q "adr_registry_mismatch" <<<"$out8" \
+    || fail "a new file claiming the reserved ADR-0012 must give adr_registry_mismatch, got:\n$out8"
+  pass "the kept ADR-0012 entry still makes check-adr-numbers.sh report adr_registry_mismatch"
+fi
+
+# This repo's HEAD tree still audits STATUS=OK (only when run from a checkout).
+repo_root="${script_dir}/../../../../.."
+if [ -f "${repo_root}/docs/blueprint/manifest.json" ] && [ -d "${repo_root}/blueprint-plugin" ]; then
+  out9="$(bash "$audit_script" --home-dir "$home" --project-dir "$repo_root" 2>&1)"
+  grep -q "^STATUS=OK$" <<<"$out9" || fail "this repo's tree no longer audits STATUS=OK:\n$out9"
+  pass "this repo's tree audits STATUS=OK"
+fi
 
 echo "ALL TESTS PASSED"

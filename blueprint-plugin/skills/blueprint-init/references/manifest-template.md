@@ -6,7 +6,7 @@ The `docs/blueprint/manifest.json` that Step 7 writes.
 
 ```json
 {
-  "format_version": "3.4.0",
+  "format_version": "3.5.0",
   "created_at": "[ISO timestamp]",
   "updated_at": "[ISO timestamp]",
   "created_by": {
