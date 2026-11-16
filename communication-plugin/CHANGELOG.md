@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.6...communication-plugin-v1.2.7) (2026-11-16)
+
+
+### Bug Fixes
+
+* **repo:** narrow the bare Bash grant in 221 skills and lint full-shell grants ([#3670](https://github.com/laurigates/claude-plugins/issues/3670)) ([bc95ec9](https://github.com/laurigates/claude-plugins/commit/bc95ec96842b386f5c0ce2ff3e105fd5189c97b1))
+
 ## [1.2.6](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.5...communication-plugin-v1.2.6) (2026-10-07)
 
 

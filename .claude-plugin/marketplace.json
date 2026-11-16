@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.58.2",
+      "version": "2.58.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -108,7 +108,7 @@
       "name": "bios-plugin",
       "source": "./bios-plugin",
       "description": "BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service, install UEFI capsules from Linux via fwupd, change hidden setup options, audit and back up the SPI flash, write it with an external programmer, and analyse EC firmware",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -157,7 +157,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.51.10",
+      "version": "3.51.11",
       "author": {
         "name": "Lauri Gates"
       },
@@ -181,7 +181,7 @@
       "name": "cloud-plugin",
       "source": "./cloud-plugin",
       "description": "Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-)",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -202,7 +202,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.30.3",
+      "version": "1.30.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -244,7 +244,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.15.4",
+      "version": "1.15.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -266,7 +266,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.2.6",
+      "version": "1.2.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -284,7 +284,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.5.3",
+      "version": "1.5.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -305,7 +305,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.43.10",
+      "version": "1.43.11",
       "author": {
         "name": "Lauri Gates"
       },
@@ -322,7 +322,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.11.4",
+      "version": "2.11.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -340,7 +340,7 @@
       "name": "css-plugin",
       "source": "./css-plugin",
       "description": "CSS tooling - Lightning CSS transpilation/minification, UnoCSS atomic utility generation",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -361,7 +361,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.16.0",
+      "version": "1.16.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -440,7 +440,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.6.3",
+      "version": "1.6.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -462,7 +462,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.74.2",
+      "version": "2.74.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -494,7 +494,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.13.7",
+      "version": "1.13.8",
       "author": {
         "name": "Lauri Gates"
       },
@@ -562,7 +562,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.22.2",
+      "version": "2.22.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -584,7 +584,7 @@
       "name": "kernel-plugin",
       "source": "./kernel-plugin",
       "description": "Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -629,7 +629,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.10.3",
+      "version": "1.10.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -670,7 +670,7 @@
       "name": "linux-plugin",
       "source": "./linux-plugin",
       "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -694,7 +694,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -717,7 +717,7 @@
       "name": "migration-patterns-plugin",
       "source": "./migration-patterns-plugin",
       "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -759,7 +759,7 @@
       "name": "obsidian-plugin",
       "source": "./obsidian-plugin",
       "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
-      "version": "1.3.7",
+      "version": "1.3.8",
       "author": {
         "name": "Lauri Gates"
       },
@@ -788,7 +788,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.15",
+      "version": "1.21.16",
       "author": {
         "name": "Lauri Gates"
       },
@@ -828,7 +828,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.2",
+      "version": "1.4.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -859,7 +859,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.5.9",
+      "version": "1.5.10",
       "author": {
         "name": "Lauri Gates"
       },
@@ -878,7 +878,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -896,7 +896,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture",
-      "version": "1.18.1",
+      "version": "1.18.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -961,7 +961,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.11",
+      "version": "1.7.12",
       "author": {
         "name": "Lauri Gates"
       },
@@ -979,7 +979,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.27.1",
+      "version": "3.27.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1001,7 +1001,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.16.1",
+      "version": "2.16.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1021,7 +1021,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.10.3",
+      "version": "1.10.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1039,7 +1039,7 @@
       "name": "video-plugin",
       "source": "./video-plugin",
       "description": "Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -1064,7 +1064,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.19.1",
+      "version": "1.19.2",
       "author": {
         "name": "Lauri Gates"
       },

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.27.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.27.1...testing-plugin-v3.27.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* **repo:** narrow the bare Bash grant in 221 skills and lint full-shell grants ([#3670](https://github.com/laurigates/claude-plugins/issues/3670)) ([bc95ec9](https://github.com/laurigates/claude-plugins/commit/bc95ec96842b386f5c0ce2ff3e105fd5189c97b1))
+
 ## [3.27.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.27.0...testing-plugin-v3.27.1) (2026-11-14)
 
 

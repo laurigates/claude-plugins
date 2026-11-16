@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.2...hooks-plugin-v2.22.3) (2026-11-16)
+
+
+### Bug Fixes
+
+* **repo:** narrow the bare Bash grant in 221 skills and lint full-shell grants ([#3670](https://github.com/laurigates/claude-plugins/issues/3670)) ([bc95ec9](https://github.com/laurigates/claude-plugins/commit/bc95ec96842b386f5c0ce2ff3e105fd5189c97b1))
+
 ## [2.22.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.1...hooks-plugin-v2.22.2) (2026-11-14)
 
 
