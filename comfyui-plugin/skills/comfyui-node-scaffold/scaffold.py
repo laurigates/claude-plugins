@@ -2612,8 +2612,7 @@ BANNER_SVG = """\
 # Registry health monitor — flags a pack whose declared registry version is
 # Flagged, Banned, Deleted, stuck Pending, or missing. Flagged and Banned have
 # different consequences: the registry's /install resolver returns the newest
-# NON-BANNED version, so a Flagged version still installs (it only drops out of
-# the Active-only listing), while a Banned one is skipped and installs fall back
+# NON-BANNED version, so a Flagged version still installs, while a Banned one is skipped and installs fall back
 # to an older version (laurigates/comfyui-image-browser#111). A Deleted version
 # used to fall through to "Active in registry" (#2994); installs are expected to
 # fall back to an older version (not yet verified against /install — no Deleted
@@ -2751,7 +2750,12 @@ jobs:
             fi
           done
 
-          highest=$(jq -r '.[].version' versions.json | sort -V | tail -1)
+          # The versions endpoint lists every status, Deleted and Banned included.
+          # /install resolves only among Active, Flagged and Pending
+          # (registry-backend GetLatestNodeVersion), so only those can be phantoms.
+          highest=$(jq -r '.[] | select(.status == "NodeVersionStatusActive"
+              or .status == "NodeVersionStatusFlagged"
+              or .status == "NodeVersionStatusPending") | .version' versions.json | sort -V | tail -1)
           body=$(mktemp); problem=""
 
           if [ -z "$status" ]; then
@@ -2812,7 +2816,11 @@ jobs:
               else
                 impact="- Flagged is not Banned, so installs are not blocked by this status: ${installs}."
               fi
-              listing="- Discoverability is affected: the registry listing's \`latest_version\` counts only Active versions, so it shows **\`${listed:-none}\`** rather than \`${ver}\`."
+              # The listing can show the Flagged version itself, so say nothing
+              # about discoverability unless it actually shows another version.
+              if [ "$listed" != "$ver" ]; then
+                listing="- Discoverability is affected: the registry listing's \`latest_version\` shows **\`${listed:-none}\`** rather than \`${ver}\`."
+              fi
               header="Declared version **\`${ver}\`** is **Flagged** by Comfy-Org registry moderation."
             fi
             {
@@ -2890,7 +2898,9 @@ jobs:
             # Flagged still installs, so an unchanged Flagged verdict needs no
             # new action and should not turn the schedule red every day. The
             # commit status set above stays failure, so the verdict stays visible.
-            if [ -n "$unchanged" ] && [ "$problem" = "flagged" ]; then
+            # A phantom does need action (a release above it), and problem stays
+            # "flagged" when one is present, so it keeps the run red.
+            if [ -n "$unchanged" ] && [ "$problem" = "flagged" ] && [ -z "$phantom" ]; then
               echo "::warning::release ${ver} is still flagged, unchanged since the last alert on #${existing}"
               exit 0
             fi
