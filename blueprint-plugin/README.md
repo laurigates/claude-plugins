@@ -330,8 +330,20 @@ true` **and** its schedule interval has elapsed since `last_completed_at`.
 on-change signal misses edits made outside Claude Code and Bash edits outside
 the recorded change list. The runner writes no `task_registry` run state
 (ADR-0027): a reconcile that changes nothing leaves the manifest
-byte-identical, and one that registers a document changes only `id_registry`. The sweep reads all
-frontmatter in one `awk` pass and registers it in one `jq` call. That pass is
+byte-identical, and one that registers a document changes only `id_registry`.
+
+The sweep and the write-time hook call one engine,
+`blueprint-autorun.sh --registry-reconcile` (ADR-0027 Q2/Q4, format 3.5.0). It
+derives each entry's path, status, title, `relates_to` and `github_issues` from
+frontmatter and keeps keys frontmatter does not carry (`implements`); takes
+`created` from frontmatter or the existing entry, never the clock; prunes an
+entry whose path exists but no longer carries its id, and never one whose path
+is missing; rebuilds the `github_issues` reverse index; and raises
+`last_prd`/`last_prp`/`last_trp` without ever lowering them. It writes only
+when `id_registry` differs, under an `mkdir` lock, through a per-PID temp file.
+`--registry-reconcile --check` writes nothing and exits 1 when the committed
+registry is stale. The engine reads all
+frontmatter in one `awk` pass and reconciles it in one `jq` call. That pass is
 `blueprint-autorun.sh --frontmatter-rows`, the one frontmatter parser the
 write-time hook, the sweep and the `/blueprint:sync-ids` audit share: it reads
 inline comments, quotes, CRLF files and `relates-to`/`github-issues` lists the
@@ -615,7 +627,7 @@ renamed, or deleted.
 
 | Hook | Event | Matcher | Purpose |
 |------|-------|---------|---------|
-| `blueprint-doc-change.sh` | PostToolUse | `Write\|Edit\|Bash` | Dispatcher: for every changed `docs/**` path, refresh the `id_registry` entry (`auto-sync-id-registry.sh`), refresh the feature tracker (`sync-feature-tracker.sh`, autonomy ≥ 1), and schema-check PRD/ADR/PRP documents (`validate-frontmatter.sh`) |
+| `blueprint-doc-change.sh` | PostToolUse | `Write\|Edit\|Bash` | Dispatcher: once per tool call that changed (or deleted) a PRD/ADR/PRP/TRP/WO document, run the id-registry engine (`blueprint-autorun.sh --registry-reconcile`, every autonomy level); for every changed `docs/**` path, refresh the feature tracker (`sync-feature-tracker.sh`, autonomy ≥ 1), and schema-check PRD/ADR/PRP documents (`validate-frontmatter.sh`) |
 | `check-prp-readiness.sh` | PreToolUse | `Skill` | Blocks `/blueprint:prp-execute` on a PRP below confidence 7/10, with missing sections, or with broken references; every other skill passes |
 
 **Why one dispatcher.** A hook `matcher` is tested against the tool *name*

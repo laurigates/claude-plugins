@@ -36,3 +36,24 @@ When the trial integration is clean, land one PR at a time:
 For a cross-repository run, land each repository's PRs separately. Chains and
 `merge-chain.sh`: `git-plugin:git-merge-hazards`. Update-branch versus rebase, and when a
 stale base is safe to leave: `git-plugin:worktree-stale-base-merge`.
+
+## Sessions without the `gh` CLI
+
+A cloud session reaches GitHub through the GitHub MCP tools, not `gh`. Pass the tool wording
+in `issueRead` instead of editing the shared region, and run with `land: 'local'`:
+
+```js
+args: {
+  issueRead: 'mcp__github__issue_read with method get for the issue, then method get_comments',
+  land: 'local',
+  // repo, root, units, gates, trailer as usual
+}
+```
+
+`land: 'local'` skips the finalise agent, whose brief runs `gh pr list` and `gh pr create`.
+The main session then pushes each landable branch with git and opens its PR through the MCP
+tool (`mcp__github__create_pull_request`), using the row's `pr_title`, `pr_body`, `fixes` and
+`refs`. `issueRead` covers issue reading only: the repair brief's PR-state read still names
+`gh pr list`; in `implement-verify` no PR exists yet, so that read guards only a reused branch name.
+Observed 2026-11-11: a 7-unit cloud run with the MCP wording and `land: 'local'` had every
+implementer read its issues; the `gh` wording was not run in a cloud session.

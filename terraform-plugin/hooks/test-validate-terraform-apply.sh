@@ -43,6 +43,17 @@ run_hook() { # $1 = Bash command string
 pass() { PASS=$((PASS + 1)); }
 fail() { FAIL=$((FAIL + 1)); echo "FAIL: $1"; }
 
+# Without a parser the hook fails open by design, so every blocking case would
+# read exit 0. Skip loudly, matching the hook's own detection (ast-grep, or an
+# `sg` that really is ast-grep rather than shadow-utils' sg(1));
+# required-to-run-tests.txt turns the skip into an ERROR on CI, where ast-grep
+# is installed on purpose (#3660).
+if ! command -v ast-grep >/dev/null 2>&1 \
+    && ! { command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; }; then
+    echo "SKIP: ast-grep not installed (validate-terraform-apply.sh fails open without it, so no apply can block)"
+    exit 0
+fi
+
 assert_allowed() { # $1 = command, $2 = label
     run_hook "$1"
     if [ "$RC" -eq 0 ]; then

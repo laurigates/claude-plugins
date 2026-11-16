@@ -67,6 +67,9 @@ const CTX = {
   decisions: INPUT.decisions ?? [],
   contract: INPUT.contract ?? '',
   trailer: INPUT.trailer ?? '',
+  // How agents read an issue with its comments. A session without the gh CLI
+  // passes its own tool wording (e.g. the GitHub MCP issue_read tool).
+  issueRead: INPUT.issueRead ?? 'gh issue view <n> --comments',
 }
 const LAND = INPUT.land === 'local' ? 'local' : 'pr'
 const REPAIR_ROUNDS = INPUT.repairRounds === 0 ? 0 : 1
@@ -241,7 +244,7 @@ ${ctx.worktrees ? `Create your own detached worktree, work only inside it, and r
 Do not commit, push, or touch GitHub, the branch, or any other worktree.
 ${ctx.setup.length ? `Bootstrap the worktree first:\n${listOr(ctx.setup, '')}\n` : ''}
 What the change must achieve:
-${u.brief || '(see the issues)'}${u.issues.length ? `\nIssues: ${u.issues.map((n) => `#${n}`).join(', ')} — read each with its comments (gh issue view <n> --comments).` : ''}
+${u.brief || '(see the issues)'}${u.issues.length ? `\nIssues: ${u.issues.map((n) => `#${n}`).join(', ')} — read each with its comments (${ctx.issueRead}).` : ''}
 ${u.findings?.length ? `Findings that were to be closed:\n${listOr(u.findings.map((f) => `${f.id}: ${f.text}`), '')}\n` : ''}
 The author's report — claims, not evidence:
 ${JSON.stringify(claims ?? {}, null, 1)}
@@ -371,7 +374,7 @@ ${common(ctx)}
 
 Unit ${u.id}${u.issues.length ? ` — issues ${u.issues.map((n) => `#${n}`).join(', ')}` : ''}
 ${u.brief}
-${u.issues.length ? 'Read each issue with its full comment thread (gh issue view <n> --comments) and re-verify cited file:line at HEAD, per git-plugin:git-issue-scoping.' : ''}
+${u.issues.length ? `Read each issue with its full comment thread (${ctx.issueRead}) and re-verify cited file:line at HEAD, per git-plugin:git-issue-scoping.` : ''}
 ${u.owns.length ? `You own these paths; do not edit outside them without saying why: ${u.owns.join(', ')}` : ''}
 
 1. ${ctx.worktrees ? `Create your worktree and work only inside it: ${worktreeAdd(ctx, u.id, `-b ${u.branch} <path> ${ctx.base}`)}` : `git fetch origin -q && git switch -c ${u.branch} ${ctx.base}`}

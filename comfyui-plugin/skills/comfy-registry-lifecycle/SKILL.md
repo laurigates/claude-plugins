@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-11-14
+modified: 2026-11-16
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
   Comfy Registry release pipeline: release-please + lockfile drift traps, the empty-web/dist publish bug, version status states, phantom versions, icon/banner generation. Use when debugging a pack's publish pipeline.
-allowed-tools: Bash(curl *), Bash(jq *), Bash(gh run list *), Bash(identify *), Bash(uvx --from cairosvg cairosvg *), Bash(uv lock *), Bash(bun run build *), Bash(git add *), Read, Grep, Glob, Write, Edit
+allowed-tools: Bash(curl *), Bash(jq *), Bash(gh run list *), Bash(identify *), Bash(uvx --from cairosvg cairosvg *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_bg.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_compose.py *), Bash(uv lock *), Bash(bun run build *), Bash(git add *), Read, Grep, Glob, Write, Edit
 ---
 
 # comfy-registry-lifecycle
@@ -101,7 +101,7 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 |---|---|---|
 | `NodeVersionStatusPending` | held while the automated security scan runs | **auto-transitions** to Active, usually < a few hours — just wait |
 | `NodeVersionStatusActive` | scan passed; installable | none |
-| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Still installable; drops out of the Active-only listing (`/nodes/<id>` `latest_version`). Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
+| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Still installable. The listing (`/nodes/<id>` `latest_version`) does not count only Active versions: on 2026-11-14 it showed a Flagged 0.1.33 for comfyui-gallery-loader. Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
 | `NodeVersionStatusBanned` | moderation banned it | **not installable** — `/install` skips it and falls back to the newest non-banned version, which can be old and itself `deprecated` |
 | `NodeVersionStatusDeleted` | removed from the registry | **presumed not installable** — installs are *expected* to fall back like Banned, but that is unverified: no Deleted version is publicly listed to test `/install` against (`GET /versions?statuses=NodeVersionStatusDeleted` returned 0 on 2026-10-12, vs 1,254 Banned). Publish a newer version to supersede it |
 
@@ -125,7 +125,9 @@ Any finding flags a version, whatever its severity. When a version is `Flagged`,
 
 A version published once from a stale local copy can sit in the registry
 **ahead of git** (e.g. `0.2.0` Active while git is at `0.1.7`). Because
-install resolves to highest-semver Active, that phantom becomes the
+install resolves to the highest-semver Active, Flagged or Pending version
+(registry-backend `GetLatestNodeVersion`; a higher Deleted or Banned version is
+listed by `/versions` but never installed, so it is not a phantom), that phantom becomes the
 clean-install target and **outranks every later fix** below it. Two ways
 out:
 

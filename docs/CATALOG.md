@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-51 plugins, 477 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+51 plugins, 482 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -19,7 +19,7 @@
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [api-plugin](../api-plugin/) | 1 | 0 | API integration and testing - REST endpoints, client generation |
-| [bios-plugin](../bios-plugin/) | 2 | 0 | BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service when the support site no longer lists it, and install UEFI capsules from Linux through fwupd |
+| [bios-plugin](../bios-plugin/) | 7 | 0 | BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service, install UEFI capsules from Linux via fwupd, change hidden setup options, audit and back up the SPI flash, write it with an external programmer, and analyse EC firmware |
 | [blueprint-plugin](../blueprint-plugin/) | 35 | 0 | Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking |
 | [comfyui-plugin](../comfyui-plugin/) | 17 | 0 | ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots |
 | [foundryvtt-plugin](../foundryvtt-plugin/) | 2 | 0 | FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR |

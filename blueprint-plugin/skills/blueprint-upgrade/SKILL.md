@@ -20,7 +20,7 @@ Upgrade the blueprint structure to the latest format version.
 | You're adding the v3.2 task registry or v3.3 monorepo workspaces | Use blueprint-execute instead when you want auto-detection of next step |
 | You're running batch upgrades across repos with `--non-interactive`/`-y` | Use blueprint-status instead to first audit current version |
 
-**Current Format Version**: 3.4.0
+**Current Format Version**: 3.5.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
@@ -58,7 +58,7 @@ else
   exit 1
 fi
 current=$(jq -r '.format_version // "1.0.0"' "$MANIFEST")
-target="3.4.0"
+target="3.5.0"
 ```
 
 **Important**: Use the resolved `$MANIFEST` in every `jq` call here and in delegated migration steps — a hard-coded filename fails silently.
@@ -74,7 +74,8 @@ target="3.4.0"
 | 3.1.x        | 3.2.0      | inline (Step 3a) |
 | 3.2.x        | 3.3.0      | `migrations/v3.2-to-v3.3.md` |
 | 3.3.x        | 3.4.0      | `migrations/v3.3-to-v3.4.md` |
-| 3.4.0        | 3.4.0      | Already up to date |
+| 3.4.x        | 3.5.0      | `migrations/v3.4-to-v3.5.md` |
+| 3.5.0        | 3.5.0      | Already up to date |
 
 ### Step 3: Check for deprecated generated commands
 
@@ -102,6 +103,10 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --manif
 
 List its `ISSUES:` in the Step 4 plan; Step 6 applies it.
 
+### Step 3e: v3.4 → v3.5 migration — one id-registry engine
+
+Delegate to `skills/blueprint-migration/migrations/v3.4-to-v3.5.md`. It reconciles `id_registry` once with `blueprint-autorun.sh --registry-reconcile` (show the `--check` output in the Step 4 plan), re-copies `.github/blueprint/blueprint-autorun.sh` when autonomy level 3 is installed, and bumps `format_version`. Nothing to ask in `$NONINTERACTIVE` mode.
+
 ### Step 4: Display upgrade plan
 
 Print the upgrade plan in [references/upgrade-plan.md](references/upgrade-plan.md).
@@ -113,7 +118,7 @@ If `$NONINTERACTIVE` is `true`, skip this confirmation and proceed directly to S
 Otherwise, use AskUserQuestion:
 
 ```
-question: "Ready to upgrade blueprint from v{current} to v3.4.0?"
+question: "Ready to upgrade blueprint from v{current} to v3.5.0?"
 options:
   - "Yes, upgrade now" → proceed
   - "Show detailed migration steps" → display migration document
@@ -130,6 +135,7 @@ options:
 - For v3.1 → v3.2: Execute Step 3a
 - For v3.2 → v3.3: Load `migrations/v3.2-to-v3.3.md` (see Step 3b summary)
 - For v3.3 → v3.4: Load `migrations/v3.3-to-v3.4.md` (see Step 3c summary)
+- For v3.4 → v3.5: Load `migrations/v3.4-to-v3.5.md` (see Step 3e)
 - If Step 3d reported findings: re-run its command without `--dry-run`; report `MIGRATED=` and `ISSUES:` in Step 10
 - Execute each step with user confirmation for destructive operations
 

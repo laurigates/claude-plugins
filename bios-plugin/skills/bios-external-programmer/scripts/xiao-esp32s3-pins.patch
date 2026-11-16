@@ -1,0 +1,18 @@
+diff --git a/src/serprog/main/main.c b/src/serprog/main/main.c
+index 190dc13..e0a529d 100644
+--- a/src/serprog/main/main.c
++++ b/src/serprog/main/main.c
+@@ -33,6 +33,13 @@
+     // #define PIN_NUM_CLK  14
+     // #define PIN_NUM_CS   15
+ 
++#elif defined CONFIG_IDF_TARGET_ESP32S3 //Seeed XIAO ESP32-S3: SCK=D8, MISO=D9, MOSI=D10, CS=D1
++    #define EEPROM_HOST  SPI2_HOST
++    #define PIN_NUM_MISO 8
++    #define PIN_NUM_MOSI 9
++    #define PIN_NUM_CLK  7
++    #define PIN_NUM_CS   2
++
+ #else //on other (newer) MCUs 'native' SPI pins vs GPIO matrix routing difference is less noticeable 
+       //so just choose whatever you like
+     #define EEPROM_HOST  SPI2_HOST 

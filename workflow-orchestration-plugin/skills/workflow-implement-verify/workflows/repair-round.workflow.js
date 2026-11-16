@@ -49,6 +49,9 @@ const CTX = {
   decisions: INPUT.decisions ?? [],
   contract: INPUT.contract ?? '',
   trailer: INPUT.trailer ?? '',
+  // How agents read an issue with its comments. A session without the gh CLI
+  // passes its own tool wording (e.g. the GitHub MCP issue_read tool).
+  issueRead: INPUT.issueRead ?? 'gh issue view <n> --comments',
 }
 const LAND = INPUT.land === 'local' ? 'local' : 'push'
 const REPAIR_ROUNDS = INPUT.repairRounds === 0 ? 0 : 1
@@ -199,7 +202,7 @@ ${ctx.worktrees ? `Create your own detached worktree, work only inside it, and r
 Do not commit, push, or touch GitHub, the branch, or any other worktree.
 ${ctx.setup.length ? `Bootstrap the worktree first:\n${listOr(ctx.setup, '')}\n` : ''}
 What the change must achieve:
-${u.brief || '(see the issues)'}${u.issues.length ? `\nIssues: ${u.issues.map((n) => `#${n}`).join(', ')} — read each with its comments (gh issue view <n> --comments).` : ''}
+${u.brief || '(see the issues)'}${u.issues.length ? `\nIssues: ${u.issues.map((n) => `#${n}`).join(', ')} — read each with its comments (${ctx.issueRead}).` : ''}
 ${u.findings?.length ? `Findings that were to be closed:\n${listOr(u.findings.map((f) => `${f.id}: ${f.text}`), '')}\n` : ''}
 The author's report — claims, not evidence:
 ${JSON.stringify(claims ?? {}, null, 1)}

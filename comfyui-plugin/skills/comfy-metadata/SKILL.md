@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-11-14
+modified: 2026-11-16
 reviewed: 2026-07-07
 name: comfy-metadata
 description: >-
   Extract/analyze ComfyUI metadata embedded in output files - PNG tEXt, WebP EXIF, MP4/WebM container, .latent safetensors. Use when figuring out what prompt/settings produced a file, or comparing runs.
-allowed-tools: Bash(jq *), Bash(ffmpeg *), Bash(magick *), Read, Grep, Glob
+allowed-tools: Bash(.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py *), Bash(jq *), Bash(ffmpeg *), Bash(magick *), Read, Grep, Glob
 ---
 
 # ComfyUI output metadata
@@ -47,12 +47,12 @@ double-encoded `comment` format, fp8-scaled safetensors metadata, etc.).
 `scripts/comfy_meta.py` is a single self-contained Python file. It works
 as both a library and a CLI with four subcommands. It uses **PIL** (for
 PNG/WebP), **PyAV** (for MP4/WebM/audio), and **safetensors** (for
-`.latent`) — all already installed in `.venv/`.
-
-Run via the project venv:
+`.latent`), each imported only when a file of that format is read. A
+ComfyUI install's `.venv/` already has all three, so run the script with
+that interpreter from the ComfyUI root:
 
 ```sh
-.venv/bin/python .claude/skills/comfy-metadata/scripts/comfy_meta.py <subcommand> ...
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py <subcommand> ...
 ```
 
 ### Library use (batch scripts)
@@ -67,14 +67,14 @@ For batch work over many files (renaming, indexing, clustering), import `comfy_m
 
 ```sh
 # Both prompt + workflow as one JSON object on stdout
-.venv/bin/python .../comfy_meta.py extract output/WanVideoWrapper_I2V_00001.png
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py extract output/WanVideoWrapper_I2V_00001.png
 
 # Just one half (suitable for piping to jq)
-.venv/bin/python .../comfy_meta.py extract -k prompt   path/to.png | jq .
-.venv/bin/python .../comfy_meta.py extract -k workflow path/to.mp4  | jq '.nodes | length'
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py extract -k prompt   path/to.png | jq .
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py extract -k workflow path/to.mp4  | jq '.nodes | length'
 
 # Re-import a downloaded JPEG/MP4 back into ComfyUI by saving its workflow:
-.venv/bin/python .../comfy_meta.py extract -k workflow some.mp4 > user/default/workflows/2026-05/recovered.json
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py extract -k workflow some.mp4 > user/default/workflows/2026-05/recovered.json
 ```
 
 ### `summary` — one-line, analysis-friendly settings
@@ -86,7 +86,7 @@ cfg/denoise/seed), latent dims, num_frames, every LoRA + strength, and
 the positive/negative prompt text.
 
 ```sh
-.venv/bin/python .../comfy_meta.py summary output/WanVideoWrapper_I2V_00001.mp4
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py summary output/WanVideoWrapper_I2V_00001.mp4
 ```
 
 Output is JSON; use `-p` for a human-readable two-column print instead.
@@ -97,7 +97,7 @@ Walk a tree (recursively by default) and emit one JSON record per output
 file. Use this to build a queryable index of every render on disk.
 
 ```sh
-.venv/bin/python .../comfy_meta.py scan output/ -o /tmp/runs.jsonl
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py scan output/ -o /tmp/runs.jsonl
 
 # Then analyze with jq:
 jq -r '[.path, .summary.steps, .summary.cfg, .summary.sampler] | @tsv' /tmp/runs.jsonl
@@ -115,7 +115,7 @@ covers everything.
 ### `diff` — what changed between two runs
 
 ```sh
-.venv/bin/python .../comfy_meta.py diff a.mp4 b.mp4
+.venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py diff a.mp4 b.mp4
 ```
 
 Prints a unified diff of the summarized settings. Useful when one of two

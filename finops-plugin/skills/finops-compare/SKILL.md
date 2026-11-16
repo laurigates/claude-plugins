@@ -1,10 +1,10 @@
 ---
 description: "FinOps metrics comparison across repos in an org. Use when benchmarking repos, identifying worst-performing ones, or doing org-wide CI cost analysis."
 args: "<org> [repo1 repo2 ...] [--limit N]"
-allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/compare-repos.sh *), Read, TodoWrite
 argument-hint: Org name required, optional repo list, --limit for auto-discovery
 created: 2025-01-30
-modified: 2026-10-10
+modified: 2026-11-16
 reviewed: 2026-04-25
 name: finops-compare
 model: haiku
@@ -48,7 +48,7 @@ Compare GitHub Actions FinOps metrics across multiple repositories - cache usage
 ## Execution
 
 ```bash
-bash "${SKILL_DIR}/scripts/compare-repos.sh" $ARGS
+bash ${CLAUDE_SKILL_DIR}/scripts/compare-repos.sh $ARGS
 ```
 
 ## Output Format
@@ -107,7 +107,7 @@ Repos with >20% failure rate:
 | List org repos (JSON) | `gh api "/orgs/{org}/repos?per_page=100&sort=pushed" --jq '.[].full_name'` |
 | Cache count per repo | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '.total_count'` |
 | Workflow runs (JSON) | `gh api "/repos/{owner}/{repo}/actions/runs?per_page=100" --jq '.workflow_runs'` |
-| Compact multi-repo compare | `bash "${SKILL_DIR}/scripts/compare-repos.sh" $ARGS` |
+| Compact multi-repo compare | `bash ${CLAUDE_SKILL_DIR}/scripts/compare-repos.sh $ARGS` |
 
 ## Post-actions
 

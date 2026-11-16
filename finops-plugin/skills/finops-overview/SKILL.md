@@ -1,10 +1,10 @@
 ---
 description: "FinOps snapshot — org billing, workflow stats, cache usage. Use when you want a high-level view of CI spending or workflow health before diving deeper."
 args: "[org]"
-allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/billing-summary.sh *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)
 created: 2025-01-30
-modified: 2026-10-10
+modified: 2026-11-16
 reviewed: 2026-04-25
 name: finops-overview
 model: haiku
@@ -37,7 +37,7 @@ Display a quick FinOps summary including org-level billing (if admin) and curren
 ## Execution
 
 ```bash
-bash "${SKILL_DIR}/scripts/billing-summary.sh" $ARGS
+bash ${CLAUDE_SKILL_DIR}/scripts/billing-summary.sh $ARGS
 ```
 
 ## Output Format
@@ -71,7 +71,7 @@ Workflows missing concurrency: 2
 | Repo cache summary | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '{total: .total_count}'` |
 | Workflow list | `gh workflow list --json name,state` |
 | Recent runs (compact) | `gh run list --limit 20 --json status,conclusion,name` |
-| Compact overview | `bash "${SKILL_DIR}/scripts/billing-summary.sh" $ARGS` |
+| Compact overview | `bash ${CLAUDE_SKILL_DIR}/scripts/billing-summary.sh $ARGS` |
 
 ## Post-actions
 

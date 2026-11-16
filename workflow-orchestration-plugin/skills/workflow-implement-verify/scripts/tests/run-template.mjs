@@ -198,6 +198,28 @@ const units = (ids) =>
   check('blocked repair → no re-verify', !r.calls.some((c) => c.startsWith('reverify')), r.calls)
   check('blocked repair → not landed', r.result.finalisePlan.length === 0 && !r.calls.includes('finalise'), r.result.finalisePlan)
 }
+// 16. The issue-reading instruction comes from args.issueRead (#3649): absent, the
+// briefs keep the gh wording; supplied, it replaces that wording in every brief
+// that tells an agent to read the unit's issues (a cloud session has no gh).
+{
+  const withIssues = (extra = {}) => {
+    const a = units(['a', 'b'])
+    a.units.forEach((u, i) => { u.issues = [40 + i] })
+    return { ...a, land: 'local', ...extra }
+  }
+  const script = (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u, { head_sha: 'def5678' }) : verdict(u, 'pass')
+  const briefs = isImpl ? ['implement:a', 'verify:a', 'reverify:a'] : ['verify:a', 'reverify:a']
+  const gh = 'gh issue view <n> --comments'
+  const def = await run(withIssues(), script)
+  check('issueRead absent → every issue brief keeps the gh wording',
+    briefs.every((l) => (def.sent[l]?.prompt ?? '').includes(gh)), briefs.map((l) => def.sent[l]?.prompt))
+  const mcp = 'mcp__github__issue_read with method get, then method get_comments'
+  const sub = await run(withIssues({ issueRead: mcp }), script)
+  check('issueRead supplied → it replaces the gh wording in every issue brief',
+    briefs.every((l) => { const p = sub.sent[l]?.prompt ?? ''; return p.includes(mcp) && !p.includes('gh issue view') }),
+    briefs.map((l) => sub.sent[l]?.prompt))
+}
 if (isImpl) {
   // 8. no-change is its own outcome and skips the verifier.
   const r = await run(units(['a', 'b']), (k, u) => (k === 'implement' ? fix(u, { status: 'no-change' }) : verdict(u, 'pass')))

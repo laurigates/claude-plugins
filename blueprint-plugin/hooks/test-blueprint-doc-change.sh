@@ -311,5 +311,134 @@ else
 fi
 rm -rf "$proj"
 
+
+# --- one engine, once per tool call (ADR-0027 Q4, #3550) -------------------------
+
+# Cross-refs follow the frontmatter: an edit to relates-to/github-issues on a
+# registered document updates the entry and the reverse index.
+proj=$(make_project 0)
+write_adr "$proj" 501 Proposed
+run_hook "$HOOK" "$proj" "$(write_payload Write "$proj/docs/adrs/ADR-501-probe.md")"
+cat > "$proj/docs/adrs/ADR-501-probe.md" <<'DOC'
+---
+id: ADR-501
+title: Probe decision 501
+status: Proposed
+created: 2026-10-09
+relates-to:
+  - ADR-0001
+github-issues: [77]
+---
+
+# ADR-501: Probe decision 501
+DOC
+run_hook "$HOOK" "$proj" "$(write_payload Edit "$proj/docs/adrs/ADR-501-probe.md")"
+entry=$(jq -c '.id_registry.documents["ADR-501"] | [.relates_to, .github_issues]' "$proj/docs/blueprint/manifest.json")
+rev=$(jq -c '.id_registry.github_issues["77"]' "$proj/docs/blueprint/manifest.json")
+if [ "$entry" = '[["ADR-0001"],[77]]' ] && [ "$rev" = '["ADR-501"]' ]; then
+    ok "editing relates-to/github-issues updates the entry and the reverse index on the next hook call"
+else
+    notok "cross-ref edit not reflected (entry $entry, reverse index $rev)"
+fi
+created=$(jq -r '.id_registry.documents["ADR-501"].created' "$proj/docs/blueprint/manifest.json")
+if [ "$created" = "2026-10-09" ]; then
+    ok "at autonomy level 0 a new ADR written through the hook is registered, created from frontmatter"
+else
+    notok "level-0 registration created=$created"
+fi
+rm -rf "$proj"
+
+# No id_registry and a Write to a non-blueprint doc: the manifest is untouched.
+proj=$(make_project 0)
+jq 'del(.id_registry)' "$proj/docs/blueprint/manifest.json" > "$proj/m.json" && mv "$proj/m.json" "$proj/docs/blueprint/manifest.json"
+printf '# Notes\n' > "$proj/docs/notes.md"
+cp "$proj/docs/blueprint/manifest.json" "$proj/before.json"
+run_hook "$HOOK" "$proj" "$(write_payload Write "$proj/docs/notes.md")"
+if cmp -s "$proj/before.json" "$proj/docs/blueprint/manifest.json"; then
+    ok "a manifest without id_registry plus a Write to docs/notes.md stays byte-identical"
+else
+    notok "a Write to docs/notes.md changed a manifest without id_registry"
+fi
+rm -rf "$proj"
+
+# The dispatcher calls the engine exactly once per tool call: a copy of the
+# hooks with a counting stub in place of scripts/blueprint-autorun.sh.
+stub_root=$(mktemp -d)
+if [ -z "$stub_root" ] || [ ! -d "$stub_root" ]; then echo "FATAL: mktemp failed" >&2; exit 1; fi
+mkdir -p "$stub_root/hooks/lib" "$stub_root/scripts"
+cp "$HOOK" "$SCRIPT_DIR/sync-feature-tracker.sh" "$SCRIPT_DIR/validate-frontmatter.sh" "$stub_root/hooks/"
+cp "$SCRIPT_DIR/lib/doc-paths.sh" "$stub_root/hooks/lib/"
+cat > "$stub_root/scripts/blueprint-autorun.sh" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$ENGINE_LOG"
+STUB
+chmod +x "$stub_root/scripts/blueprint-autorun.sh"
+proj=$(make_project 0)
+write_adr "$proj" 601 Proposed
+write_adr "$proj" 602 Proposed
+write_adr "$proj" 603 Proposed
+three=$(jq -nc --arg a "$proj/docs/adrs/ADR-601-probe.md" --arg b "$proj/docs/adrs/ADR-602-probe.md" \
+    --arg c "$proj/docs/adrs/ADR-603-probe.md" '{changedFiles: [$a, $b, $c]}')
+: > "$proj/engine.log"
+run_hook "$stub_root/hooks/blueprint-doc-change.sh" "$proj" "$(bash_payload "$three")" ENGINE_LOG="$proj/engine.log" >/dev/null
+calls=$(wc -l < "$proj/engine.log" | tr -d ' ')
+if [ "$calls" = "1" ] && grep -q -- '--registry-reconcile' "$proj/engine.log"; then
+    ok "a Bash payload listing 3 changed docs invokes the engine exactly once"
+else
+    notok "a Bash payload listing 3 changed docs invoked the engine $calls times"
+fi
+: > "$proj/engine.log"
+run_hook "$stub_root/hooks/blueprint-doc-change.sh" "$proj" \
+    "$(bash_payload "$(jq -nc --arg f "$proj/docs/adrs/ADR-0999-deleted.md" '{changedFiles: [$f]}')")" ENGINE_LOG="$proj/engine.log" >/dev/null
+calls=$(wc -l < "$proj/engine.log" | tr -d ' ')
+if [ "$calls" = "1" ]; then
+    ok "a deleted document path still triggers the engine"
+else
+    notok "a deleted document path invoked the engine $calls times"
+fi
+: > "$proj/engine.log"
+run_hook "$stub_root/hooks/blueprint-doc-change.sh" "$proj" "$(write_payload Write "$proj/docs/notes.md")" ENGINE_LOG="$proj/engine.log" >/dev/null
+calls=$(wc -l < "$proj/engine.log" | tr -d ' ')
+if [ "$calls" = "0" ]; then
+    ok "a path outside the scan set does not call the engine"
+else
+    notok "a path outside the scan set called the engine $calls times"
+fi
+rm -rf "$proj" "$stub_root"
+
+# Concurrency, 20 rounds: hook calls run in parallel while new files appear
+# between them. Every round leaves valid JSON; after a final reconcile every
+# id is registered. (The shared ${MANIFEST}.tmp this replaced truncated the
+# manifest to 0 bytes in the same race.)
+proj=$(make_project 0)
+round=1
+invalid=0
+while [ "$round" -le 20 ]; do
+    a=$((700 + round * 2)); b=$((701 + round * 2))
+    write_adr "$proj" "$a" Proposed
+    run_hook "$HOOK" "$proj" "$(write_payload Write "$proj/docs/adrs/ADR-$a-probe.md")" &
+    p1=$!
+    write_adr "$proj" "$b" Proposed
+    run_hook "$HOOK" "$proj" "$(write_payload Write "$proj/docs/adrs/ADR-$b-probe.md")" &
+    p2=$!
+    wait "$p1" "$p2"
+    jq -e . "$proj/docs/blueprint/manifest.json" >/dev/null 2>&1 || invalid=$((invalid + 1))
+    round=$((round + 1))
+done
+bash "$SCRIPT_DIR/../scripts/blueprint-autorun.sh" --registry-reconcile --project-dir "$proj" >/dev/null 2>&1
+registered=$(jq '[.id_registry.documents | keys[] | select(test("^ADR-7[0-9][0-9]$"))] | length' "$proj/docs/blueprint/manifest.json" 2>/dev/null)
+if [ "$invalid" = "0" ] && [ "$registered" = "40" ]; then
+    ok "20 concurrent rounds leave valid JSON every round and all 40 ids registered"
+else
+    notok "concurrency: $invalid invalid rounds, $registered of 40 ids registered"
+fi
+leftover=$(find "$proj/docs/blueprint" -name 'manifest.json.reconcile.*' -o -name 'manifest.json.lock.d' | wc -l | tr -d ' ')
+if [ "$leftover" = "0" ]; then
+    ok "concurrent hook calls leave no lock or temp file behind"
+else
+    notok "concurrent hook calls left $leftover lock/temp files"
+fi
+rm -rf "$proj"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

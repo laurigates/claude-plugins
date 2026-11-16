@@ -63,7 +63,7 @@ fi
 drift_init "blueprint-plugin"
 drift_no_op_if_missing "docs/blueprint/manifest.json"
 
-CURRENT_FORMAT_VERSION="3.4.0"
+CURRENT_FORMAT_VERSION="3.5.0"
 MANIFEST="${DRIFT_CWD}/docs/blueprint/manifest.json"
 
 # ---- check 1: format_version drift ----

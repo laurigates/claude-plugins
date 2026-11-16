@@ -192,7 +192,7 @@ Install based on your project's tech stack and domain.
 | home-assistant-plugin | Home Assistant configuration management |
 | linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives, laptop battery drain measurement |
 | kernel-plugin | Investigating or reporting Linux kernel behaviour — source history across tags, lore research, standalone reproducers, mailing-list reports |
-| bios-plugin | BIOS/UEFI firmware — fetching vendor firmware from the vendor's update service when the support site no longer lists it, installing UEFI capsules from Linux through fwupd |
+| bios-plugin | BIOS/UEFI firmware — fetching vendor firmware from the vendor's update service, installing UEFI capsules from Linux through fwupd, hidden setup options via efivarfs, SPI flash protection audit and backup, external SPI programming, EC firmware analysis |
 | macos-plugin | macOS-specific operational tooling — LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage, and a repeatable threshold-scored benchmark suite |
 | kitty-plugin | Working inside the kitty terminal — safe read-only remote control, showing the user an image in a labelled tab, session snapshot/restore on macOS |
 | blog-plugin | Writing project logs or technical posts |

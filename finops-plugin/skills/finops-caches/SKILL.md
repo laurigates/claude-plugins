@@ -1,10 +1,10 @@
 ---
 description: "GitHub Actions cache analysis — size, prefix/branch breakdown, stale detection. Use when investigating cache bloat, stale caches, or auditing cache key strategies."
 args: "[repo|org:orgname]"
-allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/cache-analysis.sh *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo
 created: 2025-01-30
-modified: 2026-10-10
+modified: 2026-11-16
 reviewed: 2026-04-25
 name: finops-caches
 model: haiku
@@ -38,7 +38,7 @@ Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch 
 ## Execution
 
 ```bash
-bash "${SKILL_DIR}/scripts/cache-analysis.sh" $ARGS
+bash ${CLAUDE_SKILL_DIR}/scripts/cache-analysis.sh $ARGS
 ```
 
 ## Output Format
@@ -81,7 +81,7 @@ Summary:
 | Total cache count | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '.total_count'` |
 | Delete stale cache | `gh api -X DELETE "/repos/{owner}/{repo}/actions/caches/{id}"` |
 | Cache key search | `gh api "/repos/{owner}/{repo}/actions/caches?key=prefix" --jq '.actions_caches[].key'` |
-| Compact summary | `bash "${SKILL_DIR}/scripts/cache-analysis.sh" $ARGS` |
+| Compact summary | `bash ${CLAUDE_SKILL_DIR}/scripts/cache-analysis.sh $ARGS` |
 
 ## Post-actions
 

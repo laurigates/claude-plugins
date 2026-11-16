@@ -1,9 +1,9 @@
 ---
 name: video-beat-glow
 description: Beat-synced edge glow for a video — beat tracking from a song, glow render, and a browser tuner page for the look. Use when making a video's edges pulse to music.
-allowed-tools: Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/glow_tuner.py *), Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beat_glow.py *), Read
+allowed-tools: Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beats.py *), Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/glow_tuner.py *), Bash(uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beat_glow.py *), Read
 created: 2026-10-29
-modified: 2026-11-14
+modified: 2026-11-16
 reviewed: 2026-10-29
 ---
 
@@ -30,17 +30,22 @@ Ported from shoreline-recon's `work/karaoke/` (`beats.py`, the glow inside
 
 ## Execution
 
-Scripts run with numpy only:
-`uv run -q --no-project --with numpy==2.5.4 python -I "${CLAUDE_SKILL_DIR}/scripts/<script>.py"`.
+Scripts need only numpy, which `uv run --with` supplies; each step shows the
+full command.
 
-1. **Beats.** `beats.py song.m4a --json beats.json` prints the tempo, beat
-   count and gaps. On the shoreline-recon demo song it found **127.39 BPM, 492
+1. **Beats.** Print the tempo, beat count and gaps:
+
+   ```bash
+   uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beats.py song.m4a --json beats.json
+   ```
+
+   On the shoreline-recon demo song it found **127.39 BPM, 492
    beats over 231 s**. Sanity-check the tempo against the song before going on.
 2. **Tune by eye.** Mux the song under the video first (`video-add-music`), so
    the page plays it, then write the tuner beside that video:
 
    ```bash
-   uv run -q --no-project --with numpy==2.5.4 python -I "${CLAUDE_SKILL_DIR}/scripts/glow_tuner.py" \
+   uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/glow_tuner.py \
      video-music.mp4 --song song.m4a --margin-bottom 80 --accent splat=#14b8a6 --accent mesh=#f59e0b
    ```
 
@@ -51,7 +56,7 @@ Scripts run with numpy only:
 3. **Render.**
 
    ```bash
-   uv run -q --no-project --with numpy==2.5.4 python -I "${CLAUDE_SKILL_DIR}/scripts/beat_glow.py" \
+   uv run -q --no-project --with numpy==2.5.4 python -I ${CLAUDE_SKILL_DIR}/scripts/beat_glow.py \
      video.mp4 song.m4a out.mp4 --margin-bottom 80 --accent splat=#14b8a6 --accent mesh=#f59e0b \
      --intensity 0.54 --width 31 --decay 0.46 --floor 0.12 --every 2 --phase 2 --kick
    ```
