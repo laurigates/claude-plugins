@@ -65,9 +65,11 @@ done
 : "${home_dir:=$HOME}"
 case "$window_sessions" in ''|*[!0-9]*) window_sessions=50 ;; esac
 
-# Test seams: override where transcripts and the plugin cache live.
+# Test seams: override where transcripts, the plugin cache and the plugin
+# install registry live.
 projects_dir="${WORKFLOW_CAPTURE_PROJECTS_DIR:-${home_dir}/.claude/projects}"
 plugin_cache="${WORKFLOW_CAPTURE_PLUGIN_CACHE:-${home_dir}/.claude/plugins/cache}"
+plugin_registry="${WORKFLOW_CAPTURE_PLUGIN_REGISTRY:-${home_dir}/.claude/plugins/installed_plugins.json}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -211,21 +213,48 @@ add_known() { # scope file
   known_rows+="$1"$'\t'"$nm"$'\t'"$(file_hash "$2")"$'\t'"$2"$'\n'
 }
 
+# The plugin directories Claude Code loads, one per installed plugin. The cache
+# keeps every version ever installed, so scanning it whole counted each
+# template once per old version (226 rows for about 20 templates on a
+# long-lived machine). installed_plugins.json names each plugin's installPath
+# per scope; a project entry for this project wins over the user entry.
+# Without a readable registry, the newest cached version of each plugin
+# stands in.
+plugin_roots() {
+  local out="" d newest
+  if [ -f "$plugin_registry" ] && have jq; then
+    out=$(jq -r --arg pd "$project_dir" '
+      (.plugins // {}) | to_entries[] | .value
+      | ( [ .[]? | select((.scope == "project" or .scope == "local")
+                          and (.projectPath // "") != ""
+                          and ($pd == .projectPath or ($pd | startswith(.projectPath + "/")))) ][0].installPath
+          // [ .[]? | select(.scope == "user") ][0].installPath
+          // empty )' "$plugin_registry" 2>/dev/null | sort -u)
+  fi
+  if [ -n "$out" ]; then printf '%s\n' "$out"; return 0; fi
+  [ -d "$plugin_cache" ] || return 0
+  # Cache layout: <cache>/<marketplace>/<plugin>/<version>/
+  for d in "$plugin_cache"/*/*/; do
+    [ -d "$d" ] || continue
+    newest=$(find "$d" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null | sort -V | tail -n 1)
+    [ -n "$newest" ] && printf '%s\n' "${d%/}/$newest"
+  done
+}
+
 collect_known() {
-  local f top=""
+  local f top="" root
   for f in "$project_dir"/.claude/workflows/*.js; do [ -f "$f" ] && add_known project "$f"; done
   if have git; then top=$(git -C "$project_dir" rev-parse --show-toplevel 2>/dev/null || true); fi
   if [ -n "$top" ] && [ "$top" != "$project_dir" ]; then
     for f in "$top"/.claude/workflows/*.js; do [ -f "$f" ] && add_known project "$f"; done
   fi
   for f in "$home_dir"/.claude/workflows/*.js; do [ -f "$f" ] && add_known user "$f"; done
-  # Plugin cache layout: <cache>/<marketplace>/<plugin>/<version>/...
-  if [ -d "$plugin_cache" ]; then
-    while IFS= read -r f; do [ -n "$f" ] && add_known plugin "$f"; done < <(
-      find "$plugin_cache" -mindepth 4 -maxdepth 5 -type f -name '*.js' -path '*/workflows/*' -not -path '*/skills/*' 2>/dev/null | sort)
+  while IFS= read -r root; do
+    if [ -z "$root" ] || [ ! -d "$root" ]; then continue; fi
+    for f in "$root"/workflows/*.js; do [ -f "$f" ] && add_known plugin "$f"; done
     while IFS= read -r f; do [ -n "$f" ] && add_known bundled "$f"; done < <(
-      find "$plugin_cache" -type f -name '*.js' -path '*/skills/*/workflows/*' -not -path '*/node_modules/*' 2>/dev/null | sort)
-  fi
+      find "$root/skills" -mindepth 3 -maxdepth 3 -type f -name '*.js' -path '*/workflows/*' 2>/dev/null | sort)
+  done < <(plugin_roots)
   # A plugin source checkout as the project (a marketplace repo).
   while IFS= read -r f; do [ -n "$f" ] && add_known bundled "$f"; done < <(
     find "$project_dir" -maxdepth 5 -type f -name '*.workflow.js' -path '*/skills/*/workflows/*' \
@@ -254,12 +283,16 @@ match_known() {
   echo "none|"
 }
 
+# Distinct names per scope: a plugin source checkout and its installed copy
+# carry the same template, and count once.
+count_scope() { awk -F'\t' -v s="$1" '$1 == s && !seen[$2]++ { n++ } END { print n + 0 }' <<<"$known_rows"; }
+
 emit_known() {
   local n_proj n_user n_plug n_bund
-  n_proj=$(grep -c $'^project\t' <<<"$known_rows" || true)
-  n_user=$(grep -c $'^user\t' <<<"$known_rows" || true)
-  n_plug=$(grep -c $'^plugin\t' <<<"$known_rows" || true)
-  n_bund=$(grep -c $'^bundled\t' <<<"$known_rows" || true)
+  n_proj=$(count_scope project)
+  n_user=$(count_scope user)
+  n_plug=$(count_scope plugin)
+  n_bund=$(count_scope bundled)
   echo "=== KNOWN WORKFLOWS ==="
   echo "SAVED_PROJECT_COUNT=${n_proj:-0}"
   echo "SAVED_USER_COUNT=${n_user:-0}"
@@ -272,7 +305,7 @@ emit_known() {
       i=$((i + 1))
       if [ "$i" -gt "$MAX_KNOWN" ]; then echo "KNOWN_TRUNCATED=true"; break; fi
       echo "KNOWN_${i}=${scope}|${kname}|$(owning_repo "$scope" "$kpath")|${kpath}"
-    done <<<"$known_rows"
+    done < <(awk -F'\t' '!seen[$1 FS $2]++' <<<"$known_rows")
   fi
   echo "=== END KNOWN WORKFLOWS ==="
 }
