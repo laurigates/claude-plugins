@@ -107,7 +107,7 @@
     {
       "name": "bios-plugin",
       "source": "./bios-plugin",
-      "description": "BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service when the support site no longer lists it, and install UEFI capsules from Linux through fwupd",
+      "description": "BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service, install UEFI capsules from Linux via fwupd, change hidden setup options, audit and back up the SPI flash, write it with an external programmer, and analyse EC firmware",
       "version": "1.0.0",
       "author": {
         "name": "Lauri Gates"
@@ -122,7 +122,14 @@
         "fwupd",
         "esrt",
         "huawei",
-        "linux"
+        "linux",
+        "efivarfs",
+        "ifr",
+        "spi-flash",
+        "flashrom",
+        "serprog",
+        "embedded-controller",
+        "boot-guard"
       ],
       "category": "development"
     },
