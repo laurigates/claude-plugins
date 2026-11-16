@@ -27,7 +27,9 @@ for v in cab sha model guid target; do [ -n "${!v}" ] || { echo "missing --$v" >
 red() { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
 die() { red "ABORT: $*"; exit 1; }
-ver() { printf '%d.%02d' $(($1 >> 16)) $(($1 & 0xffff)); }
+# Display only. Observed on one Insyde firmware: x.yy is stored with the decimal
+# digits written as hex digits (1.26 -> 0x00010026 = 65574). Other vendors differ.
+ver() { printf '%x.%02x' $(($1 >> 16)) $(($1 & 0xffff)); }
 
 product=$(cat /sys/class/dmi/id/product_name)
 [ "$product" = "$model" ] || die "this is a '$product', not a $model"
@@ -65,6 +67,18 @@ echo "Current firmware: $(ver "$current") (ESRT $current)"
 echo "Target firmware:  $(ver "$target") (ESRT $target)"
 [ "$current" -lt "$target" ] || die "already at that version or newer"
 
+# The update can wipe the NVRAM boot entries. Keep a record of them, and make
+# sure the removable-media fallback loader exists, because that is what boots
+# the OS if the entries are gone.
+esp=$(findmnt -n -o TARGET -t vfat | grep -m1 -E '/boot/efi|/efi|/boot' || true)
+[ -n "$esp" ] || die "could not find the mounted EFI system partition"
+fallback=$(sudo find "$esp/EFI" -maxdepth 2 -ipath '*/boot/bootx64.efi' | head -1)
+[ -n "$fallback" ] || die "no \\EFI\\BOOT\\BOOTX64.EFI on $esp: if the update wipes the boot entries, nothing would boot. Install a fallback loader first"
+green "Fallback loader: $fallback"
+bootlog="$HOME/efibootmgr-before-update-$(date +%Y%m%d-%H%M%S).txt"
+sudo efibootmgr -v | tee "$bootlog" >/dev/null || die "efibootmgr -v failed; install efibootmgr so the boot entries can be recorded"
+green "Boot entries recorded in $bootlog"
+
 echo
 red "A firmware update cannot be rolled back, and a failed flash can make the machine unbootable."
 echo "The firmware flashes itself during the next reboot. That can take several minutes with"
@@ -74,23 +88,33 @@ echo
 read -r -p "Type 'flash' to schedule the update: " answer
 [ "$answer" = flash ] || die "not confirmed"
 
+# fwupd.conf is typically mode 0640 root:root, so every read goes through sudo:
+# a plain grep fails silently and would send this into the append branch,
+# producing a second [fwupd] section.
 conf=/etc/fwupd/fwupd.conf
-[ -e /etc/fwupd/daemon.conf ] && [ ! -e "$conf" ] && conf=/etc/fwupd/daemon.conf
+if ! sudo test -e "$conf" && sudo test -e /etc/fwupd/daemon.conf; then conf=/etc/fwupd/daemon.conf; fi
 backup=""
-if [ -f "$conf" ]; then backup=$(mktemp); sudo cp -p "$conf" "$backup"; fi
+if sudo test -f "$conf"; then backup=$(mktemp); sudo cp -p "$conf" "$backup"; fi
 restore() {
   if [ -n "$backup" ]; then sudo cp -p "$backup" "$conf"; rm -f "$backup"; else sudo rm -f "$conf"; fi
   sudo systemctl restart fwupd
 }
 trap restore EXIT
 
-if [ -f "$conf" ] && sudo grep -q '^OnlyTrusted=' "$conf"; then
+if sudo test -f "$conf" && sudo grep -q '^OnlyTrusted=' "$conf"; then
   sudo sed -i.bak 's/^OnlyTrusted=.*/OnlyTrusted=false/' "$conf" && sudo rm -f "$conf.bak"
-elif [ -f "$conf" ] && sudo grep -q '^\[fwupd\]' "$conf"; then
+elif sudo test -f "$conf" && sudo grep -q '^\[fwupd\]' "$conf"; then
   sudo sed -i.bak '/^\[fwupd\]/a\
 OnlyTrusted=false' "$conf" && sudo rm -f "$conf.bak"
 else
   printf '[fwupd]\nOnlyTrusted=false\n' | sudo tee -a "$conf" >/dev/null
+fi
+# Exactly one OnlyTrusted line, set to false, and one [fwupd] section.
+if [ "$(sudo grep -c '^OnlyTrusted=' "$conf")" != 1 ] || [ "$(sudo grep -c '^OnlyTrusted=false$' "$conf")" != 1 ]; then
+  die "expected exactly one OnlyTrusted=false in $conf after the edit"
+fi
+if [ "$(sudo grep -c '^\[fwupd\]' "$conf")" != 1 ]; then
+  die "expected exactly one [fwupd] section in $conf after the edit"
 fi
 sudo systemctl restart fwupd
 
@@ -99,4 +123,7 @@ sudo fwupdmgr install --no-reboot-check "$cab"
 echo
 green "The update is scheduled. Keep the charger connected and reboot:"
 echo "  sudo systemctl reboot"
-echo "Afterwards check: fwupdmgr get-history; cat /sys/class/dmi/id/bios_version"
+echo "Afterwards, judge the result from the firmware, not from fwupd's history:"
+echo "  cat /sys/class/dmi/id/bios_version"
+echo "  sudo cat /sys/firmware/efi/esrt/entries/*/last_attempt_status   # 0 = success"
+echo "  sudo efibootmgr -v    # compare with $bootlog; recreate a missing OS entry"

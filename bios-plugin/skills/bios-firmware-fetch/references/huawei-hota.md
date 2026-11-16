@@ -81,4 +81,4 @@ tools: no BIOS.
 | Unknown DeviceName returns `status 1` | Verified |
 | Downloaded `update.zip` matches the live manifest's sha256 and size | Verified by `scripts/verify-download.sh` |
 | componentID 23 means BIOS on other Huawei models | Unverified: read each model's `param.json` |
-| The capsule installs and flashes correctly through fwupd | Not yet performed (pending at time of writing) |
+| The capsule installs and flashes correctly through fwupd | Verified on `MACHC-WAX9`: BIOS 1.07 → 1.26, ESRT `last_attempt_status` 0 (see `bios-plugin:bios-capsule-install`) |

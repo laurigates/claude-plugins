@@ -8,7 +8,10 @@
 #
 # --version is the ESRT integer the firmware will report after the update. It
 # must be greater than the current ESRT fw_version, or fwupd treats it as a
-# downgrade. --sha256 pins the image so a swapped file fails before packaging.
+# downgrade. Encodings are vendor-specific: on the Huawei Insyde firmware this
+# was verified on, BIOS x.yy is stored with its decimal digits as hex digits,
+# so 1.26 is $(( (0x1 << 16) | 0x26 )) = 65574. --sha256 pins the image so a
+# swapped file fails before packaging.
 set -euo pipefail
 
 bin="" sha="" guid="" version="" fw_name="" vendor="" out="" desc=""

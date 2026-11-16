@@ -17,11 +17,11 @@ inside it; packaged into a fwupd cabinet, it installs from Linux.
 Prior art: [derjohn's gist](https://gist.github.com/derjohn/2c19554415cea09830225314c2072807)
 for the Huawei MateBook X Pro 2018/2019, which this skill generalises.
 
-> **Status as of this skill's creation:** the steps up to and including
-> scheduling the update (`fwupdtool get-details`, the pre-flight checks, and
-> the installer's refusal paths) were exercised on a MateBook X Pro 2020. The
-> flash itself had not yet been performed on that model. Treat the reboot step
-> as unverified until a result is recorded in [REFERENCE.md](REFERENCE.md).
+> **Verified once, end to end:** a Huawei MateBook X Pro 2020 went from BIOS
+> 1.07 to 1.26 through this route on 2026-11-16 (fwupd 1.9.32, Secure Boot
+> off, systemd-boot). For any other model, treat the flash as unverified until
+> a result is recorded in [REFERENCE.md](REFERENCE.md); the firmware there may
+> encode versions differently or behave differently on reboot.
 
 ## When to Use This Skill
 
@@ -40,8 +40,10 @@ It reads, and changes nothing: DMI model and BIOS version, UEFI and Secure
 Boot state, the ESRT system-firmware entry (class GUID, current and lowest
 supported version), whether fwupd lists **System Firmware** as `Updatable`
 and with which `Problems`, whether the packager and `gcab` exist, the
-`OnlyTrusted` setting, charger and battery, and ESP free space. Some reads need
-root; it tries `sudo -n` and reports what it could not read.
+`OnlyTrusted` setting, charger and battery, ESP free space, the boot order,
+and whether the removable-media fallback loader `\EFI\BOOT\BOOTX64.EFI`
+exists. Some reads need root; it tries `sudo -n` and reports what it could not
+read.
 
 | Result | Meaning |
 |---|---|
@@ -49,19 +51,32 @@ root; it tries `sudo -n` and reports what it could not read.
 | `not_updatable` | fwupd will not update the device; read its `Problems` |
 | `FWUPD_PROBLEMS=Device requires AC power…` | Only the charger is missing; plug it in before installing |
 | `secure_boot_on` | fwupd's EFI helper must be the signed build |
+| `no_fallback_loader` | Do not flash: if the update wipes the boot entries, nothing boots the OS. Install a fallback loader first |
 
 ## Step 2: Work out the target version number
 
 fwupd compares the cabinet's release version with the ESRT `fw_version`
-integer, so the cab must carry the integer the firmware will report after the
-update. Read the current one from the preflight (`ESRT_FW_VERSION`,
+integer, so the cab should carry the integer the firmware will report after
+the update. Read the current one from the preflight (`ESRT_FW_VERSION`,
 `ESRT_VERSION_HEX`).
 
-On the Insyde firmware this was tested on, BIOS `x.yy` is stored as
-`(x << 16) | yy`: 1.07 reads 65543 (`0x00010007`), so 1.26 is 65562
-(`0x0001001A`). That encoding is an observation on one vendor's firmware, not
-a standard. Check that the current BIOS version decodes the same way
-(`ESRT_VERSION_AS_MAJOR_MINOR` against `BIOS_VERSION`) before relying on it.
+On the Huawei Insyde firmware this was verified on, BIOS `x.yy` is stored with
+the decimal digits written as hex digits: 1.07 reads 65543 (`0x00010007`) and
+1.26 reads 65574 (`0x00010026`). Compute the target the same way:
+
+```bash
+printf '%d\n' $(( (0x1 << 16) | 0x26 ))   # BIOS 1.26 -> 65574
+```
+
+That encoding is an observation on one vendor's firmware, not a standard.
+Before relying on it, check that the preflight's `ESRT_VERSION_AS_HEX_DIGITS`
+equals `BIOS_VERSION` for the current version. A single sample cannot tell the
+encodings apart when every digit is below ten (1.07 fits both `0x0007` and
+decimal 7), so a version with an 8 or 9 in the minor, or a second sample, is
+what confirms it.
+
+A wrong target does not stop the flash: the firmware applies its own image and
+reports its own version. It does make fwupd's post-reboot comparison fail.
 
 ## Step 3: Build the cabinet on the target machine
 
@@ -91,14 +106,24 @@ from an agent session:
   --guid <ESRT_FW_CLASS> --target-version <target integer> --min-battery 30
 ```
 
-What it does, in order: refuses unless the DMI model matches, the charger is
-connected, the battery is at or above the minimum, the cab checksum matches,
-and the current ESRT version is below the target; asks the user to type
-`flash`; turns fwupd's `OnlyTrusted` off, because a locally built cab is not
-signed by the LVFS; runs `fwupdmgr install --no-reboot-check`; restores the
-config file from a backup on exit; and tells the user to reboot. fwupd ≥ 1.9
-reads `/etc/fwupd/fwupd.conf`; older releases read `daemon.conf`, which the
-script falls back to.
+What it does, in order:
+
+1. Refuses unless the DMI model matches, the charger is connected, the battery
+   is at or above the minimum, the cab checksum matches, and the current ESRT
+   version is below the target.
+2. Refuses unless `\EFI\BOOT\BOOTX64.EFI` exists on the ESP, and saves
+   `efibootmgr -v` to `~/efibootmgr-before-update-<timestamp>.txt`.
+3. Asks the user to type `flash`.
+4. Turns fwupd's `OnlyTrusted` off, because a locally built cab is not signed
+   by the LVFS, then asserts the file holds exactly one `OnlyTrusted=false`
+   and one `[fwupd]` section.
+5. Runs `fwupdmgr install --no-reboot-check`, restores the config file from a
+   backup on exit, and tells the user to reboot.
+
+fwupd ≥ 1.9 reads `/etc/fwupd/fwupd.conf`; older releases read `daemon.conf`,
+which the script falls back to. The file is usually mode 0640 root, so every
+read goes through `sudo`. A plain `grep` fails silently there and sends a naive
+script into its append branch, which writes a second `[fwupd]` section.
 
 Before handing it over, confirm with `AskUserQuestion` that the user accepts
 the risk: a firmware update cannot be rolled back, and a failed flash can make
@@ -108,13 +133,32 @@ reboot.
 ## Step 5: Verify after the reboot
 
 ```bash
-fwupdmgr get-history
-cat /sys/class/dmi/id/bios_version
+cat /sys/class/dmi/id/bios_version /sys/class/dmi/id/bios_date
 bash "${CLAUDE_SKILL_DIR}/scripts/capsule-preflight.sh"
+sudo efibootmgr -v
 ```
 
-Success is `bios_version` showing the new version, the ESRT `fw_version`
-equal to the target integer, and `last_attempt_status` 0. If the BIOS version
-changed but fwupd records a failure, the target integer in the cab did not
-match what the firmware reports; the flash itself still happened. Record the
-outcome in [REFERENCE.md](REFERENCE.md).
+**Judge the result from the firmware, not from fwupd.** Success is
+`bios_version` showing the new version, and the ESRT entry reporting
+`fw_version` and `last_attempt_version` at the new value with
+`last_attempt_status` 0.
+
+fwupd's history can say "Failed" after a successful flash. On the verified
+machine it reported `boot entry missing: no 'Linux Firmware Updater' entry
+found`, because the firmware update had wiped the NVRAM boot entries,
+including fwupd's own. `fwupdmgr clear-results <device-id>` then failed with
+`failed to clear_result using uefi_capsule: unspecified error`, so the stale
+"Failed" stays in the history. It is not evidence that the flash failed.
+
+**Check the boot entries.** Compare `efibootmgr -v` with the file saved before
+flashing. On the verified machine `BootOrder` came back as only the generic
+"EFI Hard Drive" entry: the distribution's entry and fwupd's were gone, and the
+machine booted only through the fallback `\EFI\BOOT\BOOTX64.EFI`. Recreate the
+OS entry from the saved record, with the disk and partition of the ESP and the
+loader path the old entry pointed at:
+
+```bash
+sudo efibootmgr -c -d /dev/nvme0n1 -p 1 -L "<distribution name>" -l '\EFI\systemd\systemd-bootx64.efi'
+```
+
+Record the outcome in [REFERENCE.md](REFERENCE.md).

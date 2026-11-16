@@ -56,8 +56,10 @@ for e in /sys/firmware/efi/esrt/entries/*/; do
     echo "ESRT_LAST_ATTEMPT_STATUS=$(rd "${e}last_attempt_status")"
     if [ -n "$ver" ]; then
       echo "ESRT_VERSION_HEX=$(printf '0x%08x' "$ver")"
-      # Observed on Insyde firmware: BIOS x.yy is stored as (x << 16) | yy.
-      echo "ESRT_VERSION_AS_MAJOR_MINOR=$(printf '%d.%02d' $((ver >> 16)) $((ver & 0xffff)))"
+      # Observed on one Insyde firmware (Huawei MACHC-WAX9): BIOS x.yy is stored with
+      # the decimal digits written as hex digits, 1.07 -> 0x00010007, 1.26 -> 0x00010026.
+      # Compare this decode with BIOS_VERSION before relying on it for another model.
+      echo "ESRT_VERSION_AS_HEX_DIGITS=$(printf '%x.%02x' $((ver >> 16)) $((ver & 0xffff)))"
     fi
   fi
 done
@@ -115,6 +117,25 @@ if [ -n "$cap" ] && [ "$cap" -lt "$min_battery" ]; then add ERROR low_battery "b
 esp=$(findmnt -n -o TARGET -t vfat 2>/dev/null | grep -m1 -E '/boot/efi|/efi|/boot' || true)
 echo "ESP=${esp:-unknown}"
 [ -n "$esp" ] && echo "ESP_FREE_MB=$(df -Pm "$esp" | awk 'NR==2{print $4}')"
+
+# Boot entries. A firmware update can wipe the NVRAM boot entries (observed on a
+# Huawei MateBook X Pro 2020: only a generic "EFI Hard Drive" entry survived).
+# The removable-media fallback \EFI\BOOT\BOOTX64.EFI is then what boots the OS.
+if command -v efibootmgr >/dev/null; then
+  boot=$(efibootmgr -v 2>/dev/null || sudo -n efibootmgr -v 2>/dev/null)
+  echo "BOOT_ORDER=$(sed -n 's/^BootOrder: //p' <<<"$boot")"
+  echo "BOOT_ENTRY_COUNT=$(grep -cE '^Boot[0-9A-Fa-f]{4}' <<<"$boot")"
+else
+  echo "BOOT_ORDER=unknown"; add WARN no_efibootmgr "efibootmgr is not installed; boot entries cannot be recorded or recreated"
+fi
+fallback=""
+if [ -n "$esp" ]; then
+  # The ESP is often mounted umask=0077, so retry through sudo when unreadable.
+  fallback=$(find "$esp/EFI" -maxdepth 2 -ipath '*/boot/bootx64.efi' 2>/dev/null | head -1)
+  [ -n "$fallback" ] || fallback=$(sudo -n find "$esp/EFI" -maxdepth 2 -ipath '*/boot/bootx64.efi' 2>/dev/null | head -1)
+fi
+echo "FALLBACK_LOADER=${fallback:-missing}"
+[ -n "$fallback" ] || add ERROR no_fallback_loader "no \\EFI\\BOOT\\BOOTX64.EFI on the ESP: if the update wipes the boot entries, nothing boots the OS"
 
 # Summary
 n=${#issues[@]}
