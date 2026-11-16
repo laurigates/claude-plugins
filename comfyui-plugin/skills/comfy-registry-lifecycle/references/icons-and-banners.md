@@ -67,7 +67,7 @@ branding on top. `scripts/registry_banner_bg.py` and
 two-step pipeline against a running ComfyUI instance:
 
 ```sh
-python3 scripts/registry_banner_bg.py \
+python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_bg.py \
   --accent "warm amber and orange" --seed 101 --out bg.png \
   --host "${COMFYUI_HOST:-127.0.0.1:8188}"
 ```
@@ -76,7 +76,7 @@ Generates a 1344×576 (exact 21:9) abstract on-brand texture with **no
 text/letters/logo/symbols** requested in the prompt.
 
 ```sh
-python3 scripts/registry_banner_compose.py \
+python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_compose.py \
   --bg bg.png --icon icon.png --name "Display Name" \
   --tagline "Short tagline" --accent '#ffb02e' --out banner.png
 ```
