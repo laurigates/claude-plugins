@@ -105,6 +105,28 @@
       "category": "gamedev"
     },
     {
+      "name": "bios-plugin",
+      "source": "./bios-plugin",
+      "description": "BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service when the support site no longer lists it, and install UEFI capsules from Linux through fwupd",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
+      "keywords": [
+        "bios",
+        "uefi",
+        "firmware",
+        "capsule",
+        "fwupd",
+        "esrt",
+        "huawei",
+        "linux"
+      ],
+      "category": "development"
+    },
+    {
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",

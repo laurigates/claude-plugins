@@ -75,6 +75,7 @@
     "agents-plugin@laurigates-claude-plugins": true,
     "api-plugin@laurigates-claude-plugins": true,
     "bevy-plugin@laurigates-claude-plugins": true,
+    "bios-plugin@laurigates-claude-plugins": true,
     "blog-plugin@laurigates-claude-plugins": true,
     "blueprint-plugin@laurigates-claude-plugins": true,
     "cloud-plugin@laurigates-claude-plugins": true,
