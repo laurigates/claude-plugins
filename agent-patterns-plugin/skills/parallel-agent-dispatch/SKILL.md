@@ -261,6 +261,29 @@ inline or dispatch a follow-up worker — do not close on the worker's self-clai
 HTTP 422 when the target is the PR author; brief reviewers to post inline
 comments instead. See [Reviewer-agent verification](references/brief-templates.md#reviewer-agent-verification--evidence).
 
+### 6. Cross-check a synthesis against its finders
+
+A fan-out that gathers findings from several finder agents and then has a
+**synthesis or judge stage** combine them can produce a synthesis verdict that
+*contradicts a finding one of its own finders already reported*. The synthesis
+generalizes, compresses, or re-derives — and silently inverts a specific,
+grounded claim a finder got right. Nothing flags it, because the finder output
+and the synthesis both read as confident.
+
+Before trusting a synthesis verdict, check it against the finder outputs it was
+built from. When the synthesis contradicts a finder's grounded claim — one that
+cites a file and line, a measurement, or a primary source — **the finder wins**:
+the synthesis saw a summary, the finder saw the artifact. Two ways to pin it:
+
+- Make the synthesis stage **cite the finder output backing each verdict**, so a
+  contradiction shows up in its own structured result.
+- Add a cheap **consistency pass** that re-reads each synthesis claim against the
+  finder it rests on.
+
+The tell that you skipped this: a later authority — a reviewer, a second run, or
+a direct re-derivation — reverses a synthesis verdict, and on looking back a
+finder in the same run had already contradicted it.
+
 ## Who Pushes?
 
 Agents push their own commits in the normal case — worktree isolation plus
