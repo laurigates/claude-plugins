@@ -190,7 +190,7 @@ Install based on your project's tech stack and domain.
 | api-plugin | Building or testing REST APIs |
 | langchain-plugin | Building AI agents with LangChain/LangGraph |
 | home-assistant-plugin | Home Assistant configuration management |
-| linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives |
+| linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives, laptop battery drain measurement |
 | kernel-plugin | Investigating or reporting Linux kernel behaviour — source history across tags, lore research, standalone reproducers, mailing-list reports |
 | bios-plugin | BIOS/UEFI firmware — fetching vendor firmware from the vendor's update service when the support site no longer lists it, installing UEFI capsules from Linux through fwupd |
 | macos-plugin | macOS-specific operational tooling — LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage, and a repeatable threshold-scored benchmark suite |

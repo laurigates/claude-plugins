@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-51 plugins, 476 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+51 plugins, 477 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -27,7 +27,7 @@
 | [home-assistant-plugin](../home-assistant-plugin/) | 4 | 0 | Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations |
 | [kernel-plugin](../kernel-plugin/) | 4 | 0 | Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists |
 | [kitty-plugin](../kitty-plugin/) | 3 | 0 | kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore |
-| [linux-plugin](../linux-plugin/) | 1 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores |
+| [linux-plugin](../linux-plugin/) | 2 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, and laptop battery drain measurement while off, suspended or idle |
 | [obsidian-plugin](../obsidian-plugin/) | 21 | 0 | Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks |
 | [project-plugin](../project-plugin/) | 7 | 0 | Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows |
 | [session-plugin](../session-plugin/) | 5 | 0 | Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture |
