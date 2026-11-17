@@ -38,7 +38,9 @@ regardless: vale's markdown parser strips them as HTML before any rule sees the
 text.)
 
 `fixtures/house-rule-control.md` exists to close this off — it trips every House
-rule, and `scripts/check-prose-house-style.sh` asserts each one fires against it.
+rule, and the marketplace source repository's maintainer check
+`check-prose-house-style.sh` (not shipped with the plugin) asserts each one
+fires against it.
 Do not "fix" the prose in that file. Add a tripping sentence to it whenever you
 add a rule.
 

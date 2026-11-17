@@ -5,14 +5,16 @@ Layout: icon squircle at left, DisplayName wordmark + tagline to its right,
 over a slightly darkened background for legibility. Text is drawn with magick
 (sharp, correctly spelled) — never bake the pack name into the diffusion prompt.
 
-  ComfyUI/.venv/bin/python tooling/scripts/registry_banner_compose.py \
+This file is scripts/registry_banner_compose.py inside the
+comfy-registry-lifecycle skill directory; the skill runs it as:
+  python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_compose.py \
     --bg bg.png --icon icon.png --name "Touch Resize" \
     --tagline "Pinch-to-resize nodes on touch" --accent '#ffb02e' --out banner.png
 
 Inputs: --bg from registry_banner_bg.py, --icon the cairosvg-rendered 400x400
-icon (see comfy-registry-icons-banners.md — rasterize with cairosvg, NOT magick).
+icon (rasterize with cairosvg, NOT magick).
 
-See also: tooling/.claude/rules/comfy-registry-icons-banners.md
+See also: references/icons-and-banners.md in the same skill directory.
 """
 
 import argparse
