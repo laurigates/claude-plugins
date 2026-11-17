@@ -85,7 +85,7 @@ branch is gone **cannot be reopened**.
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
-Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form (braced variable, full `refs/heads/` refname, the zsh word-modifier table), the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
+Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form, the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
 
@@ -121,7 +121,7 @@ Does **not** close #162   →   GitHub reads `close #162`, and closes it
 - **Recovery**: `gh issue reopen` works (nothing was deleted, unlike #2), then
   comment so the next reader doesn't re-derive it.
 
-The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases, the audit-with-a-control procedure, and the incidents.
+The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases and the audit procedure.
 
 ## 6. A serial merge chain merges commits nobody verified
 
@@ -146,5 +146,5 @@ fix is unreviewed: pass it through
 |---|---|
 | Did the branch land? (§1, authoritative) | `gh pr list --state all --head <branch> --json number,state,mergedAt` |
 | Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
-| Rebase or squash? (§2, §6) | `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --repo <owner>/<repo> --pr <n>` — prints `METHOD=`, `REASON=`, `STATUS=`; the PR goes in `--pr`, not as a positional |
+| Rebase or squash? (§2, §6) | `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --pr <n>` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
