@@ -110,6 +110,7 @@
     "prompt-engineering-plugin@laurigates-claude-plugins": true,
     "prose-plugin@laurigates-claude-plugins": true,
     "python-plugin@laurigates-claude-plugins": true,
+    "reverse-engineering-plugin@laurigates-claude-plugins": true,
     "rust-plugin@laurigates-claude-plugins": true,
     "taskwarrior-plugin@laurigates-claude-plugins": true,
     "terraform-plugin@laurigates-claude-plugins": true,
