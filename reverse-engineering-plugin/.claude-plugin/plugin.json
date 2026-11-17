@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "reverse-engineering-plugin",
+  "version": "1.0.0",
+  "description": "Low-level reverse-engineering workflows - headless Ghidra decompilation, firmware-dump region mapping, deterministic binary-format examiners, ACPI table RE, SGX/TEE-sealed-secret recovery reasoning, and device/physical-memory passthrough feasibility",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "keywords": [
+    "reverse-engineering",
+    "ghidra",
+    "firmware",
+    "sgx",
+    "tee",
+    "acpi",
+    "vfio",
+    "binary-analysis",
+    "decompile",
+    "uefi"
+  ]
+}

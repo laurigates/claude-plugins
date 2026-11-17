@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -605,7 +605,7 @@
     {
       "name": "kitty-plugin",
       "source": "./kitty-plugin",
-      "description": "kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
+      "description": "kitty terminal for agents \u2014 safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
       "version": "2.0.0",
       "author": {
         "name": "Lauri Gates",
@@ -808,7 +808,7 @@
     {
       "name": "prompt-engineering-plugin",
       "source": "./prompt-engineering-plugin",
-      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses \u2014 anti-hallucination workflow with citation-backed analysis",
       "version": "1.1.4",
       "author": {
         "name": "Lauri Gates"
@@ -1101,6 +1101,30 @@
         "oauth"
       ],
       "category": "communication"
+    },
+    {
+      "name": "reverse-engineering-plugin",
+      "source": "./reverse-engineering-plugin",
+      "description": "Low-level reverse-engineering workflows - headless Ghidra decompilation, firmware-dump region mapping, deterministic binary-format examiners, ACPI table RE, SGX/TEE-sealed-secret recovery reasoning, and device/physical-memory passthrough feasibility",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "repository": "https://github.com/laurigates/claude-plugins",
+      "keywords": [
+        "reverse-engineering",
+        "ghidra",
+        "firmware",
+        "sgx",
+        "tee",
+        "acpi",
+        "vfio",
+        "binary-analysis",
+        "decompile",
+        "uefi"
+      ],
+      "category": "development"
     }
   ]
 }

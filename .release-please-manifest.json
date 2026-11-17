@@ -49,5 +49,6 @@
   "software-design-plugin": "1.2.0",
   "video-plugin": "2.0.1",
   "workflow-orchestration-plugin": "1.19.2",
-  "youtube-plugin": "1.1.0"
+  "youtube-plugin": "1.1.0",
+  "reverse-engineering-plugin": "1.0.0"
 }
