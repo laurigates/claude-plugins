@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.3...prose-plugin-v1.4.4) (2026-11-17)
+
+
+### Bug Fixes
+
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.2...prose-plugin-v1.4.3) (2026-11-16)
 
 

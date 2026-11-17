@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.7](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.6...finops-plugin-v1.4.7) (2026-11-17)
+
+
+### Bug Fixes
+
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.4.6](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.5...finops-plugin-v1.4.6) (2026-11-15)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.19.2...workflow-orchestration-plugin-v1.20.0) (2026-11-17)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** take the issue-reading instruction from args in implement-verify ([#3693](https://github.com/laurigates/claude-plugins/issues/3693)) ([8c6644f](https://github.com/laurigates/claude-plugins/commit/8c6644f5081fd91152e6d8c1b6e0fe8e2458669e)), closes [#3649](https://github.com/laurigates/claude-plugins/issues/3649)
+
 ## [1.19.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.19.1...workflow-orchestration-plugin-v1.19.2) (2026-11-16)
 
 

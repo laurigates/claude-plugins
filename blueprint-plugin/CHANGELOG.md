@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.52.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.11...blueprint-plugin-v3.52.0) (2026-11-17)
+
+
+### Features
+
+* **blueprint-plugin:** one id-registry engine for hook and sweep; sync-ids reports engine drift ([#3697](https://github.com/laurigates/claude-plugins/issues/3697)) ([67eeb28](https://github.com/laurigates/claude-plugins/commit/67eeb289b10ea28f0b27699f6132c4141e3bd002))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** give blueprint-generate-rules an Execution spine ([#3698](https://github.com/laurigates/claude-plugins/issues/3698)) ([090b211](https://github.com/laurigates/claude-plugins/commit/090b211db0fa4594f04e06753ef53c7e4d9bbb81)), closes [#3667](https://github.com/laurigates/claude-plugins/issues/3667) [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+* **blueprint-plugin:** give blueprint-promote step headings ([#3700](https://github.com/laurigates/claude-plugins/issues/3700)) ([230dcf7](https://github.com/laurigates/claude-plugins/commit/230dcf7ce1161dfb53deb764cd5b11942a52a214)), closes [#3667](https://github.com/laurigates/claude-plugins/issues/3667) [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+* **blueprint-plugin:** give blueprint-rules an Execution spine ([#3699](https://github.com/laurigates/claude-plugins/issues/3699)) ([ae6bec6](https://github.com/laurigates/claude-plugins/commit/ae6bec647e4a6268f3529b76d1f8aea423e78f9c)), closes [#3667](https://github.com/laurigates/claude-plugins/issues/3667) [#2779](https://github.com/laurigates/claude-plugins/issues/2779)
+
 ## [3.51.11](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.10...blueprint-plugin-v3.51.11) (2026-11-16)
 
 
