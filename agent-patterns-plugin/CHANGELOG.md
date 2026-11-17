@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.3...agent-patterns-plugin-v2.58.4) (2026-11-17)
+
+
+### Documentation
+
+* **agent-patterns:** cross-check a synthesis against its finders ([#3710](https://github.com/laurigates/claude-plugins/issues/3710)) ([4c0dc2f](https://github.com/laurigates/claude-plugins/commit/4c0dc2fbb53f290b47d932d009b8deff2e87c840))
+
 ## [2.58.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.2...agent-patterns-plugin-v2.58.3) (2026-11-16)
 
 
