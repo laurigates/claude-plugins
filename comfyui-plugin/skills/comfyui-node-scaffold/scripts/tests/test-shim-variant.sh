@@ -114,6 +114,23 @@ else
     check "shim smoke test exercises the apply/remove lifecycle" "present" "absent"
 fi
 
+# Issue #3705: frontend-types floor must sit at 1.59+ — npm `latest` (1.57.6)
+# ships no index.d.ts and bun prefers `latest` when the range admits it, so a
+# lower floor fails tsc with TS2688. 1.59+ types setting ids as `keyof Settings`,
+# so the shim's own setting id needs the `as SettingParam["id"]` cast.
+FT_RANGE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["devDependencies"]["@comfyorg/comfyui-frontend-types"])' "$SH_PKG" 2>/dev/null)"
+FT_MINOR="$(sed -nE 's/^[~^]?1\.([0-9]+)\..*/\1/p' <<<"$FT_RANGE")"
+if [ -n "$FT_MINOR" ] && [ "$FT_MINOR" -ge 59 ]; then
+    check "frontend-types floor excludes the types-less 1.57.6 ($FT_RANGE)" "ok" "ok"
+else
+    check "frontend-types floor excludes the types-less 1.57.6 ($FT_RANGE)" "ok" "too-low"
+fi
+if grep -q 'as SettingParam\["id"\]' "$SH_INDEX"; then
+    check "shim setting id carries the SettingParam id cast" "present" "present"
+else
+    check "shim setting id carries the SettingParam id cast" "present" "absent"
+fi
+
 # 2. Frontend + widgets: the shim branch must NOT over-apply.
 python3 "$SCAFFOLD" --name comfyui-widget-probe --display "Widget Probe" \
     --desc "x" --variant frontend --widgets ckpt_name --dir "$WORK" >/dev/null 2>&1
