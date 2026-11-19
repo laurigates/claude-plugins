@@ -974,6 +974,18 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#3689): a cloud worker restart dropped the Step 4 dialog,
+      # and "never ask a second round" left the outward items neither done nor
+      # declined, with no record they were pending. Step 4 must print the
+      # pending items as text before asking, and must re-ask on a resume that
+      # has no recorded answer.
+      ask_section=$(awk '/^### Step 4: One question/{f=1; next} /^### /{f=0} f' "$skill_file")
+      for token in "Print the pending Ask-lane items before the" "does not count as a second round"; do
+        if ! grep -qF -- "$token" <<<"$ask_section"; then
+          issues+=("❌ ${plugin}/${skill_name}: Step 4 must retain '${token}' (the question must survive a worker restart, #3689)")
+          has_errors=true
+        fi
+      done
     fi
     if [ "$skill_name" = "session-wrap" ] || [ "$skill_name" = "session-distill" ] || [ "$skill_name" = "session-workflow-capture" ]; then
       for token in "--orchestrated" "DEFERRED:"; do
