@@ -1154,6 +1154,11 @@ printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.jso
 # into a copy of the shipped reference (a `#` line inside the first
 # `plugins: |`, or the review job's `id-token: write` removed) exits 1 naming
 # that defect.
+#
+# Issue #3726: the review template ran on every pull_request with no actor
+# guard, and claude-code-action refuses Bot actors not in `allowed_bots`, so
+# the job went red on every release-please and Renovate PR. The `bot-guard`
+# mutation drops the review job's `if:` guard and expects the check to name it.
 cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
 ccp_ref="$root/$PLUGIN/skills/configure-claude-plugins/references/workflow-templates.md"
 cp "$ccp_ref" "$tmp/ccp-ref.orig"
@@ -1162,7 +1167,7 @@ run_check; out_ccp="$OUT"; rc_ccp="$RC"
 assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
 assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
 
-for ccp_mutation in plugins-comment id-token; do
+for ccp_mutation in plugins-comment id-token bot-guard; do
   python3 - "$tmp/ccp-ref.orig" "$ccp_ref" "$ccp_mutation" <<'PY'
 import sys
 src, dst, mutation = sys.argv[1:4]
@@ -1171,6 +1176,10 @@ if mutation == "plugins-comment":
     anchor = "          plugins: |\n"
     assert anchor in text, "fixture precondition: no `plugins: |` line in the shipped reference"
     text = text.replace(anchor, anchor + "            # a comment line inside the block scalar\n", 1)
+elif mutation == "bot-guard":
+    guard = "    if: github.event.pull_request.user.type != 'Bot'\n"
+    assert guard in text, "fixture precondition: review template has no bot guard"
+    text = text.replace(guard, "", 1)
 else:
     review = text.index("name: Claude Code Review")
     head, tail = text[:review], text[review:]
@@ -1183,8 +1192,9 @@ PY
   case "$ccp_mutation" in
     plugins-comment) ccp_needle="inside its plugins: block scalar" ;;
     id-token) ccp_needle="without id-token: write" ;;
+    bot-guard) ccp_needle="no guard against Bot-authored pull requests" ;;
   esac
-  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named (#3443)" \
+  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named" \
     "$out_ccp_red" "$ccp_needle"
 done
 rm -rf "${root:?}/$PLUGIN/skills/configure-claude-plugins"

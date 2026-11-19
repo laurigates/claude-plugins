@@ -453,6 +453,9 @@ PY
 #                    which the action needs to fetch its token through OIDC
 #   plugins-comment  a line of the `plugins:` input starts with '#'; inside a
 #                    block scalar that is content, read as a plugin name
+#   bot-guard        the workflow triggers on pull_request but the job has no
+#                    `github.event.pull_request.user.type` guard and the step no
+#                    `allowed_bots`; the action refuses Bot actors (issue #3726)
 # A fence that does not parse, or is not a workflow, is skipped (issue #3443).
 IFS= read -r -d '' CLAUDE_WORKFLOW_TEMPLATE_PY <<'PY' || true
 import sys
@@ -477,6 +480,12 @@ for path, start, end, lang in sorted(fences):
         continue
     if not isinstance(doc, dict) or not isinstance(doc.get("jobs"), dict):
         continue
+    # PyYAML (YAML 1.1) loads the bare key `on` as boolean True.
+    triggers = doc.get("on", doc.get(True))
+    on_pr = isinstance(triggers, (dict, list, str)) and any(
+        t in ("pull_request", "pull_request_target")
+        for t in ([triggers] if isinstance(triggers, str) else triggers)
+    )
     for job_name, job in doc["jobs"].items():
         if not isinstance(job, dict):
             continue
@@ -491,6 +500,9 @@ for path, start, end, lang in sorted(fences):
             plugins = (step.get("with") or {}).get("plugins")
             if isinstance(plugins, str) and any(e.strip().startswith("#") for e in plugins.splitlines()):
                 print(f"{path}:{start}\tplugins-comment\t{job_name}")
+            if on_pr and "pull_request.user.type" not in str(job.get("if", "")) \
+                    and "allowed_bots" not in (step.get("with") or {}):
+                print(f"{path}:{start}\tbot-guard\t{job_name}")
 PY
 
 check_skill_body() {
@@ -662,10 +674,11 @@ check_skill_body() {
       elif [ -n "$ccp_hits" ]; then
         while IFS=$'\t' read -r ccp_where ccp_kind ccp_job; do
           case "$ccp_kind" in
-            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action without id-token: write in its permissions (the action fetches its token through OIDC)" ;;
-            *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name)" ;;
+            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action without id-token: write in its permissions (the action fetches its token through OIDC) (issue #3443)" ;;
+            bot-guard) ccp_hit="job '${ccp_job}' runs claude-code-action on pull_request with no guard against Bot-authored pull requests (add \`if: github.event.pull_request.user.type != 'Bot'\` or \`allowed_bots\`; the action refuses Bot actors) (issue #3726)" ;;
+            *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name) (issue #3443)" ;;
           esac
-          issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit} (issue #3443)")
+          issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit}")
         done <<<"$ccp_hits"
         has_errors=true
       fi
