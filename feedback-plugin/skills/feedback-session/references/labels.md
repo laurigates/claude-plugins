@@ -27,6 +27,11 @@ If IaC indicators are found **or** `labels.tf` / `labels.yaml` exist in the work
   If user chooses option 3, exit.
   If user chooses option 1, set `$SKIP_SESSION_LABELS=true` and continue.
 
+  **Under `--confirmed`, do not ask.** The caller (`session-plugin:session-end`)
+  runs unattended, so take option 1: set `$SKIP_SESSION_LABELS=true`, keep the
+  warning, and state in the Step 6 summary that the issues were filed without
+  the session labels.
+
 **5a. Create missing labels (only when not IaC-managed)**
 
 Runs in Step 5, immediately before the first `gh issue create`, and only when at least one finding is approved. Skip this step if `$SKIP_SESSION_LABELS=true`. It never runs under `--dry-run` (Step 4 stops first), and Step 3 dedup does not need the labels to exist: `gh issue list --label <missing>` matches no issue, which is correct, since no issue can carry a label that does not exist.

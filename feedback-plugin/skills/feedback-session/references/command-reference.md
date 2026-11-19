@@ -9,8 +9,9 @@
 | Detect IaC label signals | `gh label list --json name,description --jq '.[].description'` |
 | Check label exists | `gh label list --json name -q '.[].name'` |
 | Create label | `gh label create name --description "desc" --color "hex"` |
-| Create issue (with target) | `gh issue create -R owner/repo --title "t" --label "l1,l2" --body "b"` |
-| Create issue (no labels) | `gh issue create -R owner/repo --title "t" --body "b"` |
+| Directory for body files | `mktemp -d` |
+| Create issue (with target) | `gh issue create -R owner/repo --title "t" --label "l1,l2" --body-file "$BODY_DIR/1.md"` |
+| Create issue (no labels) | `gh issue create -R owner/repo --title "t" --body-file "$BODY_DIR/1.md"` |
 | Infer current repo | `gh repo view --json nameWithOwner -q '.nameWithOwner'` |
 
 ## Quick Reference
@@ -18,6 +19,7 @@
 | Flag | Description |
 |------|-------------|
 | `--dry-run` | Show findings without creating issues |
+| `--confirmed` | Caller pre-approved filing: skip Step 4; IaC-managed labels mean filing without the session labels, not a question |
 | `--bugs-only` | Only bug reports |
 | `--enhancements-only` | Only enhancement suggestions |
 | `--positive-only` | Only positive feedback |
