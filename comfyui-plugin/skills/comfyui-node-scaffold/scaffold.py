@@ -93,17 +93,20 @@ MODAL_KIT_VERSION = "^0.12.0"
 # failure. The regression check in scripts/plugin-compliance-check.sh asserts
 # every generated biome pin stays on this single version.
 BIOME_VERSION = "2.4.15"
-# Pinned to the 1.45.x line (`~`, not `^`). A caret range here resolves to the
-# newest 1.x, and 1.48.x peer-depends on `@comfyorg/comfyui-desktop-bridge-types@0.1.3`
-# — a version that does not exist on npm (only 0.1.0–0.1.2 were published), so
-# `bun install` HARD-FAILS on a freshly scaffolded pack:
-#   error: No version matching "0.1.3" found for specifier
-#          "@comfyorg/comfyui-desktop-bridge-types" (but package exists)
-# It bit comfyui-output-swap at scaffold time. The 1.45.x releases peer-depend
-# only on vue + zod, so they resolve cleanly, and 1.45 is what the current
-# ComfyUI installs actually ship. Re-widen only after verifying the newer line
-# installs: `npm view '@comfyorg/comfyui-frontend-types@<range>' peerDependencies`.
-COMFY_FRONTEND_TYPES_VERSION = "~1.45.0"
+# Floor at 1.60 (issue #3705), matching the fleet. The floor matters more than
+# the operator: npm's `latest` dist-tag is 1.57.6, a publish carrying only
+# package.json + LICENSE, and bun prefers `latest` whenever it satisfies the
+# range — so a `^1.43.0`-style range resolves to it and `tsc` fails with TS2688
+# (no index.d.ts). 1.59+ ship index.d.ts again; ComfyUI v0.45.0 bundles frontend
+# 1.58.5. 1.59+ also types `SettingParams.id` as `keyof Settings` (the closed
+# set of core `Comfy.*` keys), so a pack's own setting ids need
+# `as SettingParam["id"]` — see the shim variant's `shimSettings()`.
+# History: the scaffold was held on `~1.45.0` because 1.48.x peer-depended on a
+# `@comfyorg/comfyui-desktop-bridge-types@0.1.3` that was never published, which
+# hard-failed `bun install`. 1.60.0 peer-depends only on vue + zod. Before moving
+# the floor again, check: `npm view '@comfyorg/comfyui-frontend-types@<range>'
+# peerDependencies` and that the tarball ships index.d.ts.
+COMFY_FRONTEND_TYPES_VERSION = "^1.60.0"
 # jsdom is added to devDependencies ONLY for the standalone-modal variant, whose
 # smoke test mounts the modal under a DOM (`@vitest-environment jsdom`). The
 # widget/gesture variants test pure helpers under the node environment and don't
@@ -1023,10 +1026,13 @@ export function removeCssShim(shim: Pick<CssShim, "id">, doc: Document = documen
 // ============================================================
 
 type ExtensionSettings = NonNullable<Parameters<ComfyApp["registerExtension"]>[0]["settings"]>;
+// frontend-types 1.59+ types a setting `id` as `keyof Settings` (the core
+// `Comfy.*` keys only), so a pack's own ids need this cast (issue #3705).
+type SettingParam = ExtensionSettings[number];
 
 function shimSettings(): ExtensionSettings {
   return SHIMS.map((shim) => ({
-    id: `@@DISPLAY_NOSPACE@@.${shim.id}`,
+    id: `@@DISPLAY_NOSPACE@@.${shim.id}` as SettingParam["id"],
     name: shim.name,
     type: "boolean",
     defaultValue: true,
