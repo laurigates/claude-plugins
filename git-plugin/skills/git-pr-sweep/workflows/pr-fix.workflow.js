@@ -419,6 +419,7 @@ const finalisePlan = landable.map((r) => ({
   branch: r.branch,
   head_sha: r.fix.head_sha,
   base_sha: UNITS.find((u) => u.id === r.unit).head_sha,
+  base: UNITS.find((u) => u.id === r.unit).base,
   commits: (r.fix.commits ?? []).map(shaOf).filter(Boolean),
   pr_body_note: '',
 }))
@@ -463,11 +464,14 @@ For each entry, in order:
    Otherwise fetch each MERGED or CLOSED entry's head (git fetch origin -q pull/<number>/head). An entry whose headRefOid and head_sha lie on
    one line of history (git merge-base --is-ancestor either way exits 0), or whose head cannot be fetched → "skipped". One that fails the test
    is earlier work on a reused branch name: ignore it.
-2. git fetch origin <branch>. All three must hold, else record "skipped" with the reason; do not rebase or force:
+2. git fetch origin <branch> and git fetch origin (for <base>). All four must hold, else record "skipped" with the reason; do not rebase or force:
    - git rev-parse origin/<branch> prints base_sha (the head the review saw; the remote has not moved);
    - git merge-base --is-ancestor <base_sha> <head_sha> exits 0;
-   - git rev-list --reverse <base_sha>..<head_sha> lists exactly the commits in \`commits\` (an abbreviated SHA matches by prefix).
-     Any other commit is local work nobody reviewed, and pushing it would publish it.
+   - git rev-list --first-parent --reverse <base_sha>..<head_sha> lists exactly the commits in \`commits\` (an abbreviated SHA matches by prefix).
+     Any other commit on that line is local work nobody reviewed, and pushing it would publish it;
+   - for each of those commits that is a merge (git rev-list --parents -n1 <sha> prints more than two SHAs), every parent after the
+     first passes git merge-base --is-ancestor <parent> <base>. A merge of <base> (the CONFLICT repair) brings in only history
+     already on the base branch; a merge of anything else is unreviewed work.
 3. git push origin <head_sha>:refs/heads/<branch> (brace shell variables before the colon).
 Do not merge, approve, mark ready, comment, or open a PR. Stop at the first failed push and mark the rest "skipped".
 Return {pushed: [{unit, branch, status: pushed|skipped|failed, detail}]}, one row per entry; no other field.`,

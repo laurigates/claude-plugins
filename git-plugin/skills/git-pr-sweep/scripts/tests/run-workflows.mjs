@@ -295,7 +295,13 @@ for (const [name, a, reason] of [
   check("pr-fix repairer must start at the fixer's tip", rp2.includes('`git rev-parse HEAD` must print abc1234'), rp2.slice(-900))
   check('pr-fix finalise plan carries the reviewed head and the reported commits', JSON.stringify(r.result.finalisePlan.map((p) => [p.base_sha, p.commits])) === JSON.stringify([[sha('1'), ['abc1234']], [sha('2'), ['abc1234', 'abc1234']]]), r.result.finalisePlan)
   check('pr-fix finalise pushes only when the remote is still at base_sha and exactly the reported commits follow it',
-    /git rev-parse origin\/<branch> prints base_sha/.test(fin.prompt) && /git merge-base --is-ancestor <base_sha> <head_sha>/.test(fin.prompt) && /git rev-list --reverse <base_sha>\.\.<head_sha> lists exactly the commits in `commits`/.test(fin.prompt))
+    /git rev-parse origin\/<branch> prints base_sha/.test(fin.prompt) && /git merge-base --is-ancestor <base_sha> <head_sha>/.test(fin.prompt) && /git rev-list --first-parent --reverse <base_sha>\.\.<head_sha> lists exactly the commits in `commits`/.test(fin.prompt))
+  // Regression: a plain `rev-list base_sha..head_sha` also listed every base-branch commit a
+  // CONFLICT repair (merge-procedure.md M8: merge origin/<base>) brought in, so Finalise
+  // skipped every such repair. First-parent walk + "merged parents must be on <base>".
+  check('pr-fix finalise accepts a merge of <base> and nothing else',
+    /every parent after the\s+first passes git merge-base --is-ancestor <parent> <base>/.test(fin.prompt) && /a merge of anything else is unreviewed work/.test(fin.prompt), fin.prompt.slice(-1200))
+  check('pr-fix finalise plan carries each unit base', r.result.finalisePlan.every((p) => typeof p.base === 'string' && p.base.startsWith('origin/')), r.result.finalisePlan)
 }
 
 {
