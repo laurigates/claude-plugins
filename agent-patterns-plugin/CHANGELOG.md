@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.4...agent-patterns-plugin-v2.58.5) (2026-11-20)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** note cloud network secrets in the direct-gateway reference ([#3743](https://github.com/laurigates/claude-plugins/issues/3743)) ([f559045](https://github.com/laurigates/claude-plugins/commit/f559045b5fe63c292dd85b03b8fcf829a7330f13))
+
 ## [2.58.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.3...agent-patterns-plugin-v2.58.4) (2026-11-17)
 
 
