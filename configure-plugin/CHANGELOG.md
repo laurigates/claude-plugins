@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.12](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.11...configure-plugin-v1.43.12) (2026-11-20)
+
+
+### Bug Fixes
+
+* **configure-plugin:** skip bot-authored PRs in the review workflow template ([#3735](https://github.com/laurigates/claude-plugins/issues/3735)) ([b15f761](https://github.com/laurigates/claude-plugins/commit/b15f761ffac8cb3ac1013b775880912dadf3b31e)), closes [#3726](https://github.com/laurigates/claude-plugins/issues/3726)
+
 ## [1.43.11](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.10...configure-plugin-v1.43.11) (2026-11-16)
 
 

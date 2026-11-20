@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.15.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.6...comfyui-plugin-v1.15.7) (2026-11-20)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** make check-fleet-drift.py executable and guard justfile script modes ([#3720](https://github.com/laurigates/claude-plugins/issues/3720)) ([42a4ec7](https://github.com/laurigates/claude-plugins/commit/42a4ec7c7cf44df994540a994656058fdd20c919)), closes [#3695](https://github.com/laurigates/claude-plugins/issues/3695)
+* **comfyui-plugin:** move scaffold frontend-types pin to ^1.60.0 ([#3730](https://github.com/laurigates/claude-plugins/issues/3730)) ([8b0f4c9](https://github.com/laurigates/claude-plugins/commit/8b0f4c92925f02c9157c500cef539e9385d40877)), closes [#3705](https://github.com/laurigates/claude-plugins/issues/3705)
+
+
+### Documentation
+
+* **comfyui-plugin:** replace maintainer-layout paths in comfy-metadata, banner scripts and prose-check ([#3719](https://github.com/laurigates/claude-plugins/issues/3719)) ([944e1da](https://github.com/laurigates/claude-plugins/commit/944e1da7e67d548d235d422ef380be44de78fc50)), closes [#3709](https://github.com/laurigates/claude-plugins/issues/3709)
+
 ## [1.15.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.5...comfyui-plugin-v1.15.6) (2026-11-17)
 
 
