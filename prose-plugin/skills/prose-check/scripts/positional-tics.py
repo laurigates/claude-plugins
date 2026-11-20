@@ -53,7 +53,8 @@ import pysbd
 
 # Verbatim from communication.md's list of portentous nouns. Mirrors
 # styles/House/SignificanceAssertion.yml; both derive from the rule, and
-# scripts/check-prose-house-style.sh pins them together.
+# check-prose-house-style.sh in the marketplace source repository (a
+# maintainer check, not shipped with the plugin) pins them together.
 SIGNIFICANCE = re.compile(
     r"\b(which is the|what makes|the thing that|precisely why)\b", re.I
 )
