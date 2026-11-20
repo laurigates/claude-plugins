@@ -1252,15 +1252,19 @@ rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
 # appears only in the Step 5 (issue creation) section; any mention of it before
 # Step 5 is ❌ (exit 1), and a Step 5 that never creates the labels is ❌ too.
 # ---------------------------------------------------------------------------
+FB_ISSUE_CREATE='Refuse a body that is only an @path reference.
+
+gh issue create --title "feedback(<plugin>): <desc>" --body-file "$BODY_DIR/1.md"'
 make_feedback_skill() {
-  # make_feedback_skill <step1-label-line> <step5-label-line>
+  # make_feedback_skill <step1-label-line> <step5-label-line> [<issue-create-block>]
+  # FB_ALLOWED_TOOLS overrides the allowed-tools line (default: Read).
   local dir="$root/$PLUGIN/skills/feedback-session"
   mkdir -p "$dir"
   {
     printf -- '---\n'
     printf 'name: feedback-session\n'
     printf 'description: Fixture feedback-session. Use when exercising the compliance self-test.\n'
-    printf 'allowed-tools: Read\n'
+    printf 'allowed-tools: %s\n' "${FB_ALLOWED_TOOLS:-Read}"
     printf 'created: 2026-11-07\n'
     printf 'modified: 2026-11-07\n'
     printf 'reviewed: 2026-11-07\n'
@@ -1272,7 +1276,7 @@ make_feedback_skill() {
     printf '%s\n\n' "$1"
     printf '### Step 4: Present findings for review\n\nIf `--dry-run`, stop here.\n\n'
     printf '### Step 5: Create approved issues\n\n%s\n\n' "$2"
-    printf 'gh issue create --title "feedback(<plugin>): <desc>"\n\n'
+    printf '%s\n\n' "${3:-$FB_ISSUE_CREATE}"
     printf '### Step 6: Report summary\n\nPrint the table.\n'
   } > "$dir/SKILL.md"
 }
@@ -1309,6 +1313,45 @@ run_check; out_fbl4="$OUT"; rc_fbl4="$RC"
 assert_eq "feedback-session: create-at-apply-time shape exits 0" "$rc_fbl4" "0"
 assert_absent "feedback-session: compliant shape raises no label issue" \
   "$out_fbl4" "label creation must happen in Step 5"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# ---------------------------------------------------------------------------
+# #3680: feedback-session files bodies with --body-file and grants gh repo view.
+#
+# Step 5 passed the multi-line, backtick-bearing body inline (`--body "<body>"`),
+# and Step 1C ran `gh repo view` with no allowed-tools grant, so a --confirmed
+# run could stop at a permission prompt. THE SEMANTIC INVARIANT UNDER TEST: an
+# inline --body on `gh issue create` is ❌, a Step 5 without the `@path` guard
+# (#3434) is ❌, and showing `gh repo view` without `Bash(gh repo view *)` is ❌.
+# The compliant shape (fbl4 above) already exits 0 with the --body-file block.
+# ---------------------------------------------------------------------------
+
+# --- Inline --body (the pre-fix shape) must FAIL ----------------------------
+make_feedback_skill "$FB_CHECK_IAC" "$FB_CREATE" \
+  'gh issue create --title "feedback(<plugin>): <desc>" --body "<body>"'
+run_check; out_fbb1="$OUT"; rc_fbb1="$RC"
+assert_eq "feedback-session: inline --body exits 1" "$rc_fbb1" "1"
+assert_contains "feedback-session: inline --body is named" \
+  "$out_fbb1" "must pass the body with --body-file"
+assert_contains "feedback-session: missing @path guard is named" \
+  "$out_fbb1" "only an '@path' reference"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# --- gh repo view without its grant must FAIL --------------------------------
+make_feedback_skill "$FB_CHECK_IAC Run \`gh repo view --json nameWithOwner\`." "$FB_CREATE"
+run_check; out_fbb2="$OUT"; rc_fbb2="$RC"
+assert_eq "feedback-session: ungranted gh repo view exits 1" "$rc_fbb2" "1"
+assert_contains "feedback-session: ungranted gh repo view is named" \
+  "$out_fbb2" "allowed-tools must grant 'Bash(gh repo view *)'"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# --- Guard integrity: gh repo view WITH its grant PASSES ---------------------
+FB_ALLOWED_TOOLS='Bash(gh repo view *), Read' \
+  make_feedback_skill "$FB_CHECK_IAC Run \`gh repo view --json nameWithOwner\`." "$FB_CREATE"
+run_check; out_fbb3="$OUT"; rc_fbb3="$RC"
+assert_eq "feedback-session: granted gh repo view exits 0" "$rc_fbb3" "0"
+assert_absent "feedback-session: granted gh repo view raises no grant issue" \
+  "$out_fbb3" "Bash(gh repo view *)"
 rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
 
 # ============================================================================

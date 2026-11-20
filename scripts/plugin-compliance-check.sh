@@ -2220,6 +2220,33 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: Step 5 must create missing labels before 'gh issue create' (issue #2360)")
         has_errors=true
       fi
+      # Regression: Step 5 filed the multi-line, backtick-bearing body inline
+      # with `--body "<body>"`, which shell quoting mangles, and Step 1C ran
+      # `gh repo view` without an allowed-tools grant, so a --confirmed run
+      # started by session-end could stop at a permission prompt (issue #3680).
+      # A body that was only an `@path` reference was once filed verbatim
+      # (issue #3434), so Step 5 also carries a guard that names `@path`.
+      # The invariants: no `gh issue create … --body "` in the skill or its
+      # sidecars, Step 5 passes `--body-file` and names the `@path` guard, and
+      # a skill that shows `gh repo view` grants `Bash(gh repo view *)`.
+      fb_dir=$(dirname "$skill_file")
+      fb_all=$(cat "$skill_file" "$fb_dir"/references/*.md 2>/dev/null)
+      if grep -qE "gh issue create.*--body[[:space:]]+[\"']" <<<"$fb_all"; then
+        issues+=("❌ ${plugin}/${skill_name}: 'gh issue create' must pass the body with --body-file, not an inline --body \"...\" (issue #3680)")
+        has_errors=true
+      fi
+      if ! grep -qF -- '--body-file' <<<"$fb_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: Step 5 must create issues with --body-file (issue #3680)")
+        has_errors=true
+      fi
+      if ! grep -qF '@path' <<<"$fb_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: Step 5 must refuse a body that is only an '@path' reference (issues #3434, #3680)")
+        has_errors=true
+      fi
+      if grep -qF 'gh repo view' <<<"$fb_all" && ! grep -E '^allowed-tools:' "$skill_file" | grep -qF 'Bash(gh repo view *)'; then
+        issues+=("❌ ${plugin}/${skill_name}: allowed-tools must grant 'Bash(gh repo view *)' because Step 1 runs gh repo view (issue #3680)")
+        has_errors=true
+      fi
     fi
 
     # Regression: configure-web-session had no drift signal for already-onboarded
