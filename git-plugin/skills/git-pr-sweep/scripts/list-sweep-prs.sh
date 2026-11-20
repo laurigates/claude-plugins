@@ -58,7 +58,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=SCRIPTDIR/lib/summary.sh
+# shellcheck source=SCRIPTDIR/lib/summary.sh disable=SC1091
 source "$SCRIPT_DIR/lib/summary.sh"
 
 usage() {
@@ -87,6 +87,7 @@ owner="${positional[0]}"
 repo="${positional[1]}"
 
 SUMMARY_FD=2
+# shellcheck disable=SC2034 # SUMMARY_FD is read by lib/summary.sh
 [ -n "$out_file" ] && SUMMARY_FD=1
 summary_init "PR SWEEP ROSTER"
 summary_kv REPO "$owner/$repo"

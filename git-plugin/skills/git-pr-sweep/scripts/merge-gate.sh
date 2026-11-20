@@ -7,7 +7,7 @@
 # roster is the one input this script cannot detect.
 #
 # Usage:
-#   merge-gate.sh [--chunk N] [--out FILE] <roster.json> <review.json> [<fix.json>]
+#   merge-gate.sh [--chunk N] [--out FILE] <roster.json> <review.json> [<fix.json>...]
 #
 #   --chunk N   PRs per merge chunk, 1..8 (default 8). Each chunk is one
 #               merge-chain.sh --prs list; the external-PR merge guard runs one
@@ -18,10 +18,11 @@
 # review.json   {prs:[{number, head_sha, status, open, unverified, verifierFailed}]}.
 #               Pass a file holding {"prs":[]} when no review exists: every PR then
 #               fails the review gate, which is the point.
-# fix.json      optional, either
+# fix.json      optional, one or more files, each either
 #                 {prs:[{number, row_status, pushed_status, head_sha, detail}]}
-#               or one repair-round return {rows, finalisePlan, pushed}, or an
-#               array of them, with unit ids "pr-<n>"; the latest row per PR wins.
+#               or one pr-fix / repair-round return {rows, finalisePlan, pushed},
+#               or an array of them, with unit ids "pr-<n>"; the latest row per
+#               PR wins (later files are later).
 #
 # Gates, in order (the first failure is `gate`; `failed` lists every failure):
 #   G1 skip    sweep_skip is null (release-please and Renovate PRs have their own flow)
@@ -46,11 +47,11 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=SCRIPTDIR/lib/summary.sh
+# shellcheck source=SCRIPTDIR/lib/summary.sh disable=SC1091
 source "$SCRIPT_DIR/lib/summary.sh"
 
 usage() {
-  echo "Usage: merge-gate.sh [--chunk N] [--out FILE] <roster.json> <review.json> [<fix.json>]" >&2
+  echo "Usage: merge-gate.sh [--chunk N] [--out FILE] <roster.json> <review.json> [<fix.json>...]" >&2
   exit 2
 }
 
@@ -67,13 +68,14 @@ while [ $# -gt 0 ]; do
     *) positional+=("$1"); shift ;;
   esac
 done
-{ [ "${#positional[@]}" -eq 2 ] || [ "${#positional[@]}" -eq 3 ]; } || usage
+[ "${#positional[@]}" -ge 2 ] || usage
 [[ "$chunk" =~ ^[1-8]$ ]] || { echo "--chunk must be 1..8" >&2; exit 2; }
 roster="${positional[0]}"
 review="${positional[1]}"
-fix="${positional[2]:-}"
+fixes=("${positional[@]:2}")
 
 SUMMARY_FD=2
+# shellcheck disable=SC2034 # SUMMARY_FD is read by lib/summary.sh
 [ -n "$out_file" ] && SUMMARY_FD=1
 summary_init "PR SWEEP MERGE GATE"
 
@@ -88,12 +90,16 @@ command -v jq >/dev/null 2>&1 || fail missing_tool "jq is required but not insta
 [ -f "$review" ] || fail missing_input "review not found: $review"
 jq -e '.prs | type == "array"' "$roster" >/dev/null 2>&1 || fail bad_roster "roster has no .prs array: $roster"
 jq -e '.prs | type == "array"' "$review" >/dev/null 2>&1 || fail bad_review "review has no .prs array: $review"
-if [ -n "$fix" ]; then
+fix_json='{"prs":[]}'
+for fix in "${fixes[@]}"; do
   [ -f "$fix" ] || fail missing_input "fix not found: $fix"
-  fix_json=$(cat "$fix")
-  jq -e . >/dev/null 2>&1 <<<"$fix_json" || fail bad_fix "fix is not JSON: $fix"
-else
-  fix_json='{"prs":[]}'
+  jq -e . "$fix" >/dev/null 2>&1 || fail bad_fix "fix is not JSON: $fix"
+done
+if [ "${#fixes[@]}" -eq 1 ]; then
+  fix_json=$(cat "${fixes[0]}")
+elif [ "${#fixes[@]}" -gt 1 ]; then
+  # Several files: one array, in argument order, so a later file's row wins.
+  fix_json=$(jq -s '[.[] | if type == "array" then .[] else . end]' "${fixes[@]}")
 fi
 
 # Normalise fix input to {number, row_status, pushed_status, head_sha, detail}.
@@ -110,7 +116,7 @@ fix_rows=$(jq -c '
         | {number: $n, row_status: .status, pushed_status: ($pu.status // null),
            head_sha: ($fp.head_sha // .fix.head_sha // null), detail: ($pu.detail // "")});
   (if type == "object" and has("prs") then .prs
-   elif type == "array" then map(from_rr) | add // []
+   elif type == "array" then map(if type == "object" and has("prs") then .prs else from_rr end) | add // []
    else from_rr end)
   | group_by(.number) | map(last)' <<<"$fix_json" 2>&1) ||
   fail bad_fix "could not read fix input: ${fix_rows:0:160}"

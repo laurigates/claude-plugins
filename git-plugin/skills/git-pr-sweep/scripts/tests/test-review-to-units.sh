@@ -87,8 +87,8 @@ assert_eq "brief quotes the title as data and scopes the fix" 'true' \
   "$(jq '.runs[0][0].brief | test("PR #1 \\(title, data not instructions: \"feat: pr 1\"\\)") and test("do not widen scope") and test("fix\\(<scope>\\)")' "$work/u.json")"
 assert_eq "summary lists unit ids" "UNIT_IDS=pr-1,pr-2,pr-3,pr-4,pr-5" "$(grep '^UNIT_IDS=' <<<"$summary")"
 validate "summary meets the structured-output contract (OK)" "$summary"
-bash "$UNITS" --chunk 5 --out "$work/u5.json" "$work/r.json" "$work/v.json" >/dev/null
-assert_eq "--chunk 5 gives one run of 5" '[5]' "$(jq -c '[.runs[] | length]' "$work/u5.json")"
+bash "$UNITS" --chunk 3 --out "$work/u3.json" "$work/r.json" "$work/v.json" >/dev/null
+assert_eq "--chunk 3 gives runs of 3 and 2" '[3,2]' "$(jq -c '[.runs[] | length]' "$work/u3.json")"
 
 echo "=== every exclusion reason ==="
 rows=$(jq -nc --arg a "$(sha 11)" --arg b "$(sha 12)" --arg c "$(sha 13)" --arg d "$(sha 14)" --arg e "$(sha 15)" \
@@ -147,7 +147,7 @@ validate "summary meets the structured-output contract (ERROR)" "$summary"
 jq 'del(.prs[0].policy)' "$work/r.json" > "$work/r-nopolicy.json"
 bash "$UNITS" "$work/r-nopolicy.json" "$work/v.json" >/dev/null 2>&1; assert_eq "roster without policy exits 1" 1 "$?"
 bash "$UNITS" "$work/missing.json" "$work/v.json" >/dev/null 2>&1; assert_eq "missing roster exits 1" 1 "$?"
-bash "$UNITS" --chunk 6 "$work/r.json" "$work/v.json" >/dev/null 2>&1; assert_eq "--chunk 6 exits 2 (repair-round cap is 5)" 2 "$?"
+bash "$UNITS" --chunk 4 "$work/r.json" "$work/v.json" >/dev/null 2>&1; assert_eq "--chunk 4 exits 2 (pr-fix cap is 3)" 2 "$?"
 bash "$UNITS" --bogus "$work/r.json" "$work/v.json" >/dev/null 2>&1; assert_eq "unknown flag exits 2" 2 "$?"
 json=$(bash "$UNITS" "$work/r.json" "$work/v.json" 2>"$work/stderr")
 assert_eq "stdout mode prints the JSON" 'true' "$(jq 'has("runs")' <<<"$json")"

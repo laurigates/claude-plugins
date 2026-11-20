@@ -177,6 +177,11 @@ assert_eq "single RR return: failed push fails G4" 'true' "$(jq '.report[] | sel
 jq -nc --slurpfile a "$work/rr.json" '[$a[0], {rows: [{unit: "pr-12", status: "PASS", fix: {}}], finalisePlan: [{unit: "pr-12", head_sha: "'"$(sha 12)"'"}], pushed: [{unit: "pr-12", status: "pushed", detail: ""}]}]' > "$work/rr-array.json"
 bash "$GATE" --out "$work/p-rra.json" "$work/r.json" "$work/v.json" "$work/rr-array.json" >/dev/null
 assert_eq "array of RR returns: the later row for a PR wins" 'true' "$(jq '.passed | index(12) != null' "$work/p-rra.json")"
+jq -c '.[1]' "$work/rr-array.json" > "$work/rr-second.json"
+bash "$GATE" --out "$work/p-rr2.json" "$work/r.json" "$work/v.json" "$work/rr.json" "$work/rr-second.json" >/dev/null
+assert_eq "two fix files: the later file's row for a PR wins" 'true' "$(jq '(.passed | index(12) != null) and (.passed | index(10) != null)' "$work/p-rr2.json")"
+bash "$GATE" --out "$work/p-rr3.json" "$work/r.json" "$work/v.json" "$work/rr-second.json" "$work/rr.json" >/dev/null
+assert_eq "two fix files in the other order: the earlier pushed row loses" 'true' "$(jq '.passed | index(12) == null' "$work/p-rr3.json")"
 jq '.rows[0].unit = "unit-1"' "$work/rr.json" > "$work/rr-bad.json"
 summary=$(bash "$GATE" --out "$work/x.json" "$work/r.json" "$work/v.json" "$work/rr-bad.json"); rc=$?
 assert_eq "a unit id that is not pr-<n> exits 1" 1 "$rc"

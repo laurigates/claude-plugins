@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# review-to-units.sh — turn a pr-review result into repair-round units, chunked
+# review-to-units.sh — turn a pr-review result into pr-fix units, chunked
 # into runs, and say why every other PR gets no unit.
 #
 # PURE: jq over two files, no gh and no git. The review's per-PR `open[]` rows
-# already have repair-round's findings shape ({id, severity, where, problem,
+# already have pr-fix's (repair-round's) findings shape ({id, severity, where, problem,
 # fix, evidence}), so they pass through unchanged; this script only wraps them.
 #
 # Usage:
 #   review-to-units.sh [--chunk N] [--out FILE] <roster.json> <review.json>
 #
-#   --chunk N   units per run, 1..5 (default 2). repair-round costs 1 + 4 x units
-#               agents and aborts above 5 units, so 2 keeps a run at 9 agents.
+#   --chunk N   units per run, 1..3 (default 2). pr-fix.workflow.js costs 1 + 4 x units
+#               agents and aborts above 3 units (its MAX_UNITS); 2 keeps a run at 9.
 #   --out FILE  write the JSON to FILE and print the summary on stdout; without
 #               it the JSON goes to stdout and the summary to stderr.
 #
@@ -34,15 +34,15 @@
 #   nothing_to_fix           open[] is empty
 #   shared_branch            a second PR with the same head branch
 #
-# Invariants (repair-round's guards never fire on this output): one unit per
-# branch, every unit has a branch and non-empty findings, at most 5 per run.
+# Invariants (pr-fix's guards never fire on this output): one unit per
+# branch, every unit has a branch and non-empty findings, at most 3 per run.
 #
 # Exit: 0 OK/WARN, 1 ERROR, 2 usage.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=SCRIPTDIR/lib/summary.sh
+# shellcheck source=SCRIPTDIR/lib/summary.sh disable=SC1091
 source "$SCRIPT_DIR/lib/summary.sh"
 
 usage() {
@@ -64,11 +64,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ "${#positional[@]}" -eq 2 ] || usage
-[[ "$chunk" =~ ^[1-5]$ ]] || { echo "--chunk must be 1..5 (repair-round aborts above 5 units)" >&2; exit 2; }
+[[ "$chunk" =~ ^[1-3]$ ]] || { echo "--chunk must be 1..3 (pr-fix.workflow.js aborts above 3 units)" >&2; exit 2; }
 roster="${positional[0]}"
 review="${positional[1]}"
 
 SUMMARY_FD=2
+# shellcheck disable=SC2034 # SUMMARY_FD is read by lib/summary.sh
 [ -n "$out_file" ] && SUMMARY_FD=1
 summary_init "PR SWEEP UNITS"
 
