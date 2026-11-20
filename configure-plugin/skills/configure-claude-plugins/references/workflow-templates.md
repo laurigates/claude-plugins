@@ -73,6 +73,8 @@ permissions:
 
 jobs:
   review:
+    # claude-code-action refuses Bot actors not listed in allowed_bots, so skip release-please/Renovate PRs
+    if: github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -98,3 +100,5 @@ jobs:
             code-quality-plugin@laurigates-claude-plugins
             testing-plugin@laurigates-claude-plugins
 ```
+
+The job-level `if:` skips pull requests opened by a Bot account (release-please, Renovate). `anthropics/claude-code-action` refuses a Bot actor that is not in its `allowed_bots` input and fails the job with `Workflow initiated by non-human actor`. A repo that does want bot PRs reviewed drops the `if:` and sets `allowed_bots` on the step instead (a comma-separated list of bot names, or `'*'` for all bots).
