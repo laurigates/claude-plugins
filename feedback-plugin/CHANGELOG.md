@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.2...feedback-plugin-v1.16.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** file feedback-session bodies with --body-file and grant gh repo view ([#3734](https://github.com/laurigates/claude-plugins/issues/3734)) ([28d90e8](https://github.com/laurigates/claude-plugins/commit/28d90e88167ecbad42b30358ccd75db0a2f33ad6)), closes [#3434](https://github.com/laurigates/claude-plugins/issues/3434)
+
 ## [1.16.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.1...feedback-plugin-v1.16.2) (2026-11-10)
 
 
