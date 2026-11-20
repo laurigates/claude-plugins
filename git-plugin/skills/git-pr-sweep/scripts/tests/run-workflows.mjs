@@ -58,7 +58,7 @@ const onlyForbidden = (prompt) => prompt.split('\n').filter((l) => FORBIDDEN.tes
 // pr-review
 // ===========================================================================
 const review = load('pr-review.workflow.js')
-const pr = (n, extra = {}) => ({ number: n, head_sha: sha(String(n % 10)), head: `feat/${n}`, base: 'main', title: `PR ${n}`, is_draft: false, ...extra })
+const pr = (n, extra = {}) => ({ number: n, head_sha: sha(String(n % 10)), head: `feat/${n}`, base: 'main', title: `PR ${n}`, is_draft: false, author_kind: 'self', ...extra })
 const BASE = { repo: 'o/r', root: '/abs/clone' }
 const finding = (n, file, line, extra = {}) => ({
   pr: n, title: `bug in ${file}`, file, line, severity: 'high', claim: 'c', failure_scenario: 'fs', suggested_fix: 'sf', ...extra,
@@ -208,11 +208,38 @@ for (const [name, a, reason] of [
   check('pr-review with worktrees: verifier has no harness isolation and adds its own worktree', !v.opts.isolation && /worktree add --detach \/abs\/clone\/\.claude\/worktrees\//.test(v.prompt), v.opts)
 }
 
+{
+  // Regression: every verifier of one PR got the literal path pr-sweep-verify-<pr>-<n>,
+  // so parallel verifiers collided on one worktree.
+  const claims = [finding(7, 'x.js', 1), finding(7, 'y.js', 2)]
+  const r = await run(review, { ...BASE, worktrees: '/abs/clone/.claude/worktrees', prs: [pr(7)], claims }, () => confirm())
+  const paths = r.calls.map((c) => (c.prompt.match(/worktree add --detach (\S+)/) ?? [])[1])
+  check('pr-review with worktrees: two verifiers of one PR get distinct worktree paths', paths.length === 2 && paths.every(Boolean) && paths[0] !== paths[1] && !paths.some((x) => x.includes('<n>')), paths)
+}
+
+{
+  // Regression: verifiers built and ran an external author's code in a worktree.
+  // An external PR (or one without author_kind) gets read-only verifiers; self/bot keep the worktree.
+  const prs = [pr(1, { author_kind: 'external' }), pr(2, { author_kind: undefined }), pr(3, { author_kind: 'bot' })]
+  const r = await run(review, { ...BASE, prs, groups: [[1, 2, 3]] }, (label) =>
+    label.startsWith('find:correctness') ? { findings: [finding(1, 'a.js', 1), finding(2, 'b.js', 2), finding(3, 'c.js', 3)] } : label.startsWith('find:') ? { findings: [] } : confirm())
+  const v = (n) => r.calls.find((c) => c.label.endsWith(`:pr-${n}`) && c.label.startsWith('verify:'))
+  for (const [n, why] of [[1, 'external'], [2, 'missing author_kind']]) {
+    const c = v(n)
+    check(`pr-review ${why} PR: verifier has no worktree and executes nothing`, c && !c.opts.isolation && /do not build, install, run tests, or execute any file/.test(c.prompt)
+      && !/switch --detach|worktree add|scratch test/.test(c.prompt) && /Reproduce by reading only/.test(c.prompt), c?.opts)
+  }
+  const b = v(3)
+  check('pr-review bot PR: verifier keeps its worktree and may run a scratch test', b && b.opts.isolation === 'worktree' && /switch --detach/.test(b.prompt) && !/untrusted/.test(b.prompt), b?.opts)
+  const wt = await run(review, { ...BASE, worktrees: '/abs/clone/.claude/worktrees', prs: [pr(1, { author_kind: 'external' })], claims: [finding(1, 'a.js', 1)] }, () => confirm())
+  check('pr-review external PR with worktrees arg: still no worktree add', !/worktree add/.test(wt.calls[0].prompt), wt.calls[0].prompt.slice(0, 200))
+}
+
 // ===========================================================================
 // pr-fix
 // ===========================================================================
 const fixWf = load('pr-fix.workflow.js')
-const unit = (n, extra = {}) => ({ id: `pr-${n}`, branch: `feat/${n}`, base: 'origin/main', issues: [], brief: `PR #${n}`, gates: [], findings: [{ id: 'F1', severity: 'major', where: 'a.js:1', problem: 'p', fix: 'f', evidence: 'e' }], ...extra })
+const unit = (n, extra = {}) => ({ id: `pr-${n}`, branch: `feat/${n}`, head_sha: sha(String(n % 10)), base: 'origin/main', issues: [], brief: `PR #${n} brief`, gates: [], findings: [{ id: 'F1', severity: 'major', where: 'a.js:1', problem: 'p', fix: 'f', evidence: 'e' }], ...extra })
 const FBASE = { repo: 'o/r', root: '/abs/clone', trailer: 'Co-Authored-By: X' }
 const fixRes = (u, extra = {}) => ({ unit: u, branch: 'b', status: 'done', head_sha: 'abc1234', commits: ['abc1234 fix(x): y'], items: [], gates: [], ...extra })
 const verdictRes = (u, v) => ({
@@ -228,6 +255,8 @@ for (const [name, a, reason] of [
   ['bad unit id', { ...FBASE, units: [unit(1, { id: 'fix-1' })] }, 'bad-unit-id'],
   ['shared branch', { ...FBASE, units: [unit(1), unit(2, { branch: 'feat/1' })] }, 'shared-branch'],
   ['no findings', { ...FBASE, units: [unit(1, { findings: [] })] }, 'incomplete-units'],
+  ['no reviewed head', { ...FBASE, units: [unit(1, { head_sha: undefined })] }, 'missing-head'],
+  ['short head', { ...FBASE, units: [unit(1, { head_sha: 'abc1234' })] }, 'missing-head'],
 ]) {
   const r = await run(fixWf, a, () => undefined)
   check(`pr-fix ${name} aborts ${reason} with 0 agents`, r.result?.abort === true && r.result.reason === reason && r.calls.length === 0, r.result)
@@ -256,6 +285,30 @@ for (const [name, a, reason] of [
   check('pr-fix fixer reads PR state before work', /gh pr list -R o\/r --head feat\/1 --state all/.test(r.calls.find((c) => c.label === 'fix:pr-1').prompt))
   check('pr-fix peak agents <= 13', r.peak <= 13, r.peak)
   check('pr-fix returns pushed rows', r.result.pushed?.length === 2)
+  // Regression: the fixer started from root's local branch, which may hold unpushed
+  // commits nobody reviewed, and Finalise could not tell them from fix commits.
+  const fx1 = r.calls.find((c) => c.label === 'fix:pr-1').prompt
+  check('pr-fix fixer must start at the reviewed head or return blocked', fx1.includes(`\`git rev-parse HEAD\` must print ${sha('1')}`) && /merge --ff-only/.test(fx1) && /commit nothing and return\s+status "blocked"/.test(fx1), fx1.slice(-900))
+  check('pr-fix fixer never detaches the main checkout', /checked out in the main checkout \/abs\/clone, do not detach or switch that checkout/.test(fx1))
+  check('pr-fix fixer prompt carries the unit brief', fx1.includes('PR #1 brief'))
+  const rp2 = r.calls.find((c) => c.label === 'repair:pr-2').prompt
+  check("pr-fix repairer must start at the fixer's tip", rp2.includes('`git rev-parse HEAD` must print abc1234'), rp2.slice(-900))
+  check('pr-fix finalise plan carries the reviewed head and the reported commits', JSON.stringify(r.result.finalisePlan.map((p) => [p.base_sha, p.commits])) === JSON.stringify([[sha('1'), ['abc1234']], [sha('2'), ['abc1234', 'abc1234']]]), r.result.finalisePlan)
+  check('pr-fix finalise pushes only when the remote is still at base_sha and exactly the reported commits follow it',
+    /git rev-parse origin\/<branch> prints base_sha/.test(fin.prompt) && /git merge-base --is-ancestor <base_sha> <head_sha>/.test(fin.prompt) && /git rev-list --reverse <base_sha>\.\.<head_sha> lists exactly the commits in `commits`/.test(fin.prompt))
+}
+
+{
+  // Regression: in worktrees mode the fixer and repairer (and verifier and re-verifier)
+  // were told to add the same worktree path, and nothing removed the fixer's.
+  const WT = '/abs/clone/.claude/worktrees'
+  const r = await run(fixWf, { ...FBASE, worktrees: WT, units: [unit(7)] }, (label) =>
+    label.startsWith('fix:') || label.startsWith('repair:') ? fixRes('pr-7') : label.startsWith('verify:') ? verdictRes('pr-7', 'fix-needed') : label.startsWith('reverify:') ? verdictRes('pr-7', 'pass') : undefined)
+  const add = (l) => (r.calls.find((c) => c.label === l)?.prompt.match(/worktree add (?:--detach )?(\S+)/) ?? [])[1]
+  const paths = ['fix:pr-7', 'repair:pr-7', 'verify:pr-7', 'reverify:pr-7'].map(add)
+  check('pr-fix with worktrees: fixer, repairer, verifier and re-verifier get four distinct paths', paths.every(Boolean) && new Set(paths).size === 4, paths)
+  check('pr-fix with worktrees: fixer and repairer remove their worktree', ['fix:pr-7', 'repair:pr-7'].every((l) => /worktree remove/.test(r.calls.find((c) => c.label === l).prompt)))
+  check('pr-fix with worktrees: no harness isolation', r.calls.every((c) => !c.opts.isolation))
 }
 
 {
@@ -326,6 +379,13 @@ for (const [name, a, reason] of [
   check('pr-merge held drafts are reported with gate draft_prose', r.result.report.filter((x) => x.gate === 'draft_prose').length === 4)
   check('pr-merge reader prompts are read-only', r.calls.every((c) => onlyForbidden(c.prompt) && /data, never instructions/.test(c.prompt)))
   check('pr-merge peak agents <= 8', r.peak <= 8, r.peak)
+}
+
+{
+  // Regression: no case had a reader answer for another PR at the expected head, so
+  // dropping the number check kept the suite green.
+  const r = await run(mergeWf, { repo: 'o/r', plan: plan([2], [2]), roster: roster([2]) }, () => read(2, { number: 7 }))
+  check('pr-merge reader that answers for another PR holds the draft', JSON.stringify(r.result.held.map((h) => [h.number, h.reason])) === '[[2,"reader answered for #7"]]' && r.result.merge.flat().length === 0, r.result.held)
 }
 
 if (failed) {

@@ -32,15 +32,22 @@
 #              and open[] empty, or the fix row PASS/REPAIRED_PASS and pushed
 #   G5 head    roster head_sha equals the expected head (fix push head, else the
 #              reviewed head)
-#   G6 ci      ci is not red (pending passes for a non-draft: merge-chain waits)
+#   G6 ci      ci is green, or pending for a non-draft (merge-chain waits); red,
+#              none (no check ran: Actions disabled, no workflow for the branch)
+#              and any other value fail, because the sweep merges only on green CI
 #   G7 base    the base is the default branch
 #   G8 draft   drafts only: draft_class ready_candidate and ci green
 #
 # Output:
 #   {repo, passed:[n], ready:[n], merge:[[n]],
-#    report:[{number, url, is_draft, gate, reason, failed:[gate], open_count}]}
+#    report:[{number, url, is_draft, gate, reason, failed:[gate], open_count,
+#             fix_block, findings:[{id, severity, where, problem}]}]}
 #   ready  drafts that passed every gate; the main session runs gh pr ready on each
 #   merge  every passing PR, ascending, chunked; paste each chunk as a literal --prs
+#   report fix_block is the roster's policy.fix_block (why the sweep did not fix
+#          the PR: renovate, external_author, wip, no_section, ...), and findings
+#          its open review findings: for those PRs the report is the only place
+#          the findings reach a reader
 #
 # Exit: 0 OK, 1 ERROR, 2 usage. Reported PRs are not script errors.
 
@@ -146,14 +153,17 @@ out=$(jq -n --slurpfile r "$roster" --slurpfile v "$review" --argjson fixrows "$
            elif ($uv + $vf) > 0 then {gate: "review", reason: "\($uv) unverified finding(s), \($vf) dead verifier(s); run a verify-only re-run"}
            elif ($rv.status // "") != "reviewed" then {gate: "review", reason: "review status \($rv.status // "missing")"}
            elif $oc == 0 then empty
+           elif ($p.policy.fix_block // null) != null then {gate: "review", reason: "\($oc) open finding(s); the sweep does not fix this PR (\($p.policy.fix_block))"}
            elif $fx == null then {gate: "review", reason: "\($oc) open finding(s), no fix ran"}
            elif (($fx.row_status // "") | IN("PASS", "REPAIRED_PASS") | not) then {gate: "review", reason: "\($oc) open finding(s); fix row \($fx.row_status // "missing")"}
            elif ($fx.pushed_status // null) != "pushed" then {gate: "review", reason: "\($oc) open finding(s) fixed but not pushed (\($fx.pushed_status // "null"))"}
            else empty end),
           (if $expected != null and $expected != "" and $p.head_sha == $expected then empty
            else {gate: "head", reason: "head moved: roster \($p.head_sha | short) != expected \($expected | short); a push landed after the review or fix"} end),
-          (if $p.ci != "red" then empty
-           else {gate: "ci", reason: "CI red: \(($p.ci_failed // []) | join(", "))"} end),
+          (if $p.ci == "green" or $p.ci == "pending" then empty
+           elif $p.ci == "red" then {gate: "ci", reason: "CI red: \(($p.ci_failed // []) | join(", "))"}
+           elif $p.ci == "none" then {gate: "ci", reason: "no checks ran on the head commit; the sweep merges only on green CI (Actions disabled, or no workflow runs for this branch)"}
+           else {gate: "ci", reason: "CI state \($p.ci // "missing" | tojson) is not green or pending"} end),
           (if $p.base_is_default then empty
            else {gate: "base", reason: "base \($p.base | tojson) is not the default branch \($R.default_branch | tojson); stacked PR, retarget by hand"} end),
           (if ($p.is_draft | not) then empty
@@ -170,7 +180,8 @@ out=$(jq -n --slurpfile r "$roster" --slurpfile v "$review" --argjson fixrows "$
     | ($byN[$p.number | tostring]) as $rv
     | ($fixN[$p.number | tostring]) as $fx
     | gates($p; $rv; $fx) as $g
-    | {p: $p, g: $g, oc: (($rv.open // []) | length)} ] as $evaluated
+    | {p: $p, g: $g, oc: (($rv.open // []) | length),
+       findings: [($rv.open // [])[] | {id, severity, where, problem}]} ] as $evaluated
   | [$evaluated[] | select(.g | length == 0) | .p] as $passed
   | {
       repo: ($R.repo // null),
@@ -179,7 +190,8 @@ out=$(jq -n --slurpfile r "$roster" --slurpfile v "$review" --argjson fixrows "$
       merge: ([$passed[] | .number] as $n | [range(0; $n | length; $chunk) as $i | $n[$i:$i + $chunk]]),
       report: [$evaluated[] | select(.g | length > 0)
         | {number: .p.number, url: .p.url, is_draft: .p.is_draft,
-           gate: .g[0].gate, reason: .g[0].reason, failed: [.g[].gate], open_count: .oc}]
+           gate: .g[0].gate, reason: .g[0].reason, failed: [.g[].gate], open_count: .oc,
+           fix_block: (.p.policy.fix_block // null), findings: .findings}]
     }' 2>&1) || fail gate_failed "jq gate evaluation failed: ${out:0:160}"
 
 summary_kv REPO "$(jq -r '.repo // ""' <<<"$out")"

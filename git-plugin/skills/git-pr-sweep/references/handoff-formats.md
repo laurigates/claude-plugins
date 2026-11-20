@@ -48,7 +48,8 @@ for one ready draft each, as data.
 ```
 
 pr-review args for run `i`: `{repo, root, prs: runs[i].prs, groups: runs[i].groups}` plus the
-optional `worktrees`, `context`, `decided`, `lensBrief`, `verifyCap`.
+optional `worktrees`, `context`, `decided`, `lensBrief`, `verifyCap`. `author_kind` in each row picks
+the verifier mode: `self`/`bot` run in a worktree, anything else (or none) reads only.
 
 ## pr-review return, and review.json (`merge-review.sh`)
 
@@ -67,8 +68,9 @@ updates a full-run row only when `head_sha` matches; its `open`/`refuted` are ap
 `unreviewed` when both lenses died, `partial` when one lens died or a finding is unverified or behind
 a dead verifier, otherwise `reviewed`.
 
-A verify-only re-run takes `claims` = every row's `unverified` (each carries `pr`) and `prs` = the
-roster rows of those PRs.
+A verify-only re-run is one per review run: `claims` = that run's `unverified` rows (each carries
+`pr`) and `prs` = that run's rows for those PRs, written to `verify-<i>.json`. Pooling claims across
+runs can exceed the 6-PR cap and abort.
 
 ## units.json (`review-to-units.sh`) and pr-fix
 
@@ -76,19 +78,23 @@ roster rows of those PRs.
 
 ```
 {repo, chunk, units_total,
- runs:[[{id: "pr-<n>", branch, base: "origin/<base>", issues: [], brief, gates: [], findings}]],
+ runs:[[{id: "pr-<n>", branch, head_sha, base: "origin/<base>", issues: [], brief, gates: [], findings}]],
  excluded:[{number, reason, open_count}]}
 ```
 
 pr-fix return (repair-round's shape): `{rows:[{unit, branch, status, fix, verdicts}],
 finalisePlan:[{unit, branch, head_sha, pr_body_note}], pushed:[{unit, branch, status, detail}] | null}`.
-`merge-gate.sh` accepts one or several of these files, keyed on the `pr-<n>` unit id.
+`finalisePlan` entries also carry `base_sha` (the reviewed head) and `commits` (the fixer's and
+repairer's commits); Finalise pushes a tip only when the remote is still at `base_sha` and exactly
+those commits follow it. `merge-gate.sh` accepts one or several of these files, keyed on the
+`pr-<n>` unit id.
 
 ## gate.json (`merge-gate.sh`) and plan.json (pr-merge)
 
 ```
 {repo, passed:[n], ready:[n], merge:[[n]],
- report:[{number, url, is_draft, gate, reason, failed:[gate], open_count}]}
+ report:[{number, url, is_draft, gate, reason, failed:[gate], open_count,
+          fix_block, findings:[{id, severity, where, problem}]}]}
 ```
 
 pr-merge adds `held:[{number, reason, conditions}]` and `verdicts`, removes held drafts from

@@ -14,8 +14,10 @@
 #     with repair-round's minus the three stage helpers.
 #   pr-merge — a reader can only hold a ready draft (hold, dead reader, unmet or
 #     unknown condition, moved head); the merge chunks are rebuilt; read-only.
-# It also pins the caps the review planner and the review template share, and
-# each template's agent count as the scale estimator reads it.
+# It also pins the caps the review planner and the review template share, each
+# template's agent count as the scale estimator reads it, and three SKILL.md
+# orderings: the review timestamp before the merge-stage re-list, one verify-only
+# re-run per review run, and findings listed in the final report.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -59,6 +61,36 @@ if command -v python3 >/dev/null; then
     else bad "$name estimator ESTIMATE=$got UNBOUNDED=$unb (want $want, 0)"; fi
   done
 fi
+
+# Regression: the merge stage took --review-ts after the re-list, the gate, the pr-merge
+# run and gh pr ready, so a push landing in that window predated the timestamp and
+# merge-chain.sh merged a head no review or gate saw. The timestamp now comes first.
+skill_md="$skill/SKILL.md"
+step4=$(awk '/^### Step 4: Merge/{on=1} /^## Draft handling/{on=0} on' "$skill_md")
+ts_line=$(grep -n 'date -u +%Y-%m-%dT%H:%M:%SZ' <<<"$step4" | head -1 | cut -d: -f1)
+relist_line=$(grep -n 'Re-list fresh' <<<"$step4" | head -1 | cut -d: -f1)
+if [[ -n "$ts_line" && -n "$relist_line" && "$ts_line" -lt "$relist_line" ]]; then pass "SKILL Step 4 takes the review timestamp before the re-list"
+else bad "SKILL Step 4 must take the review timestamp (line $ts_line) before the re-list (line $relist_line)"; fi
+proc="$skill/references/merge-procedure.md"
+ts_row=$(grep -n '^| M[0-9] .*date -u' "$proc" | head -1 | cut -d: -f1)
+relist_row=$(grep -n '^| M[0-9] .*list-sweep-prs.sh --resolve-blockers' "$proc" | head -1 | cut -d: -f1)
+if [[ -n "$ts_row" && -n "$relist_row" && "$ts_row" -lt "$relist_row" ]]; then pass "merge-procedure takes the timestamp before the re-list"
+else bad "merge-procedure must order the timestamp row ($ts_row) before the re-list row ($relist_row)"; fi
+
+# Regression: Step 2 pooled every run's unverified claims into one verify-only re-run,
+# which aborts over pr-review's 6-PR cap, and its join example dropped review-2.json.
+step2=$(awk '/^### Step 2: Review/{on=1} /^### Step 3: Fix/{on=0} on' "$skill_md")
+# shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
+if grep -qF 'For each `review-<i>.json` with `unverified` rows' <<<"$step2" && grep -qF '`<work>/verify-<i>.json`' <<<"$step2" \
+   && grep -qE 'merge-review\.sh .*review-1\.json .*review-2\.json .*verify-1\.json' <<<"$step2"; then
+  pass "SKILL Step 2 re-verifies per review run and joins every run file"
+else bad "SKILL Step 2 must re-verify per review run (verify-<i>.json) and join every review/verify file"; fi
+
+# Regression: findings of PRs the sweep may not fix were never shown; Post-actions must list them.
+post=$(awk '/^## Post-actions/{on=1} on' "$skill_md")
+# shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
+if grep -qF '`findings`' <<<"$post" && grep -qF '`fix_block`' <<<"$post"; then pass "SKILL Post-actions lists each reported PR's findings and fix_block"
+else bad "SKILL Post-actions must list reported PRs' findings and fix_block"; fi
 
 node "$here/run-workflows.mjs" "$wf" "$rr" || fail=1
 exit "$fail"

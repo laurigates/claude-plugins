@@ -41,12 +41,11 @@ Parse these from `$ARGUMENTS`:
 | `--dry-run` | off | Stop before pr-fix, `gh pr ready` and `merge-chain.sh`; print the plan |
 
 `<work>` is `<root>/tmp/pr-sweep/` when `tmp/` is git-ignored there, else the session scratchpad.
-Outside `<root>`'s repository, pass `worktrees: "<root>/.claude/worktrees"` in every Workflow's args
-(a harness worktree would be of the wrong repo). Formats: [references/handoff-formats.md](references/handoff-formats.md).
+Outside `<root>`'s repository, pass `worktrees: "<root>/.claude/worktrees"` in every Workflow's args. Formats: [references/handoff-formats.md](references/handoff-formats.md).
 
 ## Execution
 
-Execute this PR sweep one stage at a time, reading each script's summary before the next step.
+Execute this PR sweep one stage at a time, reading each script's summary before going on.
 
 ### Step 1: Guard the clone and list the PRs (every stage)
 
@@ -73,17 +72,16 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
    bash ${CLAUDE_SKILL_DIR}/scripts/prefetch-heads.sh --root <root> <work>/roster.json
    ```
 
-   On `MISSING=` PRs re-run Step 1 (a force-push); still missing → report them unreviewed and re-plan without them.
-3. For each `runs[i]`, in order, adapt `workflows/pr-review.workflow.js` (see
-   [Workflow harness (template)](#workflow-harness-template)) and run it with args `{repo, root,
+   On `MISSING=` PRs re-run Step 1; still missing → report them unreviewed and re-plan without them.
+3. For each `runs[i]`, in order, adapt `workflows/pr-review.workflow.js` and run it with args `{repo, root,
    prs: runs[i].prs, groups: runs[i].groups, context, decided}`. Write each return verbatim to
-   `<work>/review-<i>.json`.
-4. If any PR has `unverified` rows, re-run the template with `claims` = those rows and `prs` = their
-   PRs' rows; write `<work>/verify-1.json`.
-5. Join the runs:
+   `<work>/review-<i>.json`. A PR not by you or a bot is verified by reading only, never run.
+4. For each `review-<i>.json` with `unverified` rows, re-run the template once with `claims` = that
+   run's unverified rows and `prs` = their rows (never over the cap); write `<work>/verify-<i>.json`.
+5. Join every file written, review files first:
 
    ```bash
-   bash ${CLAUDE_SKILL_DIR}/scripts/merge-review.sh --out <work>/review.json <work>/review-1.json <work>/verify-1.json
+   bash ${CLAUDE_SKILL_DIR}/scripts/merge-review.sh --out <work>/review.json <work>/review-1.json <work>/review-2.json <work>/verify-1.json
    ```
 
 ### Step 3: Fix (`--stage fix|all`)
@@ -94,11 +92,11 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
    bash ${CLAUDE_SKILL_DIR}/scripts/review-to-units.sh --chunk 3 --out <work>/units.json <work>/roster.json <work>/review.json
    ```
 
-2. For each `runs[i]`, in order (each run's finalise pushes, and the next run must see it), adapt
+2. For each `runs[i]`, in order (the next run must see this one's push), adapt
    `workflows/pr-fix.workflow.js` and run it with args `{repo, root, base: "origin/<default>",
    units: runs[i], gates, setup, skills: ["git-plugin:git-commit-workflow"], decisions, trailer}`.
-   `gates` are the repo's test and lint commands; `decisions` relay Lauri's choices as given;
-   `trailer` is the session's commit trailer. Write each return to `<work>/fix-<i>.json`.
+   `gates` are the repo's test and lint commands; `decisions` relay Lauri's choices as given.
+   Write each return to `<work>/fix-<i>.json`.
 3. Re-dispatch a FAILED or UNVERIFIED unit fresh after
    `gh pr list -R <owner>/<repo> --head <branch> --state all --json number,state,headRefOid`.
 
@@ -106,27 +104,28 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
 
 Main session only, in order; stop handling: [references/merge-procedure.md](references/merge-procedure.md).
 
-1. Re-list fresh (a blocker may have merged mid-sweep): repeat Step 1.2.
-2. Gate every PR:
+1. Take the review timestamp first, before the re-list, so a later push stops merge-chain.sh:
+   `date -u +%Y-%m-%dT%H:%M:%SZ`.
+2. Re-list fresh (a blocker may have merged mid-sweep): repeat Step 1.2.
+3. Gate every PR:
 
    ```bash
    bash ${CLAUDE_SKILL_DIR}/scripts/merge-gate.sh --out <work>/gate.json <work>/roster.json <work>/review.json <work>/fix-1.json <work>/fix-2.json
    ```
 
-3. If `gate.json` has `ready` drafts, adapt `workflows/pr-merge.workflow.js`, run it with args
+4. If `gate.json` has `ready` drafts, adapt `workflows/pr-merge.workflow.js`, run it with args
    `{repo, plan: gate.json, roster: roster.json}`, write `<work>/plan.json`; else `plan.json` is `gate.json`.
-4. For each draft in `plan.ready`, one literal number per call:
+5. For each draft in `plan.ready`, one literal number per call:
    `gh pr ready 12 -R <owner>/<repo>`, then confirm with `gh pr view 12 -R <owner>/<repo> --json isDraft`.
-5. Take the review timestamp after the last push and the last `gh pr ready`:
-   `date -u +%Y-%m-%dT%H:%M:%SZ`.
-6. For each `plan.merge` chunk, in a background Bash call, `--repo` and `--prs` as literals:
+6. For each `plan.merge` chunk, in a background Bash call, `--repo` and `--prs` as literals; before
+   each later chunk, repeat steps 2–3 and drop PRs that no longer pass:
 
    ```bash
    bash ${CLAUDE_SKILL_DIR}/../git-merge-hazards/scripts/merge-chain.sh --repo <owner>/<repo> --prs 12,15,19 --review-ts <ts> --fetch-dir <root>
    ```
 
 7. Read the `=== MERGE CHAIN ===` block. A CONFLICT or CI_RED stop gets one pr-fix run for that PR,
-   then a new timestamp and the `REMAINING` list; DENIED and GUARD_LATE_COMMIT are reported for Lauri.
+   then steps 1–6 for `REMAINING`; DENIED and GUARD_LATE_COMMIT are reported for Lauri.
 
 ## Draft handling
 
@@ -135,7 +134,7 @@ Main session only, in order; stop handling: [references/merge-procedure.md](refe
 | `not_draft` | yes | yes | when G1–G7 pass |
 | `ready_candidate` | yes | yes | when G1–G8 pass and pr-merge's reader finds no unmet `## Draft status` condition |
 | `blocked`, `blockers_unresolved` | yes | yes | no; reported with each blocker not MERGED |
-| `wip`, `no_section`, `no_blocker_urls` | yes | no | no; surfaced with findings and reason (Lauri's call) |
+| `wip`, `no_section`, `no_blocker_urls` | yes | no | no; surfaced with findings and reason |
 
 WIP markers, gates and per-kind policy (release-please, Renovate, external authors): [references/draft-gates.md](references/draft-gates.md).
 
@@ -148,11 +147,11 @@ rewrite it for the work in front of you.
 **Adapt freely:** the lens and reader prompt wording, `lensBrief`, `verifyCap`, `decided[]`, the
 repo's gates, setup and trailer, and the merge chunk size.
 
-**Agent budget (pr-review.workflow.js):** 15 — 2 finders per group over `GROUPS.slice(0, 4)` plus 7 verifiers over `toVerify.slice(0, 7)`; a verify-only re-run costs at most 7.
+**Agent budget (pr-review.workflow.js):** 15 — 2 finders per group over `GROUPS.slice(0, 4)` plus 7 verifiers over `toVerify.slice(0, 7)`.
 
 **Agent budget (pr-fix.workflow.js):** 13 — per unit over `UNITS.slice(0, 3)` a fixer, a verifier, and on `fix-needed` a repairer and a re-verifier, plus 1 finalise.
 
-**Agent budget (pr-merge.workflow.js):** 8 — one reader per ready draft over `READY.slice(0, 8)`; none when `plan.ready` is empty.
+**Agent budget (pr-merge.workflow.js):** 8 — one reader per ready draft over `READY.slice(0, 8)`.
 
 Above 10 agents the scale guard asks before each run.
 
@@ -160,8 +159,7 @@ Above 10 agents the scale guard asks before each run.
 `review-to-units.sh` units, `merge-gate.sh` ready drafts), with literal slices in the fan-outs and an
 abort over a cap, never a truncation; (b) the closed enums: refute-by-default
 `confirmed|partially|refuted` (an unreproduced confirmation is a dead verifier), `pass|fix-needed|reject`,
-and `ready|hold` where only a consistent `ready` clears a draft; (c) Rank is pr-review's barrier (dedup across lenses and the per-PR fair share
-need every finder), Finalise is pr-fix's (push order on one remote), the plan rebuild is pr-merge's;
+and `ready|hold` where only a consistent `ready` clears a draft; (c) Rank is pr-review's barrier, Finalise is pr-fix's (push order on one remote), the plan rebuild is pr-merge's;
 (d) pr-fix's `rr-shared` region stays byte-identical with repair-round's, minus its stage helpers
 (`scripts/tests/test-pr-sweep-workflows.sh`).
 
@@ -176,7 +174,8 @@ never inside a fanned-out agent. `gh pr ready` and every merge run in the main s
 
 ## Post-actions
 
-1. Print one row per PR: number, stage reached, outcome or first failing gate, link; PRs in chunks
-   a stop left unrun are `not_attempted`.
-2. File a GitHub issue in the swept repo for each follow-up (a held draft's condition, a repeated CI failure).
+1. Print one row per PR: number, stage reached, outcome or first failing gate and `reason`, link;
+   PRs in chunks a stop left unrun are `not_attempted`. Under a row with `findings`, list them and
+   its `fix_block`: the only place a Renovate, external or unreadyable draft's findings surface.
+2. File a GitHub issue in the swept repo for each follow-up.
 3. Run `git -C <root> worktree prune`; never force-remove a worktree.

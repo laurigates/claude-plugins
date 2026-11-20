@@ -29,8 +29,12 @@
  *   worktrees   optional: a directory inside root's clone for verifier
  *               worktrees, when the session is NOT running inside root's
  *               repository (a harness worktree would then be of the wrong repo)
- *   prs         [{number, head_sha, head, base, title, is_draft, diff_lines,
- *               changed_files}] — one plan-review-runs.sh runs[].prs
+ *   prs         [{number, head_sha, head, base, title, is_draft, author_kind,
+ *               diff_lines, changed_files}] — one plan-review-runs.sh runs[].prs.
+ *               author_kind decides the verifier mode: a self or bot PR is
+ *               verified in a worktree and may be built and run; any other
+ *               author's PR (or a row without author_kind) gets read-only
+ *               verifiers with no worktree that execute nothing from it.
  *   groups      [[number]] — the same run's groups
  *   context     optional repo context for every agent
  *   decided     optional ["..."] the owner decided; NOT findings
@@ -89,6 +93,9 @@ const PRS = (INPUT.prs ?? []).map((p) => ({
   base: String(p.base ?? ''),
   title: String(p.title ?? ''),
   is_draft: Boolean(p.is_draft),
+  // Only the repo owner's and bots' code may run on this machine
+  // (git-plugin:external-pr-trust). A missing author_kind counts as external.
+  trusted: ['self', 'bot'].includes(String(p.author_kind ?? '')),
 }))
 const byNumber = new Map(PRS.map((p) => [p.number, p]))
 const GROUPS = (INPUT.groups ?? []).map((g) => (Array.isArray(g) ? g : (g?.prs ?? [])).map(Number))
@@ -258,8 +265,28 @@ Return {findings: [...]}. Every finding has exactly these fields, all required: 
 file, line, severity (critical|high|medium|low), claim, failure_scenario, suggested_fix. No other field is allowed.
 A schema rejection means shrink or restructure the output, not resend it unchanged.`
 
-const VERIFY_PROMPT = (f) => {
+// i is the verifier's index in this run, so parallel verifiers of one PR get
+// distinct worktree paths.
+const VERIFY_PROMPT = (f, i) => {
   const p = byNumber.get(f.pr)
+  const where = !p.trusted
+    ? `This PR's author is not the repository owner or a bot (git-plugin:external-pr-trust), so its code is untrusted:
+do not build, install, run tests, or execute any file from it — not in a worktree, not under tmp/. Do not create a
+worktree. Reproduce by reading only: trace the input through the code at ${p.head_sha} with git -C ${CTX.root} show
+and git -C ${CTX.root} grep <pattern> ${p.head_sha}, and put the traced path, file:line by file:line, in reproduction.
+`
+    : CTX.worktrees
+      ? `Create your own detached worktree and work only inside it; remove it when done (never --force):
+  git -C ${CTX.root} worktree add --detach ${CTX.worktrees}/pr-sweep-verify-${f.pr}-${i + 1} ${p.head_sha}
+If that path already exists, add the suffix -b; never reuse or remove a worktree you did not create.
+You may write and run a scratch test only inside your worktree or under ${CTX.root}/tmp/, deleted afterwards.
+`
+      : `You are in your own worktree. Detach it at the reviewed commit before building or running anything:
+  SHA=$(git -C ${CTX.root} rev-parse --verify '${p.head_sha}^{commit}')
+  git -C <your worktree> switch --detach "$SHA"
+Never detach at a symbolic ref such as HEAD from inside your worktree: it names your worktree's commit.
+You may write and run a scratch test only inside your worktree or under ${CTX.root}/tmp/, deleted afterwards.
+`
   return `${common()}
 
 Under review: ${prLine(p)}
@@ -269,16 +296,7 @@ no stake in it being real. Try to REFUTE it. Default to "refuted" unless you can
 an input or state, and the wrong outcome it produces. Check reachability, upstream normalisation, documented intent,
 and tests that assert the behaviour on purpose before confirming.
 
-${CTX.worktrees
-    ? `Create your own detached worktree and work only inside it; remove it when done (never --force):
-  git -C ${CTX.root} worktree add --detach ${CTX.worktrees}/pr-sweep-verify-${f.pr}-<n> ${p.head_sha}
-`
-    : `You are in your own worktree. Detach it at the reviewed commit before building or running anything:
-  SHA=$(git -C ${CTX.root} rev-parse --verify '${p.head_sha}^{commit}')
-  git -C <your worktree> switch --detach "$SHA"
-Never detach at a symbolic ref such as HEAD from inside your worktree: it names your worktree's commit.
-`}You may write and run a scratch test only inside your worktree or under ${CTX.root}/tmp/, deleted afterwards.
-Do not edit tracked source, stage, commit, push, or touch GitHub (no gh pr review, comment, merge or ready).
+${where}Do not edit tracked source, stage, commit, push, or touch GitHub (no gh pr review, comment, merge or ready).
 
 Finding (${f.raised_by.join(' + ')}, ${f.severity}) on PR #${f.pr}: ${f.title}
 Location: ${f.file}${f.line ? `:${f.line}` : ''}
@@ -381,7 +399,7 @@ const ISO = CTX.worktrees ? {} : { isolation: 'worktree' }
 // PRESERVE the literal bound: 7 = MAX_VERIFY.
 const verdicts = await parallel(
   toVerify.slice(0, 7).map((f, i) => () =>
-    agent(VERIFY_PROMPT(f), { label: `verify:${i + 1}:pr-${f.pr}`, phase: 'Verify', schema: VERDICT_SCHEMA, model: 'opus', effort: 'high', ...ISO }),
+    agent(VERIFY_PROMPT(f, i), { label: `verify:${i + 1}:pr-${f.pr}`, phase: 'Verify', schema: VERDICT_SCHEMA, model: 'opus', effort: 'high', ...(byNumber.get(f.pr).trusted ? ISO : {}) }),
   ),
 )
 

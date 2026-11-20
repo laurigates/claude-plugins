@@ -8,14 +8,19 @@ guards `gh pr ready`, so the author gate (G2) has already decided who may be rea
 
 | # | Actor | Action |
 |---|---|---|
-| M1 | script | `list-sweep-prs.sh --resolve-blockers` into a fresh `roster.json`; a blocker may have merged since the review |
-| M2 | script | `merge-gate.sh roster.json review.json fix-<i>.json...` into `gate.json` |
-| M3 | pr-merge | only when `gate.json` has `ready` drafts: one reader per draft, then the rebuilt `plan.json` |
-| M4 | main session | `gh pr ready <n> -R <owner>/<repo>` for each `plan.ready`, one literal number per call, then `gh pr view <n> -R <owner>/<repo> --json isDraft` to confirm |
-| M5 | main session | the review timestamp, `date -u +%Y-%m-%dT%H:%M:%SZ`, taken after the last fix push and the last `gh pr ready` |
-| M6 | main session | per `plan.merge` chunk, one background `merge-chain.sh` call |
+| M1 | main session | the review timestamp, `date -u +%Y-%m-%dT%H:%M:%SZ`, taken after the last fix push and **before** the re-list: a push landing after it is newer than it, so merge-chain.sh stops with GUARD_LATE_COMMIT |
+| M2 | script | `list-sweep-prs.sh --resolve-blockers` into a fresh `roster.json`; a blocker may have merged since the review |
+| M3 | script | `merge-gate.sh roster.json review.json fix-<i>.json...` into `gate.json` |
+| M4 | pr-merge | only when `gate.json` has `ready` drafts: one reader per draft, then the rebuilt `plan.json` |
+| M5 | main session | `gh pr ready <n> -R <owner>/<repo>` for each `plan.ready`, one literal number per call, then `gh pr view <n> -R <owner>/<repo> --json isDraft` to confirm (readying makes no commit) |
+| M6 | main session | per `plan.merge` chunk, one background `merge-chain.sh` call with the M1 timestamp; before every chunk after the first, repeat M2–M3 and drop any PR that no longer passes |
 | M7 | main session | read the `=== MERGE CHAIN ===` block |
 | M8 | conditional | one repair on CONFLICT or CI_RED, then resume the chunk |
+
+A timestamp taken after the re-list would leave a gap: a push between the re-list and the
+timestamp is older than it, and merge-chain.sh compares commits only with `--review-ts` and the head
+CI settled on, never with the head merge-gate.sh cleared. A commit dated before M1 but pushed after
+the last re-list still slips through; re-gating before each chunk keeps that window to seconds.
 
 ## merge-chain.sh invocation
 
@@ -54,20 +59,23 @@ Chunks after a stop that is not repaired stay unrun; report their PRs as `not_at
 Run pr-fix with one unit:
 
 ```
-{id: "pr-<STOPPED_AT>", branch: <head>, base: "origin/<base>",
+{id: "pr-<STOPPED_AT>", branch: <head>, head_sha: <headRefOid from gh pr view <n> --json headRefOid>,
+ base: "origin/<base>",
  findings: [{id: "M1", severity: "blocker", where: "", problem: "<REASON from merge-chain.sh>",
              fix: "merge origin/<base> into the branch (no rebase, no force-push) and resolve; or fix the failing check <names>"}]}
 ```
 
 Pass `skills: ["git-plugin:git-conflicts"]` for CONFLICT and `["git-plugin:git-fix-pr"]` for
-CI_RED. On a PASS or REPAIRED_PASS row with a pushed head, take a new timestamp (M5) and run
-merge-chain.sh for `REMAINING` only. A second stop on the same PR is reported, not repaired again.
+CI_RED. On a PASS or REPAIRED_PASS row with a pushed head, take a new timestamp (M1), then repeat
+M2–M6 for `REMAINING` only with that fix file added. A second stop on the same PR is reported, not
+repaired again.
 
 ## Stacked PRs, forks and late commits
 
 - A PR whose base is not the default branch fails G7 and is reported; retargeting the child is a
   human step (`git-plugin:git-merge-hazards`).
-- In a fork whose Actions are not enabled, CI stays `none`: non-drafts pass G6 and merge-chain.sh
-  waits on an empty rollup; drafts never pass G8.
+- In a fork or repo whose Actions are not enabled, CI stays `none` and G6 reports the PR ("no
+  checks ran"): the sweep merges only on green CI, so it never hands merge-chain.sh a PR with an
+  empty rollup.
 - Any push after the review fails G5 or stops merge-chain.sh with GUARD_LATE_COMMIT. Repos with an
   auto-fix workflow see this often; re-run the review stage for those PRs.

@@ -73,8 +73,8 @@ assert_eq "small PRs pack 3 to a group under 300 lines; large and >6-file PRs st
 assert_eq "no run exceeds 4 groups or 6 PRs" 'true' "$(jq '[.runs[] | (.groups | length) <= 4 and (.prs | length) <= 6] | all' "$work/p.json")"
 assert_eq "run prs equal the union of its groups, ascending" 'true' "$(jq '[.runs[] | (.prs | map(.number)) == (.groups | flatten | sort)] | all' "$work/p.json")"
 assert_eq "non-reviewable PR listed with its policy reason" '[{"number":8,"reason":"release_please"}]' "$(jq -c '.not_reviewed' "$work/p.json")"
-assert_eq "run rows carry what pr-review reads" '["base","changed_files","diff_lines","draft_class","head","head_sha","is_draft","number","title"]' \
-  "$(jq -c '.runs[0].prs[0] | del(.url, .author_kind) | keys' "$work/p.json")"
+assert_eq "run rows carry what pr-review reads, author_kind included (it picks the verifier mode)" '["author_kind","base","changed_files","diff_lines","draft_class","head","head_sha","is_draft","number","title"]' \
+  "$(jq -c '.runs[0].prs[0] | del(.url) | keys' "$work/p.json")"
 assert_eq "limits echo the template caps" '{"max_prs":6,"max_groups":4,"max_per_group":3}' "$(jq -c '.limits | {max_prs, max_groups, max_per_group}' "$work/p.json")"
 assert_eq "summary RUNS" "RUNS=3" "$(grep '^RUNS=' <<<"$summary")"
 validate "summary meets the structured-output contract" "$summary"
@@ -83,6 +83,13 @@ echo "=== six small PRs: two groups in one run ==="
 roster '[{"number":1},{"number":2},{"number":3},{"number":4},{"number":5},{"number":6}]' > "$work/r6.json"
 bash "$PLAN" --out "$work/p6.json" "$work/r6.json" >/dev/null
 assert_eq "six tiny PRs → one run of two groups" '[[[1,2,3],[4,5,6]]]' "$(jq -c '[.runs[].groups]' "$work/p6.json")"
+
+echo "=== group line budget ==="
+# Regression: no case put a group over 300 lines with fewer than 3 PRs, so raising
+# GROUP_LINES to 3000 kept the suite green.
+roster '[{"number":1,"diff_lines":140},{"number":2,"diff_lines":140},{"number":3,"diff_lines":30}]' > "$work/rgl.json"
+bash "$PLAN" --out "$work/pgl.json" "$work/rgl.json" >/dev/null
+assert_eq "two small PRs at 280 lines leave a 30-line PR for a new group (310 > 300)" '[[[1,2],[3]]]' "$(jq -c '[.runs[].groups]' "$work/pgl.json")"
 
 echo "=== five large PRs: a second run ==="
 roster '[{"number":1,"diff_lines":500},{"number":2,"diff_lines":500},{"number":3,"diff_lines":500},{"number":4,"diff_lines":500},{"number":5,"diff_lines":500}]' > "$work/r5.json"

@@ -11,7 +11,7 @@ tests are authoritative.
 | release-please (`release-please--*` head or login) | no | no | no | handled by `git-plugin:release-please-pr-workflow` |
 | Renovate (`renovate/*` head or login) | yes | no | no | findings reported; merge stays with Renovate's own flow |
 | head in a fork (`cross_repo_head`) | no | no | no | skipped |
-| external author | yes | no | no | `git-plugin:external-pr-trust`: authorship is a precondition of merging |
+| external author | yes, read-only verifiers (nothing from the PR is built or run) | no | no | `git-plugin:external-pr-trust`: authorship is a precondition of merging, and of running the code |
 | WIP marker, drafts and non-drafts alike | yes | no | no | "WIP/do-not-merge marker: <which>" |
 | any other PR | yes | yes | when every gate passes | — |
 
@@ -56,9 +56,13 @@ Evaluated in order; `gate` names the first failure and `failed` lists every one.
 | G3 | `wip` | no WIP marker |
 | G4 | `review` | review status `reviewed`, no `unverified`, no `verifierFailed`, and `open` empty or the fix row `PASS`/`REPAIRED_PASS` with push status `pushed` |
 | G5 | `head` | the roster `head_sha` equals the expected head: the pushed fix head, else the reviewed head |
-| G6 | `ci` | `ci` is not `red`; `pending` passes for a non-draft (merge-chain.sh waits), and so does `none` |
+| G6 | `ci` | `ci` is `green`, or `pending` for a non-draft (merge-chain.sh waits); `red`, `none` (no check ran) and any other value fail |
 | G7 | `base` | the base is the default branch; a stacked PR is reported and retargeted by a human |
 | G8 | `draft` | drafts only: `draft_class` is `ready_candidate` and `ci` is `green`, never pending |
+
+Every report row carries `fix_block` (the roster's reason the sweep did not fix the PR) and its open
+`findings`, so the findings of Renovate, external and unreadyable-draft PRs reach the final report
+(D3, D6). For such a PR G4's reason names the `fix_block` rather than "no fix ran".
 
 pr-merge adds one gate after G8 for ready drafts: `draft_prose`, held when a reader finds a
 `## Draft status` condition other than a PR URL unmet or unknown, when the head moved, or when the

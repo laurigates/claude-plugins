@@ -79,7 +79,11 @@ summary=$(bash "$UNITS" --out "$work/u.json" "$work/r.json" "$work/v.json"); rc=
 assert_eq "exit 0" 0 "$rc"
 assert_eq "runs are chunks of 2" '[2,2,1]' "$(jq -c '[.runs[] | length]' "$work/u.json")"
 assert_eq "units in ascending PR order" '["pr-1","pr-2","pr-3","pr-4","pr-5"]' "$(jq -c '[.runs[][] | .id]' "$work/u.json")"
-assert_eq "unit keys are exactly repair-round's" '["base","branch","brief","findings","gates","id","issues"]' "$(jq -c '.runs[0][0] | keys' "$work/u.json")"
+assert_eq "unit keys are repair-round's plus head_sha" '["base","branch","brief","findings","gates","head_sha","id","issues"]' "$(jq -c '.runs[0][0] | keys' "$work/u.json")"
+# Regression: units carried no head, so pr-fix started from root's local branch of the
+# same name, which can hold unpushed commits the review never saw.
+assert_eq "unit head_sha is the reviewed head" "\"$(sha 1)\"" "$(jq -c '.runs[0][0].head_sha' "$work/u.json")"
+assert_eq "brief names the reviewed head as the start point" 'true' "$(jq --arg s "$(sha 1)" '.runs[0][0].brief | contains("The review saw head " + $s + ": start from exactly that commit")' "$work/u.json")"
 assert_eq "open rows pass through unchanged" "[$F1,$F2]" "$(jq -c '.runs[0][0].findings' "$work/u.json")"
 assert_eq "base is origin/<the PR base>, not hardcoded" '"origin/develop"' "$(jq -c '.runs[1][0].base' "$work/u.json")"
 assert_eq "branch is the head ref" '"feat/b1"' "$(jq -c '.runs[0][0].branch' "$work/u.json")"

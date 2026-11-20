@@ -108,6 +108,14 @@ assert_eq "title 'wipe ...' is not WIP" 'false' "$(pr 109 .wip)"
 assert_eq "title DNM, case-insensitive" '["title:dnm"]' "$(pr 110 .wip_markers)"
 assert_eq "labels do-not-merge + Blocked; 'work in progress' is not a marker" '["label:do-not-merge","label:Blocked"]' "$(pr 111 .wip_markers)"
 
+# Regression: no fixture title started with "[DNM]", so dropping \[dnm\] from the
+# wip_markers regex kept the suite green while "[DNM] foo" stopped being WIP (D4).
+jq '[.[0] | .data.repository.pullRequests.pageInfo.hasNextPage = false
+     | .data.repository.pullRequests.nodes |= [.[0] | .title = "[DNM] try a thing" | .labels.nodes = []]]' \
+  "$FIX/graphql-pages.json" > "$work/dnm-page.json"
+PR_SWEEP_FIXTURE="$work/dnm-page.json" PR_SWEEP_SELF=octo-self bash "$LISTER" --out "$work/dnm.json" acme widgets >/dev/null
+assert_eq "title [DNM], bracketed" '[true,["title:[DNM]"]]' "$(jq -c '.prs[0] | [.wip, .wip_markers]' "$work/dnm.json")"
+
 echo "=== draft_class ==="
 assert_eq "not_draft" '"not_draft"' "$(pr 101 .draft_class)"
 assert_eq "ready_candidate" '"ready_candidate"' "$(pr 102 .draft_class)"

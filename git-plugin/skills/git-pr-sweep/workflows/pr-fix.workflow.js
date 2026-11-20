@@ -27,8 +27,12 @@
  *   worktrees    optional: a directory inside root's clone for agent worktrees,
  *                when the session is NOT running inside root's repository
  *   base         default base ref, e.g. "origin/main" (each unit carries its own)
- *   units        [{id: "pr-<n>", branch, base, issues: [], brief, gates: [],
+ *   units        [{id: "pr-<n>", branch, head_sha, base, issues: [], brief, gates: [],
  *                 findings: [{id, severity, where, problem, fix, evidence}]}]
+ *                head_sha is the reviewed head: the fixer must start from it
+ *                (root's local branch of that name may hold unpushed or stale
+ *                commits), and Finalise pushes only a tip whose commits after
+ *                it are exactly the ones the fixer and repairer reported.
  *   gates, setup, skills, decisions, contract, trailer, issueRead — as repair-round
  *   repairRounds 0 or 1 (default 1)
  *
@@ -73,6 +77,9 @@ const REPAIR_ROUNDS = INPUT.repairRounds === 0 ? 0 : 1
 const UNITS = (INPUT.units ?? []).map((u, i) => ({
   id: String(u.id ?? u.unit ?? `unit-${i + 1}`),
   branch: u.branch,
+  // The commit the review saw. The fixer must start from it, never from
+  // whatever the local branch of the same name holds in root.
+  head_sha: String(u.head_sha ?? ''),
   base: u.base ?? CTX.base,
   issues: u.issues ?? [],
   brief: u.brief ?? '',
@@ -314,6 +321,33 @@ const dupBranches = UNITS.map((u) => u.branch).filter((b, i, a) => b && a.indexO
 if (dupBranches.length) return abort('shared-branch', `two units share a branch (${dupBranches.join(', ')})`, { branches: dupBranches })
 const bad = UNITS.filter((u) => !u.branch || !u.findings.length)
 if (bad.length) return abort('incomplete-units', `units without a branch or findings: ${bad.map((u) => u.id).join(', ')}`, { units: bad.map((u) => u.id) })
+const noHead = UNITS.filter((u) => !/^[0-9a-f]{40}$/.test(u.head_sha))
+if (noHead.length) {
+  return abort('missing-head', `units without the reviewed 40-hex head_sha (review-to-units.sh carries it): ${noHead.map((u) => u.id).join(', ')}`, { units: noHead.map((u) => u.id) })
+}
+
+// ---------------------------------------------------------------------------
+// Sweep additions to the shared prompts, appended outside the shared region.
+// FIX_PROMPT switches to the LOCAL branch by name. root is the user's own clone,
+// so that branch may carry unpushed commits nobody reviewed, or lag origin; the
+// start check pins the fixer to the reviewed head and the repairer to the
+// fixer's tip. FIX_PROMPT also never prints the unit brief, so it rides here.
+// ---------------------------------------------------------------------------
+
+const sweepRules = (ctx, u, expected, what) => `
+PR sweep requirements — they override the generic steps above where they conflict:
+- Start point: right after the switch above, \`git rev-parse HEAD\` must print ${expected} (${what}).
+  If HEAD is an ancestor of it (the local branch only lags origin), run \`git merge --ff-only ${expected}\` and check again.
+  Any other HEAD means the local branch \`${u.branch}\` carries commits the review never saw: commit nothing and return
+  status "blocked" with blockers ["local ${u.branch} is at <the sha HEAD printed>, not ${expected}"].
+- If git says \`${u.branch}\` is checked out in the main checkout ${ctx.root}, do not detach or switch that checkout:
+  return status "blocked" with that reason.
+${u.brief ? `- ${u.brief}\n` : ''}${
+  ctx.worktrees ? `- When done, after \`git switch --detach\`, remove your worktree (never --force): git -C ${ctx.root} worktree remove <your worktree path>\n` : ''
+}`
+// The repairer and re-verifier make their own worktrees one level down, so a
+// fixer or verifier worktree that was not removed cannot collide with theirs.
+const ctxRound2 = (u) => ({ ...ctxFor(u), worktrees: CTX.worktrees ? `${CTX.worktrees}/round2` : '' })
 
 // ---------------------------------------------------------------------------
 // Fix → Verify → Repair → Re-verify, per unit, no barrier between stages.
@@ -337,7 +371,7 @@ const got = await pipeline(
   // scale guard counts 3 units x 4 sites.
   UNITS.slice(0, 3),
   (u) =>
-    agent(FIX_PROMPT(ctxFor(u), u, u.findings), {
+    agent(FIX_PROMPT(ctxFor(u), u, u.findings) + sweepRules(ctxFor(u), u, u.head_sha, 'the head the review saw'), {
       label: `fix:${u.id}`, phase: 'Fix', schema: FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxFor(u)),
     }),
   async (fix, u) => {
@@ -351,14 +385,14 @@ const got = await pipeline(
   async (r, u) => {
     const { fix, verdict } = r
     if (!REPAIR_ROUNDS || verdict?.verdict !== 'fix-needed') return { ...r, merged: fix, repaired: false, final: verdict }
-    const rep = await agent(FIX_PROMPT(ctxFor(u), u, repairFindings(verdict)), {
-      label: `repair:${u.id}`, phase: 'Repair', schema: FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxFor(u)),
+    const rep = await agent(FIX_PROMPT(ctxRound2(u), u, repairFindings(verdict)) + sweepRules(ctxRound2(u), u, fix.head_sha, "the fixer's last commit"), {
+      label: `repair:${u.id}`, phase: 'Repair', schema: FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxRound2(u)),
     })
     if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
     const merged = mergeRepair(fix, rep)
     if (rep.status === 'blocked') return { ...r, merged, repaired: true, final: null }
-    const final = await agent(VERIFY_PROMPT(ctxFor(u), u, merged), {
-      label: `reverify:${u.id}`, phase: 'Repair', schema: VERDICT_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxFor(u)),
+    const final = await agent(VERIFY_PROMPT(ctxRound2(u), u, merged), {
+      label: `reverify:${u.id}`, phase: 'Repair', schema: VERDICT_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxRound2(u)),
     })
     return { ...r, merged, repaired: true, final }
   },
@@ -377,7 +411,17 @@ const rows = got.map((r, j) => {
 })
 
 const landable = rows.filter((r) => r.status === 'PASS' || r.status === 'REPAIRED_PASS')
-const finalisePlan = landable.map((r) => ({ unit: r.unit, branch: r.branch, head_sha: r.fix.head_sha, pr_body_note: '' }))
+// base_sha is the reviewed head and commits the fixer's and repairer's own
+// commits: Finalise pushes a tip only when exactly those commits sit on it.
+const shaOf = (c) => String(c ?? '').trim().split(/\s+/)[0]
+const finalisePlan = landable.map((r) => ({
+  unit: r.unit,
+  branch: r.branch,
+  head_sha: r.fix.head_sha,
+  base_sha: UNITS.find((u) => u.id === r.unit).head_sha,
+  commits: (r.fix.commits ?? []).map(shaOf).filter(Boolean),
+  pr_body_note: '',
+}))
 const notLanded = rows.filter((r) => !landable.includes(r))
 if (notLanded.length) log(`not landable: ${notLanded.map((r) => `${r.unit}=${r.status}`).join(', ')}`)
 if (!finalisePlan.length) return { rows, finalisePlan, pushed: [] }
@@ -419,8 +463,11 @@ For each entry, in order:
    Otherwise fetch each MERGED or CLOSED entry's head (git fetch origin -q pull/<number>/head). An entry whose headRefOid and head_sha lie on
    one line of history (git merge-base --is-ancestor either way exits 0), or whose head cannot be fetched → "skipped". One that fails the test
    is earlier work on a reused branch name: ignore it.
-2. git fetch origin <branch>. git log --oneline origin/<branch>..<head_sha> must list only new commits on top of the remote tip; if the
-   remote moved or the history diverged, record "skipped" with the reason; do not rebase or force.
+2. git fetch origin <branch>. All three must hold, else record "skipped" with the reason; do not rebase or force:
+   - git rev-parse origin/<branch> prints base_sha (the head the review saw; the remote has not moved);
+   - git merge-base --is-ancestor <base_sha> <head_sha> exits 0;
+   - git rev-list --reverse <base_sha>..<head_sha> lists exactly the commits in \`commits\` (an abbreviated SHA matches by prefix).
+     Any other commit is local work nobody reviewed, and pushing it would publish it.
 3. git push origin <head_sha>:refs/heads/<branch> (brace shell variables before the colon).
 Do not merge, approve, mark ready, comment, or open a PR. Stop at the first failed push and mark the rest "skipped".
 Return {pushed: [{unit, branch, status: pushed|skipped|failed, detail}]}, one row per entry; no other field.`,

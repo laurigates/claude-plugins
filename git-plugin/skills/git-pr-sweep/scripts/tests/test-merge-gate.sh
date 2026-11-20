@@ -83,7 +83,11 @@ rows=$(jq -nc --arg fx "$FX" '[
   {number: 20},
   {number: 21, is_draft: true, draft_class: "no_blocker_urls", draft_status: {section_present: true, blockers: []}},
   {number: 22, is_draft: true, draft_class: "blockers_unresolved"},
-  {number: 23, sweep_skip: "release_please", author_kind: "bot"}
+  {number: 23, sweep_skip: "release_please", author_kind: "bot"},
+  {number: 24, ci: "none"},
+  {number: 25, sweep_skip: "renovate", author_kind: "bot", policy: {fix: false, fix_block: "renovate"}},
+  {number: 26, is_draft: true, draft_class: "no_section", policy: {fix: false, fix_block: "no_section"}},
+  {number: 27, ci: null}
 ]')
 revs=$(jq -nc --argjson f "[$F]" '[
   {number: 1}, {number: 2}, {number: 3}, {number: 4},
@@ -93,7 +97,9 @@ revs=$(jq -nc --argjson f "[$F]" '[
   {number: 8, open: $f}, {number: 9, open: $f}, {number: 10, open: $f},
   {number: 11}, {number: 12, open: $f},
   {number: 13}, {number: 14}, {number: 15}, {number: 16}, {number: 17}, {number: 18}, {number: 19},
-  {number: 21}, {number: 22}, {number: 23}
+  {number: 21}, {number: 22}, {number: 23}, {number: 24},
+  {number: 25, open: ($f + [$f[0] | .id = "F2" | .where = "b.sh:2"])},
+  {number: 26, open: $f}, {number: 27}
 ]')
 fixes=$(jq -nc --arg fx "$FX" '{prs: [
   {number: 8, row_status: "FIX_NEEDED", pushed_status: null, head_sha: null, detail: ""},
@@ -130,6 +136,16 @@ assert_eq "G5 head moved after review fails alone" '["head"]' "$(rep 11 .failed)
 assert_eq "G5 fix pushed but roster still at the reviewed head" '["head"]' "$(rep 12 .failed)"
 assert_eq "G6 ci red fails alone and names the checks" '[["ci"],"CI red: lint, test"]' "$(rep 13 '[.failed, .reason]')"
 assert_eq "non-draft with pending CI passes G6" 'true' "$(jq '.passed | index(14) != null' "$P")"
+# Regression: G6 let ci "none" through, so merge-chain.sh merged a PR on which no check
+# ever ran (a fork or repo with Actions disabled) against the green-CI merge gate.
+assert_eq "G6 non-draft with no checks (ci none) fails alone" '[["ci"],true]' "$(rep 24 '[.failed, (.reason | test("no checks ran"))]')"
+assert_eq "G6 missing ci value fails closed" '["ci"]' "$(rep 27 .failed)"
+# Regression: findings of PRs the sweep may not fix (Renovate, D3 drafts, external)
+# lived only in review.json; the report row now carries them and the reason.
+assert_eq "renovate report row carries both findings and its fix_block" '[2,"renovate",["F1","F2"]]' "$(rep 25 '[.open_count, .fix_block, [.findings[].id]]')"
+assert_eq "report findings keep id, severity, where, problem" '["id","problem","severity","where"]' "$(rep 25 '.findings[0] | keys')"
+assert_eq "D3 draft with findings: G4 reason names why it was not fixed" 'true' "$(rep 26 '.gate == "review" and (.reason | test("does not fix this PR \\(no_section\\)"))')"
+assert_eq "a PR with no fix_block reports null" 'null' "$(rep 5 .fix_block)"
 assert_eq "G7 stacked base fails alone" '["base"]' "$(rep 15 .failed)"
 assert_eq "ready draft with green CI passes and is readied" '[true,[16]]' "$(jq -c '[(.passed | index(16) != null), .ready]' "$P")"
 assert_eq "G8 ready draft with pending CI fails" '[["draft"],"draft CI is pending; readying needs green"]' "$(rep 17 '[.failed, .reason]')"
@@ -143,7 +159,7 @@ assert_eq "only drafts are readied" '[16]' "$(jq -c '.ready' "$P")"
 assert_eq "merge = passed, ascending" '[[1,10,14,16]]' "$(jq -c '.merge' "$P")"
 assert_eq "report rows carry url and open_count" '["https://github.com/acme/widgets/pull/5",1]' "$(rep 5 '[.url, .open_count]')"
 assert_eq "summary pastes the chunk as a literal list" "MERGE_CHUNK_1=1,10,14,16" "$(grep '^MERGE_CHUNK_1=' <<<"$summary")"
-assert_eq "summary counts per first gate (PRs 5-9 and 20)" "GATE_REVIEW=6" "$(grep '^GATE_REVIEW=' <<<"$summary")"
+assert_eq "summary counts per first gate (PRs 5-9, 20 and 26)" "GATE_REVIEW=7" "$(grep '^GATE_REVIEW=' <<<"$summary")"
 validate "summary meets the structured-output contract (OK)" "$summary"
 assert_eq "no gh or git call" "" "$(cat "$work/calls" 2>/dev/null)"
 
