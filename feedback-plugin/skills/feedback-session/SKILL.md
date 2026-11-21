@@ -2,7 +2,7 @@
 name: feedback-session
 description: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well.
 args: "[--dry-run] [--confirmed] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
-allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(gh repo view *), Bash(mktemp *), Bash(git status *), Bash(git remote *), Read, Write, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo view *), Bash(mktemp *), Bash(git remote *), Bash(grep -q *), Read, Write, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
 argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
