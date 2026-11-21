@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-17
+modified: 2026-11-21
 reviewed: 2026-08-21
 ---
 
@@ -94,7 +94,7 @@ refused) from merely-present ones (`UNSTABLE` — plain `gh pr merge` works), so
 `--admin` on an `UNSTABLE` PR takes a privilege you didn't need. Read it first.
 
 Merging over red needs **two** checks: `--json files` (config/docs can't break
-a compile) **and** the same check already failing on `main`. Either alone is a
+a compile) **and** the same tests already failing on `main`. Either alone is a
 guess — and a stale-green `main` lies, so check `createdAt` (2026-07: a "green"
 run was 21 days old; main hadn't compiled for three weeks).
 
