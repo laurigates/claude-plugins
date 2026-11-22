@@ -42,8 +42,10 @@ usual — the CLI doesn't relocate them.
 ### Safe mass node update (with the post-install venv-mismatch workaround)
 
 Bulk updates frequently break a workflow somewhere. The non-obvious gotcha:
-**`comfy node update`'s post-install pip step runs against comfy-cli's pipx
-venv, not ComfyUI's `.venv/`** — every newly-introduced custom-node Python
+**`comfy node update`'s post-install pip step runs against comfy-cli's own
+tool venv, not ComfyUI's `.venv/`** (the exact venv path depends on how
+comfy-cli was installed; see the pitfall in
+[pitfalls.md](pitfalls.md)) — every newly-introduced custom-node Python
 dep ends up in the wrong interpreter where ComfyUI can't see it. You have
 to reinstall each pack's `requirements.txt` against `.venv/` manually.
 
