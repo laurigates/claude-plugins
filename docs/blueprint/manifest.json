@@ -1,7 +1,7 @@
 {
-  "format_version": "3.4.0",
+  "format_version": "3.5.0",
   "created_at": "2026-04-16T00:00:00Z",
-  "updated_at": "2026-07-05T00:00:00Z",
+  "updated_at": "2026-11-21T19:36:11Z",
   "created_by": {
     "blueprint_plugin": "3.25.2"
   },
@@ -155,6 +155,14 @@
       "changes": [
         "Added automation block (autonomy_level 1: ambient bookkeeping)",
         "sync-ids auto_run enabled as weekly deterministic sweep"
+      ]
+    },
+    {
+      "from": "3.4.0",
+      "to": "3.5.0",
+      "date": "2026-11-21T19:36:11Z",
+      "changes": [
+        "id_registry maintained by one engine (blueprint-autorun.sh --registry-reconcile)"
       ]
     }
   ],
