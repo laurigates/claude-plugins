@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-11-14
+modified: 2026-11-21
 reviewed: 2026-07-07
 name: comfyui-pack-live-smoke
 description: >-
@@ -86,6 +86,17 @@ the touch layout (tap-target size, full-width modal, no iOS zoom).
    prompt).
 4. Clean up: remove any test-installed packs from `custom_nodes/`, stop the
    server.
+
+### Scripted first load
+
+Two traps a fresh, script-driven instance hits on first load, observed on
+frontend 1.59.1 with ComfyUI `e9afbccc2` (2026-11). Reference implementation:
+the touch-probe script (`probe.py`) in laurigates/comfyui-nodes#278.
+
+| Trap | Fix |
+|---|---|
+| A fresh `--user-directory` opens a **Templates dialog** over an empty graph, so `app.graph._nodes` stays empty and a probe waiting for nodes times out | Press Escape, then `await app.loadGraphData()`. The default graph is a Z-Image workflow whose CLIPTextEncode textareas start off-screen (0x0 rects): centre the view on the node before measuring DOM widgets. The `--user-directory` path must already exist, or `main.py` exits with an argparse error |
+| Settings applied in-page after load do not reach an extension's `setup()`: setting `KJNodes.perf.singleCanvasPan` via `extensionManager.setting.set` after load left that extension's hook uninstalled | POST the settings object to `/api/settings` before `page.goto`, as a real install would have it |
 
 ## Headless API-driven smoke
 

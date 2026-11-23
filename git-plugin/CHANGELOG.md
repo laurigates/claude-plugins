@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.4...git-plugin-v2.75.0) (2026-11-23)
+
+
+### Features
+
+* **git-plugin:** add git-pr-sweep review, fix and merge workflows ([#3752](https://github.com/laurigates/claude-plugins/issues/3752)) ([e468a4b](https://github.com/laurigates/claude-plugins/commit/e468a4bdaf66a8fdcba3cd35b7f04037b5dfe42a))
+
 ## [2.74.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.3...git-plugin-v2.74.4) (2026-11-20)
 
 
