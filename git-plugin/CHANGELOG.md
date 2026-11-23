@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.2...git-plugin-v2.75.3) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** let merge-sync pushes past the PR-metadata gate ([#3767](https://github.com/laurigates/claude-plugins/issues/3767)) ([185fb4d](https://github.com/laurigates/claude-plugins/commit/185fb4dc2a9e96b33e31255c7c017d3fac7edd76)), closes [#3331](https://github.com/laurigates/claude-plugins/issues/3331)
+
 ## [2.75.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.1...git-plugin-v2.75.2) (2026-11-23)
 
 
