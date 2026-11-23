@@ -140,7 +140,7 @@ fi
 if [ -z "$PUSH_BRANCH" ]; then exit 0; fi
 
 # Check for an existing open PR on this branch
-PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url,updatedAt,state 2>/dev/null || true)
+PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url,updatedAt,state,baseRefName 2>/dev/null || true)
 
 # Guard: no open PR for this branch
 if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then exit 0; fi
@@ -151,6 +151,7 @@ PR_BODY=$(echo "$PR_JSON" | jq -r '.body // empty')
 PR_URL=$(echo "$PR_JSON" | jq -r '.url // empty')
 PR_UPDATED_AT=$(echo "$PR_JSON" | jq -r '.updatedAt // empty')
 PR_STATE=$(echo "$PR_JSON" | jq -r '.state // empty')
+PR_BASE=$(echo "$PR_JSON" | jq -r '.baseRefName // empty')
 
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
@@ -192,6 +193,42 @@ if [ -n "$PUSH_BRANCH" ] && \
    git -C "$CWD" rev-parse --verify --quiet "refs/heads/$PUSH_BRANCH" >/dev/null 2>&1; then
     PUSH_REF="refs/heads/$PUSH_BRANCH"
 fi
+
+# Merge-sync exemption (issue #3331, decision 2026-11-21): a push whose new
+# commits are ALL merges bringing in the PR's base branch adds nothing for the
+# PR body to describe (e.g. `git merge origin/main` to clear a "cannot update
+# branch" conflict). "New commits" are those on the pushed ref and on neither
+# origin/<branch> nor origin/<base> (the base commits a merge brings in are
+# not the branch's own work); a merge
+# qualifies when every parent after the first is on origin/<base>, the shape
+# `git merge origin/<base>` and GitHub's "Update branch" produce. Any non-merge
+# commit, or a merge of some other branch, keeps the check.
+#
+# Fails toward checking: no baseRefName, no origin/<base> or origin/<branch>
+# ref (a first push, where the new-commit set is undefined), or an empty range
+# all fall through to the timestamp bypass and the block below. A merge whose
+# conflict resolution changes content also passes; the owner accepted that.
+# No path allowlist (e.g. regenerated fixtures) by decision.
+is_merge_sync_push() {
+    local base_ref="refs/remotes/origin/$PR_BASE"
+    local upstream_ref="refs/remotes/origin/$PUSH_BRANCH"
+    local revs sha first rest p
+    [ -n "$PR_BASE" ] || return 1
+    git -C "$CWD" rev-parse --verify --quiet "$base_ref" >/dev/null 2>&1 || return 1
+    git -C "$CWD" rev-parse --verify --quiet "$upstream_ref" >/dev/null 2>&1 || return 1
+    # Exclude origin/<base> too: the merge brings in base commits that are
+    # not on origin/<branch> but are not the branch's own work either.
+    revs=$(git -C "$CWD" rev-list --parents "$PUSH_REF" "^$upstream_ref" "^$base_ref" 2>/dev/null) || return 1
+    [ -n "$revs" ] || return 1
+    while read -r sha first rest; do
+        [ -n "$sha" ] && [ -n "$first" ] && [ -n "$rest" ] || return 1
+        for p in $rest; do
+            git -C "$CWD" merge-base --is-ancestor "$p" "$base_ref" 2>/dev/null || return 1
+        done
+    done <<<"$revs"
+    return 0
+}
+if is_merge_sync_push; then exit 0; fi
 
 # Retry-aware bypass (issue #1041, refined in #1400, cross-branch fix in #1419):
 # if the PR was edited after the latest local commit on the pushed branch was
