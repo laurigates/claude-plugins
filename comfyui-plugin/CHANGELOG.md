@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.15.9](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.8...comfyui-plugin-v1.15.9) (2026-11-23)
+
+
+### Documentation
+
+* **comfyui-plugin:** describe comfy-cli's own venv instead of the pipx path ([#3764](https://github.com/laurigates/claude-plugins/issues/3764)) ([3f12b37](https://github.com/laurigates/claude-plugins/commit/3f12b379c8ebf34606b4c6b8248625b3e6411c9e)), closes [#3524](https://github.com/laurigates/claude-plugins/issues/3524)
+
+## [1.15.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.7...comfyui-plugin-v1.15.8) (2026-11-23)
+
+
+### Documentation
+
+* **comfyui-plugin:** document scripted first-load traps in comfyui-pack-live-smoke ([#3754](https://github.com/laurigates/claude-plugins/issues/3754)) ([7f7b287](https://github.com/laurigates/claude-plugins/commit/7f7b287c44fc20113d635d5ae593e9bc91d6c485)), closes [#3742](https://github.com/laurigates/claude-plugins/issues/3742)
+
 ## [1.15.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.6...comfyui-plugin-v1.15.7) (2026-11-20)
 
 

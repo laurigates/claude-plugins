@@ -33,6 +33,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:repo-delete-check` | Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup |
 | `/git:pr-sync-check` | Check whether the current PR branch is still live and in sync (merged / behind / changes-requested) before building on it |
 | `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (fixes CI via `/git:fix-pr`; surfaces review threads for the user to run `/git:pr-feedback`) |
+| `/git:pr-sweep` | Review, fix, then merge one repo's open PRs, ready drafts included: script-planned review runs (two finder lenses per PR group, refute-by-default verifiers), fixes pushed to the PRs' own branches, then gates, `gh pr ready` and `merge-chain.sh` from the main session |
 
 ## Layered Skills (Composable Git Workflows)
 

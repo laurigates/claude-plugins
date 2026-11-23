@@ -11,6 +11,32 @@ is in [SKILL.md](SKILL.md).
 | [references/guarded-writes.md](references/guarded-writes.md) | Closing issues or merging PRs with `--auto-close` / `--auto-merge` |
 | [references/commands.md](references/commands.md) | Compact `gh` commands per category |
 
+## REST fallback
+
+`git-triage.sh` tries GraphQL first (`gh issue list`, `gh pr list`,
+`gh api graphql`). When a call fails with the proxy's "GraphQL is not available"
+403, which every Claude Code cloud session returns, the rest of the run uses the
+REST API (issue #3362):
+
+| Data | REST source |
+|------|-------------|
+| Issues | `repos/{o}/{r}/issues`, with entries that carry `pull_request` removed |
+| PRs | `repos/{o}/{r}/pulls` |
+| `MERGEABLE` / `MERGE_STATE` | `pulls/{n}` `mergeable` and `mergeable_state`, upper-cased |
+| `REVIEW` | `pulls/{n}/reviews`: `CHANGES_REQUESTED` if any reviewer's latest decisive review requests changes, else `APPROVED` if any approved, else `null`. Approximated, because GraphQL's `reviewDecision` also applies branch protection's required-review rule |
+| `WORST_CHECK` | `commits/{sha}/check-runs` (first 100) plus `commits/{sha}/status` |
+| `ISSUES_TOTAL` / `PRS_TOTAL` | `search/issues` `total_count` for `is:issue is:open` and `is:pr is:open` |
+| `SUBISSUES` | The issue's `sub_issues_summary` |
+| `MERGED_PRS` | None cheap: reads `unknown`, so `CLOSE_CANDIDATE` rests on checkboxes and sub-issues |
+
+Lists are walked with an explicit `&per_page=100&page=N` loop that stops on a
+short page. `gh api --paginate` is not used: it follows the `Link` header, whose
+`repositories/{id}` paths the proxy rejects. The fallback adds
+`GRAPHQL_BLOCKED=true`, `REST_FALLBACK_UNKNOWN=MERGED_PRS|none`, and
+`REST_FALLBACK_APPROXIMATED=REVIEW|none`; a run where GraphQL answers emits none
+of them. Each PR costs four extra REST calls. `GIT_TRIAGE_REST_PER_PAGE`
+overrides the page size for tests.
+
 ## Per-issue progress keys
 
 `git-triage.sh` emits four progress keys for every fetched issue (issue #2904).
