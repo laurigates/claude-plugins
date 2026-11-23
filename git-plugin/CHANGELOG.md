@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.1...git-plugin-v2.75.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** fall back to REST in git-triage collector when GraphQL is blocked ([#3765](https://github.com/laurigates/claude-plugins/issues/3765)) ([2a4b09b](https://github.com/laurigates/claude-plugins/commit/2a4b09bb7bc083fefc9038e6affcb4c782e93a7e)), closes [#3362](https://github.com/laurigates/claude-plugins/issues/3362)
+
 ## [2.75.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.0...git-plugin-v2.75.1) (2026-11-23)
 
 
