@@ -1,0 +1,100 @@
+[
+  {"data": {"repository": {
+    "defaultBranchRef": {"name": "main"},
+    "pullRequests": {
+      "pageInfo": {"hasNextPage": true, "endCursor": "c1"},
+      "nodes": [
+        {"number": 101, "title": "feat: plain self PR", "url": "https://github.com/acme/widgets/pull/101", "isDraft": false,
+         "body": "Plain body", "authorAssociation": "OWNER", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/plain", "headRefOid": "1010101010101010101010101010101010101010", "baseRefName": "main", "isCrossRepository": false,
+         "additions": 10, "deletions": 2, "changedFiles": 1, "labels": {"nodes": []}, "mergeStateStatus": "CLEAN", "reviewDecision": null,
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "SUCCESS", "contexts": {"totalCount": 1, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:05:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 102, "title": "feat: draft ready once blockers land", "url": "https://github.com/acme/widgets/pull/102", "isDraft": true,
+         "body": "Intro https://github.com/acme/widgets/pull/1 before the section\r\n\r\n## Draft status\r\nWaiting on https://github.com/acme/widgets/pull/90).\r\nAlso (https://github.com/other/lib/pull/7), and https://github.com/acme/widgets/pull/90.\r\n### Detail\r\nsee https://github.com/acme/widgets/pull/92;\r\n## Notes\r\nhttps://github.com/acme/widgets/pull/2 after the section SENTINEL-BODY-TEXT",
+         "authorAssociation": "OWNER", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/draft-ready", "headRefOid": "1020202020202020202020202020202020202020", "baseRefName": "main", "isCrossRepository": false,
+         "additions": 40, "deletions": 5, "changedFiles": 3, "labels": {"nodes": [{"name": "enhancement"}]}, "mergeStateStatus": "DRAFT", "reviewDecision": null,
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "SUCCESS", "contexts": {"totalCount": 1, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:05:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 103, "title": "feat: draft without the section", "url": "https://github.com/acme/widgets/pull/103", "isDraft": true,
+         "body": "## Summary\nhttps://github.com/acme/widgets/pull/90", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/no-section", "headRefOid": "1030303030303030303030303030303030303030", "baseRefName": "main"},
+        {"number": 104, "title": "feat: draft with an empty condition", "url": "https://github.com/acme/widgets/pull/104", "isDraft": true,
+         "body": "## Draft status\nwaiting for a design review\n", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/no-urls", "headRefOid": "1040404040404040404040404040404040404040", "baseRefName": "main"},
+        {"number": 105, "title": "feat: draft blocked by an open PR", "url": "https://github.com/acme/widgets/pull/105", "isDraft": true,
+         "body": "## Draft Status\nBlocked on https://github.com/acme/widgets/pull/91", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/blocked", "headRefOid": "1050505050505050505050505050505050505050", "baseRefName": "main"},
+        {"number": 106, "title": "feat: draft carrying a WIP label", "url": "https://github.com/acme/widgets/pull/106", "isDraft": true,
+         "body": "## Draft status\nhttps://github.com/acme/widgets/pull/90", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/wip-label", "headRefOid": "1060606060606060606060606060606060606060", "baseRefName": "main",
+         "labels": {"nodes": [{"name": "WIP"}]}},
+        {"number": 107, "title": "[WIP] bracket title", "url": "https://github.com/acme/widgets/pull/107", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "feat/wip-bracket", "headRefOid": "1070707070707070707070707070707070707070", "baseRefName": "main"},
+        {"number": 108, "title": "WIP: colon title", "url": "https://github.com/acme/widgets/pull/108", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "feat/wip-colon", "headRefOid": "1080808080808080808080808080808080808080", "baseRefName": "main"},
+        {"number": 109, "title": "wipe the cache on boot", "url": "https://github.com/acme/widgets/pull/109", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/wipe", "headRefOid": "1090909090909090909090909090909090909090", "baseRefName": "main"},
+        {"number": 110, "title": "dnm: experiment", "url": "https://github.com/acme/widgets/pull/110", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "exp/dnm", "headRefOid": "1101010101010101010101010101010101010101", "baseRefName": "main"},
+        {"number": 111, "title": "feat: labelled do-not-merge and blocked", "url": "https://github.com/acme/widgets/pull/111", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "feat/labels", "headRefOid": "1111111111111111111111111111111111111111", "baseRefName": "main",
+         "labels": {"nodes": [{"name": "do-not-merge"}, {"name": "Blocked"}, {"name": "work in progress"}]}}
+      ]
+    }
+  }}},
+  {"data": {"repository": {
+    "defaultBranchRef": {"name": "main"},
+    "pullRequests": {
+      "pageInfo": {"hasNextPage": false, "endCursor": "c2"},
+      "nodes": [
+        {"number": 112, "title": "chore: release main", "url": "https://github.com/acme/widgets/pull/112", "isDraft": false,
+         "author": {"login": "github-actions", "__typename": "Bot"}, "headRefName": "release-please--branches--main", "headRefOid": "1121212121212121212121212121212121212121", "baseRefName": "main"},
+        {"number": 113, "title": "chore: release by login", "url": "https://github.com/acme/widgets/pull/113", "isDraft": false,
+         "author": {"login": "release-please[bot]", "__typename": "User"}, "headRefName": "some-branch", "headRefOid": "1131313131313131313131313131313131313131", "baseRefName": "main"},
+        {"number": 114, "title": "fix(deps): update dependency foo to v2", "url": "https://github.com/acme/widgets/pull/114", "isDraft": false,
+         "author": {"login": "renovate", "__typename": "Bot"}, "headRefName": "renovate/foo-2.x", "headRefOid": "1141414141414141414141414141414141414141", "baseRefName": "main"},
+        {"number": 115, "title": "feat: from a fork", "url": "https://github.com/acme/widgets/pull/115", "isDraft": false,
+         "author": {"login": "someone", "__typename": "User"}, "headRefName": "patch-1", "headRefOid": "1151515151515151515151515151515151515151", "baseRefName": "main",
+         "isCrossRepository": true, "headRepositoryOwner": {"login": "someone"}},
+        {"number": 116, "title": "build: bump action", "url": "https://github.com/acme/widgets/pull/116", "isDraft": false,
+         "author": {"login": "dependabot", "__typename": "Bot"}, "headRefName": "dependabot/actions", "headRefOid": "1161616161616161616161616161616161616161", "baseRefName": "main"},
+        {"number": 117, "title": "chore: app-authored", "url": "https://github.com/acme/widgets/pull/117", "isDraft": false,
+         "author": {"login": "app/some-app", "__typename": "User"}, "headRefName": "app-branch", "headRefOid": "1171717171717171717171717171717171717171", "baseRefName": "main"},
+        {"number": 118, "title": "chore: helper bot", "url": "https://github.com/acme/widgets/pull/118", "isDraft": false,
+         "author": {"login": "helper[bot]", "__typename": "User"}, "headRefName": "helper-branch", "headRefOid": "1181818181818181818181818181818181818181", "baseRefName": "main"},
+        {"number": 119, "title": "feat: stranger in the same repo", "url": "https://github.com/acme/widgets/pull/119", "isDraft": false,
+         "author": {"login": "stranger", "__typename": "User"}, "headRefName": "stranger/feat", "headRefOid": "1191919191919191919191919191919191919191", "baseRefName": "main"},
+        {"number": 120, "title": "fix: superseded cancelled run", "url": "https://github.com/acme/widgets/pull/120", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/superseded", "headRefOid": "1202020202020202020202020202020202020202", "baseRefName": "main",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "SUCCESS", "contexts": {"totalCount": 2, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "CANCELLED", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:01:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}},
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "startedAt": "2026-11-01T10:02:00Z", "completedAt": "2026-11-01T10:07:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 121, "title": "fix: legacy status error", "url": "https://github.com/acme/widgets/pull/121", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/legacy", "headRefOid": "1212121212121212121212121212121212121212", "baseRefName": "main",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "ERROR", "contexts": {"totalCount": 2, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:05:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}},
+           {"__typename": "StatusContext", "context": "ci/legacy", "state": "ERROR"}]}}}}]}},
+        {"number": 122, "title": "fix: still running", "url": "https://github.com/acme/widgets/pull/122", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/running", "headRefOid": "1222222222222222222222222222222222222222", "baseRefName": "main",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "PENDING", "contexts": {"totalCount": 1, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "IN_PROGRESS", "conclusion": null, "startedAt": "2026-11-01T10:00:00Z", "completedAt": null, "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 123, "title": "docs: no checks at all", "url": "https://github.com/acme/widgets/pull/123", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "docs/none", "headRefOid": "1232323232323232323232323232323232323232", "baseRefName": "main",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": null}}]}},
+        {"number": 124, "title": "fix: failing and stacked", "url": "https://github.com/acme/widgets/pull/124", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/stacked", "headRefOid": "1242424242424242424242424242424242424242", "baseRefName": "feature-x",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "FAILURE", "contexts": {"totalCount": 1, "nodes": [
+           {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "FAILURE", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:05:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 125, "title": "fix: more checks than one page", "url": "https://github.com/acme/widgets/pull/125", "isDraft": false,
+         "author": {"login": "octo-self", "__typename": "User"}, "headRefName": "fix/many-checks", "headRefOid": "1252525252525252525252525252525252525252", "baseRefName": "main",
+         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "SUCCESS", "contexts": {"totalCount": 140, "nodes": [
+           {"__typename": "CheckRun", "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "startedAt": "2026-11-01T10:00:00Z", "completedAt": "2026-11-01T10:05:00Z", "checkSuite": {"workflowRun": {"workflow": {"name": "CI"}}}}]}}}}]}},
+        {"number": 126, "title": "feat: draft whose blocker cannot be read", "url": "https://github.com/acme/widgets/pull/126", "isDraft": true,
+         "body": "## Draft status\nhttps://github.com/acme/widgets/pull/93", "author": {"login": "octo-self", "__typename": "User"},
+         "headRefName": "feat/unknown-blocker", "headRefOid": "1262626262626262626262626262626262626262", "baseRefName": "main"}
+      ]
+    }
+  }}}
+]

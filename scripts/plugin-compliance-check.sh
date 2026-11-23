@@ -1113,6 +1113,23 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: git-pr-sweep merges PRs, so the body must keep the safety
+    # invariants a "tightening" edit could silently drop: drafts are gated on
+    # their `## Draft status` section; readying (`gh pr ready`) and merging run
+    # in the main session, never inside a fanned-out agent (auto mode denies a
+    # workflow agent's merge, and no hook guards gh pr ready); merges go only
+    # through git-merge-hazards' merge-chain.sh with a --review-ts that turns
+    # late commits into a stop; and the user-only /git:pr-feedback is
+    # recommended to the user, never invoked (check-delegation-reachability).
+    if [ "$skill_name" = "git-pr-sweep" ]; then
+      for token in "## Draft status" "gh pr ready" "never inside a fanned-out agent" "--review-ts" "merge-chain.sh" "recommend the user run"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (draft gate / main-session merge / merge-chain safety)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: meta-context-diet's dispositions must stay choosable and its
     # commit path must stay runnable (PR #2978 review). Lean-to-pointer is named
     # as a destructive disposition at Step 4/5, so the Step 2 rubric must carry
