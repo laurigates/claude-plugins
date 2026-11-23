@@ -25,8 +25,12 @@
 # What the suite must catch: a model-proposed label outside the allowlist being
 # accepted, a needs label kept without a quote from the issue, a label added
 # over one a person already set, a blocked label cleared while a blocker is
-# still open or when no dependency link exists, and a word in an issue body
-# ("the docs") read as a repo path.
+# still open or when no dependency link exists, a word in an issue body
+# ("the docs") read as a repo path, and the #3587 gaps: a type word read as a
+# scope, a scope hit on a missing label hiding the body paths, uncapped PR
+# routing labels, an absent taxonomy reported as empty, a merge:/dependencies
+# label renamed into build:/area:, an unmapped [Bench]/hw( keyword, a malformed
+# unblock response losing the handled rows, and a trailing backslash on a path.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -105,20 +109,24 @@ expect 969 bracket "enhancement,build:robocar" "[Enhancement] robocar carriers:"
 expect 918 bracket "chore,core:ci" "[Chore] ci:"
 expect 896 bracket "docs,area:sourcing" "[Docs] PRD-016:"
 expect 1027 bracket "chore,build:robocar" "[Test] robocar-unified:"
-# [Bench] is not a type keyword: the scope still routes, no type is guessed.
-expect 1008 bracket "build:robocar" "[Bench] robocar-unified:"
+# [Bench] maps to enhancement (#3587 gap 8); the scope still routes.
+expect 1008 bracket "enhancement,build:robocar" "[Bench] robocar-unified:"
 
 echo "=== real titles: conventional form ==="
 expect 1064 conventional "bug,area:carrier-pcb" "fix(kicad):"
 expect 1049 conventional "enhancement,area:labels" "feat(labels):"
 expect 1036 conventional "chore,build:balancebot" "chore(balancebot):"
 expect 825 conventional "chore,area:carrier-pcb" "test(kicad):"
-# The type word is a scope too: ci(balancebot) selects the ci entry as well.
-expect 1065 conventional "chore,build:balancebot,core:ci" "ci(balancebot):"
-expect 704 conventional "docs,core:docs" "docs:"
-expect 693 conventional "chore,core:ci" "ci:"
-# hw is not a type keyword; the parenthesised scope still routes.
-expect 352 conventional "build:lego-boost" "hw(lego-boost-xbox-fw):"
+# A type word is not a scope unless the taxonomy sets type_words_as_scope
+# (#3587 gap 1): ci(balancebot) selects only the balancebot entry.
+expect 1065 conventional "chore,build:balancebot" "ci(balancebot):"
+# With no scope, "docs:" and "ci:" route by their bodies. Both were labelled
+# core:docs / core:ci by hand, so the default trades agreement on these two for
+# the docs(robocar-unified) case; type_words_as_scope restores them.
+expect 704 conventional "docs,build:robocar" "docs:"
+expect 693 conventional "chore,core:agent,core:ci,core:quality" "ci:"
+# hw maps to enhancement (#3587 gap 8); the parenthesised scope still routes.
+expect 352 conventional "enhancement,build:lego-boost" "hw(lego-boost-xbox-fw):"
 
 echo "=== real titles: neither form ==="
 expect 747 scope "build:balancebot" "balancebot:"
@@ -135,7 +143,61 @@ echo "=== a bracket followed by a conventional title ==="
 item "[Bug] fix(robocar-unified): wheel stalls" ""
 is "the parenthesised scope after a bracket still routes" "$(cls)" "bug,build:robocar"
 item "[Chore] ci(balancebot): cache the toolchain" ""
-is "and the conventional word is a scope there too" "$(cls)" "chore,build:balancebot,core:ci"
+is "the conventional type word there is not a scope by default" "$(cls)" "chore,build:balancebot"
+
+echo "=== type words as title scopes: the type_words_as_scope switch (#3587 gap 1) ==="
+jq '. + {type_words_as_scope: true}' "$FX/taxonomy.json" >"$TMP/tax-typewords.json"
+item "docs(robocar-unified): document the wheel map" ""
+is "docs(robocar-unified) derives no core:docs from the type word by default" "$(cls)" "docs,build:robocar"
+is "control: type_words_as_scope true offers the type word as a scope" \
+    "$(cls --taxonomy "$TMP/tax-typewords.json")" "docs,build:robocar,core:docs"
+item "[Chore] ci(balancebot): cache the toolchain" ""
+is "control: and after a bracket" "$(cls --taxonomy "$TMP/tax-typewords.json")" "chore,build:balancebot,core:ci"
+is "#1065 with the switch on selects the ci entry too" \
+    "$(real 1065 --ignore-existing --taxonomy "$TMP/tax-typewords.json")" "conventional|chore,build:balancebot,core:ci"
+is "#704 with the switch on: docs: routes to core:docs, the body unread" \
+    "$(real 704 --ignore-existing --taxonomy "$TMP/tax-typewords.json")" "conventional|docs,core:docs"
+is "#693 with the switch on: ci: routes to core:ci" \
+    "$(real 693 --ignore-existing --taxonomy "$TMP/tax-typewords.json")" "conventional|chore,core:ci"
+item "chore(ci): bump the runner" ""
+is "a type word inside the parentheses is the author's scope and still routes" "$(cls)" "chore,core:ci"
+# After a bracket the word before the colon sits where the scope goes
+# ("[Type] scope: ..."), so it stays a scope even when it is a type word.
+item "[Chore] ci: bump the runner" ""
+is "a bare word after a bracket is the scope, type word or not" "$(cls)" "chore,core:ci"
+echo '{"type_words_as_scope": "yes"}' >"$TMP/tax-badswitch.json"
+rc=0
+out=$(python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "$TMP/tax-badswitch.json" \
+    --repo-labels "$FX/repo-labels.json") || rc=$?
+is "a non-boolean type_words_as_scope is a malformed taxonomy" "$rc|$(jq -r .status <<<"$out")" "1|ERROR"
+has "and the reason names the key" "$(jq -r .reason <<<"$out")" "type_words_as_scope"
+
+echo "=== a bracketed title prefix routes as a scope (#3737) ==="
+# Issue forms that set "[GitHub Repo]: X" carry no scope after the bracket, and
+# their bodies quote no paths, so only the bracket word can route them.
+jq '. + {area: (.area + {"dns": {"color": "0e8a16", "scopes": ["dns"]},
+                         "github-repo": {"color": "0e8a16", "scopes": ["github repo"]},
+                         "triage": {"color": "0e8a16", "scopes": ["bug"]}})}' \
+    "$FX/taxonomy.json" >"$TMP/tax-bracket.json"
+jq '. + {type_words_as_scope: true}' "$TMP/tax-bracket.json" >"$TMP/tax-bracket-words.json"
+jq '. + [{"name": "area:dns"}, {"name": "area:github-repo"}, {"name": "area:triage"}]' \
+    "$FX/repo-labels.json" >"$TMP/labels-bracket.json"
+brk() { cls --taxonomy "${1:-$TMP/tax-bracket.json}" --repo-labels "$TMP/labels-bracket.json"; }
+item "[DNS]: add a record for the dashboard" ""
+is "[DNS]: routes through a dns scope entry" "$(brk)" "area:dns"
+item "[GitHub Repo]: create foo-service" ""
+is "[GitHub Repo]: is normalised and routes through 'github repo'" "$(brk)" "area:github-repo"
+item "[DNS] robocar-unified: point the OTA host" ""
+is "the bracket word is offered beside the scope after it" "$(brk)" "build:robocar,area:dns"
+item "[Bug]: lid does not close" ""
+is "a type-word bracket is not a scope by default" "$(brk)" "bug"
+is "control: type_words_as_scope offers it" "$(brk "$TMP/tax-bracket-words.json")" "bug,area:triage"
+
+echo "=== bench and hw title keywords map to a type (#3587 gap 8) ==="
+item "[Bench] robocar-unified: measure the mic" ""
+is "[Bench] -> enhancement" "$(cls)" "enhancement,build:robocar"
+item "hw(balancebot): reflow the carrier" ""
+is "hw(...) -> enhancement" "$(cls)" "enhancement,build:balancebot"
 
 echo "=== security is never derived from a title ==="
 for title in "[Security] auth: token printed in logs" "security(auth): token printed in logs" "security: token printed in logs"; do
@@ -158,6 +220,13 @@ item "Linked only" "See https://example.com/tools/kicad/a.py for the file."
 is "a URL is not a repo path" "$(cls)" ""
 item "Boards fail the check" 'See `tools/kicad/a.py` and `tools/kicad/b.py`.' '["build:thinkpack"]'
 is "an existing routing label switches the body fallback off" "$(cls)" ""
+# A title scope whose label the repository lacks routes nothing, so it must not
+# switch the body fallback off (#3587 gap 2).
+jq '[.[] | select(.name != "area:cad")]' "$FX/repo-labels.json" >"$TMP/labels-no-cad.json"
+item "[Bug] enclosure: lid does not close" 'See `tools/kicad/a.py` and `tools/kicad/b.py`.'
+is "a scope hit on a label the repo lacks still reads the body" \
+    "$(cls --repo-labels "$TMP/labels-no-cad.json")" "bug,area:carrier-pcb"
+is "control: with the label in the repo the scope routes and the body is not read" "$(cls)" "bug,area:cad"
 # #729's title scope selects area:schematics; its body also cites
 # .claude/rules/schematic-layout.md, which must not add core:agent.
 hasnt "#729: a path cited in passing adds nothing once the scope routed" "$(real 729 --ignore-existing)" "core:agent"
@@ -165,8 +234,26 @@ hasnt "#729: a path cited in passing adds nothing once the scope routed" "$(real
 echo "=== pull requests: changed files, not body paths ==="
 item "feat(labels): add a sheet" 'Mirrors `tools/kicad/x.py`.' '[]' \
     '["tools/labels/a.py", ".github/workflows/x.yml", "packages/robocar/unified/main/a.c", "packages/x/justfile", "justfile"]'
-is "labels from the title and the changed files" "$(cls)" "enhancement,area:labels,core:ci,build:robocar,core:build"
+# Four routing labels match; the default cap is 3 (#3587 gap 3). The title's
+# area:labels counts toward it, and of the one-file ties the first two stay.
+is "labels from the title and the changed files, capped at 3 routing labels" "$(cls)" "enhancement,area:labels,core:ci,build:robocar"
 hasnt "a path only the PR body mentions adds nothing" "$(cls)" "area:carrier-pcb"
+jq '. + {max_routing_labels: 5}' "$FX/taxonomy.json" >"$TMP/tax-cap5.json"
+is "max_routing_labels in the taxonomy raises the cap" "$(cls --taxonomy "$TMP/tax-cap5.json")" \
+    "enhancement,area:labels,core:ci,build:robocar,core:build"
+item "Update the boards" "" '[]' \
+    '[".github/workflows/x.yml", "packages/robocar/a.c", "tools/kicad/a.py", "justfile", "tools/kicad/b.py", "packages/robocar/b.c", "tools/kicad/c.py", "tools/labels/a.py"]'
+out=$(python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "$FX/taxonomy.json" --repo-labels "$FX/repo-labels.json")
+is "the cap keeps the globs with the most matched files, in derived order" \
+    "$(jq -r '.add | join(",")' <<<"$out")" "core:ci,build:robocar,area:carrier-pcb"
+is "and reports what it dropped" "$(jq -r '[.capped[].label] | join(",")' <<<"$out")" "core:build,area:labels"
+for bad in 0 '"3"' true; do
+    printf '{"max_routing_labels": %s}' "$bad" >"$TMP/tax-badcap.json"
+    rc=0
+    out=$(python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "$TMP/tax-badcap.json" \
+        --repo-labels "$FX/repo-labels.json") || rc=$?
+    is "max_routing_labels $bad is a malformed taxonomy" "$rc|$(jq -r .status <<<"$out")" "1|ERROR"
+done
 
 echo "=== built-in core globs, and the taxonomy overriding them ==="
 echo '{}' >"$TMP/empty.json"
@@ -367,6 +454,9 @@ provision_labels() {
  {"name": "area:cad", "color": "0E8A16", "description": "Printed parts"},
  {"name": "area:retired", "color": "0e8a16", "description": "no longer in the taxonomy"},
  {"name": "bug", "color": "d73a4a", "description": ""},
+ {"name": "merge:squash", "color": "ededed", "description": ""},
+ {"name": "Dependencies", "color": "0366d6", "description": ""},
+ {"name": "robot", "color": "ffffff", "description": "unprefixed"},
  {"name": "wontfix", "color": "ffffff", "description": ""}]
 JSON
 }
@@ -429,7 +519,30 @@ refuse "renaming a type label away" '{"build": {"x": {"color": "1d76db", "rename
 refuse "two entries renaming one label" \
     '{"build": {"a": {"color": "1d76db", "renamed_from": "project:lego"}, "b": {"color": "1d76db", "renamed_from": "Project:Lego"}}}' \
     "already renamed by build.a"
-refuse "an empty taxonomy" '{}' "taxonomy_missing"
+# #3587 gap 7: a reserved family outside the type/core/needs/blocked set.
+refuse "renaming merge:squash into a build: label" \
+    '{"build": {"x": {"color": "1d76db", "renamed_from": "merge:squash"}}}' "cannot be renamed"
+refuse "renaming dependencies into an area: label, any case" \
+    '{"area": {"deps": {"color": "0e8a16", "renamed_from": "dependencies"}}}' "cannot be renamed"
+# #3587 gap 5: an empty file and an absent one are reported apart.
+refuse "an empty taxonomy" '{}' "taxonomy_empty"
+
+stub_reset
+provision_labels
+rc=0
+out=$(python3 "$TOOL" provision --repo o/r --dry-run) || rc=$?
+is "a taxonomy absent from the repo is an ERROR" "$rc|$(grep -c '^STATUS=ERROR$' <<<"$out")" "1|1"
+has "and says absent, not empty" "$out" "REASON=taxonomy_missing: .github/issue-labels.json is absent"
+echo '{}' >"$STUB/contents-.github-issue-labels.json.json"
+rc=0
+out=$(python3 "$TOOL" provision --repo o/r --dry-run) || rc=$?
+has "control: an empty taxonomy in the repo says empty" "$out" "REASON=taxonomy_empty: .github/issue-labels.json"
+
+stub_reset
+provision_labels
+echo '{"build": {"robot": {"color": "1d76db", "renamed_from": "robot"}}}' >"$TMP/unprefixed.json"
+out=$(python3 "$TOOL" provision --repo o/r --taxonomy "$TMP/unprefixed.json" --dry-run)
+has "an unprefixed label may still be renamed into build:" "$out" "OP=rename LABEL=build:robot FROM=robot"
 
 stub_reset
 provision_labels
@@ -528,6 +641,19 @@ out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
 is "a failed removal exits 1 and counts nothing as removed" \
     "$rc|$(grep -c '^UNBLOCKED=0$' <<<"$out")|$(grep -c '^STATUS=ERROR$' <<<"$out")" "1|1|1"
 has "and names the issue" "$out" "TYPE=dependent_failed NUMBER=11 "
+
+echo "=== unblock: a malformed response still reports what was removed (#3587 gap 9) ==="
+unblock_scenario closed
+printf '[{"number": 10, "state": "clo' >"$STUB/issues-12-dependencies-blocked_by.json"
+rc=0
+out=$(python3 "$TOOL" unblock --repo o/r --issue 10) || rc=$?
+is "a malformed response after one removal exits 1" "$rc" "1"
+for row in "NUMBER=11 ACTION=unblock REASON=all_blockers_closed" "NUMBER=12 ACTION=error REASON=malformed_response" \
+    "UNBLOCKED=1" "STATUS=ERROR" "TYPE=dependent_failed NUMBER=12 "; do
+    has "$row" "$out" "$row"
+done
+hasnt "the run stops at the malformed response" "$out" "NUMBER=13 "
+is "the removal made before it is the only write" "$(writes)" "api -X DELETE repos/o/r/issues/11/labels/blocked"
 
 echo "=== unblock: a label another run already removed ==="
 # Two blockers of #11 close together, and each run's job sees every blocker
@@ -686,6 +812,7 @@ body = (
     "The docs, a justfile and `Makefile` are words; docs/ and ./justfile and .mcp.json are paths."
 )
 print(m.path_candidates(body))
+print(m.path_candidates("The fault is in packages/robocar\\ and tools/x.py\\."))
 cases = [
     ("docs/**", "docs/a/b.md"), ("docs/**", "docs"), ("docs/**", "docsx/a"),
     ("*.just", "a.just"), ("*.just", "tools/a.just"), ("**/*.just", "tools/a.just"),
@@ -702,9 +829,10 @@ PY
 )
 is "paths keep their order, lose line suffixes and duplicates; URLs, mentions and words are skipped" \
     "$(sed -n 1p <<<"$out")" "['main/ota.c', 'docs/a/b.md', 'tools/x.py', 'docs/', 'justfile', '.mcp.json']"
-is "glob semantics: * stays in a segment, ** crosses, /** takes the directory" "$(sed -n 2p <<<"$out")" "yynynyynyyyn"
-is "a blocker with no state counts as open" "$(sed -n 3p <<<"$out")" "('keep', 'open_blocker:#3')"
-is "so audit does not report its blocked issue as resolved" "$(sed -n 4p <<<"$out")" "[]"
+is "a trailing backslash is not part of a path (#3587 gap 10)" "$(sed -n 2p <<<"$out")" "['packages/robocar', 'tools/x.py']"
+is "glob semantics: * stays in a segment, ** crosses, /** takes the directory" "$(sed -n 3p <<<"$out")" "yynynyynyyyn"
+is "a blocker with no state counts as open" "$(sed -n 4p <<<"$out")" "('keep', 'open_blocker:#3')"
+is "so audit does not report its blocked issue as resolved" "$(sed -n 5p <<<"$out")" "[]"
 
 # ── the skills that document this script ──────────────────────────────────────
 
