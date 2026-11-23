@@ -129,7 +129,7 @@ assert_contains "A1: real plugin.json STATUS=OK" "STATUS=OK" "$out"
 assert_contains "A2: real plugin.json ISSUE_COUNT=0" "ISSUE_COUNT=0" "$out"
 # Guard integrity: without these, every "no issues" assertion below is vacuous.
 assert_contains "A3: the agent prompt was actually found" "PROMPT_FOUND=true" "$out"
-assert_contains "A4: 15 concept rules ran" "RULES_CHECKED=15" "$out"
+assert_contains "A4: 24 concept rules ran" "RULES_CHECKED=24" "$out"
 assert_exit "A5: real plugin.json exits 0 under --strict" 0 \
     bash "$GUARD" --plugin-json "$REAL_JSON" --strict
 
@@ -176,6 +176,8 @@ Measure scope from the branch diff, git diff --name-only BASE...HEAD, never from
 Then look for TODO/FIXME markers, stray debug statements, and missing tests in that set.
 
 Refuse only when the work has real defects, or when there is no change at all - no commits over the base and no edits in the tree.
+If Context says the output is an external artifact, such as owner/repo#N, verify it exists by running gh api against it; a found artifact passes and the change-set checks do not apply. An unconfirmed artifact is not ok. Without gh or another GitHub tool, refuse and say which tool is missing, since retrying would not help.
+Missing tools never earn an ok: without the shell, refuse and say which tool is missing.
 Answer {"ok": true} when acceptable, else {"ok": false, "reason": "..."}.
 EOF
 reword_json=$(make_fixture reword "$WORK/reword.txt")
@@ -450,6 +452,85 @@ n3_json=$(mutate reworkinspect3 \
     's|^3\. Inspect the working tree: git status --porcelain and git diff --stat\.|3. Remember that the working tree may also carry changes; git status output is not authoritative here.|')
 out=$(run_guard "$n3_json")
 assert_contains "N3: prose about the working tree does NOT satisfy the rule" \
+    "RULE=worktree_still_inspected" "$out"
+
+# ---------------------------------------------------------------------------
+echo "TEST V: external deliverables and missing tools (#3449)"
+# ---------------------------------------------------------------------------
+# Owner decision on #3449: an external deliverable (issue / PR / comment) passes
+# only after a gh api read confirms it, skipping the change-set checks; a
+# verifier without the tools withholds with a reason naming the missing tool,
+# and a lack of tools is never grounds for ok.
+
+# V1: the pre-#3449 prompt (both new paragraphs removed) fires every new rule.
+v1_json=$(mutate pre3449 '/^(EXTERNAL DELIVERABLES|MISSING TOOLS)\./d; s/ These conditions are for change-set tasks[^)]*\)\.//')
+out=$(run_guard "$v1_json")
+for rule in external_deliverable_recognised external_confirmed_via_gh_api \
+    external_skips_change_set external_unconfirmed_never_ok \
+    external_no_github_tool_withheld missing_tools_not_ok \
+    missing_tool_named_in_reason retry_will_not_help; do
+    assert_contains "V1: the pre-#3449 prompt fires $rule" "RULE=$rule" "$out"
+done
+# Guard integrity: the pre-#3449 prompt still satisfies the #2301 rules, so V1
+# isolates the new concepts rather than breaking the whole prompt.
+assert_lacks "V1: the pre-#3449 prompt still passes branch_log_inspection" \
+    "RULE=branch_log_inspection" "$out"
+
+# V2: drop the gh api confirmation (trust the task text, option A).
+v2_json=$(mutate nogh 's/with a gh api read:[^.]*review comment\./by reading Context./')
+out=$(run_guard "$v2_json")
+assert_contains "V2: dropping the gh api read fires external_confirmed_via_gh_api" \
+    "RULE=external_confirmed_via_gh_api" "$out"
+
+# V3: drop the change-set skip, so an external deliverable can never pass.
+v3_json=$(mutate noskip 's/ and skip steps 1-8[^:]*: the change-set checks do not apply to an external deliverable//')
+out=$(run_guard "$v3_json")
+assert_contains "V3: dropping the change-set skip fires external_skips_change_set" \
+    "RULE=external_skips_change_set" "$out"
+
+# V4: drop "never ok when unconfirmed".
+v4_json=$(mutate nounconfirmed 's/ Never return ok for an external deliverable you could not confirm\.//')
+out=$(run_guard "$v4_json")
+assert_contains "V4: dropping the unconfirmed-never-ok clause fires external_unconfirmed_never_ok" \
+    "RULE=external_unconfirmed_never_ok" "$out"
+
+# V5: drop the explicit no-GitHub-tool fall direction the owner asked for.
+v5_json=$(mutate nonogh 's/ If you have no Bash or other GitHub-capable tool.*retrying will not help\.//')
+out=$(run_guard "$v5_json")
+assert_contains "V5: dropping the no-GitHub-tool sentence fires external_no_github_tool_withheld" \
+    "RULE=external_no_github_tool_withheld" "$out"
+
+# V6: drop "a lack of tools is never grounds for ok".
+v6_json=$(mutate nolack 's/ A lack of tools is never grounds for ok\.//')
+out=$(run_guard "$v6_json")
+assert_contains "V6: dropping the never-ok-on-missing-tools clause fires missing_tools_not_ok" \
+    "RULE=missing_tools_not_ok" "$out"
+
+# V7: the reason stops naming the missing tool.
+v7_json=$(mutate noname 's/(names|name) the missing tool/explains the problem/g')
+out=$(run_guard "$v7_json")
+assert_contains "V7: an unnamed tool in the reason fires missing_tool_named_in_reason" \
+    "RULE=missing_tool_named_in_reason" "$out"
+
+# V8: the reason stops telling the agent a retry is futile.
+v8_json=$(mutate noretry 's/, so the agent knows retrying will not help//g')
+out=$(run_guard "$v8_json")
+assert_contains "V8: dropping the retry-futility clause fires retry_will_not_help" \
+    "RULE=retry_will_not_help" "$out"
+
+# V9: the issue's rejected fail-open suggestion (question 2 option A) fires.
+v9_json=$(mutate failopen 's/^(MISSING TOOLS\. )/\1When you cannot run the commands this prompt depends on, return ok with a note. /')
+out=$(run_guard "$v9_json")
+assert_contains "V9: a fail-open 'return ok with a note' fires missing_tools_fail_open" \
+    "RULE=missing_tools_fail_open" "$out"
+assert_exit "V9: the fail-open prompt exits 1 under --strict" 1 \
+    bash "$GUARD" --plugin-json "$v9_json" --strict
+
+# V10: the new paragraphs must not satisfy the #2301 rules on their own. With
+# the working-tree inspection step deleted (the K mutation), the rule still fires.
+v10_json=$(mutate v10noinspect '/^3\. Inspect the working tree/d')
+out=$(run_guard "$v10_json")
+assert_contains "V10: the #3449 paragraphs do not satisfy worktree_still_inspected" \
     "RULE=worktree_still_inspected" "$out"
 
 # ---------------------------------------------------------------------------
