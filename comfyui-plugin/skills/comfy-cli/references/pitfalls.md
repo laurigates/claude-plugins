@@ -80,10 +80,13 @@ Failure modes of the `comfy` CLI on a systemd-managed install, each with its sym
   copy is unused now that uv tool owns the symlinks.
 - **`comfy node update`'s post-install pip uses the WRONG venv.** The
   ComfyUI-Manager subprocess that handles `requirements.txt` for newly-
-  updated nodes is invoked with `comfy-cli`'s `sys.executable`
-  (`~/.local/pipx/venvs/comfy-cli/bin/python`), not the install's `.venv/`.
-  Symptom: post-update logs show `EXECUTE => ['~/.local/pipx/
-  venvs/comfy-cli/bin/python', '-m', 'uv', 'pip', 'install', ...]`, and
+  updated nodes is invoked with `comfy-cli`'s `sys.executable` — the
+  interpreter of comfy-cli's own tool venv (with a uv tool install,
+  `~/.local/share/uv/tools/comfy-cli/bin/python`) — not the install's
+  `.venv/`. The exact path depends on how comfy-cli was installed; the
+  `EXECUTE` line has not been re-checked since comfy-cli moved from pipx to
+  uv tool. Symptom: post-update logs show `EXECUTE => ['<comfy-cli venv>/bin/python',
+  '-m', 'uv', 'pip', 'install', ...]`, and
   the new packages don't appear in `.venv/bin/python -m pip list`. Fix:
   install each pack's changed requirement lines into the correct
   interpreter under a `pins.txt` constraints file (see "Safe mass node
