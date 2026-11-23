@@ -17,10 +17,16 @@
 # top-level .repo "owner/name" (a run element has none; then the check is
 # skipped unless --repo is given).
 #
-# Per run: one `git fetch origin <base>...` for the bases, SHAs fetched by id in
-# chunks of 20, then `+refs/pull/<n>/head:refs/pr-sweep/<n>` for any SHA still
-# missing. A SHA missing after both is an ERROR row; the caller must not review
-# that PR.
+# Only rows the sweep reviews are fetched: a roster row with policy.review false
+# (release-please, a cross-repo head) is skipped, and counted in NOT_REVIEWED.
+# A run element's rows carry no policy and are all fetched.
+#
+# Per run: each base fetched with an explicit refspec
+# `+refs/heads/<base>:refs/remotes/origin/<base>`, so a single-branch clone gets
+# origin/<base> too; a base still missing after its fetch is an ERROR row. SHAs
+# are fetched by id in chunks of 20, then `+refs/pull/<n>/head:refs/pr-sweep/<n>`
+# for any SHA still missing. A SHA missing after both is an ERROR row; the caller
+# must not review that PR.
 #
 # Exit: 0 OK, 1 ERROR, 2 usage.
 
@@ -82,17 +88,24 @@ if [ -n "$repo" ]; then
   $origin_ok || fail origin_mismatch "origin $origin is not $repo; pass the clone of $repo as --root"
 fi
 
-mapfile -t bases < <(jq -r '[.prs[].base // empty] | unique | .[]' "$input")
-mapfile -t rows < <(jq -r '.prs[] | "\(.number) \(.head_sha // "")"' "$input")
+# shellcheck disable=SC2016 # jq program, not a shell expansion
+reviewable='[.prs[] | select(.policy.review != false)]'
+mapfile -t bases < <(jq -r "$reviewable"' | [.[].base // empty] | unique | .[]' "$input")
+mapfile -t rows < <(jq -r "$reviewable"' | .[] | "\(.number) \(.head_sha // "")"' "$input")
 summary_kv ROOT "$root"
 summary_kv REPO "$repo"
 summary_kv PRS "${#rows[@]}"
+summary_kv NOT_REVIEWED "$(jq '[.prs[] | select(.policy.review == false)] | length' "$input")"
 summary_kv BASES "$(IFS=,; echo "${bases[*]:-}")"
 
-if [ "${#bases[@]}" -gt 0 ]; then
-  git -C "$root" fetch -q origin "${bases[@]}" >/dev/null 2>&1 ||
-    summary_issue ERROR base_fetch_failed "git fetch origin ${bases[*]} failed"
-fi
+# An explicit destination: `git fetch origin <base>` updates origin/<base> only
+# when the clone's fetch refspec covers it, which a single-branch clone's does not.
+for b in "${bases[@]}"; do
+  git -C "$root" fetch -q origin "+refs/heads/${b}:refs/remotes/origin/${b}" >/dev/null 2>&1 ||
+    summary_issue ERROR base_fetch_failed "git fetch origin +refs/heads/${b}:refs/remotes/origin/${b} failed"
+  git -C "$root" rev-parse --verify -q "refs/remotes/origin/${b}" >/dev/null 2>&1 ||
+    summary_issue ERROR base_missing "origin/${b} is absent after the fetch; pr-review diffs against it"
+done
 
 have() { git -C "$root" cat-file -e "${1}^{commit}" >/dev/null 2>&1; }
 

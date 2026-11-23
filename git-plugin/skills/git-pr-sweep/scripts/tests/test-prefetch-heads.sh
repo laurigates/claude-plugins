@@ -7,7 +7,9 @@
 # Pins: a PR head that exists only under refs/pull/<n>/head on origin becomes
 # present in the clone; a head already present is not refetched; an unknown
 # SHA is an ERROR naming the PR; a clone whose origin is another repository is
-# refused before any fetch; usage errors exit 2.
+# refused before any fetch; usage errors exit 2. Also (M5): a row the sweep does
+# not review (policy.review false) is not fetched, a single-branch clone gets
+# origin/<base>, and a base origin lacks is an ERROR.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -86,6 +88,35 @@ git -C "$work/clone" remote set-url origin https://github.com/other/widgets.git
 bash "$PRE" --root "$work/clone" "$work/r.json" >/dev/null; assert_eq "github origin of another owner with the same name is refused" 1 "$?"
 git -C "$work/clone" remote set-url origin https://github.com/acme/widgets.git
 bash "$PRE" --root "$work/clone" "$work/rg.json" >/dev/null; assert_eq "github origin of another repo is refused" 1 "$?"
+
+# Regression (M5): every roster row was fetched, so an unfetchable head on a row
+# the sweep never reviews (policy.review false) failed the whole prefetch.
+echo "=== rows the sweep does not review are not fetched ==="
+git -C "$work/clone" remote set-url origin "$work/widgets.git"
+roster acme/widgets "[{\"number\":7,\"head_sha\":\"$pr7\",\"base\":\"main\",\"policy\":{\"review\":true}},{\"number\":30,\"head_sha\":\"3030303030303030303030303030303030303030\",\"base\":\"main\",\"policy\":{\"review\":false}}]" > "$work/rnr.json"
+summary=$(bash "$PRE" --root "$work/clone" "$work/rnr.json"); rc=$?
+assert_eq "unreviewed row with an unfetchable head: exit 0" 0 "$rc"
+assert_eq "MISSING empty, NOT_REVIEWED=1" "MISSING=|NOT_REVIEWED=1" "$(grep '^MISSING=' <<<"$summary")|$(grep '^NOT_REVIEWED=' <<<"$summary")"
+roster acme/widgets '[{"number":31,"head_sha":"3131313131313131313131313131313131313131","base":"main","policy":{"review":true}}]' > "$work/rrv.json"
+bash "$PRE" --root "$work/clone" "$work/rrv.json" >/dev/null; assert_eq "control: a reviewed row with the same kind of head still fails" 1 "$?"
+
+# Regression (M5): `git fetch origin <base>` left origin/<base> absent in a
+# single-branch clone, and pr-review's `git diff origin/<base>...` then failed.
+echo "=== a single-branch clone gets origin/<base> ==="
+git -C "$work/seed" switch -q -c dev main
+git -C "$work/seed" commit -q --allow-empty -m "dev work"
+git -C "$work/seed" push -q "$work/widgets.git" dev
+git clone -q --no-local --single-branch --branch main "$work/widgets.git" "$work/single"
+assert_eq "control: origin/dev absent before" absent "$(git -C "$work/single" rev-parse --verify -q refs/remotes/origin/dev >/dev/null && echo present || echo absent)"
+roster acme/widgets "[{\"number\":7,\"head_sha\":\"$pr7\",\"base\":\"dev\"}]" > "$work/rdev.json"
+summary=$(bash "$PRE" --root "$work/single" "$work/rdev.json"); rc=$?
+assert_eq "exit 0" 0 "$rc"
+assert_eq "origin/dev present after" present "$(git -C "$work/single" rev-parse --verify -q refs/remotes/origin/dev >/dev/null && echo present || echo absent)"
+roster acme/widgets "[{\"number\":7,\"head_sha\":\"$pr7\",\"base\":\"no-such-base\"}]" > "$work/rnob.json"
+summary=$(bash "$PRE" --root "$work/single" "$work/rnob.json"); rc=$?
+assert_eq "a base origin lacks exits 1" 1 "$rc"
+assert_eq "base_missing reported" true "$(grep -q 'TYPE=base_missing' <<<"$summary" && echo true || echo false)"
+validate "summary meets the structured-output contract (base ERROR)" "$summary"
 
 echo "=== usage ==="
 bash "$PRE" >/dev/null 2>&1; assert_eq "no input exits 2" 2 "$?"

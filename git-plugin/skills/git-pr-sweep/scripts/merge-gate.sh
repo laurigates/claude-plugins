@@ -39,9 +39,10 @@
 #   G8 draft   drafts only: draft_class ready_candidate and ci green
 #
 # Output:
-#   {repo, passed:[n], ready:[n], merge:[[n]],
+#   {repo, chunk, passed:[n], ready:[n], merge:[[n]],
 #    report:[{number, url, is_draft, gate, reason, failed:[gate], open_count,
 #             fix_block, findings:[{id, severity, where, problem}]}]}
+#   chunk  the --chunk value, so pr-merge rebuilds its chunks at the same size
 #   ready  drafts that passed every gate; the main session runs gh pr ready on each
 #   merge  every passing PR, ascending, chunked; paste each chunk as a literal --prs
 #   report fix_block is the roster's policy.fix_block (why the sweep did not fix
@@ -185,6 +186,7 @@ out=$(jq -n --slurpfile r "$roster" --slurpfile v "$review" --argjson fixrows "$
   | [$evaluated[] | select(.g | length == 0) | .p] as $passed
   | {
       repo: ($R.repo // null),
+      chunk: $chunk,
       passed: [$passed[] | .number],
       ready: [$passed[] | select(.is_draft) | .number],
       merge: ([$passed[] | .number] as $n | [range(0; $n | length; $chunk) as $i | $n[$i:$i + $chunk]]),

@@ -201,6 +201,14 @@ for (const [name, a, reason] of [
 }
 
 {
+  // M2: a verify-only re-run fed review-<i>.json rows (no base, no author_kind) aborts
+  // before any agent; SKILL Step 2.4 names review-plan.json runs[i].prs as the source.
+  const reviewRow = { number: 2, head_sha: sha('2'), status: 'partial', lensesFailed: [], open: [], refuted: [], unverified: [], verifierFailed: [], stats: {} }
+  const r = await run(review, { ...BASE, prs: [reviewRow], claims: [finding(2, 'x.js', 3)] }, () => confirm())
+  check('pr-review verify-only re-run with review-row prs aborts missing-head with 0 agents', r.result?.abort === true && r.result.reason === 'missing-head' && r.calls.length === 0, r.result)
+}
+
+{
   // worktrees arg: verifiers make their own worktree under the clone, no harness isolation.
   const r = await run(review, { ...BASE, worktrees: '/abs/clone/.claude/worktrees', prs: [pr(1)], groups: [[1]] }, (label) =>
     label === 'find:correctness:1' ? { findings: [finding(1, 'a.js', 1)] } : label.startsWith('find:') ? { findings: [] } : confirm())
@@ -241,7 +249,9 @@ for (const [name, a, reason] of [
 const fixWf = load('pr-fix.workflow.js')
 const unit = (n, extra = {}) => ({ id: `pr-${n}`, branch: `feat/${n}`, head_sha: sha(String(n % 10)), base: 'origin/main', issues: [], brief: `PR #${n} brief`, gates: [], findings: [{ id: 'F1', severity: 'major', where: 'a.js:1', problem: 'p', fix: 'f', evidence: 'e' }], ...extra })
 const FBASE = { repo: 'o/r', root: '/abs/clone', trailer: 'Co-Authored-By: X' }
-const fixRes = (u, extra = {}) => ({ unit: u, branch: 'b', status: 'done', head_sha: 'abc1234', commits: ['abc1234 fix(x): y'], items: [], gates: [], ...extra })
+// head_sha is the full rev-parse output the sweep's FIX schema demands; commits keep the
+// abbreviated "<sha> <subject>" form Finalise matches by prefix.
+const fixRes = (u, extra = {}) => ({ unit: u, branch: 'b', status: 'done', head_sha: sha('a'), commits: ['abc1234 fix(x): y'], items: [], gates: [], ...extra })
 const verdictRes = (u, v) => ({
   unit: u, verdict: v, gates_reproduced: [], claims_not_reproduced: [], mutant_replays: [],
   new_defects: v === 'fix-needed' ? [{ severity: 'major', where: 'a.js:1', problem: 'p', fix: 'f' }] : [], summary: '',
@@ -268,14 +278,14 @@ for (const [name, a, reason] of [
     const [kind, id] = label.split(':')
     if (kind === 'fix') return id === 'pr-3' ? fixRes(id, { status: 'blocked' }) : fixRes(id)
     if (kind === 'verify') return id === 'pr-1' ? verdictRes(id, 'pass') : verdictRes(id, 'fix-needed')
-    if (kind === 'repair') return fixRes(id, { head_sha: 'def5678' })
+    if (kind === 'repair') return fixRes(id, { head_sha: sha('d') })
     if (kind === 'reverify') return verdictRes(id, 'pass')
     if (kind === 'finalise') return { pushed: [{ unit: 'pr-1', branch: 'feat/1', status: 'pushed', detail: '' }, { unit: 'pr-2', branch: 'feat/2', status: 'pushed', detail: '' }] }
   })
   const st = Object.fromEntries(r.result.rows.map((x) => [x.unit, x.status]))
   check('pr-fix pass → PASS, fix-needed → repair → REPAIRED_PASS, blocked → BLOCKED', st['pr-1'] === 'PASS' && st['pr-2'] === 'REPAIRED_PASS' && st['pr-3'] === 'BLOCKED', st)
   check('pr-fix blocked fix spawns no verifier', !r.labels.includes('verify:pr-3'), r.labels)
-  check('pr-fix finalise plan carries the repaired head', JSON.stringify(r.result.finalisePlan.map((p) => [p.unit, p.head_sha])) === '[["pr-1","abc1234"],["pr-2","def5678"]]', r.result.finalisePlan)
+  check('pr-fix finalise plan carries the repaired head', JSON.stringify(r.result.finalisePlan.map((p) => [p.unit, p.head_sha])) === JSON.stringify([['pr-1', sha('a')], ['pr-2', sha('d')]]), r.result.finalisePlan)
   const fin = r.calls.find((c) => c.label === 'finalise')
   check('pr-fix finalise is opus/medium, not isolated', fin.opts.model === 'opus' && fin.opts.effort === 'medium' && !fin.opts.isolation)
   check('pr-fix finalise pushes but never merges, readies or opens a PR', /git push origin <head_sha>:refs\/heads\/<branch>/.test(fin.prompt) && /Do not merge, approve, mark ready, comment, or open a PR/.test(fin.prompt) && !/gh pr (merge|ready|create)/.test(fin.prompt))
@@ -292,7 +302,7 @@ for (const [name, a, reason] of [
   check('pr-fix fixer never detaches the main checkout', /checked out in the main checkout \/abs\/clone, do not detach or switch that checkout/.test(fx1))
   check('pr-fix fixer prompt carries the unit brief', fx1.includes('PR #1 brief'))
   const rp2 = r.calls.find((c) => c.label === 'repair:pr-2').prompt
-  check("pr-fix repairer must start at the fixer's tip", rp2.includes('`git rev-parse HEAD` must print abc1234'), rp2.slice(-900))
+  check("pr-fix repairer must start at the fixer's tip", rp2.includes(`\`git rev-parse HEAD\` must print ${sha('a')}`), rp2.slice(-900))
   check('pr-fix finalise plan carries the reviewed head and the reported commits', JSON.stringify(r.result.finalisePlan.map((p) => [p.base_sha, p.commits])) === JSON.stringify([[sha('1'), ['abc1234']], [sha('2'), ['abc1234', 'abc1234']]]), r.result.finalisePlan)
   check('pr-fix finalise pushes only when the remote is still at base_sha and exactly the reported commits follow it',
     /git rev-parse origin\/<branch> prints base_sha/.test(fin.prompt) && /git merge-base --is-ancestor <base_sha> <head_sha>/.test(fin.prompt) && /git rev-list --first-parent --reverse <base_sha>\.\.<head_sha> lists exactly the commits in `commits`/.test(fin.prompt))
@@ -325,6 +335,22 @@ for (const [name, a, reason] of [
   const rb = await run(fixWf, { ...FBASE, units: [unit(1)] }, (label) =>
     label.startsWith('fix:') ? fixRes('pr-1') : label.startsWith('verify:') ? verdictRes('pr-1', 'fix-needed') : label.startsWith('repair:') ? fixRes('pr-1', { status: 'blocked' }) : verdictRes('pr-1', 'pass'))
   check('pr-fix repairer that finds the PR merged → BLOCKED, no re-verify', rb.result.rows[0].status === 'BLOCKED' && !rb.labels.some((l) => l.startsWith('reverify:')), rb.labels)
+}
+
+{
+  // Regression (H2): FIX_SCHEMA.head_sha had no pattern, the mocks returned short SHAs,
+  // and a short fixer head reached finalisePlan; merge-gate.sh G5 compares it by exact
+  // string with the 40-hex headRefOid, so every such PR failed "head moved" after its push.
+  const short = await run(fixWf, { ...FBASE, units: [unit(1)] }, (label) =>
+    label.startsWith('fix:') ? fixRes('pr-1', { head_sha: 'abc1234' }) : label.startsWith('verify:') ? verdictRes('pr-1', 'pass') : { pushed: [] })
+  check('pr-fix a short fixer head_sha is BLOCKED, never finalised', short.result.rows[0].status === 'BLOCKED' && short.result.finalisePlan.length === 0 && !short.labels.includes('finalise'), short.result)
+  const shortRep = await run(fixWf, { ...FBASE, units: [unit(1)] }, (label) =>
+    label.startsWith('fix:') ? fixRes('pr-1', { head_sha: 'abc1234' }) : label.startsWith('verify:') ? verdictRes('pr-1', 'fix-needed') : verdictRes('pr-1', 'pass'))
+  check('pr-fix a short fixer head_sha spawns no repairer', !shortRep.labels.some((l) => l.startsWith('repair:')) && shortRep.result.rows[0].status === 'FIX_NEEDED', shortRep.labels)
+  const full = await run(fixWf, { ...FBASE, units: [unit(1)] }, () => undefined)
+  const schemas = full.calls.filter((c) => c.label.startsWith('fix:')).map((c) => c.opts.schema.properties.head_sha)
+  const re = schemas[0]?.pattern ? new RegExp(schemas[0].pattern) : null
+  check('pr-fix fixer schema demands a full 40-hex head_sha (or "")', re && re.test(sha('a')) && re.test('') && !re.test('abc1234'), schemas)
 }
 
 {
@@ -392,6 +418,27 @@ for (const [name, a, reason] of [
   // dropping the number check kept the suite green.
   const r = await run(mergeWf, { repo: 'o/r', plan: plan([2], [2]), roster: roster([2]) }, () => read(2, { number: 7 }))
   check('pr-merge reader that answers for another PR holds the draft', JSON.stringify(r.result.held.map((h) => [h.number, h.reason])) === '[[2,"reader answered for #7"]]' && r.result.merge.flat().length === 0, r.result.held)
+}
+
+{
+  // Regression (M4): held rows lacked merge-gate's fix_block and findings keys, so
+  // plan.report mixed two row shapes.
+  const GATE_ROW_KEYS = ['failed', 'findings', 'fix_block', 'gate', 'is_draft', 'number', 'open_count', 'reason', 'url']
+  const ros = { repo: 'o/r', prs: [rosterRow(2, { policy: { fix_block: null } }), rosterRow(3, { policy: { fix_block: 'renovate' } })] }
+  const r = await run(mergeWf, { repo: 'o/r', plan: plan([2, 3], [2, 3]), roster: ros }, (label) => read(Number(label.split('-')[1]), { verdict: 'hold' }))
+  const rows = r.result.report.filter((x) => x.gate === 'draft_prose')
+  check('pr-merge held rows carry exactly merge-gate.sh report row keys', rows.length === 2 && rows.every((x) => JSON.stringify(Object.keys(x).sort()) === JSON.stringify(GATE_ROW_KEYS)), rows)
+  check('pr-merge held rows: findings [] and the roster fix_block', JSON.stringify(rows.map((x) => [x.number, x.fix_block, x.findings])) === '[[2,null,[]],[3,"renovate",[]]]', rows)
+}
+
+{
+  // Regression (M3): gate.json carried no chunk and SKILL Step 4.4 passes none, so the
+  // rebuild used 8 and undid merge-gate.sh --chunk.
+  const passed = [1, 2, 3, 4, 5, 6, 7]
+  const r = await run(mergeWf, { repo: 'o/r', plan: { ...plan(passed, [2]), chunk: 3 }, roster: roster(passed) }, () => read(2))
+  check('pr-merge rebuilds at plan.chunk when args.chunk is absent', JSON.stringify(r.result.merge) === '[[1,2,3],[4,5,6],[7]]' && r.result.chunk === 3, r.result.merge)
+  const r2 = await run(mergeWf, { repo: 'o/r', plan: { ...plan(passed, [2]), chunk: 3 }, roster: roster(passed), chunk: 2 }, () => read(2))
+  check('pr-merge args.chunk still overrides plan.chunk', JSON.stringify(r2.result.merge) === '[[1,2],[3,4],[5,6],[7]]', r2.result.merge)
 }
 
 if (failed) {

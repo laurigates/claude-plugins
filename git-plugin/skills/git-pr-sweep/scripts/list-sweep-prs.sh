@@ -264,9 +264,10 @@ def ci_contexts:
 def is_status_context: .__typename == "StatusContext" or (has("state") and (has("status") | not));
 def ctx_failed:
   if is_status_context then (.state == "FAILURE" or .state == "ERROR")
+  # An allowlist: a completed run passes only on SUCCESS, NEUTRAL or SKIPPED, so a
+  # null conclusion or one GitHub adds later reads red instead of falling to green.
   else (.status == "COMPLETED" and ((.conclusion // "") as $c
-        | $c == "FAILURE" or $c == "CANCELLED" or $c == "TIMED_OUT"
-          or $c == "ACTION_REQUIRED" or $c == "STARTUP_FAILURE" or $c == "STALE")) end;
+        | ["SUCCESS", "NEUTRAL", "SKIPPED"] | index($c) | not)) end;
 def ctx_pending:
   if is_status_context then (.state == "PENDING" or .state == "EXPECTED")
   else (.status != "COMPLETED") end;

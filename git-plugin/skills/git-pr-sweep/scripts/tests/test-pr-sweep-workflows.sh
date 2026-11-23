@@ -17,7 +17,10 @@
 # It also pins the caps the review planner and the review template share, each
 # template's agent count as the scale estimator reads it, and three SKILL.md
 # orderings: the review timestamp before the merge-stage re-list, one verify-only
-# re-run per review run, and findings listed in the final report.
+# re-run per review run, and findings listed in the final report. Text pins:
+# the verify-only re-run takes its prs from review-plan.json (M2), a FAILED or
+# UNVERIFIED unit is re-dispatched only after its leftovers are cleared (H3),
+# and the M8 repair starts from the expected head, never the live one (H1).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,6 +94,40 @@ post=$(awk '/^## Post-actions/{on=1} on' "$skill_md")
 # shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
 if grep -qF '`findings`' <<<"$post" && grep -qF '`fix_block`' <<<"$post"; then pass "SKILL Post-actions lists each reported PR's findings and fix_block"
 else bad "SKILL Post-actions must list reported PRs' findings and fix_block"; fi
+
+# Regression (M2): Step 2.4 said `prs` = "their rows" without a source; review-<i>.json
+# rows have no base or author_kind, and pr-review aborts missing-head on them.
+handoff="$skill/references/handoff-formats.md"
+# shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
+if grep -qF '`prs` = those PRs'"'"' rows from `review-plan.json` `runs[i].prs`' <<<"$step2" \
+   && grep -qF '`prs` = `review-plan.json` `runs[i].prs` filtered to those PRs' "$handoff"; then
+  pass "verify-only re-run takes its prs from review-plan.json runs[i].prs (SKILL and handoff-formats)"
+else bad "SKILL Step 2.4 and handoff-formats must name review-plan.json runs[i].prs as the verify-only prs source"; fi
+
+# Regression (H3): Step 3.3 re-dispatched a FAILED/UNVERIFIED unit with no clean-up, so the
+# fresh fixer hit the dead run's local commits (blocked) or its worktree path (already exists).
+redispatch="$skill/references/fix-redispatch.md"
+step3=$(awk '/^### Step 3: Fix/{on=1} /^### Step 4: Merge/{on=0} on' "$skill_md")
+if grep -qF '[references/fix-redispatch.md](references/fix-redispatch.md)' <<<"$step3" \
+   && grep -qF '[references/fix-redispatch.md](references/fix-redispatch.md)' "$skill/REFERENCE.md" \
+   && [[ -f "$redispatch" ]] \
+   && grep -qF 'git -C <root> worktree remove <path>' "$redispatch" \
+   && grep -qF 'git -C <root> merge-base --is-ancestor <branch> <head_sha>' "$redispatch" \
+   && grep -qF 'git -C <root> branch rescue/<unit> <branch>' "$redispatch" \
+   && grep -qF 'git -C <root> branch -f <branch> <head_sha>' "$redispatch" \
+   && ! grep -qE 'worktree remove (--force|-f) ' "$redispatch"; then
+  pass "SKILL Step 3.3 clears leftover worktrees and resets the local branch before a re-dispatch"
+else bad "SKILL Step 3.3 must link fix-redispatch.md, which removes leftover worktrees (never --force), rescues and resets the local branch"; fi
+
+# Regression (H1): M8 built the repair unit from the live headRefOid, so a commit pushed after
+# the gate became the repair's base and merged unreviewed once the repair passed G5.
+m8=$(awk '/^## M8:/{on=1} /^## Stacked PRs/{on=0} on' "$proc")
+# shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
+if ! grep -qF 'head_sha: <headRefOid from gh pr view' <<<"$m8" \
+   && grep -qF 'latest pushed fix row' <<<"$m8" && grep -qF 'review.json` `head_sha`' <<<"$m8" \
+   && grep -qF 'do not repair, report the PR for Lauri as' <<<"$m8"; then
+  pass "merge-procedure M8 starts the repair from the expected head and refuses a moved one"
+else bad "merge-procedure M8 must set head_sha to the expected head (fix push, else review) and refuse to repair when the live head differs"; fi
 
 node "$here/run-workflows.mjs" "$wf" "$rr" || fail=1
 exit "$fail"

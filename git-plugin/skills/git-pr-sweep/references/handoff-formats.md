@@ -69,8 +69,9 @@ updates a full-run row only when `head_sha` matches; its `open`/`refuted` are ap
 a dead verifier, otherwise `reviewed`.
 
 A verify-only re-run is one per review run: `claims` = that run's `unverified` rows (each carries
-`pr`) and `prs` = that run's rows for those PRs, written to `verify-<i>.json`. Pooling claims across
-runs can exceed the 6-PR cap and abort.
+`pr`) and `prs` = `review-plan.json` `runs[i].prs` filtered to those PRs, written to
+`verify-<i>.json`. Not the `review-<i>.json` rows: they carry no `base` (pr-review aborts
+`missing-head`) and no `author_kind`. Pooling claims across runs can exceed the 6-PR cap and abort.
 
 ## units.json (`review-to-units.sh`) and pr-fix
 
@@ -92,14 +93,15 @@ those commits follow it. `merge-gate.sh` accepts one or several of these files, 
 ## gate.json (`merge-gate.sh`) and plan.json (pr-merge)
 
 ```
-{repo, passed:[n], ready:[n], merge:[[n]],
+{repo, chunk, passed:[n], ready:[n], merge:[[n]],
  report:[{number, url, is_draft, gate, reason, failed:[gate], open_count,
           fix_block, findings:[{id, severity, where, problem}]}]}
 ```
 
-pr-merge adds `held:[{number, reason, conditions}]` and `verdicts`, removes held drafts from
+`chunk` is merge-gate.sh's `--chunk`; pr-merge rebuilds its chunks at that size unless its own
+`chunk` arg overrides it. pr-merge adds `held:[{number, reason, conditions}]` and `verdicts`, removes held drafts from
 `passed`, `ready` and `merge`, rebuilds the chunks, and reports each held draft with gate
-`draft_prose`. Each `merge` chunk is pasted as a literal `--prs` list.
+`draft_prose` in the same row shape (`fix_block` from the roster, `findings: []`). Each `merge` chunk is pasted as a literal `--prs` list.
 
 ## Standalone stages
 

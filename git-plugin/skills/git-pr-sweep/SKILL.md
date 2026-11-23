@@ -3,9 +3,9 @@ name: git-pr-sweep
 description: "Review, fix, then merge one repo's open PRs incl. ready drafts, as three runnable stages. Use when sweeping a repo's whole PR queue to merge."
 args: "<owner/repo> [--stage review|fix|merge|all] [--root PATH] [--review FILE] [--fix FILE...] [--dry-run]"
 argument-hint: "owner/repo [--stage all] [--root /abs/clone] [--dry-run]"
-allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/list-sweep-prs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/plan-review-runs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prefetch-heads.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-review.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/review-to-units.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-gate.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../git-merge-hazards/scripts/merge-chain.sh *), Bash(gh pr ready *), Bash(gh pr view *), Bash(gh pr list *), Bash(date -u *), Read, Write, Workflow, Skill
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/list-sweep-prs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/plan-review-runs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prefetch-heads.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-review.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/review-to-units.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-gate.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../git-merge-hazards/scripts/merge-chain.sh *), Bash(gh pr ready *), Bash(gh pr view *), Bash(gh pr list *), Bash(date -u *), Read, Write, Workflow, Skill
 created: 2026-11-20
-modified: 2026-11-20
+modified: 2026-11-23
 reviewed: 2026-11-20
 ---
 
@@ -56,7 +56,7 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
    bash ${CLAUDE_SKILL_DIR}/scripts/list-sweep-prs.sh --resolve-blockers --out <work>/roster.json <owner> <repo>
    ```
 
-   Show the summary counts; `TRUNCATED=true` (the 500-PR ceiling) goes in the final report.
+   Show the counts; `TRUNCATED=true` (the 500-PR ceiling) goes in the final report.
 
 ### Step 2: Review (`--stage review|all`)
 
@@ -75,9 +75,10 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
    On `MISSING=` PRs re-run Step 1; still missing → report them unreviewed and re-plan without them.
 3. For each `runs[i]`, in order, adapt `workflows/pr-review.workflow.js` and run it with args `{repo, root,
    prs: runs[i].prs, groups: runs[i].groups, context, decided}`. Write each return verbatim to
-   `<work>/review-<i>.json`. A PR not by you or a bot is verified by reading only, never run.
+   `<work>/review-<i>.json`.
 4. For each `review-<i>.json` with `unverified` rows, re-run the template once with `claims` = that
-   run's unverified rows and `prs` = their rows (never over the cap); write `<work>/verify-<i>.json`.
+   run's unverified rows and `prs` = those PRs' rows from `review-plan.json` `runs[i].prs`; write
+   `<work>/verify-<i>.json`.
 5. Join every file written, review files first:
 
    ```bash
@@ -97,7 +98,8 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
    units: runs[i], gates, setup, skills: ["git-plugin:git-commit-workflow"], decisions, trailer}`.
    `gates` are the repo's test and lint commands; `decisions` relay Lauri's choices as given.
    Write each return to `<work>/fix-<i>.json`.
-3. Re-dispatch a FAILED or UNVERIFIED unit fresh after
+3. Before re-dispatching a FAILED or UNVERIFIED unit fresh, clear what it left
+   ([references/fix-redispatch.md](references/fix-redispatch.md)), then
    `gh pr list -R <owner>/<repo> --head <branch> --state all --json number,state,headRefOid`.
 
 ### Step 4: Merge (`--stage merge|all`)
@@ -153,8 +155,6 @@ repo's gates, setup and trailer, and the merge chunk size.
 
 **Agent budget (pr-merge.workflow.js):** 8 — one reader per ready draft over `READY.slice(0, 8)`.
 
-Above 10 agents the scale guard asks before each run.
-
 **Preserve across any adaptation:** (a) every loop bound comes from a script (planner groups,
 `review-to-units.sh` units, `merge-gate.sh` ready drafts), with literal slices in the fan-outs and an
 abort over a cap, never a truncation; (b) the closed enums: refute-by-default
@@ -168,7 +168,7 @@ that already succeeded and opens duplicate PRs (#1868). Re-dispatch the failed u
 sequentially after checking `gh pr list --head <branch> --state all --json number,state`.
 
 Push, PR creation, and GitHub mutations happen **only** in the single sequential finalise stage,
-never inside a fanned-out agent. `gh pr ready` and every merge run in the main session, never inside a fanned-out agent.
+never inside a fanned-out agent.
 
 **Skip the harness when:** the repo has one open PR (review and fix inline), or `plan.ready` is empty.
 
@@ -178,4 +178,4 @@ never inside a fanned-out agent. `gh pr ready` and every merge run in the main s
    PRs in chunks a stop left unrun are `not_attempted`. Under a row with `findings`, list them and
    its `fix_block`: the only place a Renovate, external or unreadyable draft's findings surface.
 2. File a GitHub issue in the swept repo for each follow-up.
-3. Run `git -C <root> worktree prune`; never force-remove a worktree.
+3. Run `bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh --root <root>`; never force a removal.

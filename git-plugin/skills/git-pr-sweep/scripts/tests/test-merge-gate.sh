@@ -179,6 +179,10 @@ assert_eq "18 passing PRs -> chunks 8,8,2" '[8,8,2]' "$(jq -c '[.merge[] | lengt
 assert_eq "ascending across chunks" 'true' "$(jq '[.merge[][]] == ([.merge[][]] | sort)' "$work/p-many.json")"
 bash "$GATE" --chunk 3 --out "$work/p3.json" "$work/r-many.json" "$work/v-many.json" >/dev/null
 assert_eq "--chunk 3" '[3,3,3,3,3,3]' "$(jq -c '[.merge[] | length]' "$work/p3.json")"
+# Regression (M3): gate.json dropped the chunk size, so pr-merge rebuilt its
+# chunks at its own default of 8 and undid a lowered --chunk.
+assert_eq "--chunk 3 is carried in the plan" '3' "$(jq -c '.chunk' "$work/p3.json")"
+assert_eq "default chunk 8 is carried in the plan" '8' "$(jq -c '.chunk' "$work/p-many.json")"
 
 echo "=== fix input as repair-round returns ==="
 rr=$(jq -nc --arg fx "$FX" '{

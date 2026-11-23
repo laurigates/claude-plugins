@@ -56,10 +56,15 @@ Chunks after a stop that is not repaired stay unrun; report their PRs as `not_at
 
 ## M8: one repair per PR per sweep
 
-Run pr-fix with one unit:
+First fix the unit's `head_sha` to the head the sweep expects, the same `$expected` merge-gate.sh
+G5 computes: the `head_sha` of that PR's latest pushed fix row (`finalisePlan`), else its
+`review.json` `head_sha`. Then read the live head, `gh pr view <n> -R <owner>/<repo> --json
+headRefOid`. When the two differ, a commit nobody reviewed reached the branch after the gate (pushed
+after the last re-list, or after merge-chain.sh stopped): do not repair, report the PR for Lauri as
+head moved. Only when they match, run pr-fix with one unit:
 
 ```
-{id: "pr-<STOPPED_AT>", branch: <head>, head_sha: <headRefOid from gh pr view <n> --json headRefOid>,
+{id: "pr-<STOPPED_AT>", branch: <head>, head_sha: <the expected head, equal to the live headRefOid>,
  base: "origin/<base>",
  findings: [{id: "M1", severity: "blocker", where: "", problem: "<REASON from merge-chain.sh>",
              fix: "merge origin/<base> into the branch (no rebase, no force-push) and resolve; or fix the failing check <names>"}]}

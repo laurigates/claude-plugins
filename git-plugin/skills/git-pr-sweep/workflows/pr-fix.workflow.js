@@ -345,6 +345,23 @@ PR sweep requirements — they override the generic steps above where they confl
 ${u.brief ? `- ${u.brief}\n` : ''}${
   ctx.worktrees ? `- When done, after \`git switch --detach\`, remove your worktree (never --force): git -C ${ctx.root} worktree remove <your worktree path>\n` : ''
 }`
+// The fixer's and repairer's head_sha becomes the repairer's start check, Finalise's
+// push source and merge-gate.sh's expected head, which G5 compares by exact string
+// with the roster's 40-hex headRefOid: an abbreviated SHA fails G5 after the push
+// landed. FIX_SCHEMA stays repair-round's (rr-shared); the sweep narrows it here.
+const FULL_SHA = /^[0-9a-f]{40}$/
+const SWEEP_FIX_SCHEMA = {
+  ...FIX_SCHEMA,
+  properties: {
+    ...FIX_SCHEMA.properties,
+    head_sha: {
+      type: 'string',
+      pattern: '^[0-9a-f]{40}$|^$',
+      description: 'the full 40-hex output of `git rev-parse HEAD` after your work (the existing tip if you added no commit), or "" if no branch exists; never an abbreviated SHA',
+    },
+  },
+}
+
 // The repairer and re-verifier make their own worktrees one level down, so a
 // fixer or verifier worktree that was not removed cannot collide with theirs.
 const ctxRound2 = (u) => ({ ...ctxFor(u), worktrees: CTX.worktrees ? `${CTX.worktrees}/round2` : '' })
@@ -372,7 +389,7 @@ const got = await pipeline(
   UNITS.slice(0, 3),
   (u) =>
     agent(FIX_PROMPT(ctxFor(u), u, u.findings) + sweepRules(ctxFor(u), u, u.head_sha, 'the head the review saw'), {
-      label: `fix:${u.id}`, phase: 'Fix', schema: FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxFor(u)),
+      label: `fix:${u.id}`, phase: 'Fix', schema: SWEEP_FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxFor(u)),
     }),
   async (fix, u) => {
     if (!hasCommitsOrRejections(fix)) return { u, fix, verdict: null }
@@ -382,11 +399,12 @@ const got = await pipeline(
     return { u, fix, verdict }
   },
   // A dead repairer keeps the verifier's fix-needed verdict, so the row stays FIX_NEEDED.
+  // A fixer tip that is not a full SHA cannot be a repairer's start check: no repair.
   async (r, u) => {
     const { fix, verdict } = r
-    if (!REPAIR_ROUNDS || verdict?.verdict !== 'fix-needed') return { ...r, merged: fix, repaired: false, final: verdict }
+    if (!REPAIR_ROUNDS || verdict?.verdict !== 'fix-needed' || !FULL_SHA.test(String(fix.head_sha))) return { ...r, merged: fix, repaired: false, final: verdict }
     const rep = await agent(FIX_PROMPT(ctxRound2(u), u, repairFindings(verdict)) + sweepRules(ctxRound2(u), u, fix.head_sha, "the fixer's last commit"), {
-      label: `repair:${u.id}`, phase: 'Repair', schema: FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxRound2(u)),
+      label: `repair:${u.id}`, phase: 'Repair', schema: SWEEP_FIX_SCHEMA, model: 'opus', effort: 'high', ...isolationOf(ctxRound2(u)),
     })
     if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
     const merged = mergeRepair(fix, rep)
@@ -401,10 +419,14 @@ const got = await pipeline(
 const rows = got.map((r, j) => {
   const u = UNITS[j]
   if (!r) return { unit: u.id, branch: u.branch, status: 'FAILED', fix: null, verdicts: [] }
+  const status = rowStatus(r.merged, r.final, r.repaired)
+  // A passing row whose head is not a full SHA is never landable (see SWEEP_FIX_SCHEMA).
+  const shortHead = ['PASS', 'REPAIRED_PASS'].includes(status) && !FULL_SHA.test(String(r.merged?.head_sha ?? ''))
+  if (shortHead) log(`${u.id}: head_sha ${JSON.stringify(r.merged?.head_sha)} is not a full 40-hex SHA; BLOCKED`)
   return {
     unit: u.id,
     branch: u.branch,
-    status: rowStatus(r.merged, r.final, r.repaired),
+    status: shortHead ? 'BLOCKED' : status,
     fix: r.merged,
     verdicts: [r.verdict, r.repaired ? r.final : null].filter(Boolean),
   }

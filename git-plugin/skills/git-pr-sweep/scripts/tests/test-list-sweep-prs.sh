@@ -141,6 +141,26 @@ assert_eq "in-progress run is pending" '"pending"' "$(pr 122 .ci)"
 assert_eq "no rollup is none" '"none"' "$(pr 123 .ci)"
 assert_eq "more than 100 checks reads pending, never green" '["pending",true]' "$(pr 125 '[.ci, .ci_truncated]')"
 assert_eq "base_is_default false for a stacked base" 'false' "$(pr 124 .base_is_default)"
+
+# Regression (M1): ctx_failed was a blocklist of conclusions, so a COMPLETED run
+# with a null conclusion, or one GitHub adds later, fell through to green.
+ci_page() { # ci_page <out> <conclusions-json>: PR 101 with one CheckRun per conclusion
+  jq --argjson cs "$2" '[.[0] | .data.repository.pullRequests.pageInfo.hasNextPage = false
+     | .data.repository.pullRequests.nodes |= [.[0]
+       | .commits.nodes[0].commit.statusCheckRollup.contexts
+         |= {totalCount: ($cs | length), nodes: [$cs | to_entries[] | {__typename: "CheckRun", name: "c\(.key)", status: "COMPLETED",
+              conclusion: .value, startedAt: "2026-11-01T10:00:00Z", completedAt: "2026-11-01T10:05:00Z",
+              checkSuite: {workflowRun: {workflow: {name: "CI"}}}}]}]]' "$FIX/graphql-pages.json" > "$1"
+}
+ci_page "$work/ci-null.json" '[null, "SUCCESS"]'
+PR_SWEEP_FIXTURE="$work/ci-null.json" PR_SWEEP_SELF=octo-self bash "$LISTER" --out "$work/ci-null-r.json" acme widgets >/dev/null 2>&1
+assert_eq "COMPLETED with a null conclusion is red and named" '["red",["c0"]]' "$(jq -c '.prs[0] | [.ci, .ci_failed]' "$work/ci-null-r.json")"
+ci_page "$work/ci-new.json" '["FUTURE_FAIL", "SUCCESS"]'
+PR_SWEEP_FIXTURE="$work/ci-new.json" PR_SWEEP_SELF=octo-self bash "$LISTER" --out "$work/ci-new-r.json" acme widgets >/dev/null 2>&1
+assert_eq "COMPLETED with an unknown conclusion is red and named" '["red",["c0"]]' "$(jq -c '.prs[0] | [.ci, .ci_failed]' "$work/ci-new-r.json")"
+ci_page "$work/ci-pass.json" '["SUCCESS", "NEUTRAL", "SKIPPED"]'
+PR_SWEEP_FIXTURE="$work/ci-pass.json" PR_SWEEP_SELF=octo-self bash "$LISTER" --out "$work/ci-pass-r.json" acme widgets >/dev/null 2>&1
+assert_eq "control: SUCCESS, NEUTRAL and SKIPPED stay green" '"green"' "$(jq -c '.prs[0].ci' "$work/ci-pass-r.json")"
 assert_eq "diff_lines = additions + deletions" '[12,1]' "$(pr 101 '[.diff_lines, .changed_files]')"
 
 echo "=== body text never leaves the script ==="

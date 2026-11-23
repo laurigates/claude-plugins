@@ -27,15 +27,16 @@
  *
  * args (object or JSON string):
  *   repo     "owner/name" (required)
- *   plan     merge-gate.sh output {repo, passed, ready, merge, report} (required)
+ *   plan     merge-gate.sh output {repo, chunk, passed, ready, merge, report} (required)
  *   roster   the fresh list-sweep-prs.sh --resolve-blockers output merge-gate
  *            read (required when plan.ready is non-empty)
- *   chunk    PRs per merge chunk, 1..8 (default 8)
+ *   chunk    PRs per merge chunk, 1..8 (default plan.chunk, else 8)
  *
  * Returns:
- *   { repo, passed, ready, merge: [[n]], report: [...plan.report, ...held rows],
+ *   { repo, chunk, passed, ready, merge: [[n]], report: [...plan.report, ...held rows],
  *     held: [{number, reason, conditions}], verdicts: [...] }
- *   held rows join report with gate "draft_prose". On a guard: {abort: true, reason}.
+ *   held rows join report with gate "draft_prose" and merge-gate's row keys (fix_block,
+ *   findings: [], since a held draft passed the review gate). On a guard: {abort: true, reason}.
  */
 
 export const meta = {
@@ -57,7 +58,8 @@ const clampInt = (v, lo, hi, dflt) => {
 const REPO = String(INPUT.repo ?? '')
 const PLAN = INPUT.plan ?? null
 const ROSTER = new Map(((INPUT.roster ?? {}).prs ?? []).map((p) => [Number(p.number), p]))
-const CHUNK = clampInt(INPUT.chunk, 1, 8, 8)
+// merge-gate.sh carries its --chunk in the plan; a lowered chunk must survive the rebuild.
+const CHUNK = clampInt(INPUT.chunk ?? PLAN?.chunk, 1, 8, 8)
 
 const READ_SCHEMA = {
   type: 'object',
@@ -175,12 +177,17 @@ const byUrl = (n) => PLAN.report.find((r) => r.number === n)?.url ?? ROSTER.get(
 
 return {
   repo: REPO,
+  chunk: CHUNK,
   passed,
   ready: READY.filter((n) => !heldSet.has(n)),
   merge,
   report: [
     ...PLAN.report,
-    ...held.map((h) => ({ number: h.number, url: byUrl(h.number), is_draft: true, gate: 'draft_prose', reason: h.reason, failed: ['draft_prose'], open_count: 0 })),
+    // PRESERVE merge-gate.sh's row shape: a held draft passed G4, so it has no open finding.
+    ...held.map((h) => ({
+      number: h.number, url: byUrl(h.number), is_draft: true, gate: 'draft_prose', reason: h.reason, failed: ['draft_prose'], open_count: 0,
+      fix_block: ROSTER.get(h.number)?.policy?.fix_block ?? null, findings: [],
+    })),
   ].sort((a, b) => a.number - b.number),
   held,
   verdicts: verdicts.filter(Boolean),
