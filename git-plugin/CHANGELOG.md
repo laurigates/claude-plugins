@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.0...git-plugin-v2.75.1) (2026-11-23)
+
+
+### Documentation
+
+* **git-plugin:** compare failing tests, not check names, before merging red ([#3756](https://github.com/laurigates/claude-plugins/issues/3756)) ([bc41c76](https://github.com/laurigates/claude-plugins/commit/bc41c766c6a884fc5d3c5b340645e0c22f2db362))
+
 ## [2.75.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.4...git-plugin-v2.75.0) (2026-11-23)
 
 
