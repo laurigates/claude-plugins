@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-23
 reviewed: 2026-11-10
 name: github-labels
 description: "GitHub labels via gh CLI and the build:/area:/needs: taxonomy. Use when labeling a PR or issue, checking which labels a repo has, or creating a label."
@@ -91,7 +91,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 
 | Subcommand | Does | Writes |
 |------------|------|--------|
-| `provision` | Creates the taxonomy file's missing `build:` and `area:` labels, updates colour and (when the entry gives one) description, renames through `renamed_from`. Refuses any other name and deletes nothing. `--dry-run` prints the actions | Labels |
+| `provision` | Creates the taxonomy file's missing `build:` and `area:` labels, updates colour and (when the entry gives one) description, renames through `renamed_from`. Refuses any other name, and a rename from a type, `core:`, `needs:`, `blocked`, `merge:*` or `dependencies` label; an unprefixed label may be renamed. Deletes nothing. An absent taxonomy file is `taxonomy_missing`, an empty one `taxonomy_empty`. `--dry-run` prints the actions | Labels |
 | `classify --issue <N>` or `--pr <N>` | Prints the labels the item's title, body and changed files point at, as JSON (`add`). A prefix that already has a label is skipped. It does not set `security` | Nothing |
 | `validate --issue <N> --labels-file <file>` | Filters labels a model proposed: type labels and `build:`/`area:`/`core:`/`needs:` names that exist in the repo. A `needs:` label is kept only with a quote found in the issue, and of two type labels only the first | Nothing |
 | `unblock --issue <N>` | After issue N closes, removes `blocked` from each open issue it was blocking whose `blocked_by` issues are all closed | Removes `blocked` |
@@ -105,10 +105,20 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `fix(parser): handle empty input` | `bug` | `parser` |
 | `parser: crashes on empty input` | none | `parser` |
 
-An issue whose title scope matches nothing is routed by the repo paths its body
-quotes; a PR by its changed files. A body token is a path only when it has a
-`/` or a `.`: `docs/` and `./justfile` are paths, the words "docs" and
-"justfile" are not. `classify` and `validate` only print labels;
+A type word (`docs`, `ci`, `fix`, ...) leading a conventional title is not a
+scope, so `docs(parser): ...` selects `parser` and not `core:docs`. Set
+`"type_words_as_scope": true` at the top of the taxonomy file to offer it as
+one. A word inside the parentheses, or before the colon after a bracket
+(`[Chore] ci: ...`), is always a scope. `[Bench]` and `hw(...)` map to
+`enhancement`.
+
+An issue with no routing label from its title scope is routed by the repo paths
+its body quotes; a scope whose label the repo lacks counts as no scope. A PR
+takes the labels its changed files match, up to `"max_routing_labels"` routing
+labels in all (default 3): the title's count first, then the labels matching
+the most files; the rest are listed under `capped`.
+A body token is a path only when it has a `/` or a `.`: `docs/` and
+`./justfile` are paths, the words "docs" and "justfile" are not. `classify` and `validate` only print labels;
 apply them with `gh issue edit <N> --add-label`. `audit` findings come back as
 `STATUS=WARN` with exit 0, and a failed read as `STATUS=ERROR` with exit 1.
 

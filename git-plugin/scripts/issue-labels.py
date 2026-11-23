@@ -23,7 +23,9 @@ branch)::
                          "paths": ["packages/robot/**"], "scopes": ["robot-fw"],
                          "renamed_from": null}},
      "area":  {"ota": {"description": "...", "color": "0e8a16", "scopes": ["ota"]}},
-     "core":  {"components": {"paths": ["packages/components/**"]}}}
+     "core":  {"components": {"paths": ["packages/components/**"]}},
+     "type_words_as_scope": false,
+     "max_routing_labels": 3}
 
 ``build`` and ``area`` entries own a label's colour and, when they give one,
 its description; ``core`` entries carry only ``paths`` and ``scopes``, and
@@ -32,6 +34,13 @@ one of its scopes. A glob matches the whole repo-relative path: ``*`` and ``?``
 stay inside one path segment, ``**`` crosses segments, and a trailing ``/**``
 also matches the directory itself.
 
+Two top-level settings change how ``classify`` reads an item.
+``type_words_as_scope`` (default false) offers a title's type word ("docs" in
+"docs(robot): ...") as a scope too, so it can select a ``docs`` entry.
+``max_routing_labels`` (default 3) caps the routing labels a pull request
+takes; the title's count first, and the changed-file labels matching the most
+files fill the rest.
+
 Every label name comes from a flag default (``--build-prefix build:``,
 ``--area-prefix area:``, ``--core-prefix core:``, ``--needs-prefix needs:``,
 ``--blocked-label blocked``, ``--type-labels``, ``--type-map``,
@@ -39,11 +48,11 @@ Every label name comes from a flag default (``--build-prefix build:``,
 
 ``classify`` reads the type from the title ("[Bug] scope: ...", "fix(scope):
 ..." or neither) and routing labels from the title's scope. A pull request
-also takes every label its changed files match. An issue with no routing label
-takes the label that most of the paths quoted in its body match; a body token
-is a path only when it has a slash or a dot, so the word "docs" in a sentence
-is not one. It only adds: a prefix that already has a label on the item is
-skipped.
+also takes the labels its changed files match, up to ``max_routing_labels``.
+An issue with no routing label, from the title or already set, takes the
+label that most of the paths quoted in its body match; a body token is a path
+only when it has a slash or a dot, so the word "docs" in a sentence is not
+one. It only adds: a prefix that already has a label on the item is skipped.
 
 Output: ``classify`` and ``validate`` print one JSON object. ``provision``,
 ``unblock`` and ``audit`` print a KEY=VALUE block
@@ -84,6 +93,14 @@ DEFAULT_CORE: dict[str, dict] = {
 }
 
 SECTIONS = ("build", "area", "core")
+# Top-level taxonomy keys that are settings, not sections, with their defaults.
+DEFAULT_TYPE_WORDS_AS_SCOPE = False
+DEFAULT_MAX_ROUTING_LABELS = 3
+SETTINGS = ("type_words_as_scope", "max_routing_labels")
+# Label families provisioned elsewhere that a taxonomy may not rename into a
+# build: or area: label, besides the type, core, needs and blocked labels.
+RESERVED_RENAME_PREFIXES = ("merge:",)
+RESERVED_RENAME_NAMES = ("dependencies",)
 PROVISIONED_SECTIONS = ("build", "area")
 ENTRY_FIELDS = {
     "build": {"description", "color", "paths", "scopes", "renamed_from"},
@@ -136,6 +153,10 @@ class Error(Exception):
     """A failure the caller reports as STATUS=ERROR; never an empty result."""
 
 
+class MalformedResponse(Error):
+    """A ``gh`` call that succeeded but printed something that is not JSON."""
+
+
 # ── Vocabulary ────────────────────────────────────────────────────────────────
 
 
@@ -172,8 +193,14 @@ def check_taxonomy(tax: object, for_provision: bool = False) -> list[str]:
         return ["taxonomy is not a JSON object"]
     problems: list[str] = []
     renamed: dict[str, str] = {}  # old label name -> the entry that renames it
+    words = tax.get("type_words_as_scope", DEFAULT_TYPE_WORDS_AS_SCOPE)
+    if not isinstance(words, bool):
+        problems.append("type_words_as_scope must be true or false")
+    cap = tax.get("max_routing_labels", DEFAULT_MAX_ROUTING_LABELS)
+    if isinstance(cap, bool) or not isinstance(cap, int) or cap < 1:
+        problems.append("max_routing_labels must be a whole number of at least 1")
     for section, entries in tax.items():
-        if section.startswith(("$", "_")):
+        if section.startswith(("$", "_")) or section in SETTINGS:
             continue
         if section not in SECTIONS:
             problems.append(
@@ -290,33 +317,49 @@ CONVENTIONAL = re.compile(
 LEADING = re.compile(r"^\s*(?P<scope>[^:\[\]()]{1,60}?):\s+\S")
 
 
-def parse_title(title: str, type_keywords: frozenset[str]) -> Title:
+def parse_title(
+    title: str,
+    type_keywords: frozenset[str],
+    type_words_as_scope: bool = DEFAULT_TYPE_WORDS_AS_SCOPE,
+    _after_bracket: bool = False,
+) -> Title:
     """The type keyword and scope candidates a title carries, by its form.
 
     bracket       "[Bug] enclosure: lid does not close"   keyword bug, scope enclosure
-                  "[Bug] fix(kicad): close the gaps"      keyword bug, scopes kicad, fix
-    conventional  "fix(kicad): close the gaps"            keyword fix, scopes kicad, fix
-                  "ci: run the check"                     keyword ci, scope ci
+                  "[Bug] fix(kicad): close the gaps"      keyword bug, scope kicad
+                  "[Chore] ci: run the check"             keyword chore, scope ci
+    conventional  "fix(kicad): close the gaps"            keyword fix, scope kicad
+                  "hw(robot): reflow the carrier"         keyword hw, scope robot
+                  "ci: run the check"                     keyword ci, no scope
     scope         "balancebot: read the divider"          scope balancebot
                   "Parts registry: tariff code per part"  scope "parts registry"
     none          "Dependency Dashboard"
 
     A title is conventional when its leading word carries a parenthesised
-    scope or is one of ``type_keywords``. That word is offered as a scope too,
-    so "ci(robot): ..." can select a ci entry as well as a robot one. What
-    follows a bracket is read for its scopes in the same forms; the bracket
-    word stays the keyword.
+    scope or is one of ``type_keywords``. The leading word is offered as a
+    scope too when it is not a type keyword, or when ``type_words_as_scope``
+    is set: only then can "ci(robot): ..." select a ci entry as well as a
+    robot one. A word inside the parentheses is the author's scope and always
+    offered. What follows a bracket is read for its scopes in the same forms,
+    except that a bare "word:" there stands where "[Type] scope:" puts the
+    scope, so it is offered whatever it is; the bracket word stays the keyword.
     """
     m = BRACKET.match(title)
     if m:
-        rest = parse_title(m.group("rest"), type_keywords)
+        rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope, True)
         return Title("bracket", norm(m.group("kw")), rest.scopes)
     m = CONVENTIONAL.match(title)
     if m and (m.group("scope") is not None or m.group("kw").lower() in type_keywords):
         keyword = m.group("kw").lower()
         inner = (m.group("scope") or "").split(",")
         scopes = [norm(s) for s in inner if s.strip()]
-        return Title("conventional", keyword, tuple(dict.fromkeys([*scopes, keyword])))
+        if (
+            type_words_as_scope
+            or keyword not in type_keywords
+            or (_after_bracket and m.group("scope") is None)
+        ):
+            scopes.append(keyword)
+        return Title("conventional", keyword, tuple(dict.fromkeys(scopes)))
     m = LEADING.match(title)
     if m:
         return Title("scope", None, (norm(m.group("scope")),))
@@ -342,15 +385,16 @@ def path_candidates(body: str) -> list[str]:
     """Path-shaped tokens in free text, in order, without duplicates.
 
     Backticks, brackets and quotes delimit tokens, so `a/b.c`, (a/b.c) and a
-    bare a/b.c all yield the same candidate. A ``file.c:12-14`` line suffix and
-    trailing sentence punctuation are dropped; URLs and tokens with neither a
-    slash nor a dot are skipped.
+    bare a/b.c all yield the same candidate. A ``file.c:12-14`` line suffix,
+    trailing sentence punctuation and a trailing backslash (a Markdown escape
+    or a line continuation) are dropped; URLs and tokens with neither a slash
+    nor a dot are skipped.
     """
     seen: dict[str, None] = {}
     for raw in SEPARATORS.split(body or ""):
         if "://" in raw:
             continue
-        token = LINE_SUFFIX.sub("", raw.rstrip(".:!?"))
+        token = LINE_SUFFIX.sub("", raw.rstrip(".:!?\\"))
         if not path_shaped(token):
             continue
         token = token.removeprefix("./").lstrip("/")
@@ -363,36 +407,53 @@ def path_candidates(body: str) -> list[str]:
 
 
 def derive(
-    item: dict, tax: dict, cfg: Config, existing: list[str]
-) -> tuple[Title, list[dict]]:
+    item: dict,
+    tax: dict,
+    cfg: Config,
+    existing: list[str],
+    repo_labels: list[str] | None = None,
+) -> tuple[Title, list[dict], list[dict]]:
     """Labels the title, body and changed files point at, each with its source.
 
-    ``existing`` is the labels already on the item that count (none when the
-    caller ignores them).
+    Returns (title, derived, capped). ``existing`` is the labels already on
+    the item that count (none when the caller ignores them). ``repo_labels``
+    is the repository's label list; when given, a title scope whose label the
+    repository lacks does not count as routing the item.
 
     The title gives the type and, through its scope, the routing labels. What
     else is read depends on the item:
 
-    - A pull request adds every label its changed files match. The diff is the
-      record of what it touches, so paths its body mentions are not read.
+    - A pull request adds the labels its changed files match, up to the
+      taxonomy's ``max_routing_labels`` routing labels in all. The title's
+      count first; the file labels matching the most files fill the rest, and
+      the ones left out come back in ``capped``. The diff is the record of
+      what it touches, so paths its body mentions are not read.
     - An issue falls back to the paths its body quotes only when it has no
-      routing label, neither set already nor selected by the title scope. It
-      then keeps the label or labels that the most distinct paths match. A
-      body cites files in passing (a rule it follows, a doc it mentions);
-      taking every match labelled those too.
+      routing label, neither set already nor selected by the title scope and
+      present in the repository. It then keeps the label or labels that the
+      most distinct paths match. A body cites files in passing (a rule it
+      follows, a doc it mentions); taking every match labelled those too.
     """
-    title = parse_title(item.get("title") or "", frozenset(cfg.type_keywords))
+    title = parse_title(
+        item.get("title") or "",
+        frozenset(cfg.type_keywords),
+        tax.get("type_words_as_scope", DEFAULT_TYPE_WORDS_AS_SCOPE),
+    )
     derived: dict[str, str] = {}
     label = cfg.type_keywords.get(title.keyword or "")
     if label and label not in cfg.never_derive:
         derived[label] = f"title:{title.keyword}"
     entries = routing_entries(tax, cfg)
+    in_repo = None if repo_labels is None else {n.lower() for n in repo_labels}
     routed = any(label_group(lb, cfg) in cfg.routing_prefixes for lb in existing)
     for scope in title.scopes:
         for entry in entries:
             if scope in entry.scopes:
                 derived.setdefault(entry.label, f"scope:{scope}")
-                routed = True
+                # A hit on a label the repository lacks adds nothing, so it
+                # must not switch the body fallback off.
+                if in_repo is None or entry.label.lower() in in_repo:
+                    routed = True
 
     def matching(paths: list[str]) -> dict[str, list[str]]:
         hits: dict[str, list[str]] = {}
@@ -402,16 +463,32 @@ def derive(
                     hits.setdefault(entry.label, []).append(path)
         return hits
 
+    capped: list[dict] = []
     if item.get("is_pr"):
-        for name, paths in matching(item.get("files") or []).items():
-            derived.setdefault(name, f"file:{paths[0]}")
+        hits = {
+            name: paths
+            for name, paths in matching(item.get("files") or []).items()
+            if name not in derived
+        }
+        cap = tax.get("max_routing_labels", DEFAULT_MAX_ROUTING_LABELS)
+        room = max(
+            0, cap - sum(name.startswith(cfg.routing_prefixes) for name in derived)
+        )
+        # Most matched files first; a tie keeps the label seen first.
+        ranked = sorted(hits, key=lambda name: -len(hits[name]))
+        kept = set(ranked[:room])
+        for name, paths in hits.items():
+            if name in kept:
+                derived[name] = f"file:{paths[0]}"
+            else:
+                capped.append({"label": name, "files": len(paths)})
     elif not routed:
         hits = matching(path_candidates(item.get("body") or ""))
         most = max((len(paths) for paths in hits.values()), default=0)
         for name, paths in hits.items():
             if len(paths) == most:
                 derived.setdefault(name, f"body:{paths[0]} ({most} path(s))")
-    return title, [{"label": k, "source": v} for k, v in derived.items()]
+    return title, [{"label": k, "source": v} for k, v in derived.items()], capped
 
 
 def label_group(label: str, cfg: Config) -> str | None:
@@ -457,7 +534,7 @@ def classify(
     item: dict, tax: dict, repo_labels: list[str], cfg: Config, ignore_existing: bool
 ) -> dict:
     existing = [] if ignore_existing else item["labels"]
-    title, derived = derive(item, tax, cfg, existing)
+    title, derived, capped = derive(item, tax, cfg, existing, repo_labels)
     add, skipped = additive([d["label"] for d in derived], existing, repo_labels, cfg)
     return {
         "status": "OK",
@@ -467,6 +544,7 @@ def classify(
         "add": add,
         "derived": derived,
         "skipped": skipped,
+        "capped": capped,
     }
 
 
@@ -571,11 +649,19 @@ def validate(
 
 
 def protected(label: str, cfg: Config) -> bool:
-    """Labels a taxonomy may not rename away: they are provisioned elsewhere."""
+    """Labels a taxonomy may not rename away: they are provisioned elsewhere.
+
+    The type, core, needs and blocked labels, and the reserved families of
+    other automation (``merge:*``, ``dependencies``). An unprefixed label is a
+    legitimate rename source.
+    """
     group = label_group(label, cfg)
+    name = label.lower()
     return (
         group in ("type", cfg.core_prefix, cfg.needs_prefix)
-        or label.lower() == cfg.blocked_label.lower()
+        or name == cfg.blocked_label.lower()
+        or name.startswith(RESERVED_RENAME_PREFIXES)
+        or name in RESERVED_RENAME_NAMES
     )
 
 
@@ -606,7 +692,8 @@ def plan_provision(
                 if protected(old, cfg):
                     problems.append(
                         f"{section}.{key}.renamed_from: '{old}' is a type, core, "
-                        "needs or blocked label and cannot be renamed here"
+                        "needs, blocked, merge: or dependencies label and cannot "
+                        "be renamed here"
                     )
                     continue
                 actions.append(
@@ -824,7 +911,10 @@ def json_stream(text: str) -> list:
         if text[i].isspace():
             i += 1
             continue
-        value, i = decoder.raw_decode(text, i)
+        try:
+            value, i = decoder.raw_decode(text, i)
+        except json.JSONDecodeError as e:
+            raise MalformedResponse(f"malformed_response: {e}") from e
         items.extend(value if isinstance(value, list) else [value])
     return items
 
@@ -864,8 +954,8 @@ def fetch_labels(repo: str) -> list[dict]:
     return labels
 
 
-def fetch_taxonomy(repo: str, path: str) -> dict:
-    """The taxonomy on the default branch; {} when the repository has none."""
+def fetch_taxonomy(repo: str, path: str) -> dict | None:
+    """The taxonomy on the default branch; None when the repository has none."""
     try:
         text = gh(
             "api",
@@ -875,7 +965,7 @@ def fetch_taxonomy(repo: str, path: str) -> dict:
         )
     except Error as e:
         if "HTTP 404" in str(e):
-            return {}
+            return None
         raise  # any other failure is not "no taxonomy"
     return json.loads(text)
 
@@ -937,6 +1027,7 @@ def load_taxonomy(a: argparse.Namespace) -> dict:
         tax = read_json(a.taxonomy)
     else:
         tax = fetch_taxonomy(resolve_repo(a.repo), a.taxonomy_path)
+        tax = {} if tax is None else tax  # no taxonomy: built-in globs only
     problems = check_taxonomy(tax)
     if problems:
         raise Error(f"taxonomy_invalid: {problems[0]} ({len(problems)} problem(s))")
@@ -1000,11 +1091,12 @@ def apply_action(repo: str, action: dict) -> None:
 def cmd_provision(a: argparse.Namespace, cfg: Config) -> int:
     name = "ISSUE LABELS PROVISION"
     repo = resolve_repo(a.repo)
+    where = a.taxonomy or a.taxonomy_path
     tax = read_json(a.taxonomy) if a.taxonomy else fetch_taxonomy(repo, a.taxonomy_path)
+    if tax is None:
+        raise Error(f"taxonomy_missing: {where} is absent from {repo}")
     if not tax:
-        raise Error(
-            f"taxonomy_missing: {a.taxonomy or a.taxonomy_path} is empty or absent"
-        )
+        raise Error(f"taxonomy_empty: {where} defines nothing to provision")
     actions, problems = plan_provision(tax, fetch_labels(repo), cfg)  # type: ignore[arg-type]
     head = [f"REPO={repo}", f"DRY_RUN={'true' if a.dry_run else 'false'}"]
     if problems:
@@ -1091,9 +1183,14 @@ def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
                     if cfg.blocked_label.lower() in {n.lower() for n in now}:
                         raise
                     action, reason = "skip", "already_removed"
-        except Error as e:
-            failure = [{"type": "dependent_failed", "number": number, "msg": str(e)}]
-            rows.append(f"  - NUMBER={number} ACTION=error REASON=gh_failed")
+        except (Error, AttributeError, TypeError, ValueError) as e:
+            # A response that is not JSON, or not the shape read here, stops the
+            # run like a failed call, and the rows already handled still print.
+            malformed = not isinstance(e, Error) or isinstance(e, MalformedResponse)
+            msg = str(e) if isinstance(e, Error) else f"malformed_response: {e}"
+            failure = [{"type": "dependent_failed", "number": number, "msg": msg}]
+            reason = "malformed_response" if malformed else "gh_failed"
+            rows.append(f"  - NUMBER={number} ACTION=error REASON={reason}")
             break
         if action == "unblock":
             unblocked += 1
@@ -1178,7 +1275,7 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument(
         "--type-map",
         default=(
-            "bug=bug,fix;enhancement=feature,enhancement,feat,perf;"
+            "bug=bug,fix;enhancement=feature,enhancement,feat,perf,bench,hw;"
             "chore=chore,test,build,ci;docs=docs;refactor=refactor"
         ),
         help="label=keyword,... per type, ';'-separated; keywords are the "
