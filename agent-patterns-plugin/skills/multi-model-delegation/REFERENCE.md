@@ -66,6 +66,29 @@ Take the key from the calling process's environment. Never have an agent read
 that way was observed extracting the key with `sed` onto a command line
 (2026-10-04), which puts it in the transcript.
 
+In a Claude Code cloud session the key may not be in the environment at all. A
+[network secret](https://code.claude.com/docs/en/cloud-environments) saved on
+the cloud environment is added to requests by the agent proxy, outside the VM,
+and the variable then holds a placeholder such as `proxy-injected`. Send the
+placeholder as usual; the proxy overwrites the header. Measured 2026-11-20 with
+`curl` and a dummy key:
+
+| Provider | Host and header | Result with the secret saved |
+|---|---|---|
+| OpenCode Go | `opencode.ai`, `Authorization: Bearer` | `/models` 401 → 200 |
+| Gemini | `generativelanguage.googleapis.com`, `x-goog-api-key`, no prefix | `/models` 200 with a dummy header; 400 with `?key=dummy` |
+
+- A key in the URL query overrides the injected header, so a client that sends
+  `?key=` with the placeholder fails.
+- The settings form defaults the prefix to `Bearer`. A Gemini secret saved that
+  way returned 400 `API_KEY_INVALID` until it was re-added with the prefix
+  cleared (the prefix is the likely cause, not confirmed).
+- Set the placeholder variable only after the secret works. PAL treats any
+  non-empty value as configured, so a placeholder with no secret lists the
+  provider as available while every call fails.
+- Setup-script requests never get the secret, and none can be saved for
+  `api.anthropic.com`.
+
 Five mechanics bite there that do not bite through PAL. The first three were
 measured on `qwen3.8-flash` reviewing GitHub Actions diffs (2026-09), the last
 two on `deepseek-v4.1-flash` from a stdlib `urllib` client (2026-10):

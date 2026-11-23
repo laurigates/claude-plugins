@@ -6,11 +6,16 @@ Importing `comfy_meta` from Python for batch renaming, indexing, or classifying 
 
 For ad-hoc batch work — renaming, indexing, clustering — calling the CLI
 once per file is slow. Import `comfy_meta` directly instead. It has no
-package wrapper, so add its dir to `sys.path` first:
+package wrapper, so add its directory to `sys.path` first. That directory is
+the `scripts/` folder next to this skill's `SKILL.md`, the same directory the
+skill's `comfy_meta.py` commands run from. Where the plugin is installed
+varies by machine, so the batch script takes the resolved path as its first
+argument instead of hard-coding one:
 
 ```python
 import sys, pathlib
-sys.path.insert(0, str(pathlib.Path(".claude/skills/comfy-metadata/scripts")))
+# argv[1]: the comfy-metadata skill's scripts/ directory (holds comfy_meta.py)
+sys.path.insert(0, str(pathlib.Path(sys.argv[1])))
 import comfy_meta
 
 for p in pathlib.Path("output").iterdir():

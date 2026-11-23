@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.74.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.3...git-plugin-v2.74.4) (2026-11-20)
+
+
+### Documentation
+
+* **git-plugin:** show pr-merge-method.py invocation in git-merge-hazards ([#3721](https://github.com/laurigates/claude-plugins/issues/3721)) ([e414137](https://github.com/laurigates/claude-plugins/commit/e414137bf15c7e8c148c5f0a6dc711faa4ded07b))
+
 ## [2.74.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.2...git-plugin-v2.74.3) (2026-11-16)
 
 

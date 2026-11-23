@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.58.4",
+      "version": "2.58.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -244,7 +244,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.15.6",
+      "version": "1.15.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -305,7 +305,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.43.11",
+      "version": "1.43.12",
       "author": {
         "name": "Lauri Gates"
       },
@@ -399,7 +399,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.16.2",
+      "version": "1.16.3",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -462,7 +462,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.74.3",
+      "version": "2.74.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -828,7 +828,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.4",
+      "version": "1.4.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -896,7 +896,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture",
-      "version": "1.18.2",
+      "version": "1.18.3",
       "author": {
         "name": "Lauri Gates"
       },

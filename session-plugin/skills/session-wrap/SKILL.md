@@ -5,7 +5,7 @@ allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write,
 args: "[--orchestrated]"
 argument-hint: "--orchestrated (set by session-end)"
 created: 2026-05-12
-modified: 2026-11-02
+modified: 2026-11-19
 reviewed: 2026-06-24
 ---
 
@@ -182,7 +182,7 @@ two equal-weight options (no default lean):
      the tracker.
   2. `agent-patterns-plugin:cold-read-gate` — body legibility +
      internal-context-leak check before anything is published
-     (`public-export-sanitization.md`).
+     (`documentation-plugin:public-export-sanitization`).
   3. File the issue (`git-plugin:github-issue-writing`) or open the
      local-fix backport. When commenting on an **existing** issue, read
      the full thread first (`git-plugin:git-issue-scoping`).
