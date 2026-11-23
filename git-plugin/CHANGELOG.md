@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.3...git-plugin-v2.75.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** close issue-labels.py gaps and route by bracketed title prefix ([#3769](https://github.com/laurigates/claude-plugins/issues/3769)) ([de8d48f](https://github.com/laurigates/claude-plugins/commit/de8d48fb8635c9b31c923b8ab9ba72fc56af7399))
+
 ## [2.75.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.2...git-plugin-v2.75.3) (2026-11-23)
 
 
