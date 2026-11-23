@@ -9,6 +9,9 @@
 # usage errors exit 2; a non-clone root is an ERROR. Also pins (M3) that
 # SKILL.md runs the clean-up through this script, under a grant anchored to
 # ${CLAUDE_SKILL_DIR}, instead of an ungranted `git -C <root> worktree prune`.
+# Pins (verifier, on M3) that only sweep-named worktrees are listed, so a peer
+# session's worktree in the shared dir is never handed to the caller, and that
+# neither the WARN nor Post-actions suggests removing what is listed.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -77,6 +80,39 @@ bash "$PRUNE" --root "$work/plain" >/dev/null; assert_eq "a non-clone root exits
 bash "$PRUNE" >/dev/null 2>&1; assert_eq "no --root exits 2" 2 "$?"
 bash "$PRUNE" --bogus >/dev/null 2>&1; assert_eq "unknown flag exits 2" 2 "$?"
 
+# Regression (verifier, on M3): the default worktrees dir is the one every
+# Claude Code session shares. The script listed every live worktree there,
+# peers' included, under a REASON telling the caller to remove each.
+echo "=== only sweep-named worktrees are listed ==="
+git -C "$work/clone" worktree add -q --detach "$wt/repair-pr-2"
+git -C "$work/clone" worktree add -q --detach "$wt/round2/verify-pr-2"
+git -C "$work/clone" worktree add -q --detach "$wt/pr-sweep-verify-7-1"
+git -C "$work/clone" worktree add -q --detach "$wt/peer-session"
+git -C "$work/clone" worktree add -q --detach "$wt/agent-a1b2"
+git -C "$work/clone" worktree add -q --detach "$wt/wf_ab12cd-3f4-1"
+git -C "$work/clone" worktree add -q --detach "$wt/wf_ffff00-000-1"
+summary=$(bash "$PRUNE" --root "$work/clone"); rc=$?
+assert_eq "exit 0" 0 "$rc"
+assert_eq "three sweep-named worktrees listed" "REMAINING=3" "$(grep '^REMAINING=' <<<"$summary")"
+assert_eq "four other worktrees counted" "OTHER_WORKTREES=4" "$(grep '^OTHER_WORKTREES=' <<<"$summary")"
+assert_eq "repair-, round2/verify- and pr-sweep-verify- are the ones listed" \
+  "$wt/pr-sweep-verify-7-1|$wt/repair-pr-2|$wt/round2/verify-pr-2" \
+  "$(sed -n 's/^WORKTREE_[0-9]*=//p' <<<"$summary" | sort | paste -sd'|' -)"
+assert_eq "a peer session's worktree is not named" "" "$(grep -F -e "$wt/peer-session" -e "$wt/agent-a1b2" <<<"$summary")"
+assert_eq "a harness run's worktree is not named without --run-id" "" "$(grep -F "$wt/wf_" <<<"$summary")"
+reason=$(grep '^REASON=' <<<"$summary")
+assert_eq "the WARN does not tell the caller to remove what is listed" "" "$(grep -iF 'remove each' <<<"$reason")"
+assert_eq "the WARN says to remove none" true "$(grep -qF 'remove none' <<<"$reason" && echo true || echo false)"
+validate "summary meets the structured-output contract (scoped WARN)" "$summary"
+
+for id in ab12cd-3f4 wf_ab12cd-3f4; do
+  summary=$(bash "$PRUNE" --root "$work/clone" --run-id "$id")
+  assert_eq "--run-id $id adds that run's worktree" "$wt/wf_ab12cd-3f4-1" "$(grep -oF "$wt/wf_ab12cd-3f4-1" <<<"$summary")"
+  assert_eq "--run-id $id leaves another run's worktree unnamed" "" "$(grep -F "$wt/wf_ffff00" <<<"$summary")"
+done
+bash "$PRUNE" --root "$work/clone" --run-id 'a.*' >/dev/null 2>&1; assert_eq "a --run-id with regex characters exits 2" 2 "$?"
+bash "$PRUNE" --root "$work/clone" --run-id >/dev/null 2>&1; assert_eq "--run-id with no value exits 2" 2 "$?"
+
 # Regression (M3): Post-actions ran `git -C <root> worktree prune`, which no
 # allowed-tools entry covered, so the run ended on a permission prompt.
 echo "=== SKILL.md runs the clean-up under a grant ==="
@@ -87,6 +123,9 @@ post=$(awk '/^## Post-actions/{on=1} on' "$SKILL_MD")
 # shellcheck disable=SC2016
 assert_eq "Post-actions invokes it as granted" true "$(grep -qF 'bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh --root <root>' <<<"$post" && echo true || echo false)"
 assert_eq "Post-actions no longer runs an ungranted git -C worktree prune" "" "$(grep -F 'git -C <root> worktree prune' <<<"$post")"
+assert_eq "Post-actions reports the listed worktrees and removes none" true "$(grep -qF 'Remove none' <<<"$post" && echo true || echo false)"
+REDISPATCH="$SCRIPT_DIR/../../references/fix-redispatch.md"
+assert_eq "fix-redispatch.md lists a harness run's worktrees with --run-id" true "$(grep -qF -- '--run-id <run-id>' "$REDISPATCH" && echo true || echo false)"
 
 echo
 echo "Results: $PASS passed, $FAIL failed"

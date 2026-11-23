@@ -178,4 +178,5 @@ never inside a fanned-out agent.
    PRs in chunks a stop left unrun are `not_attempted`. Under a row with `findings`, list them and
    its `fix_block`: the only place a Renovate, external or unreadyable draft's findings surface.
 2. File a GitHub issue in the swept repo for each follow-up.
-3. Run `bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh --root <root>`; never force a removal.
+3. Run `bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh --root <root>` and list its
+   `WORKTREE_<i>=` lines in the report. Remove none: a peer session can hold the same names.

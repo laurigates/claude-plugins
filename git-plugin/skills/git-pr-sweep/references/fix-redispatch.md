@@ -20,9 +20,10 @@ session clears two things the dead run can leave behind.
 ## Steps, per unit, in the main session
 
 1. List what is registered: `bash <skill dir>/scripts/prune-worktrees.sh --root <root>`, adding
-   `--worktrees <worktrees>` when the run set it. Each `WORKTREE_<i>=` line is a worktree that still
-   exists. Harness-isolated agents (no `worktrees` arg) get worktrees the harness names; treat a
-   listed one the same way only when it holds this unit's branch.
+   `--worktrees <worktrees>` when the run set it. Each `WORKTREE_<i>=` line is a sweep-named
+   worktree that still exists; the script names no other worktree in that shared dir. Harness-isolated
+   agents (no `worktrees` arg) get `wf_<run-id>-<n>` worktrees, listed only with `--run-id <run-id>`
+   of the dead run; treat a listed one as this unit's only when it holds this unit's branch.
 2. For each of this unit's paths in that list, `git -C <root> worktree remove <path>`. Never
    `--force`: a refusal means the tree is dirty, and its uncommitted changes are the dead agent's
    work. Report the unit for Lauri and do not re-dispatch it.
