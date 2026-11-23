@@ -104,12 +104,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `[Bug] parser: crashes on empty input` | `bug` | `parser` |
 | `fix(parser): handle empty input` | `bug` | `parser` |
 | `parser: crashes on empty input` | none | `parser` |
+| `[DNS]: add a record` | none | `dns` (the bracket word) |
 
 A type word (`docs`, `ci`, `fix`, ...) leading a conventional title is not a
 scope, so `docs(parser): ...` selects `parser` and not `core:docs`. Set
 `"type_words_as_scope": true` at the top of the taxonomy file to offer it as
 one. A word inside the parentheses, or before the colon after a bracket
-(`[Chore] ci: ...`), is always a scope. `[Bench]` and `hw(...)` map to
+(`[Chore] ci: ...`), is always a scope. A bracket word that is not a type word
+is a scope too, so an issue form's `[GitHub Repo]: ...` title is routed by a
+taxonomy entry with the scope `github repo`. `[Bench]` and `hw(...)` map to
 `enhancement`.
 
 An issue with no routing label from its title scope is routed by the repo paths

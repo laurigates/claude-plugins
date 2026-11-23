@@ -325,7 +325,8 @@ def parse_title(
 ) -> Title:
     """The type keyword and scope candidates a title carries, by its form.
 
-    bracket       "[Bug] enclosure: lid does not close"   keyword bug, scope enclosure
+    bracket       "[DNS]: add a record"                   keyword dns, scope dns
+                  "[Bug] enclosure: lid does not close"   keyword bug, scope enclosure
                   "[Bug] fix(kicad): close the gaps"      keyword bug, scope kicad
                   "[Chore] ci: run the check"             keyword chore, scope ci
     conventional  "fix(kicad): close the gaps"            keyword fix, scope kicad
@@ -342,12 +343,20 @@ def parse_title(
     robot one. A word inside the parentheses is the author's scope and always
     offered. What follows a bracket is read for its scopes in the same forms,
     except that a bare "word:" there stands where "[Type] scope:" puts the
-    scope, so it is offered whatever it is; the bracket word stays the keyword.
+    scope, so it is offered whatever it is. The bracket word stays the
+    keyword, and is offered as a scope under the same rule as the leading
+    word: "[DNS]: add a record" offers "dns", "[GitHub Repo]: x" offers
+    "github repo", and "[Bug]: x" offers nothing unless
+    ``type_words_as_scope`` is set.
     """
     m = BRACKET.match(title)
     if m:
         rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope, True)
-        return Title("bracket", norm(m.group("kw")), rest.scopes)
+        keyword = norm(m.group("kw"))
+        scopes = list(rest.scopes)
+        if type_words_as_scope or keyword not in type_keywords:
+            scopes.append(keyword)
+        return Title("bracket", keyword, tuple(dict.fromkeys(scopes)))
     m = CONVENTIONAL.match(title)
     if m and (m.group("scope") is not None or m.group("kw").lower() in type_keywords):
         keyword = m.group("kw").lower()

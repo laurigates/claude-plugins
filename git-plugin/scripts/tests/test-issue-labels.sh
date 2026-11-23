@@ -172,6 +172,27 @@ out=$(python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "$TMP/tax-b
 is "a non-boolean type_words_as_scope is a malformed taxonomy" "$rc|$(jq -r .status <<<"$out")" "1|ERROR"
 has "and the reason names the key" "$(jq -r .reason <<<"$out")" "type_words_as_scope"
 
+echo "=== a bracketed title prefix routes as a scope (#3737) ==="
+# Issue forms that set "[GitHub Repo]: X" carry no scope after the bracket, and
+# their bodies quote no paths, so only the bracket word can route them.
+jq '. + {area: (.area + {"dns": {"color": "0e8a16", "scopes": ["dns"]},
+                         "github-repo": {"color": "0e8a16", "scopes": ["github repo"]},
+                         "triage": {"color": "0e8a16", "scopes": ["bug"]}})}' \
+    "$FX/taxonomy.json" >"$TMP/tax-bracket.json"
+jq '. + {type_words_as_scope: true}' "$TMP/tax-bracket.json" >"$TMP/tax-bracket-words.json"
+jq '. + [{"name": "area:dns"}, {"name": "area:github-repo"}, {"name": "area:triage"}]' \
+    "$FX/repo-labels.json" >"$TMP/labels-bracket.json"
+brk() { cls --taxonomy "${1:-$TMP/tax-bracket.json}" --repo-labels "$TMP/labels-bracket.json"; }
+item "[DNS]: add a record for the dashboard" ""
+is "[DNS]: routes through a dns scope entry" "$(brk)" "area:dns"
+item "[GitHub Repo]: create foo-service" ""
+is "[GitHub Repo]: is normalised and routes through 'github repo'" "$(brk)" "area:github-repo"
+item "[DNS] robocar-unified: point the OTA host" ""
+is "the bracket word is offered beside the scope after it" "$(brk)" "build:robocar,area:dns"
+item "[Bug]: lid does not close" ""
+is "a type-word bracket is not a scope by default" "$(brk)" "bug"
+is "control: type_words_as_scope offers it" "$(brk "$TMP/tax-bracket-words.json")" "bug,area:triage"
+
 echo "=== bench and hw title keywords map to a type (#3587 gap 8) ==="
 item "[Bench] robocar-unified: measure the mic" ""
 is "[Bench] -> enhancement" "$(cls)" "enhancement,build:robocar"
