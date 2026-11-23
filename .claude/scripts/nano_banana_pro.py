@@ -24,7 +24,7 @@ Environment:
     GOOGLE_API_KEY or GEMINI_API_KEY must be set
 
 Model:
-    Nano Banana Pro (gemini-3-pro-image-preview)
+    Nano Banana Pro (gemini-3-pro-image)
 """
 
 from __future__ import annotations
@@ -213,7 +213,7 @@ def generate_image(
         )
 
         response = client.models.generate_content(
-            model="gemini-3-pro-image-preview",
+            model="gemini-3-pro-image",
             contents=contents,
             config=config,
         )

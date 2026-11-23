@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.3...feedback-plugin-v1.16.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** drop unused feedback-session grants and grant grep -q ([#3753](https://github.com/laurigates/claude-plugins/issues/3753)) ([0ad33ff](https://github.com/laurigates/claude-plugins/commit/0ad33ff2c706a16d33b09b71d0b3e5a1cb330f6a)), closes [#3733](https://github.com/laurigates/claude-plugins/issues/3733)
+
 ## [1.16.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.2...feedback-plugin-v1.16.3) (2026-11-20)
 
 
