@@ -493,6 +493,124 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     "If you are a delegated agent without authority to edit this PR's title/body, do not retry and do not edit the PR: report PR #42 and commit $FEATURE_SHA to your caller." \
     "$MSG_PUSH_JSON"
 
+# ── Merge-sync pushes pass the gate (issue #3331, decision 2026-11-21) ─────
+# A push whose new commits (origin/<branch>..<pushed ref>) are all merge
+# commits bringing in origin/<base> (every parent after the first is on
+# origin/<base>) adds nothing for the PR body to describe, so it is let
+# through. Everything else keeps today's behaviour: a mixed push, a merge of a
+# non-base branch, a first push with no origin/<branch>, a PR with no
+# baseRefName, or a base with no remote-tracking ref.
+#
+# Every PR below has an updatedAt OLDER than every commit, the state that
+# blocks a normal push, so "allowed" proves the merge-sync exemption fired and
+# not the retry-aware bypass.
+echo ""
+echo "merge-sync pushes from the PR's base branch pass (#3331):"
+
+MS=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+if [ -z "$MS" ] || [ ! -d "$MS" ]; then echo "mktemp -d returned no dir" >&2; exit 1; fi
+ms_git() { git -C "$MS" "$@"; }
+ms_git init -q -b main
+ms_git config commit.gpgsign false
+ms_git config user.email "test@test.com"
+ms_git config user.name "Test"
+ms_git remote add origin "$MS"
+ms_git commit --allow-empty -m "initial" -q
+ms_git update-ref refs/remotes/origin/main refs/heads/main
+ms_git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+
+# A branch carrying one real commit that is already on origin/<branch>.
+ms_branch() { # $1 = branch name
+    ms_git checkout -q -b "$1" main
+    ms_git commit --allow-empty -m "feat: real work on $1" -q
+    ms_git update-ref "refs/remotes/origin/$1" "refs/heads/$1"
+}
+ms_branch sync
+ms_branch mixed
+ms_branch nonbase
+ms_branch fresh
+ms_branch nobase
+
+# main moves on after the branches were cut; origin/main follows (a fetch).
+ms_git checkout -q main
+ms_git commit --allow-empty -m "chore: upstream change" -q
+ms_git update-ref refs/remotes/origin/main refs/heads/main
+
+# A side branch that is NOT on origin/main.
+ms_git checkout -q -b side main~1
+ms_git commit --allow-empty -m "feat: side work" -q
+
+ms_merge() { # $1 = branch, $2 = ref to merge in
+    ms_git checkout -q "$1"
+    ms_git merge -q --no-ff --no-edit -m "Merge $2 into $1" "$2"
+}
+ms_merge sync refs/remotes/origin/main
+ms_merge mixed refs/remotes/origin/main
+ms_git commit --allow-empty -m "feat: more real work after the sync" -q
+ms_merge nonbase side
+ms_merge fresh refs/remotes/origin/main
+ms_git update-ref -d refs/remotes/origin/fresh
+ms_merge nobase refs/remotes/origin/main
+ms_git checkout -q main
+
+MS_STALE=$(iso_offset "-86400")
+ms_pr() { # $1 = baseRefName ("" omits the field)
+    if [ -n "$1" ]; then
+        jq -n --arg t "$MS_STALE" --arg b "$1" \
+            '{number:7,title:"feat: x",body:"body",url:"https://example/7",updatedAt:$t,state:"OPEN",baseRefName:$b}'
+    else
+        jq -n --arg t "$MS_STALE" \
+            '{number:7,title:"feat: x",body:"body",url:"https://example/7",updatedAt:$t,state:"OPEN"}'
+    fi
+}
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "push of only a merge of origin/<base> is allowed (#3331)" 0 \
+    "$(make_json "git push origin sync" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "HEAD:<branch> push of only a merge-sync is allowed (#3331)" 0 \
+    "$(make_json "git push origin sync:sync" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "merge-sync plus a real commit still blocks (#3331)" 2 \
+    "$(make_json "git push origin mixed" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "merge of a non-base branch still blocks (#3331)" 2 \
+    "$(make_json "git push origin nonbase" "$MS")"
+
+# First push: no origin/<branch>, so the set of new commits is undefined. The
+# exemption does not apply and the hook blocks exactly as before, printing the
+# normal review message rather than erroring.
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "first push (no origin/<branch>) keeps blocking (#3331)" 2 \
+    "$(make_json "git push -u origin fresh" "$MS")"
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_stderr_contains "first push prints the normal block message (#3331)" \
+    "PR #7: feat: x" "$(make_json "git push -u origin fresh" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr "")" \
+    assert_exit "merge-sync with no baseRefName in the PR keeps blocking (#3331)" 2 \
+    "$(make_json "git push origin nobase" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr develop)" \
+    assert_exit "merge-sync when origin/<base> is absent keeps blocking (#3331)" 2 \
+    "$(make_json "git push origin nobase" "$MS")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="" \
+    assert_exit "merge-sync push with no PR is allowed (#3331)" 0 \
+    "$(make_json "git push origin sync" "$MS")"
+
+# Nothing new to push (origin/<branch> already at the tip): not a merge-sync,
+# so the stale PR still blocks as before.
+ms_git update-ref refs/remotes/origin/sync refs/heads/sync
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$(ms_pr main)" \
+    assert_exit "push with no new commits is not exempted (#3331)" 2 \
+    "$(make_json "git push origin sync" "$MS")"
+
+rm -rf "$MS"
+
 # ── Parsed trigger: a mention is not a push (issue #2737) ──────────────────
 # The trigger used to be `(^|\s|&&\s*|;\s*)git\s+push\b` over the raw command,
 # so a quoted argument, a heredoc body or a commit message that merely MENTIONS

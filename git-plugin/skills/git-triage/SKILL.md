@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(python3 *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-11-13
+modified: 2026-11-22
 reviewed: 2026-09-23
 ---
 
@@ -79,6 +79,14 @@ leaves out the oldest items, which are exactly the stale candidates. When
 re-run with `--batch` set to the `_TOTAL` value for a full sweep. When
 `TRUNCATED=unknown`, report the coverage as unverified rather than complete.
 `--oldest-first` reorders only the fetched batch.
+
+When GraphQL answers with the "GraphQL is not available" 403 (Claude Code cloud
+sessions), the collector falls back to the REST API and emits
+`GRAPHQL_BLOCKED=true`. The coverage keys then come from search counts, and two
+keys degrade: `REST_FALLBACK_UNKNOWN=MERGED_PRS` (every `ISSUE_<n>_MERGED_PRS`
+reads `unknown`) and `REST_FALLBACK_APPROXIMATED=REVIEW` (`PR_<n>_REVIEW` is the
+latest review per reviewer, not branch protection's review decision). Say so in
+the report. Details: [REFERENCE.md](REFERENCE.md#rest-fallback).
 
 `STATUS=`, `ISSUE_COUNT=`, and the `ISSUES:` block are the collector's own
 diagnostics (for example, a fetch that returned non-JSON), not GitHub issues:
