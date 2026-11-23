@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.3...hooks-plugin-v2.22.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** let TaskCompleted pass confirmed external deliverables ([#3770](https://github.com/laurigates/claude-plugins/issues/3770)) ([b830eb2](https://github.com/laurigates/claude-plugins/commit/b830eb23234496b17e95a428b7807f1bb9c3ff58)), closes [#3449](https://github.com/laurigates/claude-plugins/issues/3449)
+
 ## [2.22.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.2...hooks-plugin-v2.22.3) (2026-11-16)
 
 
