@@ -20,6 +20,11 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**/skills/**/scripts/**'
+      # Bundled workflow templates are tested by stub-runtime suites under the
+      # skill's scripts/tests/ (run-*.mjs), and git-pr-sweep's suite also pins
+      # pr-fix against workflow-implement-verify's repair-round template. A PR
+      # editing only a template must run those suites.
+      - '**/skills/**/workflows/**'
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
@@ -109,6 +114,7 @@ on:
     branches: [main]
     paths:
       - '**/skills/**/scripts/**'
+      - '**/skills/**/workflows/**'
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
