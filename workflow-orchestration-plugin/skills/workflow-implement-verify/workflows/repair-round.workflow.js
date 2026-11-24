@@ -312,7 +312,11 @@ const mergeRepair = (fix, rep) => ({
 // verdict (the verifier did answer), so the row stays FIX_NEEDED.
 const repairThenReverify = (ctxOf, rounds) => async (r) => {
   const { u, fix, verdict } = r
-  const ctx = typeof ctxOf === 'function' ? ctxOf(u) : ctxOf
+  const base = typeof ctxOf === 'function' ? ctxOf(u) : ctxOf
+  // Agents that make their own worktrees: the repair round works under round2/,
+  // so the repairer and re-verifier never reuse the fixer's or the verifier's
+  // path, which may still exist (#3749).
+  const ctx = base.worktrees ? { ...base, worktrees: `${base.worktrees}/round2` } : base
   if (!rounds || verdict?.verdict !== 'fix-needed') return { ...r, merged: fix, repaired: false, final: verdict }
   const rep = await repairStage(ctx)(u, verdict)
   if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
