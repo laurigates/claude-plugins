@@ -173,7 +173,8 @@ alternative. The steers survive as non-blocking hints in
 `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1`. The long-pipeline nudge
 counts pipes **per pipeline** (statement-split on newlines/`;`/`&&`/`||`),
 not per Bash invocation, so independent single-pipe statements never sum past
-the threshold (#2051). See `.claude/rules/bash-tool-replacements.md` and
+the threshold (#2051). See `.claude/rules/bash-tool-replacements.md`, the
+history in `docs/rules/bash-tool-replacements.md`, and
 `.claude/rules/hook-block-vs-nudge.md`.
 
 ### Handling Blocked Commands

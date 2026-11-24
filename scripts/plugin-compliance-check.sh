@@ -1721,7 +1721,7 @@ check_skill_body() {
     # dropping it would leave a skill that documents watching without the call.
     if [ "$skill_name" = "git-pr-watch" ]; then
       if ! grep -qF "subscribe_pr_activity" "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see .claude/rules/pr-branch-sync.md)")
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see docs/rules/pr-branch-sync.md)")
         has_errors=true
       fi
     fi
