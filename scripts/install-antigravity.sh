@@ -12,8 +12,8 @@
 #
 # Usage: ./scripts/install-antigravity.sh [target] [--agents-only] [--hooks-only] [--plugin NAME ...]
 #   target defaults to ~/.gemini/config (global)
-#   Each --plugin limits the install to that plugin's subagents. The safety
-#   hooks belong to hooks-plugin, so a --plugin list without it installs no hooks.
+#   Each --plugin limits the install to that plugin's subagents and safety
+#   hooks; when the selected plugins ship no safety hooks, none are installed.
 set -euo pipefail
 
 install_script_dir="$(cd "$(dirname "$0")" && pwd)"
@@ -26,7 +26,6 @@ install_agents=1
 install_hooks=1
 install_plugin_args=()
 install_plugins=()
-install_has_hooks_plugin=0
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -37,7 +36,6 @@ while [ "$#" -gt 0 ]; do
             agy_require_plugin "$install_repo_root" "$2"
             install_plugin_args+=(--plugin "$2")
             install_plugins+=("$2")
-            [ "$2" = "hooks-plugin" ] && install_has_hooks_plugin=1
             shift 2
             ;;
         -*) echo "unknown argument: $1" >&2; exit 2 ;;
@@ -53,13 +51,6 @@ if [ "$install_agents" -eq 0 ] && [ "$install_hooks" -eq 0 ]; then
     exit 2
 fi
 
-if [ "${#install_plugin_args[@]}" -gt 0 ] && [ "$install_has_hooks_plugin" -eq 0 ]; then
-    if [ "$install_agents" -eq 0 ]; then
-        echo "--hooks-only with a --plugin list that omits hooks-plugin installs nothing" >&2
-        exit 2
-    fi
-    install_hooks=0
-fi
 
 install_target="${install_target:-$HOME/.gemini/config}"
 

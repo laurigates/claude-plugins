@@ -630,7 +630,7 @@ unconfigure-antigravity *plugins:
 agy-check target=agy_config:
     ./scripts/check-antigravity.sh "{{target}}"
 
-# End-to-end setup: register skills, install subagents + safety hooks; optional plugin names limit it (hooks only with hooks-plugin)
+# End-to-end setup: register skills, install subagents + safety hooks; optional plugin names limit all three
 [group: "antigravity"]
 setup-antigravity *plugins: (configure-antigravity plugins)
     #!/usr/bin/env bash

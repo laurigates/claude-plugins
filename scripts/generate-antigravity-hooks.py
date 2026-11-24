@@ -325,7 +325,13 @@ if __name__ == "__main__":
 '''
 
 
-def main(repo_root: Path, out_dir: Path, allow_extra: set[str]) -> int:
+def main(
+    repo_root: Path,
+    out_dir: Path,
+    allow_extra: set[str],
+    plugins: frozenset[str] = frozenset(),
+) -> int:
+    """`plugins` limits the export to those plugins' hooks; empty means all."""
     allowlist = dict(AGY_SAFETY_ALLOWLIST)
     for extra in allow_extra:
         allowlist[extra] = "explicitly allowed via --allow"
@@ -338,6 +344,8 @@ def main(repo_root: Path, out_dir: Path, allow_extra: set[str]) -> int:
 
     for plugin_dir, _label, manifest in discover_manifests(repo_root):
         plugin_name = plugin_dir.name
+        if plugins and plugin_name not in plugins:
+            continue
         scanned_plugins.add(plugin_name)
         hooks_dict = manifest.get("hooks", {})
         for event, groups in hooks_dict.items():
@@ -378,6 +386,13 @@ def main(repo_root: Path, out_dir: Path, allow_extra: set[str]) -> int:
                         }
                     )
                     scripts_to_copy.setdefault(plugin_name, set()).add(script)
+
+    if plugins and not manifest_entries:
+        # The selected plugins ship no safety hooks: write nothing, so the
+        # installer finds no hooks.json and installs no runner.
+        print(f"HOOK_PLUGINS_SCANNED={len(scanned_plugins)}")
+        print("EXPORTED_HOOKS=0")
+        return 0
 
     copied_count, copied_libs = copy_scripts(repo_root, scripts_to_copy, out_dir)
 
@@ -439,18 +454,28 @@ def main(repo_root: Path, out_dir: Path, allow_extra: set[str]) -> int:
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print(
-            "usage: generate-antigravity-hooks.py <repo_root> <out_dir> [--allow <plugin>/<script>]...",
+            "usage: generate-antigravity-hooks.py <repo_root> <out_dir>"
+            " [--allow <plugin>/<script>]... [--plugin <name>]...",
             file=sys.stderr,
         )
         sys.exit(2)
     extra_allowed = set()
+    selected = set()
     idx = 3
     while idx < len(sys.argv):
         if sys.argv[idx] == "--allow" and idx + 1 < len(sys.argv):
             extra_allowed.add(sys.argv[idx + 1])
             idx += 2
+        elif sys.argv[idx] == "--plugin" and idx + 1 < len(sys.argv):
+            selected.add(sys.argv[idx + 1])
+            idx += 2
         else:
             idx += 1
     sys.exit(
-        main(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve(), extra_allowed)
+        main(
+            Path(sys.argv[1]).resolve(),
+            Path(sys.argv[2]).resolve(),
+            extra_allowed,
+            frozenset(selected),
+        )
     )

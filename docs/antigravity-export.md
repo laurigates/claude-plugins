@@ -13,6 +13,8 @@ Following the architecture established in [ADR-0022](adrs/0022-adapter-over-expo
 
 `just setup-antigravity` runs the configuration and installation in one shot.
 
+**Gemini CLI is not a target.** Google stopped serving Gemini CLI to free, AI Pro and Ultra accounts on 2026-06-18 and points those users to `agy`; it stays supported only for Gemini Code Assist Standard/Enterprise and paid API keys. This repo has no Gemini CLI export. Note that `~/.gemini/config` is agy's config directory, not Gemini CLI's.
+
 ---
 
 ## Pipeline Overview
@@ -195,7 +197,7 @@ The rewrite maps to `deny` because Antigravity documents no way for a hook to re
 ```bash
 just agy-check                   # verify agy binary, skills.json, subagents, and hooks
 just setup-antigravity           # end-to-end configuration and installation
-just setup-antigravity macos-plugin   # same, limited to the named plugins (hooks only if hooks-plugin is named)
+just setup-antigravity git-plugin     # same, limited to the named plugins' skills, subagents and safety hooks
 just export-antigravity          # dry-run export to dist/antigravity
 just unconfigure-antigravity     # unregister skills from skills.json
 ```
