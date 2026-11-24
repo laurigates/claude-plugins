@@ -281,6 +281,8 @@ import importlib.util, sys
 from pathlib import Path
 spec = importlib.util.spec_from_file_location("xrefs", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
+# @dataclass resolves sys.modules[cls.__module__]; register before exec.
+sys.modules[spec.name] = mod
 spec.loader.exec_module(mod)
 root = Path(sys.argv[2]).resolve()
 for rel in ("demo-plugin/skills/owner-skill/skill.md",
