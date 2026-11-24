@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-11-15
+modified: 2026-11-24
 reviewed: 2026-10-26
 ---
 
@@ -75,7 +75,8 @@ A `sonnet` or `haiku` implementer is acceptable only because an opus verifier fo
 A unit may name its own repository with `repo` (`owner/name`) and `root` (absolute clone path),
 both or neither, so one run can span several repositories. That unit's agents create their own
 worktrees under `<root>/.claude/worktrees/` (a harness worktree would be of the session's
-repository), its `base` and `setup` default to the run's, and the run-level `gates` and `setup`
+repository); the repairer and re-verifier use `<root>/.claude/worktrees/round2/`, so they never
+reuse a first-round agent's path. Its `base` and `setup` default to the run's, and the run-level `gates` and `setup`
 apply only when `repo` equals the run's `repo`. Finalise pushes and opens each PR in its unit's
 repository, and every row carries `repo`, `root` and `base`. `repair-round` has no per-unit
 repository yet, so a cross-repository `FIX_NEEDED` row needs its own `repair-round` run with
