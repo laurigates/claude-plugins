@@ -201,3 +201,24 @@ just setup-antigravity git-plugin     # same, limited to the named plugins' skil
 just export-antigravity          # dry-run export to dist/antigravity
 just unconfigure-antigravity     # unregister skills from skills.json
 ```
+
+---
+
+## Parity with pi and OpenCode
+
+The three harness integrations cover the same surfaces; how each one gets there
+differs. The per-harness pages carry the detail:
+[`pi-export.md`](pi-export.md), [`opencode-export.md`](opencode-export.md).
+
+| Surface | agy | pi | OpenCode |
+|---|---|---|---|
+| Skills | in-place `skills.json` registration (`configure-antigravity`) | ADR-0022 adapter (`pi-adapter-register`) | ADR-0022 adapter, entry in `opencode.json` (`configure-opencode`) |
+| Subagents | exported `agent.md` (`install-antigravity-agents`) | exported for `@tintinweb/pi-subagents` (`install-pi-agents`) | exported `agents/*.md` (`install-opencode`) |
+| Safety hooks | `PreToolUse` runner in `hooks.json` (`install-antigravity-hooks`) | one `plugin-hooks` extension (`install-pi-hooks`) | one `<plugin>-hooks.js` per plugin (`install-opencode`) |
+| Plugin-scoped setup | `just setup-antigravity <plugin>...` | `just setup-pi <plugin>...` (adapter `"plugins"` key) | `just setup-opencode <plugin>...` (adapter `"plugins"` option) |
+| Check recipe | `just agy-check` | `just pi-adapter-check` | `just oc-adapter-check` |
+| Undo | `just unconfigure-antigravity` | `just pi-adapter-unregister`; delete `plugin-hooks` | `just oc-adapter-unregister` |
+
+In all three, an unknown plugin name exits 2 before anything is written, a
+selected plugin with no subagents or safety hooks is not an error, and running
+setup with no names covers every plugin.

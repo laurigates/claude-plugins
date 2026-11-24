@@ -14,8 +14,8 @@ set -euo pipefail
 
 config_script_dir="$(cd "$(dirname "$0")" && pwd)"
 config_repo_root="$(cd "$config_script_dir/.." && pwd)"
-# shellcheck source=/dev/null  # lib/antigravity-plugins.sh, linted on its own
-. "$config_script_dir/lib/antigravity-plugins.sh"
+# shellcheck source=/dev/null  # lib/plugin-args.sh, linted on its own
+. "$config_script_dir/lib/plugin-args.sh"
 
 config_target=""
 config_action="add"
@@ -26,7 +26,7 @@ while [ "$#" -gt 0 ]; do
         --remove) config_action="remove"; shift ;;
         --plugin)
             [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
-            agy_require_plugin "$config_repo_root" "$2"
+            require_plugin "$config_repo_root" "$2"
             config_plugins+=("$2")
             shift 2
             ;;

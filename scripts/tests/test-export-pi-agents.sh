@@ -28,6 +28,10 @@
 #      Write/Edit is REPORTED in READONLY_WIDENED=, and the real corpus's cohort
 #      equals the table in docs/pi-export.md § Subagents, so no agent joins the
 #      cohort (gains an unscoped shell in pi) without being listed there
+#   M. --plugin NAME (repeatable) exports only those plugins' agents; a plugin
+#      with no agents exports zero with STATUS=OK; an unknown or malformed name
+#      exits 2 before anything is written; the justfile threads the names
+#      through export-, install- and setup-pi
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -258,7 +262,7 @@ echo "=== TEST I: recipes exist, install is additive, no network step ==="
 assert "justfile carries export-pi-agents and install-pi-agents" \
   "$(grep -q '^export-pi-agents' "$justfile" && grep -q '^install-pi-agents' "$justfile" && echo true || echo false)"
 assert "setup-pi wires the export in" \
-  "$(grep -qE '^setup-pi:.*install-pi-agents' "$justfile" && grep -A 25 '^install-pi-agents' "$justfile" | grep -q 'export-pi-agents.py' && echo true || echo false)"
+  "$(grep -qE '^setup-pi( \*plugins)?:.*install-pi-agents' "$justfile" && grep -A 25 '^install-pi-agents' "$justfile" | grep -q 'export-pi-agents.py' && echo true || echo false)"
 # The install must never rm -rf the target: ~/.pi/agent/agents/ is shared with
 # agents the user wrote, and a clobbering install is unrecoverable.
 # shellcheck disable=SC2016  # $target is a literal to match in the justfile, not an expansion
@@ -431,6 +435,47 @@ if [ "$actual" != "$documented" ]; then
 fi
 assert "the corpus's read-only widened cohort equals the documented list" \
   "$([ -n "$actual" ] && [ "$actual" = "$documented" ] && echo true || echo false)"
+
+echo "=== TEST M: --plugin limits the export ==="
+pf="$fixture/src-pf"
+for plug in one-plugin two-plugin empty-plugin; do
+  mkdir -p "$pf/$plug/.claude-plugin"
+  echo '{"name": "'"$plug"'"}' > "$pf/$plug/.claude-plugin/plugin.json"
+done
+for spec in one-plugin:alpha one-plugin:beta two-plugin:gamma; do
+  plug=${spec%%:*}; agent=${spec#*:}
+  mkdir -p "$pf/$plug/agents"
+  printf -- '---\nname: %s\ndescription: The %s agent.\ntools: Read\n---\n\n# %s\n' \
+    "$agent" "$agent" "$agent" > "$pf/$plug/agents/$agent.md"
+done
+pf_out="$(python3 "$exporter" --plugin one-plugin "$pf" "$fixture/out-pf1" 2>&1)"
+assert "--plugin one-plugin exports only its two agents" \
+  "$(grep -qx 'OUTPUT_AGENTS=2' <<<"$pf_out" && [ -f "$fixture/out-pf1/agents/alpha.md" ] \
+     && [ ! -e "$fixture/out-pf1/agents/gamma.md" ] && echo true || echo false)"
+assert "--plugin is reported as PLUGINS=" \
+  "$(grep -qx 'PLUGINS=one-plugin' <<<"$pf_out" && echo true || echo false)"
+pf_out="$(python3 "$exporter" --plugin one-plugin --plugin two-plugin "$pf" "$fixture/out-pf2" 2>&1)"
+assert "repeated --plugin unions the selection" \
+  "$(grep -qx 'OUTPUT_AGENTS=3' <<<"$pf_out" && echo true || echo false)"
+pf_out="$(python3 "$exporter" "$pf" "$fixture/out-pf-all" 2>&1)"
+assert "no --plugin exports every plugin (PLUGINS=all)" \
+  "$(grep -qx 'OUTPUT_AGENTS=3' <<<"$pf_out" && grep -qx 'PLUGINS=all' <<<"$pf_out" && echo true || echo false)"
+pf_out="$(python3 "$exporter" --plugin empty-plugin "$pf" "$fixture/out-pf-empty" 2>&1)"; pf_rc=$?
+assert "a plugin with no agents exports zero with STATUS=OK and exit 0" \
+  "$([ "$pf_rc" -eq 0 ] && grep -qx 'OUTPUT_AGENTS=0' <<<"$pf_out" && grep -qx 'STATUS=OK' <<<"$pf_out" && echo true || echo false)"
+# The message is asserted too: argparse also exits 2 on an unrecognised flag,
+# so the exit code alone cannot tell validation from "no --plugin support".
+pf_err="$(python3 "$exporter" --plugin nope-plugin "$pf" "$fixture/out-pf-bad" 2>&1)"; pf_rc=$?
+assert "an unknown plugin name exits 2 naming it, and writes nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/out-pf-bad" ] && grep -q "'nope-plugin' is not a plugin" <<<"$pf_err" && echo true || echo false)"
+pf_err="$(python3 "$exporter" --plugin ../one-plugin "$pf" "$fixture/out-pf-bad2" 2>&1)"; pf_rc=$?
+assert "a path-shaped plugin name exits 2 as invalid" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/out-pf-bad2" ] && grep -q 'invalid plugin name' <<<"$pf_err" && echo true || echo false)"
+assert "export-pi-agents and install-pi-agents take *plugins and pass --plugin" \
+  "$(grep -qE '^export-pi-agents .*\*plugins:' "$justfile" && grep -qE '^install-pi-agents .*\*plugins:' "$justfile" \
+     && grep -A 30 '^install-pi-agents' "$justfile" | grep -q -- '--plugin' && echo true || echo false)"
+assert "setup-pi passes its plugin names to install-pi-agents" \
+  "$(grep -qE '^setup-pi \*plugins:.*\(install-pi-agents [^)]*plugins\)' "$justfile" && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

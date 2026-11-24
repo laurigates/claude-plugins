@@ -49,7 +49,12 @@ A missing script at runtime FAILS OPEN (console.error + allow) — deliberately
 NOT the throw-ENOENT-on-every-matched-call failure mode a path-only projection
 produces (what rulesync's output did, per the note above).
 
-Usage: generate-opencode-hook-plugins.py <repo_root> <out_dir>
+`--plugin <name>` (repeatable) limits the export to those plugins' hooks; none
+means every plugin. Names are not validated here: export-opencode.sh rejects an
+unknown one (scripts/lib/plugin-args.sh) before calling this generator. A
+selection whose plugins ship no exportable hook writes no plugins/ dir.
+
+Usage: generate-opencode-hook-plugins.py <repo_root> <out_dir> [--plugin <name>]...
 """
 
 import json
@@ -588,17 +593,38 @@ def process_plugin(repo_root, plugin_dir, sources, out_dir):
     return exported, skipped, notes, sorted(scripts), libs, helpers
 
 
+def parse_args(argv):
+    """Return (repo_root, out_dir, selected plugin names) or None on bad usage."""
+    positional, selected = [], set()
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--plugin" and i + 1 < len(argv):
+            selected.add(argv[i + 1])
+            i += 2
+        elif argv[i].startswith("-"):
+            return None
+        else:
+            positional.append(argv[i])
+            i += 1
+    if len(positional) != 2:
+        return None
+    return Path(positional[0]).resolve(), Path(positional[1]).resolve(), selected
+
+
 def main():
-    if len(sys.argv) != 3:
+    parsed = parse_args(sys.argv[1:])
+    if parsed is None:
         print(__doc__.strip().splitlines()[-1], file=sys.stderr)
         return 2
-    repo_root = Path(sys.argv[1]).resolve()
-    out_dir = Path(sys.argv[2]).resolve()
+    repo_root, out_dir, selected = parsed
 
     print("=== OPENCODE HOOK EXPORT ===")
+    print("PLUGINS=" + (",".join(sorted(selected)) or "all"))
     generated = total_exported = total_skipped = total_scripts = 0
     scanned = total_libs = total_helpers = parse_errors = pointer_skips = 0
     for plugin_dir in sorted(p for p in repo_root.glob("*-plugin") if p.is_dir()):
+        if selected and plugin_dir.name not in selected:
+            continue
         sources, problems = discover_hook_sources(plugin_dir)
         for problem in problems:
             print(f"PLUGIN={plugin_dir.name} {problem}")

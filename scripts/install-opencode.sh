@@ -11,11 +11,36 @@
 # which configure-opencode.sh wires into opencode.json — see
 # adapters/opencode/ and docs/opencode-export.md.
 #
-# Usage: ./scripts/install-opencode.sh <target>
+# Usage: ./scripts/install-opencode.sh <target> [--plugin NAME ...]
+#   Each --plugin limits the install to that plugin's subagents and hook
+#   plugins; when the selected plugins ship no hooks, none are installed.
 set -euo pipefail
 
 install_script_dir="$(cd "$(dirname "$0")" && pwd)"
-install_target="${1:?usage: install-opencode.sh <target>}"
+install_repo_root="$(cd "$install_script_dir/.." && pwd)"
+# shellcheck source=/dev/null  # lib/plugin-args.sh, linted on its own
+. "$install_script_dir/lib/plugin-args.sh"
+
+install_target=""
+install_plugin_args=()
+install_plugins=()
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --plugin)
+            [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
+            require_plugin "$install_repo_root" "$2"
+            install_plugin_args+=(--plugin "$2")
+            install_plugins+=("$2")
+            shift 2
+            ;;
+        -*) echo "unknown argument: $1" >&2; exit 2 ;;
+        *)
+            [ -z "$install_target" ] && install_target="$1"
+            shift
+            ;;
+    esac
+done
+[ -n "$install_target" ] || { echo "usage: install-opencode.sh <target> [--plugin NAME ...]" >&2; exit 2; }
 
 # Expand a leading ~ to $HOME (justfile variables are not tilde-expanded).
 if [ "${install_target#\~}" != "$install_target" ]; then
@@ -24,6 +49,7 @@ fi
 
 echo "=== OPENCODE INSTALL ==="
 echo "TARGET=$install_target"
+echo "PLUGINS=${install_plugins[*]:-all}"
 
 # Cross-scope duplicate guard. OpenCode MERGES global (~/.config/opencode) and
 # project (<cwd>/.opencode) agents and plugins, so installing this marketplace
@@ -35,6 +61,12 @@ install_global_dir="${OPENCODE_CONFIG:-$HOME/.config/opencode}"
 if [ "${install_global_dir#\~}" != "$install_global_dir" ]; then
     install_global_dir="${HOME}${install_global_dir#\~}"
 fi
+# OPENCODE_CONFIG is also the recipes' install target, so for a project install
+# (OPENCODE_CONFIG=.opencode just setup-opencode) it names the project scope,
+# not the global one; fall back to the global default then.
+case "$install_global_dir" in
+    *.opencode|*.opencode/) install_global_dir="$HOME/.config/opencode" ;;
+esac
 install_project_dir="$PWD/.opencode"
 
 case "$install_target" in
@@ -54,7 +86,7 @@ fi
 install_tmp="$(mktemp -d)"
 trap 'rm -rf "$install_tmp"' EXIT
 
-"$install_script_dir/export-opencode.sh" "$install_tmp" >/dev/null
+"$install_script_dir/export-opencode.sh" "$install_tmp" ${install_plugin_args[@]+"${install_plugin_args[@]}"} >/dev/null
 
 mkdir -p "$install_target/agents"
 cp -R "$install_tmp/agents/." "$install_target/agents/"
@@ -68,7 +100,9 @@ if [ -d "$install_tmp/plugins" ]; then
 fi
 
 install_agents="$(find "$install_target/agents" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-install_hook_plugins="$(find "$install_target/plugins" -name '*-plugin-hooks.js' 2>/dev/null | wc -l | tr -d ' ')"
+# plugins/ is absent when no hook plugin was ever installed here; find's exit 1
+# would abort the script under pipefail.
+install_hook_plugins="$( { find "$install_target/plugins" -name '*-plugin-hooks.js' 2>/dev/null || true; } | wc -l | tr -d ' ')"
 
 # Drop a receipt so a later install into the complementary scope can detect us.
 printf 'installed_at=%s\nagents=%s\n' \

@@ -19,7 +19,8 @@ Three surfaces, three mechanisms — they are not interchangeable:
 > free, and touches neither skills nor npm.
 
 `just setup-opencode` runs install + configure in one shot and prints the
-serve/run next steps.
+serve/run next steps. `just setup-opencode git-plugin macos-plugin` limits it to
+those plugins (§ 6).
 
 ## Pipeline overview
 
@@ -398,13 +399,35 @@ skill`. Under the adapter flow `skill` is denied and replaced by
 ## 6. Install + run
 
 ```
-just setup-opencode               # global  → ~/.config/opencode
-just setup-opencode .opencode     # project → ./.opencode
+just setup-opencode                                # global  → ~/.config/opencode
+OPENCODE_CONFIG=.opencode just setup-opencode      # project → ./.opencode
+just setup-opencode git-plugin macos-plugin        # only these plugins
 ```
 
 `setup-opencode` = `install-opencode` (copies `agents/`, `plugins/`, and
 `hook-scripts/` **additively** — your own agents/plugins are preserved) +
-`configure-opencode`, then prints the serve + run next steps.
+`configure-opencode`, then prints the serve + run next steps. The target
+directory comes from `OPENCODE_CONFIG`; the recipes take plugin names, not a
+positional target.
+
+### Limiting setup to named plugins
+
+With plugin names, all three surfaces are limited to those plugins:
+
+| Surface | What changes |
+|---|---|
+| Skills | `"plugins": [...]` in the adapter's options object in `opencode.json`; the adapter indexes only those plugins' skills |
+| Subagents | `install-opencode --plugin` installs only their agents |
+| Hooks | only their `<plugin>-hooks.js`; a selection with no hooks installs none |
+
+`configure-opencode` never overwrites an existing `opencode.json`, so
+`setup-opencode` then runs `scripts/set-adapter-plugins.sh`, which edits only
+the adapter entry's `plugins` key in the live file. Run with no names, it
+removes that key, so an unscoped re-run indexes every plugin again. The install
+is additive: agents and hook plugins from an earlier, wider install stay in
+place until you remove them. A name that is not a plugin directory exits 2
+before anything is written; a selected plugin with no agents or hooks is not an
+error.
 
 > **Install into ONE scope only.** OpenCode *merges* global
 > (`~/.config/opencode`) and project (`./.opencode`) agents and plugins, so
@@ -558,6 +581,7 @@ a brainstorm or an older snippet, check it against this table:
 ## Related
 
 - [`adapters/README.md`](../adapters/README.md) — the adapter: bindings, ranker, eval harness
+- [`antigravity-export.md`](antigravity-export.md) § Parity with pi and OpenCode — the three harnesses side by side
 - [`adapters/CUTOVER.md`](../adapters/CUTOVER.md) — the frozen retrieval gate (§1) and the OpenCode token calibration (§8)
 - [`docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — why an adapter rather than an export
 - [`scripts/export-opencode.sh`](../scripts/export-opencode.sh) — agent + hook export driver

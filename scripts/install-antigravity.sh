@@ -18,8 +18,8 @@ set -euo pipefail
 
 install_script_dir="$(cd "$(dirname "$0")" && pwd)"
 install_repo_root="$(cd "$install_script_dir/.." && pwd)"
-# shellcheck source=/dev/null  # lib/antigravity-plugins.sh, linted on its own
-. "$install_script_dir/lib/antigravity-plugins.sh"
+# shellcheck source=/dev/null  # lib/plugin-args.sh, linted on its own
+. "$install_script_dir/lib/plugin-args.sh"
 
 install_target=""
 install_agents=1
@@ -33,7 +33,7 @@ while [ "$#" -gt 0 ]; do
         --hooks-only)  install_agents=0; shift ;;
         --plugin)
             [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
-            agy_require_plugin "$install_repo_root" "$2"
+            require_plugin "$install_repo_root" "$2"
             install_plugin_args+=(--plugin "$2")
             install_plugins+=("$2")
             shift 2

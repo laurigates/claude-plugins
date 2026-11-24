@@ -9,6 +9,9 @@
 #      and a `permission:` map (NOT a `tools:` list).
 #   C. a second run is non-destructive: an existing opencode.json is kept and
 #      the new config lands in opencode.json.opencode-sample.
+#   E. --plugin NAME (repeatable) writes the adapter options' "plugins" list;
+#      none writes no "plugins" key; an unknown name exits 2 and writes nothing;
+#      the setup-opencode recipe threads its names to configure-opencode.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -191,6 +194,37 @@ print("true" if tuples and tuples[0][1].get("k") == 9 else "false")
 PY
 )"
 rm -rf "$adapterfix"
+
+echo "=== TEST E: --plugin scopes the adapter ==="
+# adapter_plugins <opencode.json>: the adapter tuple's "plugins" as a JSON
+# value, or __ABSENT__ when the key is not there.
+adapter_plugins() {
+  python3 - "$1" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+tuples = [p for p in d.get("plugin", []) if isinstance(p, list)]
+opts = tuples[0][1] if tuples else {}
+print(json.dumps(opts["plugins"]) if "plugins" in opts else "__ABSENT__")
+PY
+}
+scopefix="$(mktemp -d)"
+[ -n "$scopefix" ] || { echo "mktemp failed" >&2; exit 1; }
+scope_out="$(bash "$configure" "$scopefix/two" --plugins "" --plugin git-plugin --plugin macos-plugin 2>&1)"
+assert "--plugin writes the adapter's plugins list in order" \
+  "$([ "$(adapter_plugins "$scopefix/two/opencode.json")" = '["git-plugin", "macos-plugin"]' ] && echo true || echo false)"
+assert "--plugin is reported as ADAPTER_PLUGINS=" \
+  "$(grep -qx 'ADAPTER_PLUGINS=git-plugin macos-plugin' <<<"$scope_out" && echo true || echo false)"
+bash "$configure" "$scopefix/none" --plugins "" >/dev/null 2>&1
+assert "no --plugin writes no plugins key" \
+  "$([ "$(adapter_plugins "$scopefix/none/opencode.json")" = "__ABSENT__" ] && echo true || echo false)"
+scope_err="$(bash "$configure" "$scopefix/bad" --plugin nope-plugin 2>&1)"; scope_rc=$?
+assert "an unknown --plugin exits 2 naming it, and writes nothing" \
+  "$([ "$scope_rc" -eq 2 ] && [ ! -e "$scopefix/bad" ] && grep -q "'nope-plugin' is not a plugin" <<<"$scope_err" && echo true || echo false)"
+justfile="$repo_root/justfile"
+assert "setup-opencode passes its plugin names to configure-opencode and set-adapter-plugins.sh" \
+  "$(grep -qE '^setup-opencode \*plugins:.*\(configure-opencode plugins\)' "$justfile" \
+     && grep -A 3 '^setup-opencode' "$justfile" | grep -q 'set-adapter-plugins.sh opencode .*{{plugins}}' && echo true || echo false)"
+rm -rf "$scopefix"
 
 echo ""
 echo "=== SUMMARY ==="
