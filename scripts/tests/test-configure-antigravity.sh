@@ -192,6 +192,35 @@ assert "install --plugin git-plugin installs hooks.json" \
 assert "install --plugin git-plugin installs only git-plugin's hook scripts" \
   "$(python3 -c 'import json,sys; p={h["plugin"] for h in json.load(open(sys.argv[1]))["hooks"]}; print("true" if p == {"git-plugin"} else "false")' "$target_i2/hooks_manifest.json")"
 
+echo "=== TEST J: scoped installs accumulate hooks; unscoped replaces ==="
+target_j="$fixture/target_j"
+bash "$install" "$target_j" --plugin git-plugin --hooks-only >/dev/null
+bash "$install" "$target_j" --plugin kubernetes-plugin --hooks-only >/dev/null
+manifest_plugins() {
+  python3 -c 'import json,sys; print(",".join(sorted({h["plugin"] for h in json.load(open(sys.argv[1]))["hooks"]})))' "$1"
+}
+assert "a second scoped install keeps the first plugin's hooks active (got $(manifest_plugins "$target_j/hooks_manifest.json"))" \
+  "$([ "$(manifest_plugins "$target_j/hooks_manifest.json")" = "git-plugin,kubernetes-plugin" ] && echo true || echo false)"
+bash "$install" "$target_j" --plugin git-plugin --hooks-only >/dev/null
+assert "re-installing a plugin replaces its entries rather than duplicating them" \
+  "$(python3 -c 'import json,sys; h=json.load(open(sys.argv[1]))["hooks"]; k=[(x["plugin"],x["script"]) for x in h]; print("true" if len(k)==len(set(k)) else "false")' "$target_j/hooks_manifest.json")"
+bash "$install" "$target_j" --hooks-only >/dev/null
+all_hook_plugins="$(manifest_plugins "$target_j/hooks_manifest.json")"
+assert "an unscoped install writes every plugin's hooks (got $all_hook_plugins)" \
+  "$(case "$all_hook_plugins" in *git-plugin*hooks-plugin*kubernetes-plugin*) echo true ;; *) echo false ;; esac)"
+
+echo "=== TEST K: stray arguments are refused, not ignored ==="
+for script in "$configure" "$install" "$repo_root/scripts/export-antigravity.sh"; do
+  bash "$script" "$fixture/target_k" git-plugin >/dev/null 2>"$fixture/k.err" && rc_k=0 || rc_k=$?
+  assert "$(basename "$script") exits 2 on a second positional argument" \
+    "$([ "$rc_k" -eq 2 ] && grep -q 'unexpected argument: git-plugin' "$fixture/k.err" && echo true || echo false)"
+done
+python3 "$repo_root/scripts/generate-antigravity-hooks.py" "$repo_root" "$fixture/target_k2" --plugins git-plugin >/dev/null 2>&1 && rc_k=0 || rc_k=$?
+assert "generate-antigravity-hooks.py exits 2 on an unknown flag" \
+  "$([ "$rc_k" -eq 2 ] && echo true || echo false)"
+assert "install-antigravity-hooks takes plugin names like its siblings" \
+  "$(grep -q '^install-antigravity-hooks \*plugins:' "$repo_root/justfile" && echo true || echo false)"
+
 echo ""
 echo "=== SUMMARY ==="
 echo "PASSED=$pass_count"

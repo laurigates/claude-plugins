@@ -32,7 +32,11 @@ while [ "$#" -gt 0 ]; do
             ;;
         -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            [ -z "$config_target" ] && config_target="$1"
+            if [ -n "$config_target" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
+            fi
+            config_target="$1"
             shift
             ;;
     esac

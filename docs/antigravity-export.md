@@ -148,7 +148,7 @@ Claude Code plugins declare hooks in `hooks.json` or `.claude-plugin/plugin.json
 
 Run:
 ```bash
-just install-antigravity-hooks    # installs safety hooks + runner into ~/.gemini/config
+just install-antigravity-hooks    # installs safety hooks + runner into ~/.gemini/config (optional plugin names)
 ```
 
 ### Claude Code Variable Emulation

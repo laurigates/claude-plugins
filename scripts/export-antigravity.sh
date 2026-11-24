@@ -36,7 +36,11 @@ while [ "$#" -gt 0 ]; do
             ;;
         -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            [ -z "$export_out_dir" ] && export_out_dir="$1"
+            if [ -n "$export_out_dir" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
+            fi
+            export_out_dir="$1"
             shift
             ;;
     esac

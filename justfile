@@ -604,10 +604,13 @@ install-antigravity-agents *plugins:
     flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
     ./scripts/install-antigravity.sh "{{agy_config}}" --agents-only ${flags[@]+"${flags[@]}"}
 
-# Install safety hooks + CLAUDE_* variable rewriter into Antigravity config dir (default: global ~/.gemini/config)
+# Install safety hooks + CLAUDE_* variable rewriter (target: AGY_CONFIG, default ~/.gemini/config); optional plugin names limit it
 [group: "antigravity"]
-install-antigravity-hooks target=agy_config:
-    ./scripts/install-antigravity.sh "{{target}}" --hooks-only
+install-antigravity-hooks *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/install-antigravity.sh "{{agy_config}}" --hooks-only ${flags[@]+"${flags[@]}"}
 
 # Register marketplace skills in-place via skills.json (zero copying, zero drift); optional plugin names limit it
 [group: "antigravity"]

@@ -40,7 +40,11 @@ while [ "$#" -gt 0 ]; do
             ;;
         -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            [ -z "$install_target" ] && install_target="$1"
+            if [ -n "$install_target" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
+            fi
+            install_target="$1"
             shift
             ;;
     esac
@@ -137,14 +141,39 @@ PY
     # Copy hook runner scripts and referenced script directories
     cp "$install_tmp/run-agy-hook.py" "$install_target/run-agy-hook.py"
     cp "$install_tmp/run-agy-hook.sh" "$install_target/run-agy-hook.sh"
-    cp "$install_tmp/hooks_manifest.json" "$install_target/hooks_manifest.json"
+    # A scoped install replaces only the selected plugins' manifest entries and
+    # keeps every other plugin's, so installing kubernetes-plugin after
+    # git-plugin leaves git-plugin's hooks active. An unscoped install exports
+    # every hook and replaces the manifest outright.
+    python3 - "$install_target/hooks_manifest.json" "$install_tmp/hooks_manifest.json" \
+        ${install_plugins[@]+"${install_plugins[@]}"} <<'PY'
+import json
+import sys
+from pathlib import Path
+
+target_path, src_path = Path(sys.argv[1]), Path(sys.argv[2])
+selected = set(sys.argv[3:])
+new = json.loads(src_path.read_text(encoding="utf-8"))
+if selected and target_path.is_file():
+    try:
+        old = json.loads(target_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        sys.exit(f"error: {target_path} is not valid JSON ({exc}); fix or move it, then re-run")
+    kept = [
+        h for h in old.get("hooks", [])
+        if isinstance(h, dict) and h.get("plugin") not in selected
+    ]
+    new["hooks"] = kept + new.get("hooks", [])
+target_path.write_text(json.dumps(new, indent=2) + "\n", encoding="utf-8")
+print(f"ACTIVE_HOOKS={len(new.get('hooks', []))}")
+PY
 
     if [ -d "$install_tmp/hook-scripts" ]; then
         mkdir -p "$install_target/hook-scripts"
         cp -R "$install_tmp/hook-scripts/." "$install_target/hook-scripts/"
     fi
 
-    installed_hooks_count="$(find "$install_target/hook-scripts" -name '*.sh' 2>/dev/null | wc -l | tr -d ' ')"
+    installed_hooks_count="$( { find "$install_target/hook-scripts" -name '*.sh' 2>/dev/null || true; } | wc -l | tr -d ' ')"
 fi
 
 receipt="$install_target/.claude-plugins-antigravity-receipt"

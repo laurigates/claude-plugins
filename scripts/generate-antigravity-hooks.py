@@ -470,7 +470,10 @@ if __name__ == "__main__":
             selected.add(sys.argv[idx + 1])
             idx += 2
         else:
-            idx += 1
+            # An ignored argument would silently widen the export to every
+            # plugin, so refuse it.
+            print(f"unexpected argument: {sys.argv[idx]}", file=sys.stderr)
+            sys.exit(2)
     sys.exit(
         main(
             Path(sys.argv[1]).resolve(),
