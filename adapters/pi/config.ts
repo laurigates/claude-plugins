@@ -69,6 +69,11 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+/** A `plugins` value both bindings accept: an array of non-empty strings. */
+export function isPluginNameArray(value: unknown): value is string[] {
+  return isStringArray(value) && value.every((item) => item.length > 0);
+}
+
 /**
  * Parse one config file's JSON text into a partial config, fail-safe per
  * field. `source` labels warnings so a consumer can tell which file (global
@@ -109,9 +114,18 @@ export function parseConfigText(
         else ignore(key, "an integer >= 1");
         break;
       case "pins":
-      case "plugins":
-        if (isStringArray(value)) partial[key] = value;
+        if (isStringArray(value)) partial.pins = value;
         else ignore(key, "an array of strings");
+        break;
+      case "plugins":
+        // All or nothing, as in the OpenCode binding: keeping the valid part
+        // of a list would scope to a selection nobody wrote, and keeping none
+        // of it reads the same as "every plugin", so say so.
+        if (isPluginNameArray(value)) partial.plugins = value;
+        else
+          warnings.push(
+            `${source}: "plugins" is not an array of non-empty strings — field ignored, indexing every plugin`,
+          );
         break;
       case "push":
       case "sessionNudges":

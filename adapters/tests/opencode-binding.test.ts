@@ -175,17 +175,16 @@ describe("options handling (resolveOptions)", () => {
     expect(warnings).toEqual([]);
   });
 
-  test("plugins: a non-array warns and indexes every plugin", () => {
-    const { config, warnings } = resolveOptions({ plugins: "git-plugin" });
-    expect(config.plugins).toEqual([]);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('"plugins"');
-  });
-
-  test("plugins: non-string entries are skipped with a warning, strings kept", () => {
-    const { config, warnings } = resolveOptions({ plugins: ["git-plugin", 3, ""] });
-    expect(config.plugins).toEqual(["git-plugin"]);
-    expect(warnings).toHaveLength(2);
+  // All or nothing, as in the pi parser: any bad element ignores the whole
+  // option with one warning that says every plugin is indexed.
+  test("plugins: a value that is not an array of non-empty names warns that every plugin is indexed", () => {
+    for (const bad of ["git-plugin", ["git-plugin", 3, ""], [""], [123], { name: "git-plugin" }]) {
+      const { config, warnings } = resolveOptions({ plugins: bad });
+      expect(config.plugins).toEqual([]);
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('"plugins"');
+      expect(warnings[0]).toContain("indexing every plugin");
+    }
   });
 
   test("unknown option keys warn and are ignored", () => {

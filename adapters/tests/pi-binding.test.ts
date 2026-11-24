@@ -176,13 +176,17 @@ describe("pi config", () => {
     expect(warnings).toEqual([]);
   });
 
-  test("parseConfigText ignores a plugins value that is not a string array", () => {
-    for (const bad of ["git-plugin", ["git-plugin", 3], { name: "git-plugin" }]) {
+  // All or nothing: a list with any bad element (incl. [""] or [123]) is
+  // ignored as a whole and the warning says every plugin is indexed, rather
+  // than silently becoming a narrower or an empty (= every plugin) selection.
+  test("parseConfigText ignores a plugins value that is not an array of non-empty strings", () => {
+    for (const bad of ["git-plugin", ["git-plugin", 3], { name: "git-plugin" }, [""], [123]]) {
       const { partial, warnings } = parseConfigText(JSON.stringify({ plugins: bad }), "s");
       expect(partial).toEqual({});
       expect(warnings).toHaveLength(1);
       // A known key with a bad value, not the unknown-key warning.
-      expect(warnings[0]).toContain('"plugins" is not an array of strings');
+      expect(warnings[0]).toContain('"plugins" is not an array of non-empty strings');
+      expect(warnings[0]).toContain("indexing every plugin");
     }
   });
 

@@ -4,8 +4,10 @@
 
 export { BM25_B, BM25_K1, Bm25Index, tokenize } from "./bm25.ts";
 export {
+  CACHE_FILE_VERSION,
   CACHE_SCHEMA_VERSION,
   cacheFilePath,
+  cacheMatches,
   defaultCacheDir,
   entryKey,
   loadCache,

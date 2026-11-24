@@ -160,7 +160,8 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   `just setup-pi <plugin>...` writes `plugins` into the global file
   (`PI_SKILL_DISCOVERY` overrides the path) and `just setup-pi` with no
   names removes it. A `plugins` name the marketplace lacks warns and is
-  ignored. A filtered index merges into the embedding cache instead of
+  ignored; a `plugins` value that is not an array of non-empty strings is
+  ignored whole, with a warning that every plugin is indexed (both bindings). A filtered index merges into the embedding cache instead of
   pruning it, so the other plugins' vectors survive for the next unfiltered
   session.
   Unknown pins warn and are skipped; malformed config files are ignored
@@ -208,7 +209,9 @@ config file; the tuple form carries the options):
   `nomic-embed-text`), `pins` (skill ids always injected first; unknown ids
   warn and skip), `plugins` (marketplace plugin names to index, e.g.
   `["git-plugin"]`; absent or empty indexes every plugin; a name the
-  marketplace lacks warns and is ignored; `just setup-opencode <plugin>...`
+  marketplace lacks warns and is ignored; a value with any element that is not
+  a non-empty string is ignored whole, with a warning that every plugin is
+  indexed, as in the pi binding; `just setup-opencode <plugin>...`
   writes it), `sessionNudges` (default `true`; `false` turns off
   session-plugin's spinup and end nudges). Invalid values warn and fall back
   to defaults.

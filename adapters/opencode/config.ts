@@ -98,16 +98,21 @@ export function resolveOptions(options?: Record<string, unknown>): {
     }
   }
 
+  // All or nothing, matching the pi binding: dropping bad elements could
+  // leave an empty list, which means every plugin and would silently widen a
+  // scoped config, so any bad element ignores the whole option, loudly.
   let plugins: string[] = [];
   if (raw.plugins !== undefined) {
-    if (Array.isArray(raw.plugins)) {
-      for (const name of raw.plugins) {
-        if (typeof name === "string" && name.length > 0) plugins.push(name);
-        else warnings.push(`plugin ${JSON.stringify(name)} is not a plugin name string; skipped`);
-      }
+    const value = raw.plugins;
+    if (
+      Array.isArray(value) &&
+      value.every((name) => typeof name === "string" && name.length > 0)
+    ) {
+      plugins = value as string[];
     } else {
-      warnings.push('option "plugins" must be an array of plugin names; indexing every plugin');
-      plugins = [];
+      warnings.push(
+        'option "plugins" is not an array of non-empty plugin names — ignored, indexing every plugin',
+      );
     }
   }
 
