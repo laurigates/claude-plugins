@@ -255,12 +255,13 @@ wait_for_ci() {
                  then (.state == "PENDING" or .state == "EXPECTED")
                  else (.status != "COMPLETED") end)] | length' <<<"$j") ||
       { result ERROR "read_failed: could not evaluate pending status checks"; return 1; }
+    # An allowlist: a completed run passes only on SUCCESS, NEUTRAL or SKIPPED, so
+    # a null conclusion or one GitHub adds later reads red instead of green (#3771).
     failed=$(jq -r '[.statusCheckRollup // [] | .[]
         | select(if .__typename == "StatusContext" or (has("state") and (has("status") | not))
                  then (.state == "FAILURE" or .state == "ERROR")
                  else (.status == "COMPLETED" and ((.conclusion // "") as $c
-                       | $c == "FAILURE" or $c == "CANCELLED" or $c == "TIMED_OUT"
-                         or $c == "ACTION_REQUIRED" or $c == "STARTUP_FAILURE" or $c == "STALE"))
+                       | ["SUCCESS", "NEUTRAL", "SKIPPED"] | index($c) | not))
                  end)
         | (.name // .context // "?")] | join(", ")' <<<"$j") ||
       { result ERROR "read_failed: could not evaluate failed status checks"; return 1; }
