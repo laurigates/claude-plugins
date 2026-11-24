@@ -43,9 +43,12 @@ if [ -z "$fixture" ] || [ ! -d "$fixture" ]; then echo "bad temp dir" >&2; exit 
 fixture="$(cd -P -- "$fixture" && pwd -P)" || { echo "cannot resolve" >&2; exit 1; }
 trap 'rm -rf "$fixture"' EXIT
 
-# file_mode <path>: octal permission bits, portable across BSD and GNU stat.
+# file_mode <path>: octal permission bits. Not `stat -f '%Lp' || stat -c '%a'`:
+# GNU `stat -f` is filesystem status, reads '%Lp' as a second file name, prints
+# the filesystem block to stdout and exits 1, so the captured value is that
+# block followed by the fallback's mode and every mode check fails on Linux CI.
 file_mode() {
-  stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1"
+  python3 -c 'import os, sys; print(oct(os.stat(sys.argv[1]).st_mode & 0o7777)[2:])' "$1"
 }
 
 echo "=== TEST A/B: pi skill-discovery.json ==="
