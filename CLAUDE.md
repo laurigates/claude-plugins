@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-11-08
+modified: 2026-11-24
 reviewed: 2026-04-21
 ---
 
@@ -29,54 +29,54 @@ Claude Code plugin collection providing skills and agents for development workfl
 
 | Rule | Purpose |
 |------|---------|
-| `.claude/rules/conventional-commits.md` | **Commit and PR title format standards** - drives release-please automation |
+| `.claude/rules/conventional-commits.md` | **Commit and PR title format** - drives release-please automation |
 | `.claude/rules/plugin-structure.md` | plugin.json schema and directory layout |
 | `.claude/rules/release-please.md` | Version management and changelog automation |
 | `.claude/rules/skill-development.md` | Skill creation patterns |
-| `.claude/rules/skill-consolidation.md` | Merging/deleting skills: verify the premise first, cross-plugin = name-reference (not shared REFERENCE.md), and the merge/delete checklist |
+| `.claude/rules/skill-consolidation.md` | Merging or deleting skills; cross-plugin dedupe is a name reference |
 | `.claude/rules/agentic-optimization.md` | CLI output optimization for AI |
 | `.claude/rules/skill-naming.md` | Skill namespace conventions |
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for skills |
-| `.claude/rules/auto-mode.md` | Auto mode availability, classifier rules, allow-rule fate, and authoring guidance |
-| `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
-| `.claude/rules/skill-portability.md` | Shipped skills, agents and hooks stay environment-neutral: no maintainer repos, hosts or checkout paths as instructions; values come from context. `scripts/check-skill-portability.sh` ratchets the hits down from a baseline |
-| `.claude/rules/skill-argument-handling.md` | 9-axis rubric for `args`/`argument-hint`/parsing-vs-intent fit; the haiku+opus cold-read **sweep** that finds mismatches and the model delta that calibrates it |
+| `.claude/rules/auto-mode.md` | Auto mode classifier, allow-rule fate, authoring guidance |
+| `.claude/rules/skill-quality.md` | Skill size limits, required sections, quality checklist |
+| `.claude/rules/skill-portability.md` | Shipped skills, agents and hooks stay environment-neutral |
+| `.claude/rules/skill-argument-handling.md` | `args`/`argument-hint` fit rubric and the cold-read sweep |
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
-| `.claude/rules/hook-block-vs-nudge.md` | **Block (exit 2) only for safety; nudge for style** — why a hard block on a tool-substitution dead-ends subagents lacking the tool, and the "what does it exempt?" litigation test |
-| `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
-| `.claude/rules/prompt-agent-hooks.md` | **When to use prompt/agent hooks** — decision tree, config schema, prompts guide |
+| `.claude/rules/hook-block-vs-nudge.md` | **Block (exit 2) only for safety; nudge for style** |
+| `.claude/rules/hooks-reference.md` | Hook event reference: events, schemas, timeouts |
+| `.claude/rules/prompt-agent-hooks.md` | When to use prompt/agent hooks, and their config |
 | `.claude/rules/agent-development.md` | Agent frontmatter, model, context isolation, memory |
 | `.claude/rules/agent-runtime.md` | Agent runtime: worktrees, background, workflows |
 | `.claude/rules/skill-fork-context.md` | When to set `context: fork` and `agent:` on skills |
-| `.claude/rules/workflow-vs-skill.md` | When a bundled workflow `.js` earns its agents — enumerable N, real barrier, script-decidable bound; the `workflows/` layout |
+| `.claude/rules/workflow-vs-skill.md` | When a bundled workflow `.js` earns its agents; the `workflows/` layout |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
-| `.claude/rules/skill-evaluation.md` | How we measure skill *effectiveness*: tiered cost, deterministic-vs-judge grading, cross-model delta signal |
-| `.claude/rules/context-engineering.md` | **Claude 5 context-engineering position** — rank cuts by always-loaded cost, scope new rules with `paths:`, split large skills across many files; demotes three `skill-quality.md` mandates |
-| `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
+| `.claude/rules/skill-evaluation.md` | Measuring skill effectiveness: tiered cost, grading, cross-model delta |
+| `.claude/rules/context-engineering.md` | Always-loaded budget, `paths:` scoping, splitting large skills |
+| `.claude/rules/sandbox-guidance.md` | Sandbox constraints and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
-| `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
-| `.claude/rules/pr-branch-sync.md` | **Before building further on a PR branch**, confirm it's live and in sync (remote sibling of coworker-detection) — the `/git:pr-sync-check` skill + `check-branch-sync-on-push.sh` hook + `git-drift-probe.sh` trio |
-| `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
-| `.claude/rules/github-actions-security.md` | **GitHub Actions secure-use baseline** — least-privilege `GITHUB_TOKEN`, script-injection env-var indirection, `pull_request_target` hazards, CODEOWNERS on workflows; the checklist every workflow-scaffolding skill follows |
-| `.claude/rules/workflow-model-effort.md` | **Workflow Claude model/effort standard** — every `.github/workflows` invocation pins `--model opus` (or `fable`/`sonnet` per workflow) + explicit `--effort` (a per-workflow cost/quality trade, not the subagent-contamination argument); enforced by `check-workflow-model.sh` |
-| `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
-| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); `--limit` and `head:` truncation traps |
-| `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
-| `.claude/rules/terminology.md` | House-specific terms (set the seam, define done, park, pick up where we left off) and the skill/rule that owns each; the general glossary is `docs/terminology.md` |
-| `.claude/rules/parallel-safe-queries.md` | Query commands that exit non-zero on empty results silently cancel sibling parallel tool calls — use the machine-readable variant (`--json`/`export` + `jq`) |
-| `.claude/rules/docs-currency.md` | Code and the docs describing it land in the **same commit** (stub → `blueprint:blueprint-docs-currency`) |
-| `.claude/rules/version-pinning.md` | Version pins in skill examples (`uses:`/`FROM`/`image:`/`rev:`) are a Renovate-managed surface — SHA+comment convention, the coverage guard, and what's illustrative vs. managed |
-| `.claude/rules/loop-integrity.md` | Long-running/self-continuing loops need an **independent** stop condition (a fresh verifier judges "done", not the worker) and a **compact state packet** each iteration (objective/ref/files/verifier-result/changed-since/exit-condition/ordering/next-target) — else they optimize for completion over correctness or automate context drift |
-| `.claude/rules/gitattributes.md` | `.gitattributes` conventions — `merge=union` only for one-line-per-entry append-only files, `linguist-generated` for build output (always safe), LF normalization; the `configure-gitattributes` skill + `resolve-additive-conflicts.py` pre-pass |
-| `.claude/rules/task-id-stability.md` | Taskwarrior numeric IDs renumber after every close — resolve the immutable UUID once and mutate by UUID, including *within* a single skill's own multi-step lifecycle, not just across bulk loops |
-| `.claude/rules/generated-fleet-drift.md` | Auditing a generated fleet — divergence is not automatically drift: it is bidirectional (never auto-apply template → instance), an identically-diverging cohort signals intent, and undeclared intent is unauditable |
-| `.claude/rules/plugin-usage-telemetry.md` | `~/.claude.json`'s `pluginUsage.usageCount` counts **hook fires**, so it ranks trigger cadence rather than plugin value — nothing in this repo reads it (incl. `health-check --scope=usage`, which mines transcripts); the delivery signal is the **lowercase-first** `attributionPlugin`/`attributionSkill`/`attributionAgent` |
-| `.claude/rules/drift-detection-triggering.md` | Drift that "needs a sweep" is usually a **triggering** gap, not a logic gap — mount the existing deterministic script on a trigger (event hook for local state, TTL-debounced poll for remote state) instead of rewriting it |
-| `.claude/rules/issue-grouping.md` | Related issues are grouped under an `epic` (sub-issues) or a milestone; new issues join an existing group; agents implement a group together. `scripts/check-issue-grouping.sh` lists ungrouped issues |
-| `.claude/rules/biome-markdown.md` | Keep biome's Markdown formatter/linter off (≥ 2.6 mangles frontmatter) |
-| `.claude/rules/offload-to-deterministic-substrate.md` | Plugin-authoring deltas of the global law: mechanical, repeatable, verifiable work goes in a script, hook, or structured-output contract the agent invokes — not prose it re-derives each run |
+| `.claude/rules/agent-coworker-detection.md` | Detect other agents in the same clone before destructive git ops |
+| `.claude/rules/pr-branch-sync.md` | **Before building further on a PR branch**, confirm it is live and in sync |
+| `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` |
+| `.claude/rules/github-actions-security.md` | GitHub Actions secure-use baseline for workflow-scaffolding skills |
+| `.claude/rules/workflow-model-effort.md` | Every `.github/workflows` Claude invocation pins model and effort |
+| `.claude/rules/bash-tool-replacements.md` | `cat`/`head`/`tail` → `Read` block; `grep`/`find`/`ls` nudges |
+| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names and truncation traps |
+| `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` script output |
+| `.claude/rules/terminology.md` | House-specific terms and their owners |
+| `.claude/rules/parallel-safe-queries.md` | Exit-0-on-empty query variants for parallel tool batches |
+| `.claude/rules/docs-currency.md` | Code and its docs land in the **same commit** |
+| `.claude/rules/version-pinning.md` | Version pins in skill examples are a Renovate-managed surface |
+| `.claude/rules/loop-integrity.md` | Loops need an **independent** stop condition and a state packet per iteration |
+| `.claude/rules/gitattributes.md` | `.gitattributes` conventions: `merge=union`, `linguist-generated`, LF |
+| `.claude/rules/task-id-stability.md` | Taskwarrior IDs renumber; resolve the UUID once and mutate by UUID |
+| `.claude/rules/generated-fleet-drift.md` | Auditing a generated fleet: divergence is not automatically drift |
+| `.claude/rules/plugin-usage-telemetry.md` | What `pluginUsage.usageCount` and the attribution fields measure |
+| `.claude/rules/drift-detection-triggering.md` | Mount the existing drift script on a trigger instead of rewriting it |
+| `.claude/rules/issue-grouping.md` | Related issues are grouped under an epic or milestone and implemented together |
+| `.claude/rules/biome-markdown.md` | Keep biome's Markdown formatter/linter off |
+| `.claude/rules/offload-to-deterministic-substrate.md` | Mechanical, repeatable work goes in a script, hook or output contract |
 
 **Rule clusters and the owner of each shared fact:** [`docs/rules-map.md`](docs/rules-map.md).
 
