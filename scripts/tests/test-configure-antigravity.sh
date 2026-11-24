@@ -15,6 +15,10 @@
 #      run exits non-zero (it may hold the user's own registrations)
 #   G. install-antigravity.sh leaves an unparseable hooks.json byte-identical,
 #      keeps the user's other hook keys, and rejects --agents-only --hooks-only
+#   H. --plugin limits configure to that plugin's skills dir; --remove --plugin
+#      removes only that one; an unknown plugin exits 2 and writes nothing
+#   I. install --plugin for a plugin with no agents succeeds and installs no
+#      hooks unless hooks-plugin is listed; --hooks-only without it exits 2
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -154,6 +158,39 @@ assert "installed hooks.json addresses the installed runner" \
 bash "$install" "$target_g" --agents-only --hooks-only >/dev/null 2>&1 && rc_x=0 || rc_x=$?
 assert "--agents-only --hooks-only together is rejected" \
   "$([ "$rc_x" -eq 2 ] && echo true || echo false)"
+
+echo "=== TEST H: --plugin filter ==="
+target_h="$fixture/target_h"
+bash "$configure" "$target_h" --plugin macos-plugin --plugin git-plugin >/dev/null
+assert "--plugin registers exactly the named plugins' skills dirs" \
+  "$(python3 - "$target_h/skills.json" "$repo_root" <<'PY'
+import json, sys
+paths = sorted(e["path"] for e in json.load(open(sys.argv[1]))["entries"])
+repo = sys.argv[2]
+want = sorted(f"{repo}/{p}/skills" for p in ("git-plugin", "macos-plugin"))
+print("true" if paths == want else "false")
+PY
+)"
+bash "$configure" "$target_h" --remove --plugin macos-plugin >/dev/null
+assert "--remove --plugin removes only that plugin's entry" \
+  "$(python3 -c 'import json,sys; p=[e["path"] for e in json.load(open(sys.argv[1]))["entries"]]; print("true" if p == [sys.argv[2] + "/git-plugin/skills"] else "false")' "$target_h/skills.json" "$repo_root")"
+target_h2="$fixture/target_h2"
+bash "$configure" "$target_h2" --plugin no-such-plugin >/dev/null 2>&1 && rc_h=0 || rc_h=$?
+assert "unknown --plugin exits 2" "$([ "$rc_h" -eq 2 ] && echo true || echo false)"
+assert "unknown --plugin writes no skills.json" "$([ ! -e "$target_h2/skills.json" ] && echo true || echo false)"
+
+echo "=== TEST I: install --plugin ==="
+target_i="$fixture/target_i"
+bash "$install" "$target_i" --plugin macos-plugin >/dev/null 2>&1 && rc_i=0 || rc_i=$?
+assert "install --plugin macos-plugin (no agents) exits 0" "$([ "$rc_i" -eq 0 ] && echo true || echo false)"
+assert "install --plugin without hooks-plugin installs no hooks.json" \
+  "$([ ! -e "$target_i/hooks.json" ] && echo true || echo false)"
+bash "$install" "$target_i" --plugin hooks-plugin --hooks-only >/dev/null
+assert "install --plugin hooks-plugin --hooks-only installs hooks.json" \
+  "$([ -f "$target_i/hooks.json" ] && echo true || echo false)"
+bash "$install" "$fixture/target_i2" --plugin macos-plugin --hooks-only >/dev/null 2>&1 && rc_i2=0 || rc_i2=$?
+assert "--hooks-only with a plugin list omitting hooks-plugin exits 2" \
+  "$([ "$rc_i2" -eq 2 ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

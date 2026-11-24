@@ -10,24 +10,40 @@
 # SKILLS ARE NOT INSTALLED VIA COPYING. They reach Antigravity CLI in place
 # via configure-antigravity.sh, which registers skills.json.
 #
-# Usage: ./scripts/install-antigravity.sh [target] [--agents-only] [--hooks-only]
+# Usage: ./scripts/install-antigravity.sh [target] [--agents-only] [--hooks-only] [--plugin NAME ...]
 #   target defaults to ~/.gemini/config (global)
+#   Each --plugin limits the install to that plugin's subagents. The safety
+#   hooks belong to hooks-plugin, so a --plugin list without it installs no hooks.
 set -euo pipefail
 
 install_script_dir="$(cd "$(dirname "$0")" && pwd)"
+install_repo_root="$(cd "$install_script_dir/.." && pwd)"
+# shellcheck source=/dev/null  # lib/antigravity-plugins.sh, linted on its own
+. "$install_script_dir/lib/antigravity-plugins.sh"
+
 install_target=""
 install_agents=1
 install_hooks=1
+install_plugin_args=()
+install_plugins=()
+install_has_hooks_plugin=0
 
-for arg in "$@"; do
-    case "$arg" in
-        --agents-only) install_hooks=0 ;;
-        --hooks-only)  install_agents=0 ;;
-        -*) echo "unknown argument: $arg" >&2; exit 2 ;;
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --agents-only) install_hooks=0; shift ;;
+        --hooks-only)  install_agents=0; shift ;;
+        --plugin)
+            [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
+            agy_require_plugin "$install_repo_root" "$2"
+            install_plugin_args+=(--plugin "$2")
+            install_plugins+=("$2")
+            [ "$2" = "hooks-plugin" ] && install_has_hooks_plugin=1
+            shift 2
+            ;;
+        -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            if [ -z "$install_target" ]; then
-                install_target="$arg"
-            fi
+            [ -z "$install_target" ] && install_target="$1"
+            shift
             ;;
     esac
 done
@@ -35,6 +51,14 @@ done
 if [ "$install_agents" -eq 0 ] && [ "$install_hooks" -eq 0 ]; then
     echo "--agents-only and --hooks-only are mutually exclusive" >&2
     exit 2
+fi
+
+if [ "${#install_plugin_args[@]}" -gt 0 ] && [ "$install_has_hooks_plugin" -eq 0 ]; then
+    if [ "$install_agents" -eq 0 ]; then
+        echo "--hooks-only with a --plugin list that omits hooks-plugin installs nothing" >&2
+        exit 2
+    fi
+    install_hooks=0
 fi
 
 install_target="${install_target:-$HOME/.gemini/config}"
@@ -48,13 +72,14 @@ echo "=== ANTIGRAVITY INSTALL ==="
 echo "TARGET=$install_target"
 echo "INSTALL_AGENTS=$install_agents"
 echo "INSTALL_HOOKS=$install_hooks"
+echo "PLUGINS=${install_plugins[*]:-all}"
 
 install_tmp="$(mktemp -d)"
 trap 'rm -rf "$install_tmp"' EXIT
 
 # export-antigravity.sh exits 0 on STATUS=WARN, so read its STATUS line: a
 # skipped agent or a failed hook generation must not install as success.
-install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" 2>&1)" || true
+install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" ${install_plugin_args[@]+"${install_plugin_args[@]}"} 2>&1)" || true
 if ! grep -qx 'STATUS=OK' <<<"$install_export_out"; then
     printf '%s\n' "$install_export_out" >&2
     echo "STATUS=ERROR"

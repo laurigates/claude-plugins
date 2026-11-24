@@ -596,39 +596,51 @@ export-antigravity out="dist/antigravity":
     case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
     ./scripts/export-antigravity.sh "$out"
 
-# Install exported subagents into Antigravity agents dir (default: global ~/.gemini/config)
+# Install exported subagents into Antigravity agents dir (target: AGY_CONFIG, default ~/.gemini/config); optional plugin names limit it
 [group: "antigravity"]
-install-antigravity-agents target=agy_config:
-    ./scripts/install-antigravity.sh "{{target}}" --agents-only
+install-antigravity-agents *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/install-antigravity.sh "{{agy_config}}" --agents-only ${flags[@]+"${flags[@]}"}
 
 # Install safety hooks + CLAUDE_* variable rewriter into Antigravity config dir (default: global ~/.gemini/config)
 [group: "antigravity"]
 install-antigravity-hooks target=agy_config:
     ./scripts/install-antigravity.sh "{{target}}" --hooks-only
 
-# Register marketplace skills in-place via skills.json (zero copying, zero drift)
+# Register marketplace skills in-place via skills.json (zero copying, zero drift); optional plugin names limit it
 [group: "antigravity"]
-configure-antigravity target=agy_config:
-    ./scripts/configure-antigravity.sh "{{target}}"
+configure-antigravity *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/configure-antigravity.sh "{{agy_config}}" ${flags[@]+"${flags[@]}"}
 
-# Unregister marketplace skills from skills.json
+# Unregister marketplace skills from skills.json; optional plugin names limit it
 [group: "antigravity"]
-unconfigure-antigravity target=agy_config:
-    ./scripts/configure-antigravity.sh "{{target}}" --remove
+unconfigure-antigravity *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/configure-antigravity.sh "{{agy_config}}" --remove ${flags[@]+"${flags[@]}"}
 
 # Verify Antigravity CLI prerequisites and configuration (deterministic, no model call, zero cost)
 [group: "antigravity"]
 agy-check target=agy_config:
     ./scripts/check-antigravity.sh "{{target}}"
 
-# End-to-end setup: register skills in-place, install subagents and safety hooks
+# End-to-end setup: register skills, install subagents + safety hooks; optional plugin names limit it (hooks only with hooks-plugin)
 [group: "antigravity"]
-setup-antigravity target=agy_config: (configure-antigravity target)
-    ./scripts/install-antigravity.sh "{{target}}"
-    @echo ""
-    @echo "Antigravity CLI setup complete!"
-    @echo "Next steps:"
-    @echo "  1. Verify setup:   just agy-check"
-    @echo "  2. Run the CLI:    agy"
-    @echo "  3. Undo setup:     just unconfigure-antigravity"
+setup-antigravity *plugins: (configure-antigravity plugins)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/install-antigravity.sh "{{agy_config}}" ${flags[@]+"${flags[@]}"}
+    echo ""
+    echo "Antigravity CLI setup complete!"
+    echo "Next steps:"
+    echo "  1. Verify setup:   just agy-check"
+    echo "  2. Run the CLI:    agy"
+    echo "  3. Undo setup:     just unconfigure-antigravity {{plugins}}"
 

@@ -18,6 +18,7 @@
 #   E. an agent with no description is SKIPPED and reported, never emitted bare
 #   F. an agent with malformed frontmatter is SKIPPED and reported
 #   G. full-corpus projection against this repo exports all agents cleanly with 0 skips
+#   H. plugin-name arguments limit the export to those plugins' agents
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -218,6 +219,19 @@ exported = int(lines.get("OUTPUT_AGENTS", -2))
 print("true" if src > 0 and src == exported else "false")
 PY
 )"
+
+echo "=== TEST H: plugin filter ==="
+filtered_out="$(mktemp -d)"
+if [ -z "$filtered_out" ] || [ ! -d "$filtered_out" ]; then echo "mktemp failed" >&2; exit 1; fi
+trap 'rm -rf "$fixture" "$repo_out" "$filtered_out"' EXIT
+python3 "$exporter" "$repo_root" "$filtered_out/a" agents-plugin >/dev/null
+expected_h="$(find "$repo_root/agents-plugin/agents" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
+got_h="$(find "$filtered_out/a/agents" -name agent.md | wc -l | tr -d ' ')"
+assert "agents-plugin filter exports exactly agents-plugin's $expected_h agents (got $got_h)" \
+  "$([ "$expected_h" -gt 0 ] && [ "$got_h" -eq "$expected_h" ] && echo true || echo false)"
+python3 "$exporter" "$repo_root" "$filtered_out/m" macos-plugin >/dev/null && rc_h=0 || rc_h=$?
+assert "a plugin with no agents exports none and exits 0" \
+  "$([ "$rc_h" -eq 0 ] && [ -z "$(ls -A "$filtered_out/m/agents")" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
