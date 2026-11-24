@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.58.5",
+      "version": "2.58.6",
       "author": {
         "name": "Lauri Gates"
       },
@@ -694,7 +694,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -738,7 +738,7 @@
       "name": "networking-plugin",
       "source": "./networking-plugin",
       "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
-      "version": "1.4.3",
+      "version": "1.4.4",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
