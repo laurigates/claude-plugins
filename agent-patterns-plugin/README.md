@@ -329,7 +329,7 @@ The following skills have been removed in favor of native agent teams:
 | `wip-todo` | Shared task list |
 | `orchestrator-enforcement` hook | Native delegate mode |
 
-See [ADR-0015](docs/adrs/0015-agent-teams-adoption.md) for the decision rationale.
+See [ADR-0015](../docs/adrs/0015-agent-teams-adoption.md) for the decision rationale.
 
 ## Installation
 
