@@ -345,7 +345,7 @@ fi
 # Check for piped execution from network (curl/wget piped to shell) — issue #3178.
 #
 # Pure regex/awk on purpose: this is a SAFETY block, so it must fire where
-# ast-grep is unavailable (.claude/rules/bash-tool-replacements.md). Three
+# ast-grep is unavailable (docs/rules/bash-tool-replacements.md). Three
 # narrowings over the original bare-substring match, none of which masks a
 # real execution (the third, #3186, follows the heredoc awk):
 #

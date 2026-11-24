@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-11-13
+modified: 2026-11-24
 reviewed: 2026-07-04
 ---
 
@@ -35,18 +35,8 @@ that shares the worker's context inherits the worker's motivation to be done.
 | What it reads | Its own reasoning trace | Acceptance criteria + the artefact only |
 | Bias | Toward declaring completion | Toward the criterion as written |
 
-> Measured 2026-09-04 (`claude-plugins`, seven issue→PR pipelines). Each
-> implementer ran an external model over its **own** diff before opening its PR,
-> with an adversarial brief and instructions to verify each finding. Across all
-> seven that pass accepted **zero** findings. A second pass by a fresh agent that
-> had not done the work — same model, different brief, and re-running the
-> implementer's own gates rather than reading its report — held four of the seven
-> PRs. It found six reproduced bypasses in a hook whose 45-assertion suite was
-> fully green, a PR whose every gate number predated a bot push to its branch,
-> and a guard that counted any `*.md` file as a template. The variable was not
-> the model or the prompt; it was whether the reviewer had a stake in the work
-> being done.
-
+The evidence that the reviewer's stake, not the model or prompt, decides
+what a review catches is in [`docs/rules/loop-integrity.md`](../../docs/rules/loop-integrity.md).
 
 Cheap mechanical exit conditions (a green test suite, a clean `tsc`, exit code
 0) are *already* independent — a failing test does not care how hard you worked.
@@ -105,17 +95,6 @@ judgment, and prompt cues moved when they stopped, not what they stopped on.
 | `project-plugin:project-continue` | Reads the state packet to re-enter; never assumes the prior session's reasoning |
 | `agent-patterns-plugin:execution-grounded-review` | The reusable independent verifier a behaviour-based stop condition delegates to — runs the suite first, grounds each criterion in execution evidence |
 | Any self-mutating "treadmill" plan | Write the packet before rewriting the goal toward the next phase |
-
-## Origin
-
-Distilled from the r/ClaudeCode "Goal and Loop — kinda the same?" discussion,
-where the load-bearing observations were that native `/goal` *"spawns a
-fresh/neutral agent that checks if the conditions are met"* (Pillar 1), that
-self-review is *"fundamentally flawed because the review is not independent —
-agents optimise for completion not correctness"* (Pillar 1), and that a loop
-which *"mutates its own goal file without leaving that packet behind"* is
-*"automating context drift"* (Pillar 2). The packet field list is that comment's
-verbatim shape.
 
 ## Related
 

@@ -11,8 +11,9 @@ Skills are deliberately NOT exported: OpenCode reads Claude Code `SKILL.md`
 natively, and the marketplace corpus reaches it through the adapter
 (`adapters/opencode/`, ADR-0022) rather than a flattened copy.
 
-Usage: export-opencode-agents.py <repo-root> <out-dir>
-Emits <out-dir>/agents/<name>.md and a KEY=VALUE report.
+Usage: export-opencode-agents.py <repo-root> <out-dir> [plugin ...]
+Emits <out-dir>/agents/<name>.md and a KEY=VALUE report. Plugin names
+(`git-plugin`) limit the export to those plugins' agents; none means all.
 """
 
 import sys
@@ -50,11 +51,13 @@ def render(front: dict, body: str, fallback_name: str) -> str:
     return f"---\n{header}---\n{body.lstrip(chr(10))}"
 
 
-def main(repo_root: Path, out_dir: Path) -> int:
+def main(repo_root: Path, out_dir: Path, plugins: list[str]) -> int:
     agents_out = out_dir / "agents"
     agents_out.mkdir(parents=True, exist_ok=True)
 
     sources = sorted(repo_root.glob("*-plugin/agents/*.md"))
+    if plugins:
+        sources = [s for s in sources if s.parent.parent.name in plugins]
     written, skipped = 0, []
     for src in sources:
         try:
@@ -81,7 +84,12 @@ def main(repo_root: Path, out_dir: Path) -> int:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("usage: export-opencode-agents.py <repo-root> <out-dir>", file=sys.stderr)
+    if len(sys.argv) < 3:
+        print(
+            "usage: export-opencode-agents.py <repo-root> <out-dir> [plugin ...]",
+            file=sys.stderr,
+        )
         sys.exit(2)
-    sys.exit(main(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()))
+    sys.exit(
+        main(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve(), sys.argv[3:])
+    )

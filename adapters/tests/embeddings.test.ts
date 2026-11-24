@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, readdirSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CACHE_FILE_VERSION, cacheFilePath, loadCache, saveCache } from "../core/cache.ts";
 import {
   EmbedUnavailableError,
   embedBatch,
@@ -37,6 +38,8 @@ function mockVector(input: string): number[] {
 interface MockState {
   receivedInputs: string[][];
   mode: "ok" | "http500" | "errorBody" | "stall";
+  /** Runs once when the next non-probe batch arrives (simulates a concurrent writer). */
+  onBatch?: (() => void) | undefined;
 }
 
 const state: MockState = { receivedInputs: [], mode: "ok" };
@@ -67,6 +70,11 @@ beforeAll(() => {
       }
       const body = (await req.json()) as { model: string; input: string[] };
       state.receivedInputs.push(body.input);
+      if (state.onBatch && !body.input.every((text) => text.endsWith("probe"))) {
+        const hook = state.onBatch;
+        state.onBatch = undefined;
+        hook();
+      }
       return Response.json({ model: body.model, embeddings: body.input.map(mockVector) });
     },
   });
@@ -253,5 +261,145 @@ describe("hybrid happy path", () => {
     state.receivedInputs = [];
     await index.search("commit staged changes", 3);
     expect(state.receivedInputs).toEqual([["commit staged changes"]]);
+  });
+});
+
+describe("plugin-filtered builds and the cache", () => {
+  const embed = () => ({ endpoint, model: "mock-embed", dimensions: DIMS });
+  const cachedKeys = (dir: string): string[] =>
+    Object.keys(loadCache(cacheFilePath(fixtureRoot, dir))?.entries ?? {}).sort();
+  /** Every document text sent for embedding since the last reset, probes excluded. */
+  const embeddedDocs = (): string[] =>
+    state.receivedInputs
+      .flat()
+      .filter((text) => !text.endsWith("probe"))
+      .sort();
+  const GAMMA_DOCS = [
+    "search_document: folded-description Render architecture diagrams from text sources. Use when documenting system topology.",
+    "search_document: quoted-description Debug HTTP APIs: trace requests, inspect headers. Use when a request fails: check status first.",
+  ];
+
+  test("a filtered build indexes and embeds only the named plugins", async () => {
+    state.mode = "ok";
+    state.receivedInputs = [];
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-filter-"));
+    const index = await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(index.mode).toBe("hybrid");
+    expect(index.entries.map((e) => e.plugin)).toEqual(["gamma-plugin", "gamma-plugin"]);
+    expect(embeddedDocs()).toEqual(GAMMA_DOCS);
+  });
+
+  test("a filtered build merges into the cache instead of evicting other plugins", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-merge-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    const fullKeys = cachedKeys(freshCache);
+    expect(fullKeys).toHaveLength(4);
+
+    // alpha-plugin has ONE skill, so a re-embed of it is a one-document batch.
+    state.receivedInputs = [];
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["alpha-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toEqual(fullKeys);
+    expect(embeddedDocs()).toEqual([]);
+
+    // The next unfiltered session re-embeds nothing at all.
+    state.receivedInputs = [];
+    const full = await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    expect(full.mode).toBe("hybrid");
+    expect(embeddedDocs()).toEqual([]);
+  });
+
+  test("a filtered build keeps stale entries; an unfiltered build prunes them", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-prune-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    const filePath = cacheFilePath(fixtureRoot, freshCache);
+    const cache = loadCache(filePath);
+    if (cache === null) throw new Error("cache not written");
+    const stale = "stale-entry-key";
+    saveCache(filePath, { ...cache, entries: { ...cache.entries, [stale]: mockVector("x") } });
+
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["alpha-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toContain(stale);
+
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    expect(cachedKeys(freshCache)).not.toContain(stale);
+    expect(cachedKeys(freshCache)).toHaveLength(4);
+  });
+
+  test("a filtered build over a cache for another model does not keep its entries", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-model-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: { ...embed(), model: "other-embed" },
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toHaveLength(2);
+    expect(loadCache(cacheFilePath(fixtureRoot, freshCache))?.model).toBe("other-embed");
+  });
+
+  test("a filtered build over a cache of another file version neither reuses nor keeps it", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-version-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    const filePath = cacheFilePath(fixtureRoot, freshCache);
+    const cache = loadCache(filePath);
+    if (cache === null) throw new Error("cache not written");
+    saveCache(filePath, { ...cache, version: CACHE_FILE_VERSION + 1 });
+
+    state.receivedInputs = [];
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(embeddedDocs()).toEqual(GAMMA_DOCS);
+    expect(cachedKeys(freshCache)).toHaveLength(2);
+    expect(loadCache(filePath)?.version).toBe(CACHE_FILE_VERSION);
+  });
+
+  // Session B saves the cache while session A (filtered) is embedding. A must
+  // merge B's entries rather than overwrite them with what it loaded earlier.
+  test("a filtered build merges entries another session saved while it was embedding", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-race-"));
+    const filePath = cacheFilePath(fixtureRoot, freshCache);
+    const concurrent = "written-by-another-session";
+    state.onBatch = () => {
+      saveCache(filePath, {
+        version: CACHE_FILE_VERSION,
+        model: "mock-embed",
+        dims: DIMS,
+        entries: { [concurrent]: mockVector("y") },
+      });
+    };
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    state.onBatch = undefined;
+    expect(cachedKeys(freshCache)).toContain(concurrent);
+    expect(cachedKeys(freshCache)).toHaveLength(3);
   });
 });

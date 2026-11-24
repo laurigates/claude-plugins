@@ -4,10 +4,17 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cacheFilePath, entryKey, loadCache, saveCache } from "../core/cache.ts";
+import {
+  CACHE_FILE_VERSION,
+  cacheFilePath,
+  cacheMatches,
+  entryKey,
+  loadCache,
+  saveCache,
+} from "../core/cache.ts";
 
 const BASE = {
   model: "nomic-embed-text",
@@ -90,5 +97,28 @@ describe("save/load", () => {
 
   test("missing cache file loads as empty", () => {
     expect(loadCache("/nonexistent/path/cache.json")).toBeNull();
+  });
+
+  // Two sessions saving at once must not share a temp path. A directory
+  // squatting on the old fixed `<file>.tmp` name stands in for the other
+  // writer: a fixed-name write fails on it, a per-writer name does not.
+  test("the temp file is unique per writer, not a fixed <file>.tmp", () => {
+    const dir = mkdtempSync(join(tmpdir(), "adapters-cache-"));
+    const file = join(dir, "cache.json");
+    mkdirSync(`${file}.tmp`);
+    saveCache(file, { version: 1, model: "m", dims: 2, entries: { a: [1, 2] } });
+    expect(loadCache(file)?.entries.a).toEqual([1, 2]);
+    expect(readdirSync(dir).sort()).toEqual(["cache.json", "cache.json.tmp"]);
+  });
+});
+
+describe("cacheMatches", () => {
+  const base = { version: CACHE_FILE_VERSION, model: "m", dims: 2, entries: {} };
+  test("matches only the same file version, model and width", () => {
+    expect(cacheMatches(base, "m", 2)).toBe(true);
+    expect(cacheMatches({ ...base, version: CACHE_FILE_VERSION + 1 }, "m", 2)).toBe(false);
+    expect(cacheMatches({ ...base, model: "other" }, "m", 2)).toBe(false);
+    expect(cacheMatches({ ...base, dims: 4 }, "m", 2)).toBe(false);
+    expect(cacheMatches(null, "m", 2)).toBe(false);
   });
 });

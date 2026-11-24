@@ -516,7 +516,9 @@ jobs:
         with:
           name: claude-execution-sweep-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ steps.redact.outputs.path }}
-          retention-days: 14
+          # 45, not 14: a monthly follow-up reads the denied calls from this
+          # transcript after the next run, so it must outlive the cadence (#3661).
+          retention-days: 45
           if-no-files-found: warn
 
       # The issue is this job's only output, and the SDK exits 0 when a tool
