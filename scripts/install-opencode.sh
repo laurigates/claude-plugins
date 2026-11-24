@@ -35,7 +35,11 @@ while [ "$#" -gt 0 ]; do
             ;;
         -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            [ -z "$install_target" ] && install_target="$1"
+            if [ -n "$install_target" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
+            fi
+            install_target="$1"
             shift
             ;;
     esac
@@ -65,13 +69,15 @@ fi
 # (OPENCODE_CONFIG=.opencode just setup-opencode) it names the project scope,
 # not the global one; fall back to the global default then.
 case "$install_global_dir" in
-    *.opencode|*.opencode/) install_global_dir="$HOME/.config/opencode" ;;
+    # A directory literally named .opencode, not any name ending in it
+    # (~/configs/work.opencode is a global config dir).
+    .opencode|.opencode/|*/.opencode|*/.opencode/) install_global_dir="$HOME/.config/opencode" ;;
 esac
 install_project_dir="$PWD/.opencode"
 
 case "$install_target" in
     "$install_global_dir"|"$install_global_dir"/) install_other="$install_project_dir" ;;
-    *.opencode|*.opencode/) install_other="$install_global_dir" ;;
+    .opencode|.opencode/|*/.opencode|*/.opencode/) install_other="$install_global_dir" ;;
     *) install_other="" ;;
 esac
 

@@ -422,8 +422,11 @@ With plugin names, all three surfaces are limited to those plugins:
 
 `configure-opencode` never overwrites an existing `opencode.json`, so
 `setup-opencode` then runs `scripts/set-adapter-plugins.sh`, which edits only
-the adapter entry's `plugins` key in the live file. Run with no names, it
-removes that key, so an unscoped re-run indexes every plugin again. The install
+the adapter entry's `plugins` key in the live file (through a symlink, keeping
+the file's mode). A bare-string adapter entry becomes a `[path, {plugins}]`
+tuple. With names and no adapter entry it fails with `STATUS=ERROR` and names
+`just oc-adapter-register`, rather than leaving setup unscoped. Run with no
+names, it removes that key, so an unscoped re-run indexes every plugin again. The install
 is additive: agents and hook plugins from an earlier, wider install stay in
 place until you remove them. A name that is not a plugin directory exits 2
 before anything is written; a selected plugin with no agents or hooks is not an

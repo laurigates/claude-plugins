@@ -9,10 +9,16 @@
 #      unscoped), and an absent file stays absent
 #   C. opencode: names set options.plugins on the adapter's own tuple only;
 #      other plugin entries and keys survive; no names delete it
-#   D. opencode: an absent file or an unregistered adapter is left untouched
+#   D. opencode: names with no adapter entry, or no file, are STATUS=ERROR
+#      exit 1 and leave the file as it was; without names they are a no-op
 #   E. an unknown plugin name exits 2 and writes nothing; a non-object config
 #      is refused with STATUS=ERROR and left as it was
 #   F. the setup-pi recipe calls it with PI_SKILL_DISCOVERY and its names
+#   G. opencode: a bare-string adapter entry is recognised; names upgrade it
+#      in place to [path, {plugins}], no names leave it a bare string
+#   H. writes keep the file's mode (a new pi file is 600), go through a
+#      symlink to its target (the link stays a link), and a malformed adapter
+#      entry is STATUS=ERROR with a readable reason and no temp file left
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,8 +37,10 @@ assert() {
   fi
 }
 
-fixture="$(mktemp -d)"
-[ -n "$fixture" ] || { echo "mktemp failed" >&2; exit 1; }
+fixture="$(mktemp -d)" || { echo "mktemp failed" >&2; exit 1; }
+if [ -z "$fixture" ] || [ ! -d "$fixture" ]; then echo "bad temp dir" >&2; exit 1; fi
+# Canonical root: the script resolves symlinked config paths (TEST H).
+fixture="$(cd -P -- "$fixture" && pwd -P)" || { echo "cannot resolve" >&2; exit 1; }
 trap 'rm -rf "$fixture"' EXIT
 
 # file_mode <path>: octal permission bits, portable across BSD and GNU stat.
@@ -75,14 +83,20 @@ bash "$sap" opencode "$oc_cfg" >/dev/null 2>&1
 assert "opencode: no names delete options.plugins" \
   "$([ "$(jq -c --arg ext "$adapter_entry" '.plugin[] | select(type == "array" and .[0] == $ext) | .[1]' "$oc_cfg")" = '{"k":5,"pins":[]}' ] && echo true || echo false)"
 out="$(bash "$sap" opencode "$fixture/oc-absent/opencode.json" git-plugin 2>&1)"; rc=$?
-assert "opencode: an absent file is left absent" \
+assert "opencode: names with no config file are STATUS=ERROR exit 1, file left absent" \
+  "$([ "$rc" -eq 1 ] && [ ! -e "$fixture/oc-absent" ] && grep -qx 'STATUS=ERROR' <<<"$out" && grep -q '^REASON=no_config' <<<"$out" && echo true || echo false)"
+out="$(bash "$sap" opencode "$fixture/oc-absent/opencode.json" 2>&1)"; rc=$?
+assert "opencode: no names and no config file are a no-op" \
   "$([ "$rc" -eq 0 ] && [ ! -e "$fixture/oc-absent" ] && grep -q '^ACTION=none' <<<"$out" && echo true || echo false)"
 unreg="$fixture/oc-unreg/opencode.json"
 mkdir -p "$fixture/oc-unreg"
 echo '{"plugin": ["opencode-pty"]}' > "$unreg"
 before="$(cksum < "$unreg")"
 out="$(bash "$sap" opencode "$unreg" git-plugin 2>&1)"; rc=$?
-assert "opencode: a config without the adapter entry is left untouched" \
+assert "opencode: names with no adapter entry are STATUS=ERROR exit 1 naming the fix, file untouched" \
+  "$([ "$rc" -eq 1 ] && [ "$before" = "$(cksum < "$unreg")" ] && grep -q '^REASON=adapter_not_registered: .*oc-adapter-register' <<<"$out" && echo true || echo false)"
+out="$(bash "$sap" opencode "$unreg" 2>&1)"; rc=$?
+assert "opencode: no names and no adapter entry are a no-op" \
   "$([ "$rc" -eq 0 ] && [ "$before" = "$(cksum < "$unreg")" ] && grep -q '^ACTION=none' <<<"$out" && echo true || echo false)"
 
 echo "=== TEST E: invalid input ==="
@@ -104,6 +118,58 @@ justfile="$repo_root/justfile"
 assert "setup-pi calls set-adapter-plugins.sh pi with pi_skill_discovery and its names" \
   "$(grep -A 3 '^setup-pi \*plugins:' "$justfile" | grep -q 'set-adapter-plugins.sh pi "{{pi_skill_discovery}}" {{plugins}}' \
      && grep -q '^pi_skill_discovery := env_var_or_default("PI_SKILL_DISCOVERY"' "$justfile" && echo true || echo false)"
+
+echo "=== TEST G: bare-string adapter entry ==="
+bare="$fixture/oc-bare/opencode.json"
+mkdir -p "$fixture/oc-bare"
+jq -n --arg ext "$adapter_entry" '{plugin: ["opencode-pty", $ext]}' > "$bare"
+bash "$sap" opencode "$bare" >/dev/null 2>&1; rc=$?
+assert "opencode: no names leave a bare-string entry as it is" \
+  "$([ "$rc" -eq 0 ] && [ "$(jq -c '.plugin[1] | type' "$bare")" = '"string"' ] && echo true || echo false)"
+out="$(bash "$sap" opencode "$bare" git-plugin 2>&1)"; rc=$?
+assert "opencode: names upgrade a bare-string entry to [path, {plugins}] in place" \
+  "$([ "$rc" -eq 0 ] && grep -qx 'ACTION=set' <<<"$out" \
+     && [ "$(jq -c --arg ext "$adapter_entry" '[.plugin[0], (.plugin[1] | .[0] == $ext), .plugin[1][1], (.plugin | length)]' "$bare")" = '["opencode-pty",true,{"plugins":["git-plugin"]},2]' ] && echo true || echo false)"
+bash "$sap" opencode "$bare" >/dev/null 2>&1
+assert "opencode: no names then remove plugins from the upgraded tuple" \
+  "$([ "$(jq -c '.plugin[1][1]' "$bare")" = '{}' ] && echo true || echo false)"
+
+echo "=== TEST H: file mode, symlinks, malformed entry ==="
+modecfg="$fixture/oc-mode/opencode.json"
+mkdir -p "$fixture/oc-mode"
+jq -n --arg ext "$adapter_entry" '{plugin: [[$ext, {k: 5}]]}' > "$modecfg"
+chmod 644 "$modecfg"
+bash "$sap" opencode "$modecfg" git-plugin >/dev/null 2>&1
+assert "opencode: a set keeps the file's mode (644 stays 644)" \
+  "$([ "$(file_mode "$modecfg")" = "644" ] && [ "$(jq -c '.plugin[0][1].plugins' "$modecfg")" = '["git-plugin"]' ] && echo true || echo false)"
+pimode="$fixture/pi-mode/skill-discovery.json"
+mkdir -p "$fixture/pi-mode"
+echo '{"k": 3}' > "$pimode"
+chmod 640 "$pimode"
+bash "$sap" pi "$pimode" git-plugin >/dev/null 2>&1
+assert "pi: a set keeps an existing file's mode (640 stays 640)" \
+  "$([ "$(file_mode "$pimode")" = "640" ] && echo true || echo false)"
+
+mkdir -p "$fixture/oc-link/real" "$fixture/oc-link/conf"
+jq -n --arg ext "$adapter_entry" '{plugin: [[$ext, {k: 5}]]}' > "$fixture/oc-link/real/opencode.json"
+ln -s "$fixture/oc-link/real/opencode.json" "$fixture/oc-link/conf/opencode.json"
+bash "$sap" opencode "$fixture/oc-link/conf/opencode.json" git-plugin >/dev/null 2>&1; rc=$?
+assert "opencode: a symlinked config stays a symlink" \
+  "$([ "$rc" -eq 0 ] && [ -L "$fixture/oc-link/conf/opencode.json" ] && echo true || echo false)"
+assert "opencode: the symlink's target file is the one updated" \
+  "$([ "$(jq -c '.plugin[0][1].plugins' "$fixture/oc-link/real/opencode.json")" = '["git-plugin"]' ] && echo true || echo false)"
+assert "opencode: no temp file is left beside the link or the target" \
+  "$([ -z "$(find "$fixture/oc-link" -name '.adapter-plugins.*')" ] && echo true || echo false)"
+
+bad="$fixture/oc-badentry/opencode.json"
+mkdir -p "$fixture/oc-badentry"
+jq -n --arg ext "$adapter_entry" '{plugin: [[$ext, "bad"]]}' > "$bad"
+before="$(cksum < "$bad")"
+out="$(bash "$sap" opencode "$bad" git-plugin 2>&1)"; rc=$?
+assert "opencode: a malformed adapter entry is STATUS=ERROR exit 1 with a readable reason" \
+  "$([ "$rc" -eq 1 ] && grep -qx 'STATUS=ERROR' <<<"$out" && grep -q '^REASON=jq_failed: .*not a JSON object' <<<"$out" && echo true || echo false)"
+assert "opencode: a malformed adapter entry leaves the file as it was and no temp file" \
+  "$([ "$before" = "$(cksum < "$bad")" ] && [ -z "$(find "$fixture/oc-badentry" -name '.adapter-plugins.*')" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

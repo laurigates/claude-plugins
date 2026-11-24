@@ -31,7 +31,8 @@
 #   M. --plugin NAME (repeatable) exports only those plugins' agents; a plugin
 #      with no agents exports zero with STATUS=OK; an unknown or malformed name
 #      exits 2 before anything is written; the justfile threads the names
-#      through export-, install- and setup-pi
+#      through export-, install- and setup-pi; install-pi-agents rejects an
+#      unknown name even when it would self-skip for a missing pi-subagents
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -474,6 +475,15 @@ assert "a path-shaped plugin name exits 2 as invalid" \
 assert "export-pi-agents and install-pi-agents take *plugins and pass --plugin" \
   "$(grep -qE '^export-pi-agents .*\*plugins:' "$justfile" && grep -qE '^install-pi-agents .*\*plugins:' "$justfile" \
      && grep -A 30 '^install-pi-agents' "$justfile" | grep -q -- '--plugin' && echo true || echo false)"
+if command -v just >/dev/null 2>&1; then
+  # PI_CODING_AGENT_DIR points at an empty dir, so pi-subagents is "absent"
+  # and the recipe would self-skip; the name check must come first.
+  pf_err="$(PI_CODING_AGENT_DIR="$fixture/no-pi" just -f "$justfile" install-pi-agents "$fixture/pi-agents-bad" preserve "" nope-plugin 2>&1)"; pf_rc=$?
+  assert "install-pi-agents rejects an unknown plugin before its pi-subagents skip" \
+    "$([ "$pf_rc" -eq 2 ] && grep -q "'nope-plugin' is not a plugin" <<<"$pf_err" && ! grep -q '^SKIP' <<<"$pf_err" && echo true || echo false)"
+else
+  echo "SKIP: just not available — install-pi-agents name-check case not run"
+fi
 assert "setup-pi passes its plugin names to install-pi-agents" \
   "$(grep -qE '^setup-pi \*plugins:.*\(install-pi-agents [^)]*plugins\)' "$justfile" && echo true || echo false)"
 

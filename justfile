@@ -521,10 +521,11 @@ export-pi-agents out="dist/pi" model="preserve" model_map="" *plugins:
 # absent, because pi ignores .pi/agents/ entirely without it: installing anyway
 # would look like it worked and change nothing.
 # `model` and `model_map` are the same switches as export-pi-agents; trailing
-# plugin names limit the install to those plugins' agents (zero is fine).
+# plugin names limit the install to those plugins' agents (zero is fine). Names
+# are validated first, so a typo exits 2 even when the install would self-skip.
 # Install exported subagents into a pi agents dir (default: global)
 [group: "pi"]
-install-pi-agents target=pi_agents_dir model="preserve" model_map="" *plugins:
+install-pi-agents target=pi_agents_dir model="preserve" model_map="" *plugins: (_require-plugins plugins)
     #!/usr/bin/env bash
     set -euo pipefail
     target="{{target}}"

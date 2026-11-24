@@ -26,6 +26,9 @@
 #      --plugin, select only those plugins' agents and hook plugins; a plugin with
 #      no agents or hooks is STATUS=OK (not a warning, not an abort); an unknown
 #      name exits 2 before anything is written
+#   I. a second positional argument (a plugin name without --plugin) exits 2
+#      instead of being ignored; the project scope is a directory literally
+#      named .opencode, so a global dir named work.opencode stays global
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -211,6 +214,22 @@ assert "install-opencode.sh: OPENCODE_CONFIG=<project>/.opencode still detects a
 (cd "$fixture" && bash "$install_sh" "$fixture/inst-bad" --plugin nope-plugin >/dev/null 2>&1); pf_rc=$?
 assert "install-opencode.sh: an unknown plugin exits 2 and writes nothing" \
   "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/inst-bad" ] && echo true || echo false)"
+
+echo "=== TEST I: argument and scope strictness ==="
+pf_err="$(bash "$export_sh" "$fixture/pos-export" git-plugin 2>&1)"; pf_rc=$?
+assert "export-opencode.sh: a second positional exits 2 naming --plugin, writes nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/pos-export" ] && grep -q 'unexpected argument: git-plugin (plugin names need --plugin)' <<<"$pf_err" && echo true || echo false)"
+pf_err="$(cd "$fixture" && bash "$install_sh" "$fixture/pos-install" git-plugin 2>&1)"; pf_rc=$?
+assert "install-opencode.sh: a second positional exits 2 naming --plugin, installs nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/pos-install" ] && grep -q 'unexpected argument: git-plugin (plugin names need --plugin)' <<<"$pf_err" && echo true || echo false)"
+# work.opencode is a GLOBAL config dir (OPENCODE_CONFIG), so the complementary
+# scope is the project's .opencode, whose receipt must be reported.
+mkdir -p "$fixture/home2" "$fixture/proj2/.opencode" "$fixture/configs"
+touch "$fixture/proj2/.opencode/.claude-plugins-opencode-receipt"
+pf_inst="$(cd "$fixture/proj2" && HOME="$fixture/home2" OPENCODE_CONFIG="$fixture/configs/work.opencode" \
+  bash "$install_sh" "$fixture/configs/work.opencode" --plugin macos-plugin 2>&1)"
+assert "install-opencode.sh: a global dir named work.opencode is not mistaken for a project scope" \
+  "$(grep -qx "DUPLICATE_SCOPE_DETECTED=$fixture/proj2/.opencode" <<<"$pf_inst" && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
