@@ -6,24 +6,38 @@
 # and this marketplace's plugin skill directories are merged. With --remove, this
 # marketplace's entries are cleanly removed.
 #
-# Usage: ./scripts/configure-antigravity.sh [target] [--remove]
+# Usage: ./scripts/configure-antigravity.sh [target] [--remove] [--plugin NAME ...]
 #   target defaults to ~/.gemini/config (global)
+#   Each --plugin limits the add (or --remove) to that plugin's skills dir;
+#   none means every plugin.
 set -euo pipefail
 
 config_script_dir="$(cd "$(dirname "$0")" && pwd)"
 config_repo_root="$(cd "$config_script_dir/.." && pwd)"
+# shellcheck source=/dev/null  # lib/antigravity-plugins.sh, linted on its own
+. "$config_script_dir/lib/antigravity-plugins.sh"
 
 config_target=""
 config_action="add"
+config_plugins=()
 
-for arg in "$@"; do
-    case "$arg" in
-        --remove) config_action="remove" ;;
-        -*) echo "unknown argument: $arg" >&2; exit 2 ;;
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --remove) config_action="remove"; shift ;;
+        --plugin)
+            [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
+            agy_require_plugin "$config_repo_root" "$2"
+            config_plugins+=("$2")
+            shift 2
+            ;;
+        -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            if [ -z "$config_target" ]; then
-                config_target="$arg"
+            if [ -n "$config_target" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
             fi
+            config_target="$1"
+            shift
             ;;
     esac
 done
@@ -42,9 +56,10 @@ echo "=== ANTIGRAVITY CONFIGURE ==="
 echo "TARGET=$config_target"
 echo "ACTION=$config_action"
 echo "REPO_ROOT=$config_repo_root"
+echo "PLUGINS=${config_plugins[*]:-all}"
 
 # Run Python helper to cleanly inspect, merge, or remove JSON entries
-python3 - "$config_repo_root" "$skills_json" "$config_action" <<'PY'
+python3 - "$config_repo_root" "$skills_json" "$config_action" ${config_plugins[@]+"${config_plugins[@]}"} <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -52,10 +67,14 @@ from pathlib import Path
 repo_root = Path(sys.argv[1]).resolve()
 skills_json_path = Path(sys.argv[2]).resolve()
 action = sys.argv[3]
+selected = set(sys.argv[4:])
 
-# Collect all plugin skill directories in this repo
+# Collect the plugin skill directories in this repo (only the selected
+# plugins' when --plugin was given)
 marketplace_paths = []
 for p in sorted(repo_root.glob("*-plugin")):
+    if selected and p.name not in selected:
+        continue
     skills_dir = p / "skills"
     if skills_dir.is_dir():
         marketplace_paths.append(str(skills_dir.resolve()))

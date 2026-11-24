@@ -10,24 +10,42 @@
 # SKILLS ARE NOT INSTALLED VIA COPYING. They reach Antigravity CLI in place
 # via configure-antigravity.sh, which registers skills.json.
 #
-# Usage: ./scripts/install-antigravity.sh [target] [--agents-only] [--hooks-only]
+# Usage: ./scripts/install-antigravity.sh [target] [--agents-only] [--hooks-only] [--plugin NAME ...]
 #   target defaults to ~/.gemini/config (global)
+#   Each --plugin limits the install to that plugin's subagents and safety
+#   hooks; when the selected plugins ship no safety hooks, none are installed.
 set -euo pipefail
 
 install_script_dir="$(cd "$(dirname "$0")" && pwd)"
+install_repo_root="$(cd "$install_script_dir/.." && pwd)"
+# shellcheck source=/dev/null  # lib/antigravity-plugins.sh, linted on its own
+. "$install_script_dir/lib/antigravity-plugins.sh"
+
 install_target=""
 install_agents=1
 install_hooks=1
+install_plugin_args=()
+install_plugins=()
 
-for arg in "$@"; do
-    case "$arg" in
-        --agents-only) install_hooks=0 ;;
-        --hooks-only)  install_agents=0 ;;
-        -*) echo "unknown argument: $arg" >&2; exit 2 ;;
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --agents-only) install_hooks=0; shift ;;
+        --hooks-only)  install_agents=0; shift ;;
+        --plugin)
+            [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
+            agy_require_plugin "$install_repo_root" "$2"
+            install_plugin_args+=(--plugin "$2")
+            install_plugins+=("$2")
+            shift 2
+            ;;
+        -*) echo "unknown argument: $1" >&2; exit 2 ;;
         *)
-            if [ -z "$install_target" ]; then
-                install_target="$arg"
+            if [ -n "$install_target" ]; then
+                echo "unexpected argument: $1 (plugin names need --plugin)" >&2
+                exit 2
             fi
+            install_target="$1"
+            shift
             ;;
     esac
 done
@@ -36,6 +54,7 @@ if [ "$install_agents" -eq 0 ] && [ "$install_hooks" -eq 0 ]; then
     echo "--agents-only and --hooks-only are mutually exclusive" >&2
     exit 2
 fi
+
 
 install_target="${install_target:-$HOME/.gemini/config}"
 
@@ -48,13 +67,14 @@ echo "=== ANTIGRAVITY INSTALL ==="
 echo "TARGET=$install_target"
 echo "INSTALL_AGENTS=$install_agents"
 echo "INSTALL_HOOKS=$install_hooks"
+echo "PLUGINS=${install_plugins[*]:-all}"
 
 install_tmp="$(mktemp -d)"
 trap 'rm -rf "$install_tmp"' EXIT
 
 # export-antigravity.sh exits 0 on STATUS=WARN, so read its STATUS line: a
 # skipped agent or a failed hook generation must not install as success.
-install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" 2>&1)" || true
+install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" ${install_plugin_args[@]+"${install_plugin_args[@]}"} 2>&1)" || true
 if ! grep -qx 'STATUS=OK' <<<"$install_export_out"; then
     printf '%s\n' "$install_export_out" >&2
     echo "STATUS=ERROR"
@@ -121,14 +141,39 @@ PY
     # Copy hook runner scripts and referenced script directories
     cp "$install_tmp/run-agy-hook.py" "$install_target/run-agy-hook.py"
     cp "$install_tmp/run-agy-hook.sh" "$install_target/run-agy-hook.sh"
-    cp "$install_tmp/hooks_manifest.json" "$install_target/hooks_manifest.json"
+    # A scoped install replaces only the selected plugins' manifest entries and
+    # keeps every other plugin's, so installing kubernetes-plugin after
+    # git-plugin leaves git-plugin's hooks active. An unscoped install exports
+    # every hook and replaces the manifest outright.
+    python3 - "$install_target/hooks_manifest.json" "$install_tmp/hooks_manifest.json" \
+        ${install_plugins[@]+"${install_plugins[@]}"} <<'PY'
+import json
+import sys
+from pathlib import Path
+
+target_path, src_path = Path(sys.argv[1]), Path(sys.argv[2])
+selected = set(sys.argv[3:])
+new = json.loads(src_path.read_text(encoding="utf-8"))
+if selected and target_path.is_file():
+    try:
+        old = json.loads(target_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        sys.exit(f"error: {target_path} is not valid JSON ({exc}); fix or move it, then re-run")
+    kept = [
+        h for h in old.get("hooks", [])
+        if isinstance(h, dict) and h.get("plugin") not in selected
+    ]
+    new["hooks"] = kept + new.get("hooks", [])
+target_path.write_text(json.dumps(new, indent=2) + "\n", encoding="utf-8")
+print(f"ACTIVE_HOOKS={len(new.get('hooks', []))}")
+PY
 
     if [ -d "$install_tmp/hook-scripts" ]; then
         mkdir -p "$install_target/hook-scripts"
         cp -R "$install_tmp/hook-scripts/." "$install_target/hook-scripts/"
     fi
 
-    installed_hooks_count="$(find "$install_target/hook-scripts" -name '*.sh' 2>/dev/null | wc -l | tr -d ' ')"
+    installed_hooks_count="$( { find "$install_target/hook-scripts" -name '*.sh' 2>/dev/null || true; } | wc -l | tr -d ' ')"
 fi
 
 receipt="$install_target/.claude-plugins-antigravity-receipt"
