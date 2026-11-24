@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.325",
-  "lastCheckedDate": "2026-11-16",
+  "lastCheckedVersion": "2.1.330",
+  "lastCheckedDate": "2026-11-23",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,32 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.330",
+      "date": "2026-11-23",
+      "windowed": false,
+      "relevantChanges": [
+        "HIGH: hooks - a hook's \"decision\": \"block\" holds in more cases, so always-printing hooks may start blocking (2.1.326); managed PostToolUse no longer fires for calls refused before running, PostToolBatch gets most (2.1.327); onFailure: \"block\" extended to mcp_tool hooks (2.1.327); Code Mode PreToolUse hook errors no longer refuse script tool calls without onFailure: block (2.1.329); Stop/SubagentStop background_tasks list Monitor scripts as monitor (2.1.329); prompt hooks accept model aliases (2.1.330)",
+        "HIGH: hook-rewritten approved commands stay sandboxed unless the approver adds dangerouslyDisableSandbox: true (2.1.326); PermissionRequest rewrite to a sandbox-excluded command runs outside the sandbox (2.1.328); Code Mode no longer runs UserPromptSubmit hooks on script output, use PostToolUse updatedToolOutput (2.1.327); CLAUDE_CODE_DISABLE_DEFERRED_TOOL_RESUME (2.1.327)",
+        "HIGH: recurring scheduled tasks and /loop now run up to 30 days instead of 7 while the session runs; pre-2.1.330 tasks keep 7 (2.1.330)",
+        "HIGH: ExitWorktree asks before removing a worktree with possible unsaved work, refused unattended without allow rule/auto/bypass (2.1.327), refuses while a background subagent/shell may run unless discard_changes (2.1.326), and no longer deletes another live session's worktree (2.1.330); worktree subagents refuse branch-rewriting git commands (2.1.326)",
+        "HIGH: skills with a model setting (non-fork) leave subagents, forks, compaction and /recap on the session model (2.1.330); subagent model fallback carries over to agents/forks it starts (2.1.330); subagents without a model stay on their start model on resume (2.1.327); Agent effort parameter honoured for named teammates (2.1.329); same-name agent file choice made deterministic (2.1.330)",
+        "HIGH: permissions - more rm against root/home/top-level/working folder asks or is refused (2.1.330); deniedMcpServers name entries hide only the named connector, deny the URL to block all (2.1.330); blockReadsOutsideWorkingDirectories asks/denies/refuses more Bash commands and the working-directory boundary changed (2.1.327); auto mode ignores more run-any-package and $HOME/no-program wildcard allow rules (2.1.326/2.1.327); file tools refuse sign-in files (2.1.326); --add-dir untrusted folders prompt for trust (2.1.326)",
+        "HIGH: plugins with a malformed plugin.json display field (author, homepage) now load with hooks and MCP servers instead of being refused (2.1.326); claude plugin install --json gains commandPrinted/commandFailed (2.1.330); plugin eval keeps its deny rules over a plugin permission hook (2.1.327); plugin uninstall deletes extracted .mcpb/.dxt files (2.1.326)",
+        "Sandbox: no writes to some sensitive home folders by default, allowWrite to re-open (2.1.326); unexpected .git entries set aside after commands, state kept until /sandbox or /cd, claude mcp serve ignores excludedCommands (2.1.326); unstartable sandbox refuses next sandboxed command (2.1.328); allowUnixSockets not honoured on Linux (2.1.329)",
+        "Auto mode: on for Opus/Sonnet 4.6 on Bedrock/Agent Platform/Foundry/apps gateway (2.1.328); default when org policy hasn't loaded and for HIPAA orgs (2.1.326); fewer git status checks, discard-changes git may wait (2.1.329); billed-classifier fallback to be removed in an upcoming release (2.1.327)",
+        "MCP: claude mcp add-json <name> - reads stdin (2.1.327); project-scope add/remove preserve other .mcp.json keys and refuse top-level server lists (2.1.327); managed-mcp.json added mid-session needs restart (2.1.326); /mcp groups plugin servers under Plugin MCPs (2.1.330); built-in easel chart server (2.1.330)",
+        "Removals/reversals: IDE-connection tools openFile/saveDocument/getOpenEditors removed (2.1.327, unreferenced); 2.1.329 removal of the max_tokens auto-retry reverted in 2.1.330 - document neither. Self-hosted runner Bash diffs now need bashEditDiffEnabled (2.1.330), which reinforces the caveat at blueprint-plugin/README.md:665. Bulk of the window is VS Code, Code Mode, self-hosted runner, Remote Control, auth and TUI fixes"
+      ],
+      "actionsRequired": [
+        "See issue #3781 for the rule update plan",
+        "No rule files were edited by this triage run; the tracking issue groups the bullets by file",
+        "Files needing follow-up edits: hooks-reference.md, prompt-agent-hooks.md, skill-development.md, agent-development.md, agent-runtime.md, agentic-permissions.md (+ auto-mode.md), plugin-structure.md, sandbox-guidance.md, plus the MCP-facing skills (mcp-management, configure-mcp) and agent-coworker-detection.md for the ExitWorktree changes",
+        "Top follow-ups: document the widened decision: block semantics (2.1.326) and audit our hooks for unconditional block output; the 30-day /loop and scheduled-task lifetime (2.1.330); the ExitWorktree ask/refuse changes (2.1.326/2.1.327/2.1.330); the managed PostToolUse no-fire-on-refused change (2.1.327); malformed plugin.json display fields now loading (2.1.326)",
+        "Deprecated-identifier list was empty this run; the window's removals (IDE openFile/saveDocument/getOpenEditors) and the reverted max_tokens retry removal were checked by hand and are not referenced in any skill, hook or agent",
+        "Tracking issue #3781, as read back by the workflow: labels present: changelog-review, maintenance; assignee laurigates present"
+      ]
+    },
     {
       "version": "2.1.325",
       "date": "2026-11-16",

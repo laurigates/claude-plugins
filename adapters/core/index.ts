@@ -4,8 +4,10 @@
 
 export { BM25_B, BM25_K1, Bm25Index, tokenize } from "./bm25.ts";
 export {
+  CACHE_FILE_VERSION,
   CACHE_SCHEMA_VERSION,
   cacheFilePath,
+  cacheMatches,
   defaultCacheDir,
   entryKey,
   loadCache,
@@ -28,7 +30,12 @@ export {
 } from "./embeddings.ts";
 export { extractFrontmatterBlock, parseFrontmatter } from "./frontmatter.ts";
 export { FUSE_DEPTH, RRF_K, rrfFuse } from "./fusion.ts";
-export { documentText, scanSkills } from "./indexer.ts";
+export {
+  documentText,
+  isUnknownPluginWarning,
+  scanSkills,
+  UNKNOWN_PLUGIN_WARNING_SUFFIX,
+} from "./indexer.ts";
 export {
   AVAILABLE_SKILLS_CLOSE,
   AVAILABLE_SKILLS_OPEN,

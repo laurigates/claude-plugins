@@ -9,7 +9,14 @@
  */
 
 import { Bm25Index } from "./bm25.ts";
-import { cacheFilePath, entryKey, loadCache, saveCache } from "./cache.ts";
+import {
+  CACHE_FILE_VERSION,
+  cacheFilePath,
+  cacheMatches,
+  entryKey,
+  loadCache,
+  saveCache,
+} from "./cache.ts";
 import {
   BATCH_TIMEOUT_MS,
   DEFAULT_DIMENSIONS,
@@ -221,7 +228,8 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
   let warnings: string[] = [];
 
   try {
-    const scanned = scanSkills(opts.repoRoot, target);
+    const filtered = (opts.plugins?.length ?? 0) > 0;
+    const scanned = scanSkills(opts.repoRoot, target, opts.plugins);
     entries = scanned.entries;
     warnings = scanned.warnings;
 
@@ -235,7 +243,7 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
 
     const filePath = cacheFilePath(opts.repoRoot, opts.cacheDir);
     const cached = loadCache(filePath);
-    const cacheValid = cached !== null && cached.model === embedOpts.model && cached.dims === dims;
+    const cacheValid = cacheMatches(cached, embedOpts.model, dims);
     const keys = entries.map((entry) =>
       entryKey({
         model: embedOpts.model,
@@ -269,12 +277,29 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
       return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
     }
 
-    // Rewrite with only-current entries (self-pruning).
-    const nextEntries: Record<string, number[]> = {};
+    // Unfiltered: rewrite with only-current entries (self-pruning). Filtered:
+    // the current entries are a subset of the marketplace, so pruning would
+    // evict every other plugin's vectors and the next unfiltered session
+    // would re-embed them all; merge into a valid cache instead. The cache is
+    // re-read here, after embedding, so entries another session saved in the
+    // meantime are merged rather than overwritten (a narrow read-merge-write,
+    // not a lock).
+    let nextEntries: Record<string, number[]> = {};
+    if (filtered) {
+      const latest = loadCache(filePath);
+      if (latest !== null && cacheMatches(latest, embedOpts.model, dims)) {
+        nextEntries = { ...latest.entries };
+      }
+    }
     keys.forEach((key, i) => {
       nextEntries[key] = rows[i] as number[];
     });
-    saveCache(filePath, { version: 1, model: embedOpts.model, dims, entries: nextEntries });
+    saveCache(filePath, {
+      version: CACHE_FILE_VERSION,
+      model: embedOpts.model,
+      dims,
+      entries: nextEntries,
+    });
 
     const matrix = toNormalizedMatrix(rows as number[][], dims);
     return new SkillIndex(entries, warnings, "hybrid", embedOpts, matrix, dims);

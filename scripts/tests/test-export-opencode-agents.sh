@@ -22,6 +22,13 @@
 #   E. the export emits agents/ and hooks, and NO skills/ tree
 #   F. no rulesync / bunx / npx step survives anywhere in the export pipeline
 #   G. install-opencode.sh still carries the cross-scope duplicate guard
+#   H. plugin filter: the exporter's trailing names, and export-/install-opencode.sh
+#      --plugin, select only those plugins' agents and hook plugins; a plugin with
+#      no agents or hooks is STATUS=OK (not a warning, not an abort); an unknown
+#      name exits 2 before anything is written
+#   I. a second positional argument (a plugin name without --plugin) exits 2
+#      instead of being ignored; the project scope is a directory literally
+#      named .opencode, so a global dir named work.opencode stays global
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -46,8 +53,10 @@ if ! python3 -c 'import yaml' 2>/dev/null; then
   exit 0
 fi
 
-fixture="$(mktemp -d)"
-[ -n "$fixture" ] || { echo "mktemp failed" >&2; exit 1; }
+fixture="$(mktemp -d)" || { echo "mktemp failed" >&2; exit 1; }
+if [ -z "$fixture" ] || [ ! -d "$fixture" ]; then echo "bad temp dir" >&2; exit 1; fi
+# Canonical root: TEST H compares an install path printed by the script.
+fixture="$(cd -P -- "$fixture" && pwd -P)" || { echo "cannot resolve" >&2; exit 1; }
 trap 'rm -rf "$fixture"' EXIT
 
 # --- fixture marketplace -----------------------------------------------------
@@ -156,6 +165,71 @@ assert "install-opencode.sh still writes and checks the scope receipt" \
 # shellcheck disable=SC2016  # the $install_tmp is a literal to match in the file, not an expansion
 assert "install-opencode.sh no longer copies a skills tree" \
   "$(grep -qE '\$install_tmp/skills' "$install_sh" && echo false || echo true)"
+
+echo "=== TEST H: plugin filter ==="
+mkdir -p "$fixture/src/other-plugin/agents"
+printf -- '---\nname: helper\ndescription: Helps.\n---\n\n# Helper\n' > "$fixture/src/other-plugin/agents/helper.md"
+pf_out="$(python3 "$exporter" "$fixture/src" "$fixture/out-pf" other-plugin 2>&1)"; pf_rc=$?
+assert "exporter: a trailing plugin name exports only that plugin's agents" \
+  "$([ "$pf_rc" -eq 0 ] && [ -f "$fixture/out-pf/agents/helper.md" ] && [ ! -e "$fixture/out-pf/agents/reviewer.md" ] \
+     && grep -qx 'OUTPUT_AGENTS=1' <<<"$pf_out" && echo true || echo false)"
+pf_out="$(python3 "$exporter" "$fixture/src" "$fixture/out-pf-none" absent-plugin 2>&1)"; pf_rc=$?
+assert "exporter: a selection with no agents exports zero and exits 0" \
+  "$([ "$pf_rc" -eq 0 ] && grep -qx 'OUTPUT_AGENTS=0' <<<"$pf_out" && echo true || echo false)"
+
+pf_git="$(bash "$export_sh" "$fixture/pf-git" --plugin git-plugin 2>&1)"; pf_rc=$?
+pf_git_agents="$(find "$fixture/pf-git/agents" -name '*.md' | wc -l | tr -d ' ')"
+pf_src_agents="$(find "$repo_root/git-plugin/agents" -name '*.md' | wc -l | tr -d ' ')"
+assert "export-opencode.sh --plugin git-plugin exports exactly git-plugin's agents" \
+  "$([ "$pf_rc" -eq 0 ] && [ "$pf_git_agents" -gt 0 ] && [ "$pf_git_agents" = "$pf_src_agents" ] && echo true || echo false)"
+assert "export-opencode.sh --plugin git-plugin emits only git-plugin's hook plugin" \
+  "$([ "$(ls "$fixture/pf-git/plugins")" = "git-plugin-hooks.js" ] && echo true || echo false)"
+assert "export-opencode.sh reports PLUGINS=git-plugin" \
+  "$(grep -qx 'PLUGINS=git-plugin' <<<"$pf_git" && echo true || echo false)"
+pf_none="$(bash "$export_sh" "$fixture/pf-none" --plugin macos-plugin 2>&1)"; pf_rc=$?
+assert "export-opencode.sh: a plugin with no agents or hooks exits 0 with STATUS=OK" \
+  "$([ "$pf_rc" -eq 0 ] && grep -qx 'STATUS=OK' <<<"$pf_none" && grep -qx 'OUTPUT_AGENTS=0' <<<"$pf_none" \
+     && grep -qx 'OUTPUT_HOOK_PLUGINS=0' <<<"$pf_none" && echo true || echo false)"
+bash "$export_sh" "$fixture/pf-bad" --plugin nope-plugin >/dev/null 2>&1; pf_rc=$?
+assert "export-opencode.sh: an unknown plugin exits 2 and writes nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/pf-bad" ] && echo true || echo false)"
+
+pf_inst="$(cd "$fixture" && bash "$install_sh" "$fixture/inst-none" --plugin macos-plugin 2>&1)"; pf_rc=$?
+assert "install-opencode.sh: a plugin with no agents or hooks installs nothing, STATUS=OK" \
+  "$([ "$pf_rc" -eq 0 ] && grep -qx 'STATUS=OK' <<<"$pf_inst" && grep -qx 'INSTALLED_AGENTS=0' <<<"$pf_inst" \
+     && grep -qx 'INSTALLED_HOOK_PLUGINS=0' <<<"$pf_inst" && echo true || echo false)"
+pf_inst="$(cd "$fixture" && bash "$install_sh" "$fixture/inst-git" --plugin git-plugin 2>&1)"; pf_rc=$?
+assert "install-opencode.sh --plugin git-plugin installs git-plugin's agents and hook plugin only" \
+  "$([ "$pf_rc" -eq 0 ] && grep -qx "INSTALLED_AGENTS=$pf_src_agents" <<<"$pf_inst" \
+     && grep -qx 'INSTALLED_HOOK_PLUGINS=1' <<<"$pf_inst" && echo true || echo false)"
+# Project scope selected through OPENCODE_CONFIG (the recipes' target since
+# they took plugin names instead of a positional target): the complementary
+# scope is still the global ~/.config/opencode, not the project dir itself.
+mkdir -p "$fixture/home/.config/opencode" "$fixture/proj"
+touch "$fixture/home/.config/opencode/.claude-plugins-opencode-receipt"
+pf_inst="$(cd "$fixture/proj" && HOME="$fixture/home" OPENCODE_CONFIG="$fixture/proj/.opencode" \
+  bash "$install_sh" "$fixture/proj/.opencode" --plugin macos-plugin 2>&1)"
+assert "install-opencode.sh: OPENCODE_CONFIG=<project>/.opencode still detects a global install" \
+  "$(grep -qx "DUPLICATE_SCOPE_DETECTED=$fixture/home/.config/opencode" <<<"$pf_inst" && echo true || echo false)"
+(cd "$fixture" && bash "$install_sh" "$fixture/inst-bad" --plugin nope-plugin >/dev/null 2>&1); pf_rc=$?
+assert "install-opencode.sh: an unknown plugin exits 2 and writes nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/inst-bad" ] && echo true || echo false)"
+
+echo "=== TEST I: argument and scope strictness ==="
+pf_err="$(bash "$export_sh" "$fixture/pos-export" git-plugin 2>&1)"; pf_rc=$?
+assert "export-opencode.sh: a second positional exits 2 naming --plugin, writes nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/pos-export" ] && grep -q 'unexpected argument: git-plugin (plugin names need --plugin)' <<<"$pf_err" && echo true || echo false)"
+pf_err="$(cd "$fixture" && bash "$install_sh" "$fixture/pos-install" git-plugin 2>&1)"; pf_rc=$?
+assert "install-opencode.sh: a second positional exits 2 naming --plugin, installs nothing" \
+  "$([ "$pf_rc" -eq 2 ] && [ ! -e "$fixture/pos-install" ] && grep -q 'unexpected argument: git-plugin (plugin names need --plugin)' <<<"$pf_err" && echo true || echo false)"
+# work.opencode is a GLOBAL config dir (OPENCODE_CONFIG), so the complementary
+# scope is the project's .opencode, whose receipt must be reported.
+mkdir -p "$fixture/home2" "$fixture/proj2/.opencode" "$fixture/configs"
+touch "$fixture/proj2/.opencode/.claude-plugins-opencode-receipt"
+pf_inst="$(cd "$fixture/proj2" && HOME="$fixture/home2" OPENCODE_CONFIG="$fixture/configs/work.opencode" \
+  bash "$install_sh" "$fixture/configs/work.opencode" --plugin macos-plugin 2>&1)"
+assert "install-opencode.sh: a global dir named work.opencode is not mistaken for a project scope" \
+  "$(grep -qx "DUPLICATE_SCOPE_DETECTED=$fixture/proj2/.opencode" <<<"$pf_inst" && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

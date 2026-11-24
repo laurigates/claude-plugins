@@ -1,6 +1,6 @@
 ---
 created: 2026-06-29
-modified: 2026-11-06
+modified: 2026-11-24
 reviewed: 2026-07-04
 paths:
   - "**/hooks/**"
@@ -66,7 +66,7 @@ one-to-one `Read` substitution; a pipeline or here-doc read still passes, so it
 cannot dead-end a subagent that lacks `Read`; and at that scope its
 same-session repeat-block rate held at 6.3–20.0% over six readings, against
 46.3% while #2114 had widened it. `.claude/rules/bash-tool-replacements.md`
-owns its scope and evidence.
+owns its scope; the evidence is in `docs/rules/bash-tool-replacements.md`.
 
 ## Quick test before adding (or keeping) a hard block
 
