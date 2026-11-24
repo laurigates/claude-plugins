@@ -203,6 +203,7 @@ const findingsSchema = (numbers) => ({
 })
 
 // `could-not-verify` is deliberately absent: refute-by-default is the point.
+// <fv-shared:verdict-schema:begin> — keep byte-identical with find-verify.workflow.js (git-pr-sweep test-pr-sweep-workflows.sh)
 const VERDICT_SCHEMA = {
   type: 'object',
   required: ['verdict', 'evidence', 'corrected_claim', 'fix_recommendation', 'severity', 'distinct_also'],
@@ -221,6 +222,7 @@ const VERDICT_SCHEMA = {
     },
   },
 }
+// <fv-shared:verdict-schema:end>
 
 // ---------------------------------------------------------------------------
 // Prompts — ADAPT the wording, keep the clauses.
@@ -405,11 +407,13 @@ const verdicts = await parallel(
 
 const rows = new Map(PRS.map((p) => [p.number, { open: [], refuted: [], unverified: [], verifierFailed: [] }]))
 rest.forEach((f) => rows.get(f.pr).unverified.push(f))
+// <fv-shared:distinct-also:begin> — keep byte-identical with find-verify.workflow.js (git-pr-sweep test-pr-sweep-workflows.sh)
 const distinctOf = (f, v) => {
   if (!f.also.length) return []
   if (!Array.isArray(v.distinct_also)) return null
   return [...new Set(v.distinct_also)].filter((j) => Number.isInteger(j) && j >= 0 && j < f.also.length)
 }
+// <fv-shared:distinct-also:end>
 toVerify.forEach((f, i) => {
   const v = verdicts[i]
   const row = rows.get(f.pr)

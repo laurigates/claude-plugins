@@ -7,7 +7,10 @@
 #     fair share across PRs; dead finders and verifiers come back as coverage
 #     gaps (partial / unreviewed / unverified), never as clean or refuted; the
 #     open[] rows carry exactly pr-fix's findings keys; the claims re-run skips
-#     Find; no prompt asks for a GitHub mutation.
+#     Find; no prompt asks for a GitHub mutation; its verdict schema and
+#     distinct_also handling are byte-identical with adversarial-review's
+#     find-verify (fv-shared markers) and both carry the refute-by-default
+#     clauses (#3750).
 #   pr-fix — repair-round's guards plus a "pr-<n>" unit id; PASS / REPAIRED_PASS
 #     / BLOCKED / UNVERIFIED / FIX_NEEDED rows; only the finalise agent pushes
 #     and it never merges or opens a PR; its shared region is byte-identical
@@ -128,6 +131,40 @@ if ! grep -qF 'head_sha: <headRefOid from gh pr view' <<<"$m8" \
    && grep -qF 'do not repair, report the PR for Lauri as' <<<"$m8"; then
   pass "merge-procedure M8 starts the repair from the expected head and refuses a moved one"
 else bad "merge-procedure M8 must set head_sha to the expected head (fix push, else review) and refuse to repair when the live head differs"; fi
+
+# #3750: pr-review copies find-verify's refute-by-default verifier. The verdict
+# schema and distinct_also handling sit between `fv-shared:` markers in both and
+# must stay byte-identical; the prompts differ on purpose (untrusted PRs, worktree
+# paths), so their refute-by-default clauses and the code that enforces them are
+# pinned as text in both.
+fv="$repo_root/agent-patterns-plugin/skills/adversarial-review/workflows/find-verify.workflow.js"
+fv_region() { # fv_region <file> <name>: lines strictly between the named markers
+  awk -v b="// <fv-shared:$2:begin>" -v e="// <fv-shared:$2:end>" \
+    'index($0, e) == 1 {on=0} on {print} index($0, b) == 1 {on=1}' "$1"
+}
+if [[ ! -f "$fv" ]]; then bad "find-verify template missing: $fv"
+else
+  for name in verdict-schema distinct-also; do
+    a=$(fv_region "$fv" "$name"); b=$(fv_region "$wf/pr-review.workflow.js" "$name")
+    if [[ -z "$a" ]]; then bad "find-verify has no fv-shared:$name region"
+    elif [[ -z "$b" ]]; then bad "pr-review has no fv-shared:$name region"
+    elif [[ "$a" == "$b" ]]; then pass "pr-review fv-shared:$name is byte-identical with find-verify"
+    else bad "pr-review fv-shared:$name differs from find-verify"; diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") || true; fi
+  done
+  # Prompt clauses, whitespace-normalised because each template wraps its lines differently.
+  norm() { tr -s ' \n\t' '   ' < "$1"; }
+  fv_txt=$(norm "$fv"); pr_txt=$(norm "$wf/pr-review.workflow.js")
+  for clause in \
+    'You did not find this defect and have no stake in it being real.' \
+    'Try to REFUTE it. Default to "refuted" unless you can construct a concrete reproduction: an input or state, and the wrong outcome it produces.' \
+    'a verdict without one counts as a failed verifier' \
+    "const onEnum = v && ['confirmed', 'partially', 'refuted'].includes(v.verdict)" \
+    "const reproduced = onEnum && (v.verdict === 'refuted' || String(v.reproduction ?? '').trim() !== '')" \
+    'if (!onEnum || !reproduced || distinct === null) {'; do
+    if [[ "$fv_txt" == *"$clause"* && "$pr_txt" == *"$clause"* ]]; then pass "refute-by-default clause in both: ${clause:0:60}"
+    else bad "refute-by-default clause missing from find-verify or pr-review: $clause"; fi
+  done
+fi
 
 node "$here/run-workflows.mjs" "$wf" "$rr" || fail=1
 exit "$fail"
