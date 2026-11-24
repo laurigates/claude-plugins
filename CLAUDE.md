@@ -25,6 +25,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 └── agents/              # Agent definitions (optional)
 ```
 
+**Hooks live in many plugins, not only `hooks-plugin`.** List the plugins that declare them with `jq -r 'select(.hooks) | input_filename' */.claude-plugin/plugin.json`. A root-level `hooks.json` loads only when `plugin.json` points at it (`"hooks": "./hooks.json"`). Code that collects, filters or exports hooks scans every plugin. The safety subset exported to pi, OpenCode and Antigravity is `PI_SAFETY_ALLOWLIST` in `scripts/generate-pi-hook-extension.py`, keyed `<plugin>/<script>`.
+
 ## Rules
 
 | Rule | Purpose |
