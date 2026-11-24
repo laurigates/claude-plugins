@@ -13,6 +13,10 @@
 #   - a missing script fails OPEN at run time,
 #   - nudge-class hooks are skipped by name (the safety allowlist),
 #   - SessionStart consumers (drift-aggregator) run after the probes they read.
+#   - --plugin NAME limits the export to the hooks that plugin owns; a selection
+#     owning none writes nothing (EXTENSION=none, a stale generated extension is
+#     removed) and exits 0; an unknown name exits 2; install-pi-hooks installs
+#     nothing for such a selection and leaves an existing install alone.
 #
 # The generated index.ts is plain JavaScript by design, so it is EXECUTED here
 # under node with a stub `pi` object — the assertions are on what the handlers
@@ -494,6 +498,54 @@ jq_is "repo: real secret-protection blocks pi's read of .env" "$r" \
 r="$(drive "$rext" tool_call "{\"cwd\":\"$repo_work\",\"toolName\":\"read\",\"input\":{\"path\":\"notes.md\"}}")"
 jq_is "repo: real hooks allow a plain read" "$r" '.result == null'
 
+# --- --plugin filter (real repo) ---------------------------------------------------
+pf_out="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-git" --plugin git-plugin 2>&1)"
+check "plugin filter: git-plugin exports only git-plugin's hooks" \
+    bash -c "grep -qx 'HOOK_PLUGINS_SCANNED=1' <<<\"\$1\" && grep -q '^PLUGIN=git-plugin ' <<<\"\$1\" && ! grep -q '^PLUGIN=hooks-plugin' <<<\"\$1\"" _ "$pf_out"
+check "plugin filter: git-plugin's extension is written" \
+    test -f "$test_tmp/pf-git/extensions/plugin-hooks/index.ts"
+check "plugin filter: hooks-plugin scripts are not exported for git-plugin" \
+    bash -c "test -f \"\$1\" && ! grep -q '\"plugin\": \"hooks-plugin\"' \"\$1\"" _ "$test_tmp/pf-git/extensions/plugin-hooks/index.ts"
+pf_all="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-all" 2>&1)"
+pf_git_n="$(grep -m1 '^EXPORTED_HOOKS=' <<<"$pf_out" | cut -d= -f2)"
+pf_all_n="$(grep -m1 '^EXPORTED_HOOKS=' <<<"$pf_all" | cut -d= -f2)"
+check "plugin filter: git-plugin exports fewer hooks than the unfiltered run" \
+    test "${pf_git_n:-0}" -gt 0 -a "${pf_git_n:-0}" -lt "${pf_all_n:-0}"
+# A selection that owns no hook: a stale extension from an earlier run in the
+# same out dir is removed, nothing is written, and the run is OK.
+cp -R "$test_tmp/pf-git" "$test_tmp/pf-none"
+check "plugin filter: precondition — a stale extension sits in the out dir" \
+    test -f "$test_tmp/pf-none/extensions/plugin-hooks/index.ts"
+pf_none="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-none" --plugin macos-plugin 2>&1)"; pf_rc=$?
+check "plugin filter: a plugin with no hooks exits 0" test "$pf_rc" -eq 0
+check "plugin filter: a plugin with no hooks reports EXTENSION=none and STATUS=OK" \
+    bash -c "grep -qx 'EXTENSION=none' <<<\"\$1\" && grep -qx 'STATUS=OK' <<<\"\$1\" && grep -qx 'EXPORTED_HOOKS=0' <<<\"\$1\"" _ "$pf_none"
+check_not "plugin filter: a plugin with no hooks leaves no extension behind" \
+    test -e "$test_tmp/pf-none/extensions/plugin-hooks"
+pf_err="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-bad" --plugin nope-plugin 2>&1)"; pf_rc=$?
+check "plugin filter: an unknown plugin name exits 2 naming it" \
+    bash -c "[ $pf_rc -eq 2 ] && grep -q \"'nope-plugin' is not a plugin\" <<<\"\$1\"" _ "$pf_err"
+check_not "plugin filter: an unknown plugin name writes nothing" test -e "$test_tmp/pf-bad"
+
+# install-pi-hooks with a no-hook selection: nothing installed, an existing
+# install untouched. Runs the real recipe, so it needs `just`.
+if command -v just >/dev/null 2>&1; then
+    pf_ext="$test_tmp/pf-ext"
+    mkdir -p "$pf_ext"
+    pf_inst="$(just -f "$test_repo_root/justfile" install-pi-hooks "$pf_ext" macos-plugin 2>&1)"; pf_rc=$?
+    check "install-pi-hooks: a no-hook selection exits 0" test "$pf_rc" -eq 0
+    check_not "install-pi-hooks: a no-hook selection installs nothing" test -e "$pf_ext/plugin-hooks"
+    check "install-pi-hooks: a no-hook selection says so" grep -q 'nothing installed' <<<"$pf_inst"
+    just -f "$test_repo_root/justfile" install-pi-hooks "$pf_ext" git-plugin >/dev/null 2>&1
+    check "install-pi-hooks: git-plugin installs its extension" test -f "$pf_ext/plugin-hooks/index.ts"
+    pf_before="$(cksum < "$pf_ext/plugin-hooks/index.ts" 2>/dev/null)"
+    just -f "$test_repo_root/justfile" install-pi-hooks "$pf_ext" macos-plugin >/dev/null 2>&1
+    check "install-pi-hooks: a later no-hook selection leaves the install unchanged" \
+        bash -c "test -f \"\$1\" && test \"\$2\" = \"\$(cksum < \"\$1\")\"" _ "$pf_ext/plugin-hooks/index.ts" "$pf_before"
+else
+    echo "SKIP: just not available — install-pi-hooks recipe cases not run"
+fi
+
 # --- justfile wiring ------------------------------------------------------------
 justfile="$test_repo_root/justfile"
 install_recipe() { grep -A 25 '^install-pi-hooks' "$justfile"; }
@@ -503,10 +555,12 @@ install_removes_target() { install_recipe | grep -qE 'rm -rf "?\$\{?target\}?"?$
 install_checks_marker() { install_recipe | grep -q 'Generated by scripts/generate-pi-hook-extension.py'; }
 check "justfile: export-pi-hooks and install-pi-hooks recipes exist" recipes_exist
 check "justfile: setup-pi installs the safety hooks" \
-    grep -qE '^setup-pi:.*install-pi-hooks' "$justfile"
+    grep -qE '^setup-pi( \*plugins)?:.*install-pi-hooks' "$justfile"
 # The install replaces only its own subdirectory, never the shared extensions dir.
 check_not "justfile: install-pi-hooks never removes the extensions dir itself" install_removes_target
 check "justfile: install-pi-hooks refuses a directory it did not write" install_checks_marker
+check "justfile: setup-pi passes its plugin names to install-pi-hooks" \
+    grep -qE '^setup-pi \*plugins:.*\(install-pi-hooks [^)]*plugins\)' "$justfile"
 
 echo ""
 echo "PASS=$pass FAIL=$fail"

@@ -260,8 +260,29 @@ don't understand the `developer` role reasoning-capable models use
 message), nor `reasoning_effort` (`supportsReasoningEffort: false`).
 
 `just setup-pi` runs the adapter prereq check, registers the adapter, installs
-the subagents (§ Subagents), then prints this block (with your `pi_model` /
-`pi_port` interpolated) plus the run command.
+the subagents (§ Subagents) and safety hooks (§ Safety hooks), then prints this
+block (with your `pi_model` / `pi_port` interpolated) plus the run command.
+
+#### Limiting setup to named plugins
+
+`just setup-pi git-plugin macos-plugin` limits all three surfaces to those
+plugins:
+
+| Surface | What changes |
+|---|---|
+| Skills | `"plugins": ["git-plugin", "macos-plugin"]` in `skill-discovery.json` (global `~/.pi/agent/skill-discovery.json`, or `PI_SKILL_DISCOVERY`); the adapter indexes only those plugins' skills |
+| Subagents | `install-pi-agents` exports only their agents; zero is fine |
+| Safety hooks | `install-pi-hooks` projects only the hooks they own; when they own none, nothing is installed and an existing `plugin-hooks` install is left as it is |
+
+`scripts/set-adapter-plugins.sh` writes the key with jq, keeping every other
+key. `just setup-pi` with no names removes `plugins`, so an unscoped re-run
+indexes every plugin again. A project `.pi/skill-discovery.json` that sets its
+own `plugins` still overrides the global one. A name that is not a plugin
+directory exits 2 before anything is written. The subagent install is
+additive, so agents from an earlier, wider install stay in place until you
+delete them. A filtered index merges its embeddings into the shared cache
+instead of pruning it, so the next unfiltered session does not re-embed the
+other plugins.
 
 ### 4. Run pi against the local model
 
@@ -289,6 +310,7 @@ just export-pi-agents              # -> dist/pi/agents/*.md (source read-only, o
 just install-pi-agents             # -> ~/.pi/agent/agents/   (additive, global scope)
 just install-pi-agents .pi/agents  # -> project scope, which overrides global
 just install-pi-agents ~/.pi/agent/agents inherit   # local-model-only pi: drop the model pin
+just install-pi-agents ~/.pi/agent/agents preserve "" git-plugin   # only git-plugin's agents
 ```
 
 `install-pi-agents` self-skips with a hint when `@tintinweb/pi-subagents` is not
@@ -431,7 +453,9 @@ just export-pi-hooks    # -> dist/pi/extensions/plugin-hooks/{index.ts,hook-scri
 just install-pi-hooks   # -> ~/.pi/agent/extensions/plugin-hooks/ (auto-discovered)
 ```
 
-`setup-pi` runs `install-pi-hooks`. To try it without installing, pass the
+`setup-pi` runs `install-pi-hooks`. Both hook recipes take trailing plugin
+names (`just install-pi-hooks ~/.pi/agent/extensions git-plugin`) and then
+project only the hooks those plugins own. To try it without installing, pass the
 generated file with `pi -e dist/pi/extensions/plugin-hooks/index.ts`. Undo an
 install by deleting `~/.pi/agent/extensions/plugin-hooks`.
 
@@ -496,5 +520,6 @@ which wrote its signal file under pi's session id.
 - [`../adapters/CUTOVER.md`](../adapters/CUTOVER.md) — the eval gate that authorized retiring the tier installer
 - [`adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — adapter-over-export decision
 - [`opencode-export.md`](opencode-export.md) — the sibling harness: same adapter for skills, plus its own subagent/hook export
+- [`antigravity-export.md`](antigravity-export.md) § Parity with pi and OpenCode — the three harnesses side by side
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema
 - [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) and [pi-subagents](https://github.com/tintinweb/pi-subagents) — upstream READMEs for the two packages in § Extension triad

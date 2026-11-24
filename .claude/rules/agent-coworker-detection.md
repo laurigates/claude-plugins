@@ -1,6 +1,6 @@
 ---
 created: 2026-04-21
-modified: 2026-10-02
+modified: 2026-11-24
 reviewed: 2026-10-02
 ---
 
@@ -18,19 +18,7 @@ The root cause is missing coordination: each agent assumes it is the sole writer
 
 ## Detection Signals
 
-No single signal is reliable. Combine these seven and treat any positive as "assume a coworker is present".
-
-| Signal | Detects | Cost | Platform |
-|--------|---------|------|----------|
-| **Baseline drift** — snapshot `git status --porcelain` + `git stash list` at session start; diff at risky moments | Files that appeared after we started, regardless of who created them | Free | All |
-| **Session marker** — write `.git/.claude-session-<pid>` on start, delete on exit; scan siblings | Other agents that adopt the same convention | Free | All |
-| **Process scan** — find other `claude`/`node` processes whose `cwd` is the same repo | Ad-hoc agents that do not write markers | ~100ms | Linux/macOS differ |
-| **Taskwarrior `+ACTIVE` claims** — query `task project:<repo-basename> +ACTIVE export` for claims by other agent IDs | Coworkers that picked up coordination work via `/taskwarrior:task-claim`, even from a different process tree or host | ~50ms | Any host with `task` + `jq` |
-| **Worktree leak** — every untracked file in the parent is probed against the working tree and HEAD of each linked `git worktree` | Transient leaks where a child `Agent(isolation: "worktree")` writes a file that briefly appears in the parent checkout at the same relative path (issue #1319) | ~10ms per worktree | All |
-| **Bare flip** — the shared checkout reports `core.bare=true` via `git rev-parse --is-bare-repository`, or a leaked `GIT_DIR` / `GIT_WORK_TREE` env points away from the repo | A concurrent agent fleet flipping the shared repo to bare (every `git status`/`commit` then fails with "fatal: this operation must be run in a work tree") or redirecting git at another tree (issue #1692) | Free | All |
-| **Cross-session discovery** — `ListAgents` (native, 2.1.224+) | Other live Claude Code sessions on this or other machines that have cross-session messaging enabled | Free (built-in tool call) | macOS/Linux (2.1.224), Windows (2.1.239) |
-
-How each signal is computed, its platform caveats, and the verdict vocabulary live in `git-plugin:git-coworker-check` (`detect-coworkers.sh`, `claim-session.sh`, and its REFERENCE.md § Signal design). Run `/git:coworker-check` rather than re-deriving a probe by hand. Two of the signals are harness gotchas worth holding every turn:
+No single signal is reliable; treat any positive as "assume a coworker is present". `git-plugin:git-coworker-check` combines seven: baseline drift, session markers, a process scan, taskwarrior `+ACTIVE` claims, worktree leak, bare flip, and cross-session discovery (`ListAgents`). How each is computed, its cost, its platform caveats and the verdict vocabulary live in that skill (`detect-coworkers.sh`, `claim-session.sh`, and its REFERENCE.md § Signal design). Run `/git:coworker-check` rather than re-deriving a probe by hand. Two of the signals are harness gotchas worth holding every turn:
 
 ### Worktree leak (issue #1319)
 
