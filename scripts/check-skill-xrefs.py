@@ -151,7 +151,7 @@ def unreadable_findings(repo: Repo) -> list[Finding]:
             "not valid UTF-8 -- nothing in it was checked",
         )
         for p in sorted(UNREADABLE)
-        if p in {f.resolve() for f in repo.scan_files}
+        if p in {f.resolve() for f in repo.scan_files + repo.link_only_files}
     ]
 
 
@@ -318,6 +318,7 @@ class Repo:
         self.skill_dirs: dict[str, Path] = {}  # "plugin:skill" -> dir
         self.by_name: dict[str, list[Path]] = {}  # "skill" -> dirs
         self.scan_files: list[Path] = []
+        self.link_only_files: list[Path] = []  # plugin READMEs: link guard only
         self._discover()
 
     def _walk(self, base: Path):
@@ -342,6 +343,7 @@ class Repo:
                     self.by_name.setdefault(sd.name, []).append(sd)
 
         files: list[Path] = []
+        readmes: list[Path] = []
         for sd in list(self.skill_dirs.values()) + [
             d for ds in self.by_name.values() for d in ds if d.parent == local
         ]:
@@ -356,11 +358,19 @@ class Repo:
             agents = child / "agents"
             if child.name.endswith("-plugin") and agents.is_dir():
                 files.extend(sorted(agents.glob("*.md")))
+            # A plugin README is the page GitHub shows for the plugin; its
+            # skill-table links went unchecked and 14 pointed at `skill.md`,
+            # which resolves on macOS but 404s on GitHub. Links only: README
+            # prose uses `§` for report sections, not headings.
+            readme = child / "README.md"
+            if child.name.endswith("-plugin") and readme.is_file():
+                readmes.append(readme)
         rules = root / ".claude" / "rules"
         if rules.is_dir():
             files.extend(sorted(rules.glob("*.md")))
         self.scan_files = sorted(set(files))
-        load_fences(self.scan_files)
+        self.link_only_files = sorted(set(readmes))
+        load_fences(self.scan_files + self.link_only_files)
 
     def skill_of(self, path: Path) -> Path | None:
         for parent in path.parents:
@@ -715,10 +725,31 @@ def check_citations(repo: Repo) -> tuple[list[Finding], dict[str, int]]:
 # --------------------------------------------------------------------------
 
 
+def case_mismatch(root: Path, target: Path) -> str | None:
+    """On-disk spelling of `target` when it exists only case-insensitively.
+
+    macOS and Windows resolve `skill.md` to `SKILL.md`; GitHub and Linux CI do
+    not, so `exists()` alone passes a link that 404s on the rendered page.
+    """
+    base = root.resolve()
+    try:
+        parts = target.relative_to(base).parts
+    except ValueError:
+        return None  # outside the repo: nothing to compare against
+    cur = base
+    for part in parts:
+        names = os.listdir(cur)
+        if part not in names:
+            actual = next((n for n in names if n.lower() == part.lower()), None)
+            return str((cur / actual).relative_to(base)) if actual else None
+        cur = cur / part
+    return None
+
+
 def check_links(repo: Repo) -> tuple[list[Finding], dict[str, int]]:
     findings: list[Finding] = []
     stats = {"scanned": 0}
-    for src in repo.scan_files:
+    for src in repo.scan_files + repo.link_only_files:
         for lineno, line in prose_lines(src, read_lines(src)):
             spans = code_spans(line)
             hrefs: list[str] = []
@@ -747,6 +778,17 @@ def check_links(repo: Repo) -> tuple[list[Finding], dict[str, int]]:
                                 lineno,
                                 "dead-relative-link",
                                 f"{href} does not exist (resolves to {target_rel(repo, target)})",
+                            )
+                        )
+                        continue
+                    actual = case_mismatch(repo.root, target)
+                    if actual:
+                        findings.append(
+                            Finding(
+                                repo.rel(src),
+                                lineno,
+                                "dead-relative-link",
+                                f"{href} differs in case from {actual} (404 on GitHub)",
                             )
                         )
                         continue

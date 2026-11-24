@@ -254,6 +254,25 @@ run_case "a link inside inline code is exempt" clean \
 run_case "external URLs and templated placeholders are exempt" clean \
   "$user/REFERENCE.md" 'See [x](https://example.com/a.md) and [y]({{url}}).'
 
+# --- links: case and plugin READMEs ------------------------------------------
+# macos-plugin and networking-plugin READMEs linked `skills/<name>/skill.md`.
+# macOS resolves that to SKILL.md, so `exists()` passed it locally; GitHub 404s.
+# On a case-sensitive CI runner the same cases fail as missing files.
+run_case "a link whose case differs from the file on disk is dead" flag:dead-relative-link \
+  "$user/REFERENCE.md" 'See [owner](../owner-skill/skill.md).'
+
+run_case "a plugin README link with the wrong filename case is dead" flag:dead-relative-link \
+  "demo-plugin/README.md" '| [owner-skill](skills/owner-skill/skill.md) | demo |'
+
+run_case "a plugin README link to a missing file is dead" flag:dead-relative-link \
+  "demo-plugin/README.md" 'See [ADR](docs/adrs/0015-missing.md).'
+
+run_case "a plugin README link with the exact case resolves" clean \
+  "demo-plugin/README.md" '| [owner-skill](skills/owner-skill/SKILL.md) | demo |'
+
+run_case "plugin README § prose is not checked as a heading citation" clean \
+  "demo-plugin/README.md" 'Exempt via a literal path (W34 §Signal C).'
+
 # --- backticked paths: detection (#2948) ------------------------------------
 # The control: comfy-metadata named `scripts/rename_outputs.py`, which no
 # skill, plugin or repo directory ships. Inline code is not a link, so the
