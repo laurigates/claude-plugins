@@ -41,5 +41,5 @@ Unscoped rules load on every turn; the rest load when a file matching their
 | Required vs optional skill body sections | `context-engineering.md` § Supersedes | `skill-quality.md`, `agentic-optimization.md`, `skill-development.md` |
 | Which commits bump which package | `conventional-commits.md` § Scope is a label; the files touched decide what releases | `release-please.md` |
 | Release-please config and auth facts | `release-please.md`, checked by `scripts/check-release-please-rule.sh` | — |
-| Why the `cat`/`head`/`tail` block keeps exit 2 | `bash-tool-replacements.md` | `hook-block-vs-nudge.md` |
+| Why the `cat`/`head`/`tail` block keeps exit 2 | `docs/rules/bash-tool-replacements.md` | `hook-block-vs-nudge.md` |
 | Rule scoping (`paths:`) and the always-loaded budget | `context-engineering.md` | every unscoped rule states its reason |
