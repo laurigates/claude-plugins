@@ -5,7 +5,7 @@ args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-05-22
+modified: 2026-11-24
 reviewed: 2026-05-22
 ---
 
@@ -199,4 +199,4 @@ regardless of which form is pasted; see `.claude/rules/task-id-stability.md`).
 - `/taskwarrior:task-add` — file something surfaced by drift detection
 - `/taskwarrior:task-done` — close PR-ready tasks
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
-- `.claude/rules/task-id-stability.md` — why the report's UUID column is convenience, not the safety mechanism
+- `docs/rules/task-id-stability.md` — why the report's UUID column is convenience, not the safety mechanism

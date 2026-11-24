@@ -21,7 +21,7 @@ Unscoped rules load on every turn; the rest load when a file matching their
 | Skill authoring | `skill-development`, `skill-quality`, `skill-naming`, `skill-execution-structure`, `skill-argument-handling`, `skill-fork-context`, `skill-portability`, `skill-consolidation`, `skill-evaluation`, `agentic-optimization`, `context-engineering`, `workflow-vs-skill`, `plugin-flow-diagrams`, `version-pinning` | — |
 | Agents and runtime | `agent-development`, `agent-runtime`, `loop-integrity`, `agent-coworker-detection` | `loop-integrity`, `agent-coworker-detection` |
 | Hooks | `hooks-reference`, `prompt-agent-hooks`, `hook-block-vs-nudge`, `bash-tool-replacements`, `handling-blocked-hooks` | `bash-tool-replacements`, `handling-blocked-hooks` |
-| Scripts and checks | `shell-scripting`, `structured-script-output`, `regression-testing`, `offload-to-deterministic-substrate`, `drift-detection-triggering`, `parallel-safe-queries` | `offload-to-deterministic-substrate`, `parallel-safe-queries` |
+| Scripts and checks | `shell-scripting`, `structured-script-output`, `regression-testing`, `offload-to-deterministic-substrate`, `drift-detection-triggering`, `parallel-safe-queries` | `parallel-safe-queries` |
 | Git, PRs and releases | `conventional-commits`, `release-please`, `pr-branch-sync`, `gh-json-fields`, `issue-grouping`, `gitattributes`, `docs-currency` | `conventional-commits`, `pr-branch-sync`, `gh-json-fields`, `issue-grouping`, `docs-currency` |
 | Plugins and marketplace | `plugin-structure`, `plugin-usage-telemetry`, `generated-fleet-drift`, `biome-markdown` | — |
 | CI workflows | `workflow-model-effort`, `workflow-naming` | — |
@@ -41,5 +41,5 @@ Unscoped rules load on every turn; the rest load when a file matching their
 | Required vs optional skill body sections | `context-engineering.md` § Supersedes | `skill-quality.md`, `agentic-optimization.md`, `skill-development.md` |
 | Which commits bump which package | `conventional-commits.md` § Scope is a label; the files touched decide what releases | `release-please.md` |
 | Release-please config and auth facts | `release-please.md`, checked by `scripts/check-release-please-rule.sh` | — |
-| Why the `cat`/`head`/`tail` block keeps exit 2 | `bash-tool-replacements.md` | `hook-block-vs-nudge.md` |
+| Why the `cat`/`head`/`tail` block keeps exit 2 | `docs/rules/bash-tool-replacements.md` | `hook-block-vs-nudge.md` |
 | Rule scoping (`paths:`) and the always-loaded budget | `context-engineering.md` | every unscoped rule states its reason |
