@@ -12,6 +12,8 @@
 #   (c) no literal ${CLAUDE_PLUGIN_ROOT} survives into generated JS
 #       (the rulesync failure mode this generator replaces),
 #   (d) prompt/agent hooks and unsupported events are skipped, not broken.
+#   (e) --plugin NAME limits the export to those plugins; a selection with no
+#       hooks writes no plugins/ dir and reports STATUS=OK.
 set -uo pipefail
 
 test_script_dir="$(cd "$(dirname "$0")" && pwd)"
@@ -338,6 +340,21 @@ if command -v node >/dev/null 2>&1; then
             node --check "$test_tmp/syntax-check.mjs"
     done
 fi
+
+# --- (e) --plugin filter (real repo) ---------------------------------------------
+pf_out="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-hooks" --plugin hooks-plugin 2>&1)"
+check "plugin filter: hooks-plugin emits only hooks-plugin-hooks.js" \
+    test "$(ls "$test_tmp/pf-hooks/plugins" 2>/dev/null)" = "hooks-plugin-hooks.js"
+check "plugin filter: only hooks-plugin's scripts are copied" \
+    test "$(ls "$test_tmp/pf-hooks/hook-scripts" 2>/dev/null)" = "hooks-plugin"
+check "plugin filter: the selection is reported" grep -qx 'PLUGINS=hooks-plugin' <<<"$pf_out"
+pf_two="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-two" --plugin hooks-plugin --plugin git-plugin 2>&1)"
+check "plugin filter: repeated --plugin emits both plugins" \
+    grep -qx 'HOOK_PLUGINS_GENERATED=2' <<<"$pf_two"
+pf_none="$(python3 "$test_generator" "$test_repo_root" "$test_tmp/pf-none" --plugin macos-plugin 2>&1)"; pf_rc=$?
+check "plugin filter: a plugin with no hooks exits 0 with STATUS=OK" \
+    bash -c "[ $pf_rc -eq 0 ] && grep -qx 'STATUS=OK' <<<\"\$1\" && grep -qx 'EXPORTED_HOOKS=0' <<<\"\$1\"" _ "$pf_none"
+check_not "plugin filter: a plugin with no hooks writes no plugins/ dir" test -e "$test_tmp/pf-none/plugins"
 
 echo ""
 echo "PASS=$pass FAIL=$fail"

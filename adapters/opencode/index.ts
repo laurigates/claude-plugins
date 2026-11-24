@@ -45,6 +45,7 @@ import {
   AVAILABLE_SKILLS_OPEN,
   buildIndex,
   DEFAULT_K,
+  isUnknownPluginWarning,
   renderInjectedBlock,
   renderToolResult,
   SEARCH_SKILLS_TOOL_DESCRIPTION,
@@ -172,8 +173,12 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
     statePromise ??= (async () => {
       const index = await buildIndex({
         repoRoot: config.repoRoot,
+        plugins: config.plugins,
         embed: { endpoint: config.endpoint, model: config.model },
       });
+      for (const warning of index.warnings.filter(isUnknownPluginWarning)) {
+        console.warn(`${LOG_PREFIX} ${warning}`);
+      }
       const { pins, unknown } = resolvePins(config.pins, index.entries);
       for (const id of unknown) console.warn(`${LOG_PREFIX} unknown pin "${id}" skipped`);
       return { index, pins };

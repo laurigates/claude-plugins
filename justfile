@@ -315,30 +315,46 @@ opencode_provider := "mlx-local"
 opencode_plugins := env_var_or_default("OPENCODE_PLUGINS", "@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp")
 
 # Skills are NOT exported — they reach OpenCode via the adapter (ADR-0022, #2094).
+# Args pass through: [OUTPUT_DIR] [--plugin NAME ...].
 # Project subagents + hooks to OpenCode format (output: dist/opencode)
 [group: "opencode"]
 export-opencode *args:
     ./scripts/export-opencode.sh {{args}}
 
-# Additive: the user's own agents/plugins under <target> are preserved.
-# Install exported agents + hook plugins into an OpenCode config dir (default: global)
+# Additive: the user's own agents/plugins under the target are preserved.
+# Target: OPENCODE_CONFIG (default ~/.config/opencode).
+# Install exported agents + hook plugins into an OpenCode config dir; optional plugin names limit it
 [group: "opencode"]
-install-opencode target=opencode_config:
-    ./scripts/install-opencode.sh "{{target}}"
+install-opencode *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/install-opencode.sh "{{opencode_config}}" ${flags[@]+"${flags[@]}"}
 
 # Non-destructive: an existing opencode.json is kept and a .opencode-sample written.
-# Generate opencode.json (provider + skill adapter) + agents/orchestrator.md
+# Target: OPENCODE_CONFIG. Plugin names go into the adapter options' "plugins".
+# Generate opencode.json (provider + skill adapter) + agents/orchestrator.md; optional plugin names scope the adapter
 [group: "opencode"]
-configure-opencode target=opencode_config:
-    ./scripts/configure-opencode.sh "{{target}}" \
+configure-opencode *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    ./scripts/configure-opencode.sh "{{opencode_config}}" \
         --provider "{{opencode_provider}}" \
         --model "{{opencode_model}}" \
         --port "{{opencode_port}}" \
-        --plugins "{{opencode_plugins}}"
+        --plugins "{{opencode_plugins}}" \
+        ${flags[@]+"${flags[@]}"}
 
-# Install + configure, then print the serve + run next steps
+# Plugin names limit all three surfaces: the adapter indexes only their skills
+# ("plugins" in its opencode.json options), and only their subagents and hook
+# plugins are installed. configure-opencode keeps an existing opencode.json, so
+# set-adapter-plugins.sh then edits the adapter entry there in place; with no
+# names it removes "plugins", so re-running unscoped is really unscoped.
+# Install + configure, then print the serve + run next steps; optional plugin names limit all three
 [group: "opencode"]
-setup-opencode target=opencode_config: (install-opencode target) (configure-opencode target)
+setup-opencode *plugins: (install-opencode plugins) (configure-opencode plugins)
+    ./scripts/set-adapter-plugins.sh opencode "{{opencode_config}}/opencode.json" {{plugins}}
     @echo ""
     @echo "Next steps:"
     @echo "  1. Install the server:  uv tool install mlx-lm"
@@ -457,6 +473,18 @@ pi_agents_dir := env_var_or_default("PI_AGENTS_DIR", "~/.pi/agent/agents")
 # Where `install-pi-hooks` writes the safety-hook extension. Global by default;
 # a project .pi/extensions/ dir loads only once the project is trusted.
 pi_extensions_dir := env_var_or_default("PI_EXTENSIONS_DIR", "~/.pi/agent/extensions")
+# The pi adapter's config file, where `setup-pi <plugin>...` writes "plugins".
+# Global by default; a project .pi/skill-discovery.json overrides it key by key.
+pi_skill_discovery := env_var_or_default("PI_SKILL_DISCOVERY", "~/.pi/agent/skill-discovery.json")
+
+# Fail with exit 2 on a name that is not a plugin directory, before a setup
+# recipe's other dependencies write anything (scripts/lib/plugin-args.sh).
+[private]
+_require-plugins *plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    . "{{justfile_directory()}}/scripts/lib/plugin-args.sh"
+    for p in {{plugins}}; do require_plugin "{{justfile_directory()}}" "$p"; done
 
 # Serve the local model via mlx-lm (OpenAI-compatible /v1 on the configured port)
 [group: "pi"]
@@ -473,26 +501,31 @@ serve-pi-model:
 # other value is a pi model id applied to every agent.
 # `model_map` (e.g. opus=prov/large,haiku=prov/small) sends each pinned tier to
 # its own target; agents whose tier is not in the map follow `model`.
+# Trailing plugin names limit the export to those plugins' agents.
 # Project marketplace subagents into pi-subagents' agent format (output: dist/pi)
 [group: "pi"]
-export-pi-agents out="dist/pi" model="preserve" model_map="":
+export-pi-agents out="dist/pi" model="preserve" model_map="" *plugins:
     #!/usr/bin/env bash
     set -euo pipefail
     out="{{out}}"
     case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
     map_args=()
     if [ -n {{quote(model_map)}} ]; then map_args=(--model-map={{quote(model_map)}}); fi
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
     python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
-        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} "{{justfile_directory()}}" "$out"
+        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} ${flags[@]+"${flags[@]}"} \
+        "{{justfile_directory()}}" "$out"
 
 # Additive: agents you wrote yourself under <target> are preserved — never an
 # rm -rf of a shared directory. No-op with a hint when @tintinweb/pi-subagents is
 # absent, because pi ignores .pi/agents/ entirely without it: installing anyway
 # would look like it worked and change nothing.
-# `model` and `model_map` are the same switches as export-pi-agents.
+# `model` and `model_map` are the same switches as export-pi-agents; trailing
+# plugin names limit the install to those plugins' agents (zero is fine). Names
+# are validated first, so a typo exits 2 even when the install would self-skip.
 # Install exported subagents into a pi agents dir (default: global)
 [group: "pi"]
-install-pi-agents target=pi_agents_dir model="preserve" model_map="":
+install-pi-agents target=pi_agents_dir model="preserve" model_map="" *plugins: (_require-plugins plugins)
     #!/usr/bin/env bash
     set -euo pipefail
     target="{{target}}"
@@ -510,33 +543,46 @@ install-pi-agents target=pi_agents_dir model="preserve" model_map="":
     trap 'rm -rf "$tmp"' EXIT
     map_args=()
     if [ -n {{quote(model_map)}} ]; then map_args=(--model-map={{quote(model_map)}}); fi
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
     python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
-        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} "{{justfile_directory()}}" "$tmp" >/dev/null
+        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} ${flags[@]+"${flags[@]}"} \
+        "{{justfile_directory()}}" "$tmp" >/dev/null
+    shopt -s nullglob
+    exported=("$tmp"/agents/*.md)
+    if [ "${#exported[@]}" -eq 0 ]; then
+        echo "no subagents in {{ if plugins == "" { "the marketplace" } else { plugins } }} — nothing installed in $target"
+        exit 0
+    fi
     mkdir -p "$target"
-    cp "$tmp"/agents/*.md "$target/"
-    echo "installed $(find "$target" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ') subagent file(s) in $target"
+    cp "${exported[@]}" "$target/"
+    echo "installed ${#exported[@]} subagent file(s) in $target"
     echo "(project scope .pi/agents/ overrides this; add one with: just install-pi-agents .pi/agents)"
 
 # pi never evaluates a Claude Code hook manifest, so the marketplace's safety
 # hooks are inert there until projected into a pi extension (#2634). Only the
 # safety allowlist in the generator is exported; nudges are skipped by name.
 # See docs/pi-export.md § Safety hooks.
+# Trailing plugin names limit it to the hooks those plugins own.
 # Project the marketplace safety hooks into one pi extension (output: dist/pi)
 [group: "pi"]
-export-pi-hooks out="dist/pi":
+export-pi-hooks out="dist/pi" *plugins:
     #!/usr/bin/env bash
     set -euo pipefail
     out="{{out}}"
     case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
-    python3 "{{justfile_directory()}}/scripts/generate-pi-hook-extension.py" "{{justfile_directory()}}" "$out"
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
+    python3 "{{justfile_directory()}}/scripts/generate-pi-hook-extension.py" \
+        "{{justfile_directory()}}" "$out" ${flags[@]+"${flags[@]}"}
 
 # pi auto-discovers <extensions>/*/index.ts, so no settings.json edit is needed.
 # Replaces only a previous install of this extension (its index.ts carries the
 # generator marker); refuses a same-named directory it did not write. Undo by
-# deleting <target>/plugin-hooks.
+# deleting <target>/plugin-hooks. Trailing plugin names limit it to the hooks
+# those plugins own; when they own none, nothing is installed and an existing
+# install is left as it is.
 # Install the safety-hook extension into a pi extensions dir (default: global)
 [group: "pi"]
-install-pi-hooks target=pi_extensions_dir:
+install-pi-hooks target=pi_extensions_dir *plugins:
     #!/usr/bin/env bash
     set -euo pipefail
     target="{{target}}"
@@ -550,8 +596,14 @@ install-pi-hooks target=pi_extensions_dir:
     fi
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
+    flags=(); for p in {{plugins}}; do flags+=(--plugin "$p"); done
     python3 "{{justfile_directory()}}/scripts/generate-pi-hook-extension.py" \
-        "{{justfile_directory()}}" "$tmp" >/dev/null
+        "{{justfile_directory()}}" "$tmp" ${flags[@]+"${flags[@]}"} >/dev/null
+    if [ ! -d "$tmp/extensions/plugin-hooks" ]; then
+        echo "no safety hooks in {{plugins}} — nothing installed in $target"
+        [ -e "$dest" ] && echo "(the existing $dest is unchanged; remove it to drop its hooks)"
+        exit 0
+    fi
     mkdir -p "$target"
     rm -rf "$dest"
     cp -R "$tmp/extensions/plugin-hooks" "$dest"
@@ -564,9 +616,14 @@ install-pi-hooks target=pi_extensions_dir:
 # `install-pi-agents` self-skips (with a hint) when @tintinweb/pi-subagents is
 # absent, so wiring it in needs no conditional here; the adapter is prereq-checked
 # first.
+# Plugin names limit all three surfaces: the adapter indexes only their skills
+# ("plugins" in PI_SKILL_DISCOVERY, default ~/.pi/agent/skill-discovery.json),
+# and only their subagents and safety hooks are installed. With no names the
+# "plugins" key is removed, so re-running unscoped is really unscoped.
 # Wire pi up end to end: register the adapter, project the subagents, install the safety hooks, print next steps
 [group: "pi"]
-setup-pi: pi-adapter-check pi-adapter-register install-pi-agents install-pi-hooks
+setup-pi *plugins: (_require-plugins plugins) pi-adapter-check pi-adapter-register (install-pi-agents pi_agents_dir "preserve" "" plugins) (install-pi-hooks pi_extensions_dir plugins)
+    ./scripts/set-adapter-plugins.sh pi "{{pi_skill_discovery}}" {{plugins}}
     @echo ""
     @echo "Next steps:"
     @echo "  1. Install the server:  uv tool install mlx-lm"

@@ -54,6 +54,11 @@ export interface IndexOptions {
   repoRoot: string;
   /** Default "foreign": skip `compatibility: claude-code` entries. */
   target?: "foreign" | "claude-code";
+  /**
+   * Index only these marketplace plugins (`git-plugin`). Absent or empty =
+   * every plugin. A name not in marketplace.json warns and is ignored.
+   */
+  plugins?: string[];
   embed?: {
     /** Default "http://localhost:11434". */
     endpoint?: string;
