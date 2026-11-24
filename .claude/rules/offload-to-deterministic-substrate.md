@@ -1,7 +1,13 @@
 ---
 created: 2026-06-25
-modified: 2026-06-25
+modified: 2026-11-24
 reviewed: 2026-07-04
+paths:
+  - "**/SKILL.md"
+  - "**/skills/**"
+  - "**/hooks/**"
+  - "**/scripts/**"
+  - ".claude/rules/**"
 ---
 
 # Offload Mechanical Work to a Deterministic Substrate — plugin-authoring deltas
@@ -11,6 +17,9 @@ The canonical statement of this principle is the global rule
 `exact_dot_claude/rules/offload-to-deterministic-substrate.md`). Read it first
 — this file holds only what is specific to authoring plugins, skills, and hooks
 in *this* repo, and names the children that already implement the law here.
+
+Path-scoped on purpose: every row below fires while you write a skill, hook,
+script or rule, so it loads on those paths rather than on every turn.
 
 > **The law (short form):** anything mechanical, repeatable, and verifiable
 > belongs outside the agent's reasoning loop — in a script, hook, or
