@@ -1058,7 +1058,7 @@ def main(argv: list[str]) -> int:
         emit(
             "RELATIVE LINKS",
             {
-                "FILES_SCANNED": len(repo.scan_files),
+                "FILES_SCANNED": len(repo.scan_files) + len(repo.link_only_files),
                 "LINKS_SCANNED": st["scanned"],
             },
             fnd,

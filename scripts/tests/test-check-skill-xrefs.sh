@@ -273,6 +273,43 @@ run_case "a plugin README link with the exact case resolves" clean \
 run_case "plugin README § prose is not checked as a heading citation" clean \
   "demo-plugin/README.md" 'Exempt via a literal path (W34 §Signal C).'
 
+# On a case-sensitive runner a wrong-case link already fails as a missing file,
+# so the cases above never reach case_mismatch there. Call it directly: it only
+# reads directory listings, so it behaves the same on every filesystem.
+case_out="$(python3 - "$checker" "$fixture" <<'PY'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("xrefs", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+root = Path(sys.argv[2]).resolve()
+for rel in ("demo-plugin/skills/owner-skill/skill.md",
+            "Demo-plugin/skills/owner-skill/SKILL.md",
+            "demo-plugin/skills/owner-skill/SKILL.md"):
+    print(f"{rel} -> {mod.case_mismatch(root, root / rel)}")
+PY
+)"
+if grep -qxF "demo-plugin/skills/owner-skill/skill.md -> demo-plugin/skills/owner-skill/SKILL.md" <<<"$case_out" \
+  && grep -qxF "Demo-plugin/skills/owner-skill/SKILL.md -> demo-plugin" <<<"$case_out" \
+  && grep -qxF "demo-plugin/skills/owner-skill/SKILL.md -> None" <<<"$case_out"; then
+  ok "case_mismatch names the on-disk spelling of a wrong-case leaf or directory, None when exact"
+else
+  bad "case_mismatch direct calls" "$case_out"
+fi
+
+files_scanned() {
+  python3 "$checker" --project-dir "$fixture" --only links 2>&1 | grep -m1 '^FILES_SCANNED=' | cut -d= -f2
+}
+before_count="$(files_scanned)"
+printf '%s\n' '# demo' >"$fixture/demo-plugin/README.md"
+after_count="$(files_scanned)"
+rm -f "$fixture/demo-plugin/README.md"
+if [ -n "$before_count" ] && [ "$after_count" = "$((before_count + 1))" ]; then
+  ok "RELATIVE LINKS FILES_SCANNED counts plugin READMEs ($before_count -> $after_count)"
+else
+  bad "FILES_SCANNED counts plugin READMEs" "before=$before_count after=$after_count"
+fi
+
 # --- backticked paths: detection (#2948) ------------------------------------
 # The control: comfy-metadata named `scripts/rename_outputs.py`, which no
 # skill, plugin or repo directory ships. Inline code is not a link, so the
