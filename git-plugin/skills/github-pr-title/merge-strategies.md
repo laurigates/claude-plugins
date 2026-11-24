@@ -42,6 +42,12 @@ disagree with.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --repo <owner>/<repo> --pr <n>
 ```
 
+To check a branch before it is pushed (a fold or rebase before a force-push),
+`--local [BASE..HEAD]` reads the commits from git instead, with no `gh` and no
+network. The default range is `origin/<default branch>..HEAD`. Rules 1 and 2 need
+GitHub data, so the output adds
+`NOT_EVALUATED=rule1_override_label,rule2_bot_author` and `PR=local:<range>`.
+
 It prints a `KEY=VALUE` contract: `METHOD=rebase|squash`, `REASON=<code>`,
 `OVERRIDE=<label|none>`, and `BODY_LINT=<n>` followed by one `LINT_*` line per
 finding. Merge with `gh pr merge <n> --<METHOD>`.

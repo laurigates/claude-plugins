@@ -13,12 +13,14 @@ Usage::
     pr-merge-method.py --repo OWNER/NAME --pr 123      # live, via gh
     pr-merge-method.py --pr https://github.com/o/r/pull/123
     pr-merge-method.py --fixture pr.json               # offline, for tests
+    pr-merge-method.py --local [BASE..HEAD]            # unpushed branch, git only
     pr-merge-method.py --repo o/r --pr 123 --emit-fixture pr.json
 
 Output (KEY=VALUE, .claude/rules/structured-script-output.md)::
 
     === PR MERGE METHOD ===
-    PR=o/r#123
+    PR=o/r#123                   # PR=local:BASE..HEAD under --local
+    NOT_EVALUATED=rule1_override_label,rule2_bot_author   # --local only
     METHOD=rebase|squash
     RULE=<1-9>
     REASON=<code>
@@ -317,9 +319,13 @@ def render(pr: dict, d: Decision, lint: dict[str, int], squash_body: str) -> str
     title = f"→ {verb} ({why})"
     if n_lint:
         title += f" · body: {n_lint} lint issue{'s' if n_lint != 1 else ''}"
+    local = pr.get("localRange")
     lines = [
         "=== PR MERGE METHOD ===",
-        f"PR={pr.get('repo', '?')}#{pr.get('number', '?')}",
+        f"PR=local:{local}"
+        if local
+        else f"PR={pr.get('repo', '?')}#{pr.get('number', '?')}",
+        *([f"NOT_EVALUATED={LOCAL_NOT_EVALUATED}"] if local else []),
         f"METHOD={d.method}",
         f"RULE={d.rule}",
         f"REASON={d.reason}",
@@ -493,11 +499,92 @@ def fetch_files(repo: str, oids: list[str]) -> dict[str, list[str]]:
         return dict(zip(oids, pool.map(partial(commit_files, repo), oids)))
 
 
+# ── Local branch (git only, no gh, no network) ───────────────────────────────
+
+# Rules that need GitHub data a local branch does not have.
+LOCAL_NOT_EVALUATED = "rule1_override_label,rule2_bot_author"
+
+
+def git(*args: str) -> str:
+    r = subprocess.run(["git", *args], check=False, capture_output=True, text=True)
+    if r.returncode:
+        raise RuntimeError(f"git {' '.join(args[:2])} failed: {r.stderr.strip()[:150]}")
+    return r.stdout
+
+
+def default_base() -> str:
+    """origin/<default branch> from refs/remotes/origin/HEAD, else origin/main."""
+    try:
+        ref = git("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD").strip()
+    except RuntimeError:
+        return "origin/main"
+    return ref.removeprefix("refs/remotes/") or "origin/main"
+
+
+def local_pr(spec: str) -> dict:
+    """The --fixture/--pr dict shape, built from BASE..HEAD in the cwd repo.
+
+    No labels and no author: rules 1 and 2 cannot be evaluated locally.
+    """
+    base, _, head = (spec or default_base()).partition("..")
+    head = head or "HEAD"
+    rng = f"{base}..{head}"
+    log = git("log", "--reverse", "--format=%H%x00%P%x00%aI%x00%s", rng)
+    commits = []
+    for line in log.splitlines():
+        oid, parents, date, subject = line.split("\0", 3)
+        commits.append(
+            {
+                "oid": oid,
+                "headline": subject,
+                "authoredDate": date,
+                "parents": len(parents.split()),
+            }
+        )
+    try:
+        unions = union_paths(git("show", f"{head}:.gitattributes"))
+    except RuntimeError:
+        unions = []
+    branch = git("rev-parse", "--abbrev-ref", head).strip()
+    return {
+        "localRange": rng,
+        "headRefName": "" if branch == "HEAD" else branch,
+        "squashMergeCommitMessage": "UNKNOWN",
+        "body": "",
+        "author": None,
+        "labels": [],
+        "unionPaths": unions,
+        "commits": commits,
+    }
+
+
+def local_files(oids: list[str]) -> dict[str, list[str]]:
+    return {
+        o: [f for f in git("show", "--format=", "--name-only", o).splitlines() if f]
+        for o in oids
+    }
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     ap.add_argument("--repo", help="OWNER/NAME (default: gh resolves from cwd)")
-    ap.add_argument("--pr", help="number, URL or branch (default: current branch)")
-    ap.add_argument("--fixture", help="read a normalized PR JSON instead of calling gh")
+    src = ap.add_mutually_exclusive_group()
+    src.add_argument("--pr", help="number, URL or branch (default: current branch)")
+    src.add_argument(
+        "--fixture", help="read a normalized PR JSON instead of calling gh"
+    )
+    src.add_argument(
+        "--local",
+        nargs="?",
+        const="",
+        metavar="BASE..HEAD",
+        help=(
+            "classify a local branch from git, before it is pushed; no gh, no "
+            "network (default range: origin/<default branch>..HEAD, from "
+            "refs/remotes/origin/HEAD, else origin/main). Rules 1 and 2 "
+            "(override label, bot author) are not evaluated"
+        ),
+    )
     ap.add_argument(
         "--emit-fixture",
         metavar="PATH",
@@ -505,7 +592,10 @@ def main(argv: list[str]) -> int:
     )
     a = ap.parse_args(argv)
     try:
-        if a.fixture:
+        if a.local is not None:
+            pr = local_pr(a.local)
+            files_for = local_files
+        elif a.fixture:
             with open(a.fixture) as f:
                 pr = json.load(f)
             known = {c["oid"]: c.get("files", []) for c in pr["commits"]}

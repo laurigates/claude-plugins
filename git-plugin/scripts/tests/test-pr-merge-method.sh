@@ -110,5 +110,85 @@ done
 grep -qx 'TITLE=→ Rebase and merge (4 independent conventional commits)' <<<"$out" &&
     ok "rebase title" || notok "title: $(grep ^TITLE= <<<"$out")"
 
+echo "=== --local: classify an unpushed branch from git (#3686) ==="
+# Throwaway repos only: HOME and global/system git config are isolated, the
+# GIT_DIR family is unset (#1745), and every repo dir is guarded so an empty
+# mktemp result can never point git at the real checkout.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+LOCAL_TMP=$(mktemp -d) || { notok "mktemp failed"; echo "PASSED=$PASS FAILED=$FAIL"; exit 1; }
+[ -n "$LOCAL_TMP" ] && [ -d "$LOCAL_TMP" ] || { notok "no temp dir"; exit 1; }
+trap 'rm -rf "$LOCAL_TMP"' EXIT
+export HOME="$LOCAL_TMP" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+
+g() { git -c user.name=Test -c user.email=test@example.invalid -c init.defaultBranch=main -c commit.gpgsign=false "$@"; }
+
+# new_repo <name> — repo with one base commit; origin/main points at it.
+new_repo() {
+    local r="$LOCAL_TMP/$1"
+    mkdir -p "$r" && [ -d "$r" ] || return 1
+    g -C "$r" init -q && echo base >"$r/base.txt" && g -C "$r" add base.txt &&
+        g -C "$r" commit -qm "chore: base" && g -C "$r" update-ref refs/remotes/origin/main HEAD &&
+        g -C "$r" switch -qc feature && printf '%s\n' "$r"
+}
+# commit_file <repo> <file> <message>
+commit_file() { echo "$3" >>"$1/$2" && g -C "$1" add "$2" && g -C "$1" commit -qm "$3"; }
+
+# local_expect <repo> <METHOD> <REASON> <label> [range]
+local_expect() {
+    local r=$1 method=$2 reason=$3 label=$4 out
+    out=$(cd "$r" && python3 "$TOOL" --local ${5:+"$5"})
+    grep -qx "METHOD=$method" <<<"$out" && grep -qx "REASON=$reason" <<<"$out" &&
+        ok "local $label -> $method ($reason)" ||
+        notok "local $label: wanted $method/$reason, got $(tr '\n' ' ' <<<"$out")"
+}
+
+if r=$(new_repo indep); then
+    commit_file "$r" a.py "feat(a): add a"
+    commit_file "$r" b.py "fix(b): repair b"
+    local_expect "$r" rebase independent_commits "two independent commits"
+    out=$(cd "$r" && python3 "$TOOL" --local)
+    grep -qx 'NOT_EVALUATED=rule1_override_label,rule2_bot_author' <<<"$out" &&
+        ok "local output names the rules it cannot evaluate" || notok "NOT_EVALUATED missing: $out"
+    grep -qx 'PR=local:origin/main..HEAD' <<<"$out" &&
+        ok "default range is origin/main..HEAD (no origin/HEAD)" || notok "PR line: $(grep ^PR= <<<"$out")"
+    # origin/HEAD names the default branch when present.
+    g -C "$r" update-ref refs/remotes/origin/develop main
+    g -C "$r" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
+    out=$(cd "$r" && python3 "$TOOL" --local)
+    grep -qx 'PR=local:origin/develop..HEAD' <<<"$out" &&
+        ok "default branch resolved from refs/remotes/origin/HEAD" || notok "origin/HEAD ignored: $(grep ^PR= <<<"$out")"
+else notok "could not build indep repo"; fi
+
+if r=$(new_repo correction); then
+    commit_file "$r" a.py "feat(a): add a"
+    commit_file "$r" a.py "fix(a): correct a"
+    local_expect "$r" squash in_pr_correction "fix of in-branch work"
+else notok "could not build correction repo"; fi
+
+if r=$(new_repo single); then
+    commit_file "$r" a.py "feat(a): add a"
+    local_expect "$r" squash single_commit "single commit"
+else notok "could not build single repo"; fi
+
+if r=$(new_repo range); then
+    commit_file "$r" a.py "feat(a): add a"
+    mid=$(g -C "$r" rev-parse HEAD)
+    commit_file "$r" b.py "fix(b): repair b"
+    # Only the last commit is in mid..HEAD: a single commit, not the pair.
+    local_expect "$r" squash single_commit "explicit BASE..HEAD range" "$mid..HEAD"
+    out=$(cd "$r" && python3 "$TOOL" --local "$mid..HEAD")
+    grep -qx 'COMMITS=1' <<<"$out" && ok "explicit range counts only its commits" || notok "range COMMITS: $out"
+    rc=0
+    out=$(cd "$r" && python3 "$TOOL" --local HEAD..HEAD) || rc=$?
+    [ "$rc" -eq 1 ] && grep -qx 'STATUS=ERROR' <<<"$out" &&
+        ok "empty local range -> STATUS=ERROR" || notok "empty range rc=$rc: $out"
+else notok "could not build range repo"; fi
+
+rc=0
+err=$(python3 "$TOOL" --local --fixture "$FX/pr-2940.json" 2>&1 >/dev/null) || rc=$?
+[ "$rc" -eq 2 ] && grep -q 'not allowed with' <<<"$err" &&
+    ok "--local and --fixture are mutually exclusive" || notok "--local + --fixture rc=$rc: $err"
+python3 "$TOOL" --help | grep -q -- '--local' && ok "--help documents --local" || notok "--help lacks --local"
+
 echo "PASSED=$PASS FAILED=$FAIL"
 [ "$FAIL" -eq 0 ]
