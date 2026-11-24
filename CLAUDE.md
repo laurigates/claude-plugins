@@ -86,60 +86,9 @@ Claude Code plugin collection providing skills and agents for development workfl
 
 Invoke `/marketplace-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
 
-## Agentic Optimization
-
-See `.claude/rules/agentic-optimization.md` for detailed patterns.
-
-Key principles:
-- **Compact output**: `--dots`, `--reporter=github`, `-c`
-- **Fail fast**: `--bail=1`, `-x`
-- **CI modes**: `--reporter=junit`, `--frozen-lockfile`
-- **Machine-readable**: JSON output when available
-
-## Plugin Organization
-
-| Plugin Type | Example | Contains |
-|-------------|---------|----------|
-| Tool-focused | `tools-plugin` | CLI tool skills (fd, rg, jq) |
-| Language-focused | `typescript-plugin` | Language ecosystem skills |
-| Workflow-focused | `git-plugin` | Git/GitHub operations |
-| Infrastructure | `configure-plugin` | Configuration automation |
-
 ## Git Workflow
 
-**CRITICAL: Commits and PR titles MUST follow conventional commit format.**
-
-### Conventional Commits
-
-All commits and PR titles must follow the pattern:
-```
-<type>(<scope>): <subject>
-```
-
-**Why:** This drives release-please version automation and maintains clean git history.
-
-- **Commits:** Use `git commit -m "feat(plugin): description"` with issue references
-- **PR titles:** MUST match conventional format - used as commit message on squash-merge
-- **Scope:** The plugin directory name (e.g., `feat(git-plugin)`). It is a changelog label only; the files touched decide which packages release
-- **Types:** `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`, `revert`
-
-See `.claude/rules/conventional-commits.md` for complete guide and examples.
-
-### Example Workflow
-
-```bash
-# Write and test code
-git add src/feature.ts tests/feature.test.ts
-
-# Commit with conventional format + issue reference
-git commit -m "feat(git-plugin): add new workflow
-
-Closes #42
-Refs #99"
-
-# PR title must also be conventional
-gh pr create --title "feat(git-plugin): add new workflow"
-```
+**Commits and PR titles MUST follow conventional commit format** — `<type>(<scope>): <subject>`, scope = the plugin directory name. release-please parses them, and a squash-merge lands the PR title on `main`. Types, bumps, issue footers and merge-method detail: `.claude/rules/conventional-commits.md`.
 
 ## Local-model export
 
