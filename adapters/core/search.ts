@@ -221,7 +221,8 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
   let warnings: string[] = [];
 
   try {
-    const scanned = scanSkills(opts.repoRoot, target);
+    const filtered = (opts.plugins?.length ?? 0) > 0;
+    const scanned = scanSkills(opts.repoRoot, target, opts.plugins);
     entries = scanned.entries;
     warnings = scanned.warnings;
 
@@ -269,8 +270,12 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
       return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
     }
 
-    // Rewrite with only-current entries (self-pruning).
-    const nextEntries: Record<string, number[]> = {};
+    // Unfiltered: rewrite with only-current entries (self-pruning). Filtered:
+    // the current entries are a subset of the marketplace, so pruning would
+    // evict every other plugin's vectors and the next unfiltered session
+    // would re-embed them all; merge into a valid cache instead.
+    const nextEntries: Record<string, number[]> =
+      filtered && cacheValid ? { ...(cached as NonNullable<typeof cached>).entries } : {};
     keys.forEach((key, i) => {
       nextEntries[key] = rows[i] as number[];
     });

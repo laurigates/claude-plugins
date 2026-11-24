@@ -161,9 +161,40 @@ describe("pi config", () => {
       endpoint: DEFAULT_ENDPOINT,
       model: DEFAULT_MODEL,
       pins: [],
+      plugins: [],
       push: true,
       sessionNudges: true,
     });
+  });
+
+  test("parseConfigText accepts a plugins string array", () => {
+    const { partial, warnings } = parseConfigText(
+      JSON.stringify({ plugins: ["git-plugin", "macos-plugin"] }),
+      "test.json",
+    );
+    expect(partial).toEqual({ plugins: ["git-plugin", "macos-plugin"] });
+    expect(warnings).toEqual([]);
+  });
+
+  test("parseConfigText ignores a plugins value that is not a string array", () => {
+    for (const bad of ["git-plugin", ["git-plugin", 3], { name: "git-plugin" }]) {
+      const { partial, warnings } = parseConfigText(JSON.stringify({ plugins: bad }), "s");
+      expect(partial).toEqual({});
+      expect(warnings).toHaveLength(1);
+      // A known key with a bad value, not the unknown-key warning.
+      expect(warnings[0]).toContain('"plugins" is not an array of strings');
+    }
+  });
+
+  test("loadConfig: a project plugins list replaces the global one", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-config-"));
+    const globalPath = join(dir, "global.json");
+    const projectPath = join(dir, "project.json");
+    writeFileSync(globalPath, JSON.stringify({ plugins: ["git-plugin"] }));
+    writeFileSync(projectPath, JSON.stringify({ plugins: ["macos-plugin"] }));
+    const { config, warnings } = loadConfig({ defaultRepoRoot: "/repo", globalPath, projectPath });
+    expect(config.plugins).toEqual(["macos-plugin"]);
+    expect(warnings).toEqual([]);
   });
 
   test("parseConfigText accepts valid fields and warns on bad ones", () => {

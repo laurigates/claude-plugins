@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, readdirSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { cacheFilePath, loadCache, saveCache } from "../core/cache.ts";
 import {
   EmbedUnavailableError,
   embedBatch,
@@ -253,5 +254,83 @@ describe("hybrid happy path", () => {
     state.receivedInputs = [];
     await index.search("commit staged changes", 3);
     expect(state.receivedInputs).toEqual([["commit staged changes"]]);
+  });
+});
+
+describe("plugin-filtered builds and the cache", () => {
+  const embed = () => ({ endpoint, model: "mock-embed", dimensions: DIMS });
+  const cachedKeys = (dir: string): string[] =>
+    Object.keys(loadCache(cacheFilePath(fixtureRoot, dir))?.entries ?? {}).sort();
+
+  test("a filtered build indexes only the named plugins", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-filter-"));
+    const index = await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(index.mode).toBe("hybrid");
+    expect(index.entries.map((e) => e.plugin)).toEqual(["gamma-plugin", "gamma-plugin"]);
+  });
+
+  test("a filtered build merges into the cache instead of evicting other plugins", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-merge-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    const fullKeys = cachedKeys(freshCache);
+    expect(fullKeys).toHaveLength(4);
+
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toEqual(fullKeys);
+
+    // The next unfiltered session re-embeds nothing.
+    state.receivedInputs = [];
+    const full = await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    expect(full.mode).toBe("hybrid");
+    expect(state.receivedInputs.filter((batch) => batch.length > 1)).toEqual([]);
+  });
+
+  test("a filtered build keeps stale entries; an unfiltered build prunes them", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-prune-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    const filePath = cacheFilePath(fixtureRoot, freshCache);
+    const cache = loadCache(filePath);
+    if (cache === null) throw new Error("cache not written");
+    const stale = "stale-entry-key";
+    saveCache(filePath, { ...cache, entries: { ...cache.entries, [stale]: mockVector("x") } });
+
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["alpha-plugin"],
+      embed: embed(),
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toContain(stale);
+
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    expect(cachedKeys(freshCache)).not.toContain(stale);
+    expect(cachedKeys(freshCache)).toHaveLength(4);
+  });
+
+  test("a filtered build over a cache for another model does not keep its entries", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache-model-"));
+    await buildIndex({ repoRoot: fixtureRoot, embed: embed(), cacheDir: freshCache });
+    await buildIndex({
+      repoRoot: fixtureRoot,
+      plugins: ["gamma-plugin"],
+      embed: { ...embed(), model: "other-embed" },
+      cacheDir: freshCache,
+    });
+    expect(cachedKeys(freshCache)).toHaveLength(2);
+    expect(loadCache(cacheFilePath(fixtureRoot, freshCache))?.model).toBe("other-embed");
   });
 });

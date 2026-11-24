@@ -21,6 +21,11 @@ export interface OpencodeBindingConfig {
   model: string;
   /** Skill ids ("plugin:skill") always injected first; unknown ids warn and skip. */
   pins: string[];
+  /**
+   * Index only these marketplace plugins ("git-plugin"); empty = every plugin.
+   * Written by `just setup-opencode <plugin>...`; unknown names warn and are ignored.
+   */
+  plugins: string[];
   /** Run session-plugin's spinup and end nudges (#2802). Default true. */
   sessionNudges: boolean;
 }
@@ -32,7 +37,15 @@ export interface OpencodeBindingConfig {
  */
 export const DEFAULT_REPO_ROOT = resolve(import.meta.dir, "..", "..");
 
-const KNOWN_KEYS = new Set(["repoRoot", "k", "endpoint", "model", "pins", "sessionNudges"]);
+const KNOWN_KEYS = new Set([
+  "repoRoot",
+  "k",
+  "endpoint",
+  "model",
+  "pins",
+  "plugins",
+  "sessionNudges",
+]);
 
 function stringOption(
   options: Record<string, unknown>,
@@ -85,6 +98,19 @@ export function resolveOptions(options?: Record<string, unknown>): {
     }
   }
 
+  let plugins: string[] = [];
+  if (raw.plugins !== undefined) {
+    if (Array.isArray(raw.plugins)) {
+      for (const name of raw.plugins) {
+        if (typeof name === "string" && name.length > 0) plugins.push(name);
+        else warnings.push(`plugin ${JSON.stringify(name)} is not a plugin name string; skipped`);
+      }
+    } else {
+      warnings.push('option "plugins" must be an array of plugin names; indexing every plugin');
+      plugins = [];
+    }
+  }
+
   let sessionNudges = true;
   if (raw.sessionNudges !== undefined) {
     if (typeof raw.sessionNudges === "boolean") sessionNudges = raw.sessionNudges;
@@ -98,6 +124,7 @@ export function resolveOptions(options?: Record<string, unknown>): {
       endpoint: stringOption(raw, "endpoint", DEFAULT_ENDPOINT, warnings),
       model: stringOption(raw, "model", DEFAULT_MODEL, warnings),
       pins,
+      plugins,
       sessionNudges,
     },
     warnings,

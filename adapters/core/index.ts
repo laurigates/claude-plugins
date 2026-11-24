@@ -28,7 +28,12 @@ export {
 } from "./embeddings.ts";
 export { extractFrontmatterBlock, parseFrontmatter } from "./frontmatter.ts";
 export { FUSE_DEPTH, RRF_K, rrfFuse } from "./fusion.ts";
-export { documentText, scanSkills } from "./indexer.ts";
+export {
+  documentText,
+  isUnknownPluginWarning,
+  scanSkills,
+  UNKNOWN_PLUGIN_WARNING_SUFFIX,
+} from "./indexer.ts";
 export {
   AVAILABLE_SKILLS_CLOSE,
   AVAILABLE_SKILLS_OPEN,

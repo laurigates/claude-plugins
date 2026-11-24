@@ -123,6 +123,7 @@ describe("options handling (resolveOptions)", () => {
       endpoint: DEFAULT_ENDPOINT,
       model: DEFAULT_MODEL,
       pins: [],
+      plugins: [],
       sessionNudges: true,
     });
     expect(warnings).toEqual([]);
@@ -165,6 +166,25 @@ describe("options handling (resolveOptions)", () => {
   test("non-string pin entries are skipped with a warning, strings kept", () => {
     const { config, warnings } = resolveOptions({ pins: ["a:one", 7, null] });
     expect(config.pins).toEqual(["a:one"]);
+    expect(warnings).toHaveLength(2);
+  });
+
+  test("plugins: a string array passes through with no warning", () => {
+    const { config, warnings } = resolveOptions({ plugins: ["git-plugin", "macos-plugin"] });
+    expect(config.plugins).toEqual(["git-plugin", "macos-plugin"]);
+    expect(warnings).toEqual([]);
+  });
+
+  test("plugins: a non-array warns and indexes every plugin", () => {
+    const { config, warnings } = resolveOptions({ plugins: "git-plugin" });
+    expect(config.plugins).toEqual([]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('"plugins"');
+  });
+
+  test("plugins: non-string entries are skipped with a warning, strings kept", () => {
+    const { config, warnings } = resolveOptions({ plugins: ["git-plugin", 3, ""] });
+    expect(config.plugins).toEqual(["git-plugin"]);
     expect(warnings).toHaveLength(2);
   });
 

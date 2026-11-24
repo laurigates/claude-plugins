@@ -151,11 +151,18 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   "endpoint": "http://localhost:11434",      // embedding endpoint
   "model": "nomic-embed-text",               // embedding model
   "pins": ["git-plugin:git-commit"],         // always injected; ranked results fill k after pins
+  "plugins": ["git-plugin"],                 // index only these plugins; absent/[] = every plugin
   "push": true,                              // false = pull-only (debug/ablation)
   "sessionNudges": true                      // false = no session-plugin spinup/end nudges
 }
 ```
 
+  `just setup-pi <plugin>...` writes `plugins` into the global file
+  (`PI_SKILL_DISCOVERY` overrides the path) and `just setup-pi` with no
+  names removes it. A `plugins` name the marketplace lacks warns and is
+  ignored. A filtered index merges into the embedding cache instead of
+  pruning it, so the other plugins' vectors survive for the next unfiltered
+  session.
   Unknown pins warn and are skipped; malformed config files are ignored
   with a warning (never fatal to the session). Warnings — including the
   BM25-only degradation notice when the embedding endpoint is unreachable —
@@ -199,7 +206,10 @@ config file; the tuple form carries the options):
   the plugin file's location), `k` (push top-k, default 5), `endpoint` /
   `model` (embeddings; default `http://localhost:11434` /
   `nomic-embed-text`), `pins` (skill ids always injected first; unknown ids
-  warn and skip), `sessionNudges` (default `true`; `false` turns off
+  warn and skip), `plugins` (marketplace plugin names to index, e.g.
+  `["git-plugin"]`; absent or empty indexes every plugin; a name the
+  marketplace lacks warns and is ignored; `just setup-opencode <plugin>...`
+  writes it), `sessionNudges` (default `true`; `false` turns off
   session-plugin's spinup and end nudges). Invalid values warn and fall back
   to defaults.
 - Runs session-plugin's spinup and end nudges (`opencode/session-nudges.ts`,

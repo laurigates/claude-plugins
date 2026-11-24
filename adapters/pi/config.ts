@@ -41,6 +41,11 @@ export interface SkillDiscoveryConfig {
   model: string;
   /** Always-injected skill ids ("plugin:skill"); ranked results fill k after pins. */
   pins: string[];
+  /**
+   * Index only these marketplace plugins ("git-plugin"); empty = every plugin.
+   * Written by `just setup-pi <plugin>...`; unknown names warn and are ignored.
+   */
+  plugins: string[];
   /** false = pull-only (debug/ablation). */
   push: boolean;
   /** false turns off session-plugin's spinup and end nudges (session-nudges.ts). */
@@ -54,6 +59,7 @@ export function defaultConfig(defaultRepoRoot: string): SkillDiscoveryConfig {
     endpoint: DEFAULT_ENDPOINT,
     model: DEFAULT_MODEL,
     pins: [],
+    plugins: [],
     push: true,
     sessionNudges: true,
   };
@@ -103,7 +109,8 @@ export function parseConfigText(
         else ignore(key, "an integer >= 1");
         break;
       case "pins":
-        if (isStringArray(value)) partial.pins = value;
+      case "plugins":
+        if (isStringArray(value)) partial[key] = value;
         else ignore(key, "an array of strings");
         break;
       case "push":

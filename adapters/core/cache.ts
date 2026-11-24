@@ -9,8 +9,10 @@
  *   <sha256(absRepoRoot).slice(0,16)>.json — XDG, never in-repo (in-repo
  *   caches dirty `git clean -x`, multiply per-worktree, and trip
  *   coworker-detection). Per-repo-path filename isolates checkouts.
- * - Write: atomic (.tmp + rename); each build rewrites with only-current
- *   entries (self-pruning, no LRU bookkeeping).
+ * - Write: atomic (.tmp + rename); each unfiltered build rewrites with
+ *   only-current entries (self-pruning, no LRU bookkeeping). A build limited
+ *   to some plugins (IndexOptions.plugins) merges into the existing cache
+ *   instead, so it does not evict the other plugins' vectors.
  */
 
 import { createHash } from "node:crypto";
