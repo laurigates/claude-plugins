@@ -92,17 +92,7 @@ Invoke `/marketplace-authoring` — it carries the create-a-skill and create-a-u
 
 ## Local-model export
 
-Run this marketplace's skills inside other coding agents: two local-model harnesses through the adapter, and Antigravity CLI through in-place `skills.json` registration (not an adapter):
-
-| Target | Source of truth | Doc | Recipes |
-|--------|-----------------|-----|---------|
-| **pi** (pi.dev) — adapter (ADR-0022) | `adapters/pi/` binding | [`adapters/README.md`](adapters/README.md) § pi, [`docs/pi-export.md`](docs/pi-export.md) | `just pi-adapter-check`, `pi-adapter`, `pi-adapter-register`, `pi-adapter-unregister` (group `adapters`); `serve-pi-model`, `setup-pi` (group `pi`) |
-| **OpenCode** — adapter (ADR-0022) | `adapters/opencode/` binding | [`adapters/README.md`](adapters/README.md), [`docs/opencode-export.md`](docs/opencode-export.md) | `just oc-adapter-check`, `oc-adapter-register`, `oc-adapter-unregister` (group `adapters`); `export-opencode`, `install-opencode`, `setup-opencode` (group `opencode`) |
-| **Antigravity CLI** (`agy`) | in-place `skills.json` + agent/hook export | [`docs/antigravity-export.md`](docs/antigravity-export.md) | `just agy-check`, `configure-antigravity`, `install-antigravity-agents`, `install-antigravity-hooks`, `setup-antigravity` (group `antigravity`) |
-
-pi and OpenCode load Claude Code `SKILL.md` unmodified but neither **budgets** the skill listing: pi costs ~111 tok/skill and OpenCode ~88 (measured 2026-08-24 — ~34,000 standing tokens for 382 skills), both uncapped. The **adapter** (ADR-0022) closes that gap for each: a `search_skills` pull tool + per-turn ranked top-k push injection reaching every skill at ~600 standing tokens — see `adapters/README.md`. Antigravity's standing skill-listing cost has not been measured.
-
-Both cutovers are done. pi's curated tier installer (`pi/tiers.yaml` + `scripts/install-pi.sh`, ~9,900 standing tokens over ~95 skills) was removed in #2093; OpenCode's rulesync export was retired in #2094, once its own token calibration landed beside the retrieval gate frozen at `main_hit_at_k_min = 0.57` on 2026-07-22 (`adapters/CUTOVER.md` §1 and §8). `just export-opencode` survives for the two surfaces the adapter does not cover — **subagents** (OpenCode does not auto-load `~/.claude/agents/`) and **hooks** (OpenCode has no hook surface at all).
+pi and OpenCode load `SKILL.md` unmodified but neither budgets the skill listing (~111 and ~88 tok/skill, uncapped); the retrieval adapter (ADR-0022) closes that gap, and `just export-opencode` survives only for subagents and hooks. Antigravity CLI registers skills in place through `skills.json`. Targets, recipes, measurements and cutover history: [`adapters/README.md`](adapters/README.md), `adapters/CUTOVER.md`, [`docs/pi-export.md`](docs/pi-export.md), [`docs/opencode-export.md`](docs/opencode-export.md), [`docs/antigravity-export.md`](docs/antigravity-export.md).
 
 ## Blueprint (constrained dogfooding)
 
@@ -118,15 +108,7 @@ This repo runs `blueprint-plugin` against itself in a deliberately constrained m
 
 **Autonomy level 3 is consumer-only (ADR-0020, #2005).** This repo stays at `automation.autonomy_level: 1` and never runs the level-3 out-of-band pipeline. `/blueprint:autonomy-level3` scaffolds that pipeline (the `blueprint-autorun` + `blueprint-wo-execute` workflow templates + gate/parser scripts) into a *downstream* consumer repo that opts in; it is authored and tested here but not exercised here.
 
-### Commit-scope convention for blueprint work
-
-| Scope | Effect | Use for |
-|-------|--------|---------|
-| `chore(blueprint): …` | No version bump | Manifest bookkeeping, sync runs, ID assignments inside `docs/blueprint/` |
-| `feat(blueprint-plugin): …` | Minor version bump on the published plugin | Skill changes inside `blueprint-plugin/` |
-| `fix(blueprint-plugin): …` | Patch version bump | Bug fixes inside `blueprint-plugin/` |
-
-What keeps dogfooding from publishing the plugin is the `chore` **type** (no bump) plus keeping edits under `docs/blueprint/` — **not** the `blueprint` scope. release-please routes by files touched, not by scope (`.claude/rules/conventional-commits.md`), so `fix(blueprint): …` on a file inside `blueprint-plugin/` **would** publish.
+Blueprint bookkeeping commits are `chore(blueprint): …` and touch only `docs/blueprint/`. The `chore` type keeps the plugin unpublished, not the scope: release-please routes by files touched, so `fix(blueprint): …` on a file inside `blueprint-plugin/` **would** publish. Scope table: [`docs/blueprint/README.md`](docs/blueprint/README.md) § Commit-scope convention.
 
 ## Conventions
 
