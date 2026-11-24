@@ -21,7 +21,7 @@ Unscoped rules load on every turn; the rest load when a file matching their
 | Skill authoring | `skill-development`, `skill-quality`, `skill-naming`, `skill-execution-structure`, `skill-argument-handling`, `skill-fork-context`, `skill-portability`, `skill-consolidation`, `skill-evaluation`, `agentic-optimization`, `context-engineering`, `workflow-vs-skill`, `plugin-flow-diagrams`, `version-pinning` | — |
 | Agents and runtime | `agent-development`, `agent-runtime`, `loop-integrity`, `agent-coworker-detection` | `loop-integrity`, `agent-coworker-detection` |
 | Hooks | `hooks-reference`, `prompt-agent-hooks`, `hook-block-vs-nudge`, `bash-tool-replacements`, `handling-blocked-hooks` | `bash-tool-replacements`, `handling-blocked-hooks` |
-| Scripts and checks | `shell-scripting`, `structured-script-output`, `regression-testing`, `offload-to-deterministic-substrate`, `drift-detection-triggering`, `parallel-safe-queries` | `offload-to-deterministic-substrate`, `parallel-safe-queries` |
+| Scripts and checks | `shell-scripting`, `structured-script-output`, `regression-testing`, `offload-to-deterministic-substrate`, `drift-detection-triggering`, `parallel-safe-queries` | `parallel-safe-queries` |
 | Git, PRs and releases | `conventional-commits`, `release-please`, `pr-branch-sync`, `gh-json-fields`, `issue-grouping`, `gitattributes`, `docs-currency` | `conventional-commits`, `pr-branch-sync`, `gh-json-fields`, `issue-grouping`, `docs-currency` |
 | Plugins and marketplace | `plugin-structure`, `plugin-usage-telemetry`, `generated-fleet-drift`, `biome-markdown` | — |
 | CI workflows | `workflow-model-effort`, `workflow-naming` | — |
