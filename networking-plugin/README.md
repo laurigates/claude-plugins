@@ -6,13 +6,13 @@ Modern network discovery, diagnostics, monitoring, and load testing tools - prio
 
 | Skill | Description |
 |-------|-------------|
-| [network-discovery](skills/network-discovery/skill.md) | Host and port discovery using RustScan, arp-scan-rs, and nmap |
-| [network-diagnostics](skills/network-diagnostics/skill.md) | Connectivity troubleshooting with trippy, gping, and ss |
-| [network-monitoring](skills/network-monitoring/skill.md) | Real-time traffic monitoring with bandwhich and Sniffnet |
-| [dns-tools](skills/dns-tools/skill.md) | Modern DNS queries with dog (DoT/DoH support) |
-| [layer2-discovery](skills/layer2-discovery/skill.md) | Layer 2 topology mapping with LLDP/CDP and ARP scanning |
-| [interface-state](skills/interface-state/skill.md) | Local interface, address, route, and neighbor state with iproute2 (`ip`) |
-| [http-load-testing](skills/http-load-testing/skill.md) | HTTP load testing with oha (coordinated omission handling) |
+| [network-discovery](skills/network-discovery/SKILL.md) | Host and port discovery using RustScan, arp-scan-rs, and nmap |
+| [network-diagnostics](skills/network-diagnostics/SKILL.md) | Connectivity troubleshooting with trippy, gping, and ss |
+| [network-monitoring](skills/network-monitoring/SKILL.md) | Real-time traffic monitoring with bandwhich and Sniffnet |
+| [dns-tools](skills/dns-tools/SKILL.md) | Modern DNS queries with dog (DoT/DoH support) |
+| [layer2-discovery](skills/layer2-discovery/SKILL.md) | Layer 2 topology mapping with LLDP/CDP and ARP scanning |
+| [interface-state](skills/interface-state/SKILL.md) | Local interface, address, route, and neighbor state with iproute2 (`ip`) |
+| [http-load-testing](skills/http-load-testing/SKILL.md) | HTTP load testing with oha (coordinated omission handling) |
 
 ## Tool Categories
 
