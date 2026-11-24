@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-24
 reviewed: 2026-04-25
 name: python-testing
 description: Python testing with pytest, coverage, fixtures, and mocking. Use when the user mentions pytest, unit tests, coverage, fixtures, mocking, or writing Python tests.
@@ -280,6 +280,22 @@ def test_with_tmp_path(tmp_path):
     file_path = tmp_path / "test.txt"
     file_path.write_text("content")
     assert file_path.read_text() == "content"
+```
+
+### Load a Script File as a Module
+
+A script with a hyphenated name (`check-skill-xrefs.py`) cannot be imported, so tests load it by path. Register the module in `sys.modules` before executing it. A module that combines `from __future__ import annotations` with `@dataclass` otherwise fails to load with `AttributeError` on Python 3.12–3.14, because `dataclasses` resolves string annotations through `sys.modules[cls.__module__]`. Python 3.15 loads it, so a test can pass locally and fail on an older CI interpreter.
+
+```python
+import importlib.util, sys
+from pathlib import Path
+
+def load_script(path: Path, name: str = "script_under_test"):
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod  # before exec_module (dataclass + future annotations)
+    spec.loader.exec_module(mod)
+    return mod
 ```
 
 ## TDD Workflow
