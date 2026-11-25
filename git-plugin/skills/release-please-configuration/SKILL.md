@@ -1,6 +1,6 @@
 ---
 created: 2025-12-28
-modified: 2026-11-14
+modified: 2026-11-25
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
@@ -158,27 +158,10 @@ A PR that already merged with a bare title stays `autorelease: pending` after
 the fix, so runs keep aborting; relabel it and re-run as in
 [references/troubleshooting.md](references/troubleshooting.md#recovery-unwedge-an-already-merged-untagged-pr).
 
-**Single-package repos: don't set `separate-pull-requests: false` at all.** The
-"CORRECT" example in
-[Common Failure: Merged Release PR Never Tagged](#common-failure-merged-release-pr-never-tagged)
-is for monorepos. With exactly one package, the code
-defaults `separate-pull-requests` to `true` (`src/manifest.ts`; the manifest docs
-say "absence defaults to false", which does not match). Setting it to `false`
-forces the Merge plugin anyway: the PR is titled `chore: release main` (the
-group default `chore: release ${branch}`) on a branch named
-`release-please--branches--main` with **no component**. A `node` package takes
-its component from `package.json`'s `name`, so the tagging pass logs
-`PR component: undefined does not match configured component: <name>` and cuts
-no release, even with no custom title pattern. The workflow job still reports
-success, and the missed-release guard counts only feat/fix/perf/revert commits,
-so it misses this too. Fix: delete `separate-pull-requests` (and any custom
-title pattern) so release PRs are standalone (`chore(main): release X.Y.Z`).
-Recovery for the stuck PR: run `release-please github-release --release-type
-simple --target-branch main`. The simple strategy has no package name, so its
-empty component matches the merged PR's branch, and it tags the release and
-relabels the PR `autorelease: tagged`. Then attach any release assets by hand,
-because the workflow's `release_created` jobs did not run. (Seen 2026-11-24 in
-laurigates/foundryvtt-local-rest-api#18, fixed in #19, recovered as v2.1.0.)
+**Single-package repos: don't set `separate-pull-requests: false` at all.** It
+forces the Merge plugin, the PR loses its component, and no release is cut;
+fix and recovery in
+[references/troubleshooting.md](references/troubleshooting.md#single-package-separate-pull-requests-false-cuts-no-release).
 
 ## Per-Package `extra-files` for Custom Version Locations
 

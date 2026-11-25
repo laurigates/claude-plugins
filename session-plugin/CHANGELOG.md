@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.19.0...session-plugin-v1.20.0) (2026-11-25)
+
+
+### Features
+
+* **session-plugin:** flag an origin remote that shares no history with the checkout ([17254fd](https://github.com/laurigates/claude-plugins/commit/17254fd3956b6f72c221c914b47af2b0acfe31b0)), closes [#3450](https://github.com/laurigates/claude-plugins/issues/3450)
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.3...session-plugin-v1.19.0) (2026-11-25)
 
 
