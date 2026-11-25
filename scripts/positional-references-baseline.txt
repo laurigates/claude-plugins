@@ -31,7 +31,7 @@ comfyui-plugin/skills/comfy-workflow-layout/SKILL.md	1
 comfyui-plugin/skills/comfyui-node-authoring/SKILL.md	1
 comfyui-plugin/skills/comfyui-pack-live-smoke/SKILL.md	1
 configure-plugin/skills/claude-security-settings/SKILL.md	1
-configure-plugin/skills/configure-all/SKILL.md	2
+configure-plugin/skills/configure-all/SKILL.md	1
 configure-plugin/skills/configure-dockerfile/SKILL.md	1
 configure-plugin/skills/configure-formatting/SKILL.md	1
 configure-plugin/skills/configure-gitignore/SKILL.md	1

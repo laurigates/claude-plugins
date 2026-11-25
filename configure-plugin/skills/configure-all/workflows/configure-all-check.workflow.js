@@ -7,15 +7,17 @@
  *
  * Shape: fan-out-and-synthesize.
  *   Fan-out unit  — one READ-ONLY check agent per applicable roster row.
- *   Loop bound    — `scripts/list-components.sh`'s `COMPONENT=` rows, passed in
- *                   as `args.roster`. Never a prose "for each component".
+ *   Loop bound    — `scripts/detect-relevance.sh`'s `RELEVANCE=` rows (or
+ *                   `list-components.sh`'s `COMPONENT=` rows), passed in as
+ *                   `args.roster`. Never a prose "for each component".
  *   Barrier       — Synthesize. The fix plan has to see every component at once
  *                   to group the ones contending for the same file.
  *
  * Three things this deliberately does NOT do:
- *   1. No classify agent. Applicability is
- *      `types === 'all' || types.split(',').includes(projectType)` over a field
- *      the lister already emits — manifest data, not a judgement.
+ *   1. No classify agent. Applicability is `tier !== 'SKIP'` over the field
+ *      detect-relevance.sh already emits; a row with no tier falls back to
+ *      `types === 'all' || types.split(',').includes(projectType)`. Both are
+ *      script or manifest data, not a judgement.
  *   2. No `--fix`. Several components write the same files (pre-commit and
  *      linting both write `.pre-commit-config.yaml`); parallel fixers race.
  *      The `fixPlan` is returned for the SKILL to apply sequentially, outside.
@@ -164,11 +166,14 @@ if (!roster?.length) {
   return { abort: true, reason: 'empty-roster' }
 }
 
-// TYPES is manifest data, not a judgement. No agent decides this.
-const applicable = roster.filter((r) => r.types === 'all' || r.types.split(',').includes(projectType))
+// The tier is script output and TYPES is manifest data, not a judgement. No
+// agent decides this. REVIEW rows are checked (read-only) like APPLY rows.
+const isApplicable = (r) =>
+  r.tier ? r.tier !== 'SKIP' : r.types === 'all' || r.types.split(',').includes(projectType)
+const applicable = roster.filter(isApplicable)
 const skipped = roster
   .filter((r) => !applicable.includes(r))
-  .map((r) => ({ ...r, reason: `TYPES=${r.types}` }))
+  .map((r) => ({ ...r, reason: r.tier ? `TIER=SKIP ${r.reason ?? ''}`.trim() : `TYPES=${r.types}` }))
 
 // The floor is as load-bearing as the ceiling: a harness that fires 8 agent
 // preambles to replace 8 slash commands is pure overhead.

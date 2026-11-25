@@ -49,6 +49,9 @@ if [ ! -f "$manifest" ]; then
   exit 1
 fi
 echo "MANIFEST=${manifest}"
+# Standards version is defined once, in the manifest (top-level scalar).
+standards_version="$(awk -F'"' '/^standards_version:/ {print $2; exit}' "$manifest")"
+echo "STANDARDS_VERSION=${standards_version:-unknown}"
 
 # ---------------------------------------------------------------------------
 # Parse the flat manifest with awk (no yq dependency).
