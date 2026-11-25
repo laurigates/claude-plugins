@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.6",
-  "agent-patterns-plugin": "2.58.6",
+  "agent-patterns-plugin": "2.58.7",
   "agents-plugin": "1.16.3",
   "api-plugin": "2.0.1",
   "bevy-plugin": "1.4.2",
@@ -13,7 +13,7 @@
   "comfyui-plugin": "1.15.9",
   "communication-plugin": "1.2.7",
   "component-patterns-plugin": "1.5.4",
-  "configure-plugin": "1.44.0",
+  "configure-plugin": "1.44.1",
   "container-plugin": "2.11.5",
   "css-plugin": "1.2.4",
   "documentation-plugin": "1.16.1",
