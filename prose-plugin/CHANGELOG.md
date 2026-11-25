@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.5...prose-plugin-v1.5.0) (2026-11-25)
+
+
+### Features
+
+* **prose-plugin:** add --kind email to prose-check ([#3810](https://github.com/laurigates/claude-plugins/issues/3810)) ([d622299](https://github.com/laurigates/claude-plugins/commit/d6222997ae1db4d4ca00831cabc0ec22e1a5943a)), closes [#3740](https://github.com/laurigates/claude-plugins/issues/3740)
+
 ## [1.4.5](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.4...prose-plugin-v1.4.5) (2026-11-20)
 
 

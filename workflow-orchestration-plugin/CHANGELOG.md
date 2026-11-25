@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.20.0...workflow-orchestration-plugin-v1.20.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **workflow-orchestration-plugin:** give repair-round stages distinct worktree paths ([e2824f6](https://github.com/laurigates/claude-plugins/commit/e2824f6320b3f56a1fbbb1df315656e4bcc4e0b8)), closes [#3749](https://github.com/laurigates/claude-plugins/issues/3749)
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.19.2...workflow-orchestration-plugin-v1.20.0) (2026-11-17)
 
 
