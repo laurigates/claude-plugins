@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-25
 reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(jq *), Bash(sort *), AskUserQuestion, TodoWrite
@@ -60,7 +60,7 @@ First, test whether `.mcp.json` exists in the current working directory:
 
 - **If `.mcp.json` is absent** (the `Config exists` context line is empty, or `test -f .mcp.json` would fail): print "No `.mcp.json` found — starting fresh." and treat `mcpServers` as `{}` for the remainder of the workflow. Do **not** abort. Proceed to Step 2 so the user can still install core servers or specific servers via flags / interactive mode; Step 3 will create the file from scratch.
 - **If `.mcp.json` exists**: use the `Read` tool to load `.mcp.json` and parse the `mcpServers` object. List all configured servers and surface the result to subsequent steps. For each server, check its command type (`npx`, `bunx`, `uvx`, `go run`) and required env vars. Flag any servers with missing required environment variables.
-- **Check `pal` against the policy form.** A `pal` entry is in policy form when its `command` and `args` equal the policy's `mcpServers.pal` and every `env` key the policy names carries the policy's value. Anything else is legacy and needs normalization: a bare `pal-mcp-server` command, a `uvx --from git+…` source, `pal-mcp-server` without `@latest`, or an `env` value written as `$VAR` instead of `${VAR}`. Report it as `NOT POLICY FORM`.
+- **Check `pal` against the policy form.** A `pal` entry is in policy form when its `command` and `args` equal the policy's `mcpServers.pal` and every `env` key the policy names carries the policy's value. Anything else is legacy and needs normalization: a bare `pal-mcp-server` command, a `uvx --from git+…` source, the pre-rename package `pal-mcp-server` (with or without `@latest`), `palaver-mcp-server` without `@latest`, or an `env` value written as `$VAR` instead of `${VAR}`. Report it as `NOT POLICY FORM`.
 
 If `--check-only`, skip to Step 4 (report only).
 
