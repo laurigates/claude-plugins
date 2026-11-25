@@ -1,0 +1,19 @@
+To: Example List <list@example.org>
+Cc: Somebody Else <somebody@example.org>, Another Person <another@example.org>,
+ Third Recipient <third@example.org>, Fourth Recipient <fourth@example.org>
+Subject: Re: [PATCH v2] collector: batch writes before the flush so rebalances stay clean
+
+On Mon, 3 Nov 2026 at 10:15, Quoted Author <quoted@example.org> wrote:
+> The collector batches its writes on every partition rebalance and therefore
+> the flush happens far too late for the edge cache to warm up before the first
+> request arrives, which is why the operator keeps seeing stale reads.
+
+Thanks for the review. I reran the bench with the batching change applied and
+the bodyzebra flush now completes before the rebalance starts in every one of
+the forty runs I collected overnight on the staging cluster, although two runs
+still showed a short stall that I have not explained yet. I will send v3 with
+the per-partition counters included tomorrow morning.
+
+-- 
+Signature Person, team lead for the collector and the edge cache tier
+who writes a signature line long enough to be scored as a sentence.
