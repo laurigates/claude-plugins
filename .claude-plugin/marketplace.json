@@ -399,7 +399,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -901,7 +901,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture",
-      "version": "1.20.0",
+      "version": "1.20.1",
       "author": {
         "name": "Lauri Gates"
       },
