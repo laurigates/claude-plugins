@@ -130,4 +130,43 @@ jobs:
             PLUGINS_LIST
 ```
 
-The review workflow is the same shape with `on: pull_request`, `permissions: contents: read`, a `prompt:`, `claude_args: "--model opus --effort medium --max-turns 5"`, and a job-level `if: github.event.pull_request.user.type != 'Bot'` (the action refuses a Bot actor not listed in `allowed_bots`). Add a `concurrency:` group keyed on the PR number with `cancel-in-progress: true`.
+The standalone review workflow keeps a job-level `if:` on the actor, because the action refuses a Bot actor not listed in `allowed_bots`:
+
+```yaml
+name: Claude Code Review (standalone)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    if: github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@<FULL_SHA> # <tag>
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@<FULL_SHA> # <tag>
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: Review this pull request for correctness, security and test coverage.
+          claude_args: "--model opus --effort medium --max-turns 5"
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            PLUGINS_LIST
+```

@@ -459,7 +459,10 @@ PY
 # each YAML fence the way GitHub Actions does. For every job step that uses
 # anthropics/claude-code-action it prints `<file>:<fence-start>\t<kind>\t<job>`:
 #   id-token         the job's (or workflow's) permissions lack `id-token: write`,
-#                    which the action needs to fetch its token through OIDC
+#                    which the action needs to fetch its token through OIDC; also
+#                    checked on a job that calls a reusable Claude workflow
+#                    (`uses: …/.github/workflows/*claude*`), whose caller must
+#                    grant the called workflow's permissions
 #   plugins-comment  a line of the `plugins:` input starts with '#'; inside a
 #                    block scalar that is content, read as a plugin name
 #   bot-guard        the workflow triggers on pull_request but the job has no
@@ -498,6 +501,14 @@ for path, start, end, lang in sorted(fences):
     for job_name, job in doc["jobs"].items():
         if not isinstance(job, dict):
             continue
+        # A caller of a reusable Claude workflow must grant at least the called
+        # workflow's permissions, id-token: write included, or GitHub rejects
+        # the run at parse time. The reusable workflow owns the actor guard.
+        called = str(job.get("uses", "")).lower()
+        if ".github/workflows/" in called and "claude" in called:
+            perms = job.get("permissions", doc.get("permissions"))
+            if not (perms == "write-all" or (isinstance(perms, dict) and perms.get("id-token") == "write")):
+                print(f"{path}:{start}\tid-token\t{job_name}")
         for step in job.get("steps") or []:
             if not isinstance(step, dict):
                 continue
@@ -683,7 +694,7 @@ check_skill_body() {
       elif [ -n "$ccp_hits" ]; then
         while IFS=$'\t' read -r ccp_where ccp_kind ccp_job; do
           case "$ccp_kind" in
-            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action without id-token: write in its permissions (the action fetches its token through OIDC) (issue #3443)" ;;
+            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action (directly or through a reusable workflow) without id-token: write in its permissions (the action fetches its token through OIDC) (issue #3443)" ;;
             bot-guard) ccp_hit="job '${ccp_job}' runs claude-code-action on pull_request with no guard against Bot-authored pull requests (add \`if: github.event.pull_request.user.type != 'Bot'\` or \`allowed_bots\`; the action refuses Bot actors) (issue #3726)" ;;
             *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name) (issue #3443)" ;;
           esac
