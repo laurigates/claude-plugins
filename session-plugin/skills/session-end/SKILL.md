@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Runs reversible wrap/distill/taskwarrior work at once, asks once for outward filings. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-11-02
+modified: 2026-11-19
 reviewed: 2026-06-24
 ---
 
@@ -200,12 +200,21 @@ Gather the Ask-lane items: every `DEFERRED:` line from
 Step 3, a Blueprint drain that did not pass the auto gate, and any
 low-confidence task add. If there are none, skip to Step 5 — no question.
 
-Otherwise print a short receipt of what Step 3 already did (so the user can
-undo it), then ask **one AskUserQuestion** call: up to 4 questions grouped
-by destination (GitHub filings, `[PROMOTE]` PRs,
+Otherwise print, as plain text, a short receipt of what Step 3 already did
+(so the user can undo it) and then the pending Ask-lane items, one line each
+with its destination. Print the pending Ask-lane items before the
+`AskUserQuestion` call, not only inside it: a cloud worker restart can drop
+the dialog, and the printed list is then the only record of what is still
+owed (issue #3689). Then ask **one AskUserQuestion** call: up to 4 questions
+grouped by destination (GitHub filings, `[PROMOTE]` PRs,
 journal / removals), each `multiSelect`, each option one concrete item. The
-user picks any subset; "Other" covers adjustments. Never ask a second
-round — the sub-skills already received their decisions.
+user picks any subset; "Other" covers adjustments. Never ask again once the
+question is answered — the sub-skills already received their decisions.
+
+**On a resume** (a worker restart, or the user says the question
+disappeared) where Steps 1–3 are done and the conversation records no
+answer to this question, ask the same question again from the printed list.
+That re-ask does not count as a second round. Do not re-run Steps 1–3.
 
 Then run the approved items:
 

@@ -376,7 +376,9 @@ Feedback files its findings minus any workflow friction already filed.
 
 ### Step 4: One question for the Ask lane
 
-Ask once for the DEFERRED: lines.'
+Print the pending Ask-lane items before the question, then ask once for the
+DEFERRED: lines. On a resume with no recorded answer, re-ask; that re-ask
+does not count as a second round.'
 
 # --- The regression: old two-field form (no enabled check) must FAIL --------
 rm -rf "${root:?}/$PLUGIN/skills/headingonly"
@@ -454,6 +456,20 @@ run_check; out_fbl="$OUT"; rc_fbl="$RC"
 assert_eq "session-end: no already-filed exclusion exits 1" "$rc_fbl" "1"
 assert_contains "session-end: missing already-filed exclusion is named" \
   "$out_fbl" "must retain 'minus any workflow friction'"
+# --- #3689: Step 4 asking without printing the pending items must FAIL ------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/Print the pending Ask-lane items before the question, then ask/Ask}"
+run_check; out_print="$OUT"; rc_print="$RC"
+assert_eq "session-end: Step 4 without printed pending items exits 1" "$rc_print" "1"
+assert_contains "session-end: missing printed pending items is named" \
+  "$out_print" "Step 4 must retain 'Print the pending Ask-lane items before the'"
+# --- #3689: Step 4 without the resume re-ask clause must FAIL ---------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/does not count as a second round/is forbidden}"
+run_check; out_resume="$OUT"; rc_resume="$RC"
+assert_eq "session-end: Step 4 without resume re-ask exits 1" "$rc_resume" "1"
+assert_contains "session-end: missing resume re-ask is named" \
+  "$out_resume" "Step 4 must retain 'does not count as a second round'"
 rm -rf "${root:?}/$PLUGIN/skills/session-end"
 make_session_end_skill "$GATE3"
 
