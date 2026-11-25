@@ -8,35 +8,36 @@ this document is the whole of that exception.
 | | |
 |---|---|
 | The one registered template | `evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js` |
-| The name it must resolve under | `evaluate-skill` |
-| Who resolves it | `evaluate-plugin:evaluate-plugin-batch`'s harness, via `workflow('evaluate-skill', {...})` |
+| How it is registered | `"workflows": ["./skills/evaluate-skill/workflows/evaluate-skill.workflow.js"]` in `evaluate-plugin/.claude-plugin/plugin.json` |
+| The name it resolves under | `evaluate-plugin:evaluate-skill` (`<plugin>:<meta.name>`) |
+| Who resolves it | `evaluate-plugin:evaluate-plugin-batch`'s harness, via `workflow('evaluate-plugin:evaluate-skill', {...})` |
 | Everything else | **Not registered.** Bundled only. |
 
-**Register that one and nothing else.** A file in `~/.claude/workflows/` reads
-as *runnable*, and these templates are deliberately incomplete — invoking one
-against empty `args` spends real agents to discover it was a template. The only
-thing that earns a registered name is another harness that has to call it by
-name, and today there is exactly one such call site.
+**Register that one and nothing else.** A registered workflow reads as
+*runnable* and appears in the skill listing, and these templates are
+deliberately incomplete: invoking one against empty `args` spends real agents
+to discover it was a template. There is no `meta` field that hides a registered
+workflow from the listing. The only thing that earns a registered name is
+another harness that has to call it by name, and today there is exactly one
+such call site.
 
-## Why a name at all — and the two alternatives that do not need one
+## Why a name at all — and the alternatives
 
-The platform supports three ways for one harness to reach another's work. Weigh
-them before adding a second registered name; two of them need no registry.
+The platform supports several ways for one harness to reach another's work.
+Weigh them before adding a second registered name.
 
 | Route | Call shape | Cost |
 |---|---|---|
-| **Registered name** *(chosen)* | `workflow('evaluate-skill', args)` | Needs a saved copy outside the repo. Throws on an unknown name. |
-| Script path | `workflow({scriptPath: '<repo>/evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js'}, args)` | No registry and no install step, but the path must be one the session can already read. The installed plugin cache is not (see below). |
-| Slash command per unit | each fan-out agent invokes `/evaluate:skill <plugin>/<skill>` with the `SlashCommand` tool — the pattern `configure-all-check.workflow.js` uses | No registry and no path, but the child runs as prose inside one agent, so the cell-level fan-out and the schema-forced verdicts are lost. |
-| Plugin-native registration *(not yet probed)* | `workflow('evaluate-plugin:evaluate-skill', args)`, with `"workflows": ["./skills/evaluate-skill/workflows/evaluate-skill.workflow.js"]` in `evaluate-plugin/.claude-plugin/plugin.json` | No copy hook and no stale user-scope copy: the plugin cache is the source, at the installed version. The name gains the `evaluate-plugin:` prefix, so the batch harness's call site changes with it. Read from the 2.1.325 binary (the plugin loader and nested `workflow()` resolve against the same list); no end-to-end run yet ([#3684](https://github.com/laurigates/claude-plugins/issues/3684)). |
+| **Plugin-native registration** *(chosen, #3684)* | `workflow('evaluate-plugin:evaluate-skill', args)` | No copy and no install step: the plugin cache is the source, at the installed version. The name carries the `evaluate-plugin:` prefix. |
+| User-scope copy *(retired)* | `workflow('evaluate-skill', args)` against `~/.claude/workflows/evaluate-skill.workflow.js` | Needed a SessionStart hook to keep the copy in step (#2829), and put a bare `evaluate-skill` entry in every session's listing in every repo. |
+| Script path | `workflow({scriptPath: '<repo>/evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js'}, args)` | The path must be one the session can already read. The installed plugin cache is not (see below). |
+| Slash command per unit | each fan-out agent invokes `/evaluate:skill <plugin>/<skill>` with the `SlashCommand` tool — the pattern `configure-all-check.workflow.js` uses | The child runs as prose inside one agent, so the cell-level fan-out and the schema-forced verdicts are lost. |
 
 `evaluate-plugin-batch` wants the *harness*, not the prose skill, which rules
-out the slash-command route. Both skills live in `evaluate-plugin`, so a script
-path would not cross a plugin boundary. What rules it out is a platform
-restriction: a nested `workflow({scriptPath})` only accepts *a script path the
-Workflow tool returned, or a file the session can already read (the working
-directory or a directory you have added)*. Probed 2026-09-25 with zero-agent
-workflows (empty `args` makes `evaluate-skill` abort before any `agent()` call):
+out the slash-command route. A nested `workflow({scriptPath})` only accepts *a
+script path the Workflow tool returned, or a file the session can already read
+(the working directory or a directory you have added)*. Probed 2026-09-25 with
+zero-agent workflows:
 
 | `scriptPath` target | Result |
 |---|---|
@@ -44,103 +45,67 @@ workflows (empty `args` makes `evaluate-skill` abort before any `agent()` call):
 | `~/.claude/plugins/cache/<marketplace>/evaluate-plugin/<version>/…` | Threw the restriction above |
 | `~/.claude/workflows/evaluate-skill.workflow.js` | Threw the restriction above |
 
-So the script path works only when the session runs inside this checkout, and
-fails for anyone who installed the plugin. Adding the plugin cache to
-`permissions.additionalDirectories` would lift that, at the cost of a broad
-standing read grant over every cached plugin that each consumer must replicate.
-[#2829](https://github.com/laurigates/claude-plugins/issues/2829) decided
-against the grant: the registered name stays, and a SessionStart hook keeps the
-saved copy in step (see "Installing the registration").
+So the script path works only inside this checkout.
 
-## Where a registered workflow lives
+## How plugin-native registration resolves
 
-Two scopes, same mechanism:
+Claude Code loads plugin workflows from a plugin-root `workflows/` directory,
+or from a `plugin.json` `workflows` field (a path, or a list of directories and
+`.js` files) that replaces that directory. Each registers as
+`<plugin>:<meta.name>`, and a nested `workflow('<name>')` resolves against the
+same merged list of saved and plugin workflows
+(`.claude/rules/workflow-vs-skill.md` § "Layout convention" tables every
+location).
 
-| Scope | Directory | Applies to |
-|---|---|---|
-| User | `~/.claude/workflows/` | every session for that user |
-| Project | `<repo>/.claude/workflows/` | sessions whose working directory is in that project |
+Probed 2026-11-25 on the current release
+([#3684](https://github.com/laurigates/claude-plugins/issues/3684)): a minimal
+plugin with a two-entry `workflows` list, loaded with `claude --plugin-dir`,
+ran a caller workflow that called `workflow('wf-probe:hello', {via: 'caller'})`
+and got the nested result back with its args. The probe used a probe plugin
+loaded by `--plugin-dir`, not `evaluate-plugin` from a marketplace install;
+verify once after the marketplace update with the steps below.
 
-With nested `.claude/` directories the workflow **closest to the working
-directory wins** on a name collision, and project-scope saves target the closest
-existing `.claude/workflows/` (Claude Code 2.1.178 — see
-`.claude/rules/agent-development.md`). So a project-scoped
-`evaluate-skill` would shadow a user-scoped one of the same name rather than
-merging with it.
+`evaluate-plugin` lists the one file rather than relying on a plugin-root
+`workflows/` directory, because its templates live under
+`skills/<skill>/workflows/` and only one of them is registered.
 
-**This repo does not commit a `.claude/workflows/` copy**, and deliberately so:
-the bundled `workflows/*.workflow.js` file is the single source of truth, and a
-second committed copy would be a fleet-drift surface with nothing keeping the two
-in step (`.claude/rules/generated-fleet-drift.md`). Registration is a copy
-written at session start by `evaluate-plugin`'s hook, not a second tracked file.
+The identity is the workflow's **`meta.name`**. Keep `meta.name`
+(`evaluate-skill`), the bundled basename, and the `evaluate-skill` part of the
+caller's literal in agreement.
 
-The one file this repo does track there, `.claude/workflows/model-suitability-audit.workflow.js`,
-is not a copy: it is a repo-internal audit harness with no bundled twin, so it
-has no drift surface. Sessions in this checkout can start it by name, and it
-returns `{abort: true}` before its first `agent()` call when `args` are empty
+### The one project-scope workflow
+
+This repo tracks one file under `.claude/workflows/`,
+`model-suitability-audit.workflow.js`. It is not a copy: it is a repo-internal
+audit harness with no bundled twin, so it has no drift surface. Sessions in this
+checkout can start it by name, and it returns `{abort: true}` before its first
+`agent()` call when `args` are empty
 (`scripts/tests/test-model-suitability-audit-workflow.sh`).
 
-## Installing the registration
+### Upgrading from the copy hook
 
-`evaluate-plugin` ships a SessionStart hook,
-`evaluate-plugin/hooks/sync-evaluate-skill-workflow.sh` (#2829), that does the
-install. On every session start it compares the bundled template with
-`~/.claude/workflows/evaluate-skill.workflow.js` and, when the copy is missing
-or differs, creates the directory and copies the template in. It writes nothing
-to the session and exits 0 on every path, including an unwritable target. Its
-regression test is `evaluate-plugin/hooks/test-sync-evaluate-skill-workflow.sh`.
-
-**A changed copy takes effect from the next session.** The workflow registry is
-not re-read when the file lands (see step 4 below), so the session in which the
-hook first installs or updates the copy still resolves the previous one, or
-none. Start a new session after installing the plugin, or after an update that
-changed the template.
-
-The hook targets user scope only. Neither directory exists by default (verified
-2026-09-20: `~/.claude/workflows` and `<repo>/.claude/workflows` were both
-absent on a clean machine). Where the hook cannot run, for example with plugin
-hooks disabled, install by hand, keeping the **basename in step with
-`meta.name`**:
+Earlier versions copied the template to
+`~/.claude/workflows/evaluate-skill.workflow.js` at each session start. Nothing
+removes that copy now, and it keeps registering a bare `evaluate-skill` that no
+caller uses. Delete it:
 
 ```bash
-mkdir -p ~/.claude/workflows
-cp evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js ~/.claude/workflows/evaluate-skill.workflow.js
+rm -f ~/.claude/workflows/evaluate-skill.workflow.js
 ```
-
-The identity that `workflow('evaluate-skill', …)` resolves is the workflow's
-**`meta.name`**, which is why that field is load-bearing rather than cosmetic and
-why the bundled file is named `evaluate-skill.workflow.js` rather than after some
-other purpose slug. Keep the three in agreement — `meta.name`, the bundled
-basename, and the installed basename — and the question of which one the registry
-keys on never has to be answered.
 
 ### Verifying it resolved
 
-There is no lint for this in the repo, and there cannot usefully be one: the
-registry lives outside the checkout, so a CI job would be asserting something
-about the runner's home directory. Verify it by hand, in this order:
+There is no CI check for resolution: the registry lives in the session, not the
+checkout. Verify by hand from a session with `evaluate-plugin` installed:
 
-1. `ls ~/.claude/workflows/evaluate-skill.workflow.js` — the file is installed.
-2. `grep -n "name: 'evaluate-skill'" ~/.claude/workflows/evaluate-skill.workflow.js`
-   — the installed copy declares the name the caller uses.
-3. `diff evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js ~/.claude/workflows/evaluate-skill.workflow.js`
-   — the installed copy has not drifted from the bundled source of truth. The
-   hook re-syncs it at each session start; a difference here means the hook
-   has not run since the bundled file changed.
-4. In a session, check that `evaluate-skill` appears in `/workflows`. The
-   registry is not re-read the moment the file lands: on 2026-09-25 the session
-   that installed it still got `no workflow with that name. Available:
-   deep-research` about half an hour later, and the same call resolved only
-   after the registry reloaded. Check from a new session.
-
-5. Resolve it the way the batch caller does, with **empty** `args`. Run a
+1. Check that `evaluate-plugin:evaluate-skill` appears in `/workflows`.
+2. Resolve it the way the batch caller does, with **empty** `args`. Run a
    Workflow script whose body is
-   `return await workflow('evaluate-skill', {})`; it should return
-   `{abort: true, reason: 'missing-skill-dir'}`. That comes from the
+   `return await workflow('evaluate-plugin:evaluate-skill', {})`; it should
+   return `{abort: true, reason: 'missing-skill-dir'}`. That comes from the
    `skillDir` guard in `evaluate-skill.workflow.js`, which returns before the
-   first `agent()` call, so the check spawns no agents (measured 2026-09-26:
-   0 agents, 0 tokens). An unregistered name throws `no workflow with that name`
-   instead.
+   first `agent()` call, so the check spawns no agents. An unregistered name
+   throws `no workflow with that name` instead.
 
 Pass exactly `{}`. Any non-empty `skillDir`, including a placeholder, gets past
 the guard and starts the preflight agent.
@@ -160,7 +125,7 @@ call:
 ```js
 let result
 try {
-  result = await workflow('evaluate-skill', cellArgs)
+  result = await workflow('evaluate-plugin:evaluate-skill', cellArgs)
 } catch (e) {
   // One unresolvable name must not take the sweep down with it. Record the
   // skill as unevaluated so it stays in the denominator, and carry on.
@@ -169,11 +134,8 @@ try {
 }
 ```
 
-Silently letting the throw escape is not acceptable, because a batch that dies
-on its first skill reports nothing and looks like an infrastructure failure
-rather than a missing install step. Falling back to the script-path route above
-does not replace the catch: it resolves only in a session running inside this
-checkout, and from a plugin install it throws too (see "Why a name at all").
+A batch that dies on its first skill reports nothing and looks like an
+infrastructure failure rather than a missing registration.
 
 The child also **shares the parent's concurrency cap, agent counter, abort
 signal and token budget**. That is why `evaluate-skill.workflow.js` imposes no
@@ -185,21 +147,18 @@ whatever `--parallel N` the batch caller was given.
 Don't, unless a *second* harness genuinely has to call a template by name. When
 that happens:
 
-1. Confirm neither alternative in the table above fits — a slash command is
-   cheaper and carries no install step, and so is a script path when every
-   session that calls it can already read the file (the plugin cache is not
-   readable today; see "Why a name at all").
-2. Add the template to the table at the top of this file, with its call site.
+1. Confirm neither the slash-command nor the script-path route fits.
+2. Add the template to the owning plugin's `plugin.json` `workflows` list, and
+   to the table at the top of this file with its call site.
 3. Update `.claude/rules/workflow-vs-skill.md` § "Layout convention", which
-   currently states the rule as "register a name **only** when another harness
-   must call it by name".
-4. Extend the sync hook (or add a sibling in the template's plugin), the manual
-   install snippet, and the verification steps above.
+   states the rule as "register a name **only** when another harness must call
+   it by name".
+4. Extend `scripts/tests/test-evaluate-workflow-registration.sh` or add a
+   sibling that pins the new name against its `meta.name`.
 
 ## Related
 
-- `.claude/rules/workflow-vs-skill.md` — when a bundled template earns its agents; the layout convention and the global-registration rule
-- `.claude/rules/plugin-structure.md` § "Bundled Workflow Templates" — the same four rows in table form
-- `.claude/rules/agent-development.md` § Scope Priority — the nested-`.claude/` closest-wins resolution note
+- `.claude/rules/workflow-vs-skill.md` — when a bundled template earns its agents; the layout convention and the registration rule
+- `.claude/rules/plugin-structure.md` § "Bundled Workflow Templates" — the same rows in table form
 - `.claude/rules/docs-currency.md` — this doc lands in the same commit as the `.js` that depends on it
 - `docs/plans/dynamic-workflow-migration.md` — the evaluation that made `evaluate-skill` the one exception

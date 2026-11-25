@@ -20,6 +20,11 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**/skills/**/scripts/**'
+      # Bundled workflow templates are tested by stub-runtime suites under the
+      # skill's scripts/tests/ (run-*.mjs), and git-pr-sweep's suite also pins
+      # pr-fix against workflow-implement-verify's repair-round template. A PR
+      # editing only a template must run those suites.
+      - '**/skills/**/workflows/**'
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
@@ -52,6 +57,9 @@ on:
       # evals.json files, which no other entry here matches. Without these, a PR
       # editing only eval-grader.md ran the suite in pre-commit but not in CI (#2890).
       - 'evaluate-plugin/agents/**'
+      # test-evaluate-workflow-registration.sh reads the manifest's `workflows`
+      # field, which no other entry here matches (#3684).
+      - 'evaluate-plugin/.claude-plugin/plugin.json'
       - '**/evals.json'
       - '*-plugin/hooks.json'
       - 'justfile'
@@ -109,6 +117,7 @@ on:
     branches: [main]
     paths:
       - '**/skills/**/scripts/**'
+      - '**/skills/**/workflows/**'
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
@@ -118,6 +127,9 @@ on:
       - 'experiments/**'
       - '.github/workflows/golden-set-evaluation.yml'
       - 'evaluate-plugin/agents/**'
+      # test-evaluate-workflow-registration.sh reads the manifest's `workflows`
+      # field, which no other entry here matches (#3684).
+      - 'evaluate-plugin/.claude-plugin/plugin.json'
       - '**/evals.json'
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'

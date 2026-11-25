@@ -43,3 +43,21 @@ Steps A–D in [SKILL.md § Step 1](../SKILL.md#step-1-resolve-target-repo-and-c
   3. **Abort** — exit the skill.
 
   Continue to Step 1b once `$TARGET_REPO` is set.
+
+## When origin shares no history with the checkout
+
+Step C's two local git commands set `$CWD_REPO_UNRELATED=true` when `refs/remotes/origin/*` refs exist and `git merge-base HEAD <tips>` finds no common ancestor with any of them (`merge-base` with several commits answers for HEAD and *any* of them, so one call covers every ref). `$CWD_REPO` then names a repository the checkout is not a copy of. Observed in #3450: a cloud clone held one organization's `.github` history while `origin` pointed at another owner's `.github` repo, and filing would have gone to the wrong repo with no warning. An unfetched origin (no refs) is not flagged, since there is nothing to compare.
+
+Use AskUserQuestion:
+
+> **`origin` may name a different repo.** The current directory's git remote points to **`$CWD_REPO`**, but none of its fetched refs shares history with this checkout. Which repo should receive the feedback?
+
+Options:
+1. **Claude files against `$SUGGESTED_REPO`** (only when Step B found a dominant source that differs from `$CWD_REPO`) — set `$TARGET_REPO` and append `-R $TARGET_REPO` to every remaining `gh` command.
+2. **Claude files against `$CWD_REPO` anyway** — the user confirms the remote is the intended target; set `$TARGET_REPO=$CWD_REPO` and pass `-R $TARGET_REPO` explicitly.
+3. **The user enters a different `owner/repo`** — free-text follow-up; validate against `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$` and set `$TARGET_REPO`.
+4. **Abort** — Claude files nothing and exits the skill.
+
+Under `--confirmed` this prompt counts as "Step 1 would need AskUserQuestion": file nothing and return each finding as a `DEFERRED: <finding>` line.
+
+`session-plugin`'s `session-survey.sh` reports the same condition as `REPO_CONFIDENCE=low`; feedback-session runs the check itself because the two plugins install independently.

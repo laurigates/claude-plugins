@@ -65,3 +65,4 @@ the plugin README, § Availability and linkage keys.
 | `UNDRAINED_WOS_NO_EVIDENCE` | `BLUEPRINT` | WOs in `UNDRAINED_WOS` with no annotated closed task, so no evidence to hand `--evidence` |
 | `TASK_n_BPID` | `TASKWARRIOR` | The WO a pending task is linked to; absent when unlinked |
 | `REPO` | `GIT` | The cwd checkout's `<owner>/<repo>` from the origin URL, no `gh` call; empty when unresolvable |
+| `REPO_CONFIDENCE` | `GIT` | `low` means no local `origin/*` ref shares history with HEAD, so `REPO` may name a different repository than the checkout: confirm the target before filing against it. `high` = shared, `unknown` = no origin refs (never fetched), not a warning |

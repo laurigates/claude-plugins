@@ -74,8 +74,14 @@ cost split the source pins encode, which a single `--model` id would erase. A
 tier no agent pins is reported in `MODEL_MAP_UNUSED=`, not treated as an error,
 because the map is written for the corpus the user expects to export.
 
+`--plugin NAME` (repeatable) limits the export to those plugins' agents; none
+means every plugin. A name that is not a plugin directory of the repo exits 2
+before anything is written. A selection whose plugins ship no agents exports
+zero and reports STATUS=OK.
+
 Usage: export-pi-agents.py [--model=preserve|inherit|<model>]
-                           [--model-map <tier>=<target>,...] <repo-root> <out-dir>
+                           [--model-map <tier>=<target>,...] [--plugin NAME ...]
+                           <repo-root> <out-dir>
 Emits <out-dir>/agents/<name>.md plus a KEY=VALUE report.
 """
 
@@ -363,18 +369,37 @@ def render(
     )
 
 
+def plugin_name_error(repo_root: Path, name: str) -> str | None:
+    """Why `name` is not a plugin of `repo_root`, or None when it is.
+
+    Mirrors scripts/lib/plugin-args.sh `require_plugin`, so a typo fails
+    loudly instead of exporting nothing.
+    """
+    if not name or "/" in name or name.startswith("."):
+        return (
+            f"invalid plugin name {name!r} (expected a directory name like git-plugin)"
+        )
+    if not (repo_root / name / ".claude-plugin" / "plugin.json").is_file():
+        return f"{name!r} is not a plugin in {repo_root} (no {name}/.claude-plugin/plugin.json)"
+    return None
+
+
 def main(
     repo_root: Path,
     out_dir: Path,
     model: str = MODEL_PRESERVE,
     model_map: dict[str, str] | None = None,
+    plugins: frozenset[str] = frozenset(),
 ) -> int:
+    """`plugins` limits the export to those plugins' agents; empty means all."""
     model_map = model_map or {}
     used_tiers: set[str] = set()
     agents_out = out_dir / "agents"
     agents_out.mkdir(parents=True, exist_ok=True)
 
     sources = sorted(repo_root.glob("*-plugin/agents/*.md"))
+    if plugins:
+        sources = [s for s in sources if s.parent.parent.name in plugins]
     written, skipped = 0, []
     widened_total, nested_total, model_pins = 0, 0, 0
     dropped_by_tool: dict[str, int] = {}
@@ -436,6 +461,7 @@ def main(
     print("=== PI AGENT EXPORT ===")
     print(f"SOURCE={repo_root}")
     print(f"OUTPUT={agents_out}")
+    print("PLUGINS=" + (",".join(sorted(plugins)) or "all"))
     print(f"SOURCE_AGENTS={len(sources)}")
     print(f"OUTPUT_AGENTS={written}")
     print(f"SKIPPED_AGENTS={len(skipped)}")
@@ -487,12 +513,24 @@ if __name__ == "__main__":
         help="<tier>=<target>,...: an agent pinned to a mapped tier gets its target "
         "(a model id, or inherit); every other agent follows --model",
     )
+    parser.add_argument(
+        "--plugin",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="limit the export to this plugin's agents (repeatable); none means all",
+    )
     args = parser.parse_args()
+    for name in args.plugin:
+        bad = plugin_name_error(args.repo_root, name)
+        if bad:
+            parser.error(bad)
     sys.exit(
         main(
             args.repo_root.resolve(),
             args.out_dir.resolve(),
             args.model,
             args.model_map,
+            frozenset(args.plugin),
         )
     )

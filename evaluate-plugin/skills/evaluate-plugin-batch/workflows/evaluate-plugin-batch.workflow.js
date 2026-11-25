@@ -46,10 +46,11 @@ export const meta = {
   ],
 }
 
-// The name `evaluate-skill`'s harness is registered under. #2172 defines it;
-// this file calls it. Both children must agree on this literal — a mismatch
-// does not degrade, it throws (see WAVE 1 handling below).
-const EVALUATE_SKILL_WORKFLOW = 'evaluate-skill'
+// The name `evaluate-skill`'s harness is registered under: evaluate-plugin's
+// plugin.json `workflows` field registers it as `<plugin>:<meta.name>` (#3684).
+// The `evaluate-skill` part must equal that file's `meta.name` — a mismatch does
+// not degrade, it throws (see WAVE 1 handling below).
+const EVALUATE_SKILL_WORKFLOW = 'evaluate-plugin:evaluate-skill'
 
 // Refuse above this many eval-ready skills. A CEILING, and it ABORTS: the
 // golden set is deliberately ~15-25 skills, so a request to sweep more than

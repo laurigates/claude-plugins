@@ -149,12 +149,15 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
 
 ## Hooks
 
-Both run on `SessionStart`.
+Runs on `SessionStart`.
 
 | Hook | Purpose |
 |------|---------|
 | `hooks/evaluate-drift-probe.sh` | Reports skills edited after their last `eval-results/` run (drift nudge pointing at `/evaluate:report`) |
-| `hooks/sync-evaluate-skill-workflow.sh` | Copies the bundled `evaluate-skill` workflow template to `~/.claude/workflows/evaluate-skill.workflow.js` when the copy is missing or differs, so `evaluate-plugin-batch` can resolve it by name. Silent and fail-open; a changed copy takes effect from the next session. See [`docs/dynamic-workflow-registration.md`](../docs/dynamic-workflow-registration.md) |
+
+## Registered workflow
+
+`plugin.json` registers the bundled `evaluate-skill` harness through its `workflows` field, so it resolves as `evaluate-plugin:evaluate-skill`; `evaluate-plugin-batch` calls it by that name. See [`docs/dynamic-workflow-registration.md`](../docs/dynamic-workflow-registration.md).
 
 ## Context Engineering
 

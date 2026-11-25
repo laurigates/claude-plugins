@@ -2,11 +2,11 @@
 name: feedback-session
 description: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well.
 args: "[--dry-run] [--confirmed] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
-allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo view *), Bash(mktemp *), Bash(git remote *), Bash(git for-each-ref *), Bash(git merge-base *), Bash(grep -q *), Read, Write, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
 argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-11-10
+modified: 2026-11-25
 compatibility: claude-code
 reviewed: 2026-06-28
 ---
@@ -37,7 +37,7 @@ Parse these from `$ARGUMENTS`:
 | Parameter | Description |
 |-----------|-------------|
 | `--dry-run` | Show findings without creating issues |
-| `--confirmed` | The caller pre-approved filing the seed findings (set by `session-plugin:session-end`, which files feedback without asking because feedback issues are triaged separately). Skip Step 4 and file the findings that survive Step 3 dedup. If Step 1 would need `AskUserQuestion` to pick the target repo, file nothing and return each finding as a `DEFERRED: <finding>` line |
+| `--confirmed` | The caller pre-approved filing the seed findings (set by `session-plugin:session-end`, which files feedback without asking because feedback issues are triaged separately). Skip Step 4 and file the findings that survive Step 3 dedup. If Step 1 would need `AskUserQuestion` to pick the target repo, file nothing and return each finding as a `DEFERRED: <finding>` line. If Step 1b finds IaC-managed labels, do not ask: proceed without the session labels (`$SKIP_SESSION_LABELS=true`) and say so in the Step 6 summary |
 | `--bugs-only` | Only report bugs (wrong/outdated guidance) |
 | `--enhancements-only` | Only report enhancement opportunities |
 | `--positive-only` | Only report positive feedback |
@@ -80,7 +80,18 @@ Compute the share per entry. If the top entry accounts for **more than ~70%** of
 
 Run `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If it succeeds, record the result as `$CWD_REPO`.
 
+Then check that `origin` holds this checkout's history, since the URL alone can name a different repository (#3450). Local refs only, no network:
+
+```bash
+git for-each-ref --format='%(objectname)' refs/remotes/origin
+git merge-base HEAD <every SHA the first command printed>
+```
+
+If the first command prints SHAs and `git merge-base` exits non-zero, no origin ref shares history with HEAD: set `$CWD_REPO_UNRELATED=true` and ask before filing, per [references/target-repo-resolution.md](references/target-repo-resolution.md#when-origin-shares-no-history-with-the-checkout). That prompt replaces Step D's prompts. No SHAs (origin never fetched) or a zero exit means nothing to flag.
+
 **Step D: Branch on the combination.**
+
+Skip this step when `$CWD_REPO_UNRELATED=true`: the Step C prompt already resolved the target.
 
 - **No `$CWD_REPO`** — prompt per [references/target-repo-resolution.md](references/target-repo-resolution.md#step-d-branches-when-the-cwd-has-no-git-remote), then continue to Step 1b.
 
@@ -177,9 +188,17 @@ approved.
 
 Labels and body template: [references/issue-format.md](references/issue-format.md).
 
-Create each issue:
+Create each issue from a body file. The body is multi-line and contains
+backticks, which shell quoting mangles in an inline `--body "<body>"`, so the
+body goes through `--body-file`:
+
+1. Once per run, create a directory for the bodies with `mktemp -d` and record it as `$BODY_DIR`.
+2. Write each finding's body with the Write tool to `$BODY_DIR/<n>.md`.
+3. Read the file back before filing. If it is empty, or its whole content is a single `@path` reference (for example `@/tmp/.../body.md`), do not file it: `gh` does not expand `@file`, so the issue would carry the path as its only text (#3434). Write the real body and check again.
+4. File it:
+
 ```
-gh issue create --title "feedback(<plugin>): <desc>" --label "<labels>" --body "<body>"
+gh issue create --title "feedback(<plugin>): <desc>" --label "<labels>" --body-file "$BODY_DIR/<n>.md"
 ```
 
 Append `-R $TARGET_REPO` when set. Omit `--label` if no labels apply (positive + `$SKIP_SESSION_LABELS`).

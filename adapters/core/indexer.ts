@@ -23,6 +23,14 @@ interface Marketplace {
   plugins: MarketplacePlugin[];
 }
 
+/** Suffix of the warning an unknown `plugins` name produces (bindings surface these). */
+export const UNKNOWN_PLUGIN_WARNING_SUFFIX = "is not in the marketplace — ignored";
+
+/** True for the warnings a binding should show: a `plugins` name the marketplace lacks. */
+export function isUnknownPluginWarning(warning: string): boolean {
+  return warning.endsWith(UNKNOWN_PLUGIN_WARNING_SUFFIX);
+}
+
 export interface ScanResult {
   entries: SkillEntry[];
   warnings: string[];
@@ -41,10 +49,15 @@ export interface ScanResult {
  *   equality — the observed corpus is uniformly the bare string, but a future
  *   list syntax must not silently defeat the filter. Neither harness enforces
  *   the field itself, so the core is the only place this judgment executes.
+ * - Plugin filter: a non-empty `plugins` keeps only those marketplace
+ *   plugins. A name the marketplace does not list warns and is ignored, so a
+ *   typo in the config degrades to "that plugin is missing" rather than a
+ *   crash.
  */
 export function scanSkills(
   repoRoot: string,
   target: "foreign" | "claude-code" = "foreign",
+  plugins?: string[],
 ): ScanResult {
   const marketplacePath = join(repoRoot, ".claude-plugin", "marketplace.json");
   const marketplace = JSON.parse(readFileSync(marketplacePath, "utf8")) as Marketplace;
@@ -52,7 +65,16 @@ export function scanSkills(
   const entries: SkillEntry[] = [];
   const warnings: string[] = [];
 
+  const selected = plugins && plugins.length > 0 ? new Set(plugins) : null;
+  if (selected) {
+    const known = new Set(marketplace.plugins.map((plugin) => plugin.name));
+    for (const name of selected) {
+      if (!known.has(name)) warnings.push(`plugin "${name}" ${UNKNOWN_PLUGIN_WARNING_SUFFIX}`);
+    }
+  }
+
   for (const plugin of marketplace.plugins) {
+    if (selected && !selected.has(plugin.name)) continue;
     const skillsDir = join(repoRoot, plugin.source, "skills");
     if (!existsSync(skillsDir)) continue;
     const skillDirs = readdirSync(skillsDir, { withFileTypes: true })

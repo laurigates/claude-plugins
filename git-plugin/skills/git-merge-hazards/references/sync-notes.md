@@ -9,6 +9,14 @@ the exceptions listed in this file. Read it when syncing that rule.
 - §5's follow-on subsections moved verbatim into `references/`; they are still
   rule text when syncing. §3's pointer moved too, but its registration-race text
   diverged (see **Diverged, not yet mirrored: §3's registration race**).
+- §2's **Nothing tells you this happened** and **Telling an accident from a
+  decision** bullets moved verbatim into
+  [stranded-child-audit.md](stranded-child-audit.md) (#3644); they are still
+  rule text when syncing, and SKILL.md keeps a one-line pointer.
+- The `## Rebase or squash` section is skill-only (#3644): it names the
+  `single_concern` case the rule's one-line summary omits. Mirror its
+  single-concern clause into `pr-merge-hazards.md`, or the next sync leaves the
+  rule reading two same-`type(scope)` commits as rebase-eligible.
 - The `## Merge shepherd` section is skill-only: it points at
   `scripts/merge-chain.sh` and [merge-shepherd.md](merge-shepherd.md). SKILL.md
   sits at the 10,000-character band that `test-no-force-stack.sh` pins, so new

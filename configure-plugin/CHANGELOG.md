@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.44.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.44.0...configure-plugin-v1.44.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **configure-plugin:** launch PAL as palaver-mcp-server ([#3825](https://github.com/laurigates/claude-plugins/issues/3825)) ([82ef769](https://github.com/laurigates/claude-plugins/commit/82ef7690b2e7fade05ee0afe8104aaef1aa7859a))
+
+## [1.44.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.13...configure-plugin-v1.44.0) (2026-11-25)
+
+
+### Features
+
+* **configure-plugin:** rank configure-all components by relevance, fix sibling templates ([#3820](https://github.com/laurigates/claude-plugins/issues/3820)) ([0358f4f](https://github.com/laurigates/claude-plugins/commit/0358f4f035fdf7123609825e5ed96b9a57a86750))
+
+## [1.43.13](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.12...configure-plugin-v1.43.13) (2026-11-25)
+
+
+### Documentation
+
+* **rules:** drop the ignored :ask suffix from allowed-tools guidance ([135d89d](https://github.com/laurigates/claude-plugins/commit/135d89d8c0d839a09db6ddb1d76d073c063c0cce)), closes [#3583](https://github.com/laurigates/claude-plugins/issues/3583)
+
+## [1.43.12](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.11...configure-plugin-v1.43.12) (2026-11-20)
+
+
+### Bug Fixes
+
+* **configure-plugin:** skip bot-authored PRs in the review workflow template ([#3735](https://github.com/laurigates/claude-plugins/issues/3735)) ([b15f761](https://github.com/laurigates/claude-plugins/commit/b15f761ffac8cb3ac1013b775880912dadf3b31e)), closes [#3726](https://github.com/laurigates/claude-plugins/issues/3726)
+
 ## [1.43.11](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.10...configure-plugin-v1.43.11) (2026-11-16)
 
 

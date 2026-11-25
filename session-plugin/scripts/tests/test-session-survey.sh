@@ -2933,6 +2933,48 @@ check "C1e control: the gh argv log is live (the collector does call gh)" "$c1_g
 check_absent "C1e: no gh repo view" "$c1_gh_argv" "repo view"
 check_absent "C1e: no gh api repos lookup" "$c1_gh_argv" "api repos"
 
+# --- RC (#3450): REPO_CONFIDENCE — does origin share the checkout's history? -
+# A cloud clone held ForumViriumHelsinki/.github's history while `origin`
+# named laurigates/.github, so REPO= named a repo the checkout is not a copy
+# of. The collector compares HEAD with the local refs/remotes/origin/* refs
+# (no network): none sharing history -> low; no origin refs at all (a remote
+# that was never fetched) -> unknown, never low.
+RC="$SANDBOX/rc-repo"
+mkrepo "$RC"
+git -C "$RC" remote add origin 'https://github.com/laurigates/.github.git'
+rc_head=$(git -C "$RC" rev-parse HEAD)
+# An unrelated root commit: same object store, no shared ancestor with HEAD.
+rc_other=$(git -C "$RC" commit-tree "$(git -C "$RC" mktree </dev/null)" -m "unrelated root")
+rc_conf() { run_at "$RC" --project demo | grep -m1 '^REPO_CONFIDENCE=' | cut -d= -f2-; }
+
+# Fixture validity: git itself must agree the two histories are disjoint.
+git -C "$RC" merge-base "$rc_head" "$rc_other" >/dev/null 2>&1
+check_eq "RC: fixture — the unrelated root shares no history with HEAD" "$?" "1"
+
+check_eq "RC1: origin configured but never fetched -> unknown" "$(rc_conf)" "unknown"
+
+git -C "$RC" update-ref refs/remotes/origin/main "$rc_head"
+check_eq "RC2: origin/main is HEAD -> high" "$(rc_conf)" "high"
+
+git -C "$RC" update-ref refs/remotes/origin/other "$rc_other"
+check_eq "RC3: one shared ref among unrelated ones is enough -> high" "$(rc_conf)" "high"
+
+git -C "$RC" update-ref refs/remotes/origin/main "$rc_other"
+check_eq "RC4: every origin ref unrelated -> low" "$(rc_conf)" "low"
+out=$(run_at "$RC" --project demo)
+rc_git=$(c1_section "$out" GIT)
+check_line "RC4: the key sits in the GIT section" "$rc_git" "REPO_CONFIDENCE=low"
+check_line "RC4: REPO= still names the origin slug" "$rc_git" "REPO=laurigates/.github"
+check_line "RC4: low confidence is a caveat, not an error" "$rc_git" "STATUS=OK"
+check_count_line "RC4: exactly one REPO_CONFIDENCE row" "$out" '^REPO_CONFIDENCE=' 1
+
+# A ref outside refs/remotes/origin/ never counts as origin's history.
+git -C "$RC" update-ref refs/remotes/upstream/main "$rc_head"
+check_eq "RC5: a shared non-origin remote ref does not lift low" "$(rc_conf)" "low"
+
+out=$(run_at "$SANDBOX" --project demo)
+check_line "RC6: not a git repo -> unknown" "$(c1_section "$out" GIT)" "REPO_CONFIDENCE=unknown"
+
 # ============================================================================
 # C2 (#3173): a WO is not undrained while ANY pending/active task still carries
 # its bpid. A WO tracked as several tasks used to read UNDRAINED_WOS=WO-NNN the

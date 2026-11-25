@@ -123,6 +123,7 @@ describe("options handling (resolveOptions)", () => {
       endpoint: DEFAULT_ENDPOINT,
       model: DEFAULT_MODEL,
       pins: [],
+      plugins: [],
       sessionNudges: true,
     });
     expect(warnings).toEqual([]);
@@ -166,6 +167,24 @@ describe("options handling (resolveOptions)", () => {
     const { config, warnings } = resolveOptions({ pins: ["a:one", 7, null] });
     expect(config.pins).toEqual(["a:one"]);
     expect(warnings).toHaveLength(2);
+  });
+
+  test("plugins: a string array passes through with no warning", () => {
+    const { config, warnings } = resolveOptions({ plugins: ["git-plugin", "macos-plugin"] });
+    expect(config.plugins).toEqual(["git-plugin", "macos-plugin"]);
+    expect(warnings).toEqual([]);
+  });
+
+  // All or nothing, as in the pi parser: any bad element ignores the whole
+  // option with one warning that says every plugin is indexed.
+  test("plugins: a value that is not an array of non-empty names warns that every plugin is indexed", () => {
+    for (const bad of ["git-plugin", ["git-plugin", 3, ""], [""], [123], { name: "git-plugin" }]) {
+      const { config, warnings } = resolveOptions({ plugins: bad });
+      expect(config.plugins).toEqual([]);
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('"plugins"');
+      expect(warnings[0]).toContain("indexing every plugin");
+    }
   });
 
   test("unknown option keys warn and are ignored", () => {

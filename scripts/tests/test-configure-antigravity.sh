@@ -15,6 +15,10 @@
 #      run exits non-zero (it may hold the user's own registrations)
 #   G. install-antigravity.sh leaves an unparseable hooks.json byte-identical,
 #      keeps the user's other hook keys, and rejects --agents-only --hooks-only
+#   H. --plugin limits configure to that plugin's skills dir; --remove --plugin
+#      removes only that one; an unknown plugin exits 2 and writes nothing
+#   I. install --plugin installs only the named plugins' safety hooks: none for
+#      a plugin that ships none (macos-plugin), git-plugin's alone for git-plugin
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -154,6 +158,68 @@ assert "installed hooks.json addresses the installed runner" \
 bash "$install" "$target_g" --agents-only --hooks-only >/dev/null 2>&1 && rc_x=0 || rc_x=$?
 assert "--agents-only --hooks-only together is rejected" \
   "$([ "$rc_x" -eq 2 ] && echo true || echo false)"
+
+echo "=== TEST H: --plugin filter ==="
+target_h="$fixture/target_h"
+bash "$configure" "$target_h" --plugin macos-plugin --plugin git-plugin >/dev/null
+assert "--plugin registers exactly the named plugins' skills dirs" \
+  "$(python3 - "$target_h/skills.json" "$repo_root" <<'PY'
+import json, sys
+paths = sorted(e["path"] for e in json.load(open(sys.argv[1]))["entries"])
+repo = sys.argv[2]
+want = sorted(f"{repo}/{p}/skills" for p in ("git-plugin", "macos-plugin"))
+print("true" if paths == want else "false")
+PY
+)"
+bash "$configure" "$target_h" --remove --plugin macos-plugin >/dev/null
+assert "--remove --plugin removes only that plugin's entry" \
+  "$(python3 -c 'import json,sys; p=[e["path"] for e in json.load(open(sys.argv[1]))["entries"]]; print("true" if p == [sys.argv[2] + "/git-plugin/skills"] else "false")' "$target_h/skills.json" "$repo_root")"
+target_h2="$fixture/target_h2"
+bash "$configure" "$target_h2" --plugin no-such-plugin >/dev/null 2>&1 && rc_h=0 || rc_h=$?
+assert "unknown --plugin exits 2" "$([ "$rc_h" -eq 2 ] && echo true || echo false)"
+assert "unknown --plugin writes no skills.json" "$([ ! -e "$target_h2/skills.json" ] && echo true || echo false)"
+
+echo "=== TEST I: install --plugin ==="
+target_i="$fixture/target_i"
+bash "$install" "$target_i" --plugin macos-plugin >/dev/null 2>&1 && rc_i=0 || rc_i=$?
+assert "install --plugin macos-plugin (no agents) exits 0" "$([ "$rc_i" -eq 0 ] && echo true || echo false)"
+assert "install --plugin for a plugin with no safety hooks installs no hooks.json" \
+  "$([ ! -e "$target_i/hooks.json" ] && echo true || echo false)"
+target_i2="$fixture/target_i2"
+bash "$install" "$target_i2" --plugin git-plugin --hooks-only >/dev/null
+assert "install --plugin git-plugin installs hooks.json" \
+  "$([ -f "$target_i2/hooks.json" ] && echo true || echo false)"
+assert "install --plugin git-plugin installs only git-plugin's hook scripts" \
+  "$(python3 -c 'import json,sys; p={h["plugin"] for h in json.load(open(sys.argv[1]))["hooks"]}; print("true" if p == {"git-plugin"} else "false")' "$target_i2/hooks_manifest.json")"
+
+echo "=== TEST J: scoped installs accumulate hooks; unscoped replaces ==="
+target_j="$fixture/target_j"
+bash "$install" "$target_j" --plugin git-plugin --hooks-only >/dev/null
+bash "$install" "$target_j" --plugin kubernetes-plugin --hooks-only >/dev/null
+manifest_plugins() {
+  python3 -c 'import json,sys; print(",".join(sorted({h["plugin"] for h in json.load(open(sys.argv[1]))["hooks"]})))' "$1"
+}
+assert "a second scoped install keeps the first plugin's hooks active (got $(manifest_plugins "$target_j/hooks_manifest.json"))" \
+  "$([ "$(manifest_plugins "$target_j/hooks_manifest.json")" = "git-plugin,kubernetes-plugin" ] && echo true || echo false)"
+bash "$install" "$target_j" --plugin git-plugin --hooks-only >/dev/null
+assert "re-installing a plugin replaces its entries rather than duplicating them" \
+  "$(python3 -c 'import json,sys; h=json.load(open(sys.argv[1]))["hooks"]; k=[(x["plugin"],x["script"]) for x in h]; print("true" if len(k)==len(set(k)) else "false")' "$target_j/hooks_manifest.json")"
+bash "$install" "$target_j" --hooks-only >/dev/null
+all_hook_plugins="$(manifest_plugins "$target_j/hooks_manifest.json")"
+assert "an unscoped install writes every plugin's hooks (got $all_hook_plugins)" \
+  "$(case "$all_hook_plugins" in *git-plugin*hooks-plugin*kubernetes-plugin*) echo true ;; *) echo false ;; esac)"
+
+echo "=== TEST K: stray arguments are refused, not ignored ==="
+for script in "$configure" "$install" "$repo_root/scripts/export-antigravity.sh"; do
+  bash "$script" "$fixture/target_k" git-plugin >/dev/null 2>"$fixture/k.err" && rc_k=0 || rc_k=$?
+  assert "$(basename "$script") exits 2 on a second positional argument" \
+    "$([ "$rc_k" -eq 2 ] && grep -q 'unexpected argument: git-plugin' "$fixture/k.err" && echo true || echo false)"
+done
+python3 "$repo_root/scripts/generate-antigravity-hooks.py" "$repo_root" "$fixture/target_k2" --plugins git-plugin >/dev/null 2>&1 && rc_k=0 || rc_k=$?
+assert "generate-antigravity-hooks.py exits 2 on an unknown flag" \
+  "$([ "$rc_k" -eq 2 ] && echo true || echo false)"
+assert "install-antigravity-hooks takes plugin names like its siblings" \
+  "$(grep -q '^install-antigravity-hooks \*plugins:' "$repo_root/justfile" && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

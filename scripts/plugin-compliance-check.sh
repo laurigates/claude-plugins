@@ -264,6 +264,15 @@ check_skill_frontmatter() {
       continue
     fi
 
+    # Detect an `:ask` suffix on an allowed-tools entry.
+    # Regression: agentic-permissions.md documented `Bash(git push *):ask` as an
+    # always-prompt tier; a 2026-11-25 probe showed the suffix is ignored and the
+    # command runs unprompted (issue #3583).
+    if grep -qE '\):ask' <<<"$fm_allowed_tools"; then
+      issues+=("❌ ${plugin}/${skill_name}: allowed-tools has an ':ask' suffix, which Claude Code ignores (the command runs unprompted); use permissions.ask in settings.json instead (issue #3583)")
+      has_errors=true
+    fi
+
     local fm_model fm_created fm_modified fm_reviewed
     fm_model=$(extract_field "$skill_file" "model")
     fm_created=$(extract_field "$skill_file" "created")
@@ -450,9 +459,15 @@ PY
 # each YAML fence the way GitHub Actions does. For every job step that uses
 # anthropics/claude-code-action it prints `<file>:<fence-start>\t<kind>\t<job>`:
 #   id-token         the job's (or workflow's) permissions lack `id-token: write`,
-#                    which the action needs to fetch its token through OIDC
+#                    which the action needs to fetch its token through OIDC; also
+#                    checked on a job that calls a reusable Claude workflow
+#                    (`uses: …/.github/workflows/*claude*`), whose caller must
+#                    grant the called workflow's permissions
 #   plugins-comment  a line of the `plugins:` input starts with '#'; inside a
 #                    block scalar that is content, read as a plugin name
+#   bot-guard        the workflow triggers on pull_request but the job has no
+#                    `github.event.pull_request.user.type` guard and the step no
+#                    `allowed_bots`; the action refuses Bot actors (issue #3726)
 # A fence that does not parse, or is not a workflow, is skipped (issue #3443).
 IFS= read -r -d '' CLAUDE_WORKFLOW_TEMPLATE_PY <<'PY' || true
 import sys
@@ -477,9 +492,23 @@ for path, start, end, lang in sorted(fences):
         continue
     if not isinstance(doc, dict) or not isinstance(doc.get("jobs"), dict):
         continue
+    # PyYAML (YAML 1.1) loads the bare key `on` as boolean True.
+    triggers = doc.get("on", doc.get(True))
+    on_pr = isinstance(triggers, (dict, list, str)) and any(
+        t in ("pull_request", "pull_request_target")
+        for t in ([triggers] if isinstance(triggers, str) else triggers)
+    )
     for job_name, job in doc["jobs"].items():
         if not isinstance(job, dict):
             continue
+        # A caller of a reusable Claude workflow must grant at least the called
+        # workflow's permissions, id-token: write included, or GitHub rejects
+        # the run at parse time. The reusable workflow owns the actor guard.
+        called = str(job.get("uses", "")).lower()
+        if ".github/workflows/" in called and "claude" in called:
+            perms = job.get("permissions", doc.get("permissions"))
+            if not (perms == "write-all" or (isinstance(perms, dict) and perms.get("id-token") == "write")):
+                print(f"{path}:{start}\tid-token\t{job_name}")
         for step in job.get("steps") or []:
             if not isinstance(step, dict):
                 continue
@@ -491,6 +520,9 @@ for path, start, end, lang in sorted(fences):
             plugins = (step.get("with") or {}).get("plugins")
             if isinstance(plugins, str) and any(e.strip().startswith("#") for e in plugins.splitlines()):
                 print(f"{path}:{start}\tplugins-comment\t{job_name}")
+            if on_pr and "pull_request.user.type" not in str(job.get("if", "")) \
+                    and "allowed_bots" not in (step.get("with") or {}):
+                print(f"{path}:{start}\tbot-guard\t{job_name}")
 PY
 
 check_skill_body() {
@@ -662,10 +694,11 @@ check_skill_body() {
       elif [ -n "$ccp_hits" ]; then
         while IFS=$'\t' read -r ccp_where ccp_kind ccp_job; do
           case "$ccp_kind" in
-            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action without id-token: write in its permissions (the action fetches its token through OIDC)" ;;
-            *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name)" ;;
+            id-token) ccp_hit="job '${ccp_job}' runs claude-code-action (directly or through a reusable workflow) without id-token: write in its permissions (the action fetches its token through OIDC) (issue #3443)" ;;
+            bot-guard) ccp_hit="job '${ccp_job}' runs claude-code-action on pull_request with no guard against Bot-authored pull requests (add \`if: github.event.pull_request.user.type != 'Bot'\` or \`allowed_bots\`; the action refuses Bot actors) (issue #3726)" ;;
+            *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name) (issue #3443)" ;;
           esac
-          issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit} (issue #3443)")
+          issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit}")
         done <<<"$ccp_hits"
         has_errors=true
       fi
@@ -1110,6 +1143,23 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar must not branch the shared PLUGINS_REPO checkout — promote via a throwaway clone (issue #2113)")
         has_errors=true
       fi
+    fi
+
+    # Regression: git-pr-sweep merges PRs, so the body must keep the safety
+    # invariants a "tightening" edit could silently drop: drafts are gated on
+    # their `## Draft status` section; readying (`gh pr ready`) and merging run
+    # in the main session, never inside a fanned-out agent (auto mode denies a
+    # workflow agent's merge, and no hook guards gh pr ready); merges go only
+    # through git-merge-hazards' merge-chain.sh with a --review-ts that turns
+    # late commits into a stop; and the user-only /git:pr-feedback is
+    # recommended to the user, never invoked (check-delegation-reachability).
+    if [ "$skill_name" = "git-pr-sweep" ]; then
+      for token in "## Draft status" "gh pr ready" "never inside a fanned-out agent" "--review-ts" "merge-chain.sh" "recommend the user run"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (draft gate / main-session merge / merge-chain safety)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: meta-context-diet's dispositions must stay choosable and its
@@ -1703,7 +1753,7 @@ check_skill_body() {
     # dropping it would leave a skill that documents watching without the call.
     if [ "$skill_name" = "git-pr-watch" ]; then
       if ! grep -qF "subscribe_pr_activity" "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see .claude/rules/pr-branch-sync.md)")
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see docs/rules/pr-branch-sync.md)")
         has_errors=true
       fi
     fi
@@ -2230,6 +2280,33 @@ check_skill_body() {
       fi
       if ! grep -qi 'create missing labels' <<<"$fb_step5"; then
         issues+=("❌ ${plugin}/${skill_name}: Step 5 must create missing labels before 'gh issue create' (issue #2360)")
+        has_errors=true
+      fi
+      # Regression: Step 5 filed the multi-line, backtick-bearing body inline
+      # with `--body "<body>"`, which shell quoting mangles, and Step 1C ran
+      # `gh repo view` without an allowed-tools grant, so a --confirmed run
+      # started by session-end could stop at a permission prompt (issue #3680).
+      # A body that was only an `@path` reference was once filed verbatim
+      # (issue #3434), so Step 5 also carries a guard that names `@path`.
+      # The invariants: no `gh issue create … --body "` in the skill or its
+      # sidecars, Step 5 passes `--body-file` and names the `@path` guard, and
+      # a skill that shows `gh repo view` grants `Bash(gh repo view *)`.
+      fb_dir=$(dirname "$skill_file")
+      fb_all=$(cat "$skill_file" "$fb_dir"/references/*.md 2>/dev/null)
+      if grep -qE "gh issue create.*--body[[:space:]]+[\"']" <<<"$fb_all"; then
+        issues+=("❌ ${plugin}/${skill_name}: 'gh issue create' must pass the body with --body-file, not an inline --body \"...\" (issue #3680)")
+        has_errors=true
+      fi
+      if ! grep -qF -- '--body-file' <<<"$fb_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: Step 5 must create issues with --body-file (issue #3680)")
+        has_errors=true
+      fi
+      if ! grep -qF '@path' <<<"$fb_step5"; then
+        issues+=("❌ ${plugin}/${skill_name}: Step 5 must refuse a body that is only an '@path' reference (issues #3434, #3680)")
+        has_errors=true
+      fi
+      if grep -qF 'gh repo view' <<<"$fb_all" && ! grep -E '^allowed-tools:' "$skill_file" | grep -qF 'Bash(gh repo view *)'; then
+        issues+=("❌ ${plugin}/${skill_name}: allowed-tools must grant 'Bash(gh repo view *)' because Step 1 runs gh repo view (issue #3680)")
         has_errors=true
       fi
     fi

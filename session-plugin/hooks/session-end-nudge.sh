@@ -2,7 +2,7 @@
 # Stop hook — offers the session-plugin:session-end orchestrator when the user
 # signals end-of-session. Collapses the former user-level session-wrap-nudge
 # and project-plugin's project-distill-nudge into ONE nudge (decision D4 in
-# docs/session-plugin-workflow.md), so wind-down produces a single offer
+# docs/archive/session-plugin-workflow.md), so wind-down produces a single offer
 # instead of competing hook injections.
 #
 # Fires at most once per session_id (state file). Conservative gates:
@@ -43,35 +43,18 @@ mkdir -p "$state_dir"
 state_file="$state_dir/$session_id"
 [ -f "$state_file" ] && exit 0
 
-# Skip when an end-of-session skill is already driving the flow this session —
-# either invoked as a slash command (<command-name> tag in the expansion) or
-# via the Skill tool ("skill":"…" in the tool_use input).
-if grep -q 'command-name>[^<]*session-\(wrap\|end\|distill\|workflow-capture\)' "$transcript" 2>/dev/null; then
-    exit 0
-fi
-if grep -q '"skill"[[:space:]]*:[[:space:]]*"[^"]*session-\(wrap\|end\|distill\|workflow-capture\)' "$transcript" 2>/dev/null; then
-    exit 0
-fi
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source-path=SCRIPTDIR source=lib/session-transcript.sh
+. "$script_dir/lib/session-transcript.sh"
 
-# Genuine user prompts only: drop tool_result lines (role=user but harness-
-# generated) and slash-command expansions (role=user but skill markdown).
-# Then drop harness-injected user-role content (#3180): a line whose origin
-# kind is human is always kept; otherwise isMeta records, any non-human
-# origin (task-notification, scheduled tasks, ...), and task-notification /
-# system-reminder / PR-activity wake / webhook / child-session bodies go.
-# Queued messages need no filter: they are "type":"queue-operation" records
-# without "role":"user", and a dequeued one arrives as an ordinary user record.
-user_lines=$(grep '"role":"user"' "$transcript" 2>/dev/null \
-    | grep -v '"tool_use_id"' \
-    | grep -v 'command-name>' \
-    | awk '
-        /"origin":[{]"kind":"human"/ { print; next }
-        /"isMeta":true/ { next }
-        /"origin":[{]"kind":"/ { next }
-        /<(task-notification|system-reminder|webhook-payload|child-session-event)>/ { next }
-        /<wake[ >]/ { next }
-        { print }
-    ' || true)
+# Skip when an end-of-session skill is already driving the flow this session
+# (slash command or Skill tool; see lib/session-transcript.sh).
+session_end_skill_ran "$transcript" && exit 0
+
+# Genuine user prompts only — tool results, command expansions and
+# harness-injected user-role content are dropped (#3180; the filter and its
+# rationale live in lib/session-transcript.sh, shared with session-ledger.sh).
+user_lines=$(session_genuine_user_lines "$transcript")
 
 user_turns=$(printf '%s\n' "$user_lines" | grep -c '"role":"user"' || true)
 user_turns=${user_turns:-0}
@@ -95,7 +78,6 @@ has_surface=0
 has_open_tasks=0
 if command -v "$task_bin" >/dev/null 2>&1; then
     has_surface=1
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     collector="$script_dir/../scripts/session-survey.sh"
     if [ -f "$collector" ]; then
         summary=$(SESSION_SURVEY_TASK_BIN="$task_bin" \

@@ -13,6 +13,8 @@ Following the architecture established in [ADR-0022](adrs/0022-adapter-over-expo
 
 `just setup-antigravity` runs the configuration and installation in one shot.
 
+**Gemini CLI is not a target.** Google stopped serving Gemini CLI to free, AI Pro and Ultra accounts on 2026-06-18 and points those users to `agy`; it stays supported only for Gemini Code Assist Standard/Enterprise and paid API keys. This repo has no Gemini CLI export. Note that `~/.gemini/config` is agy's config directory, not Gemini CLI's.
+
 ---
 
 ## Pipeline Overview
@@ -70,6 +72,15 @@ just configure-antigravity       # registers all plugin skill dirs in ~/.gemini/
 just unconfigure-antigravity     # removes them cleanly
 ```
 
+Both take optional plugin names to register or remove only those plugins'
+skills dirs; an unknown name exits 2 and writes nothing. The target directory
+comes from the `AGY_CONFIG` environment variable (default `~/.gemini/config`):
+
+```bash
+just configure-antigravity macos-plugin git-plugin
+AGY_CONFIG=/abs/path/to/project/.agents just setup-antigravity macos-plugin   # project-scoped
+```
+
 This generates:
 ```json
 {
@@ -88,6 +99,20 @@ While `agy plugin install .` is supported by the CLI binary, it copies all 45 pl
 - **Zero copying**: Files stay where they are.
 - **Zero drift**: Changes made to any `SKILL.md` are immediately picked up on the next turn.
 - **On-demand bodies**: Antigravity loads a full skill body only when the skill is activated. How many tokens its up-front listing of ~400 skills costs has not been measured.
+
+### Installing one plugin without a checkout
+
+`agy plugin install` also accepts a GitHub tree URL to a plugin directory, cloning
+the repo and copying that plugin into `~/.gemini/config/plugins/<name>` (verified
+with agy 1.5.10):
+
+```bash
+agy plugin install https://github.com/laurigates/claude-plugins/tree/main/macos-plugin
+```
+
+That is a copy, so it does not track the repo; re-run it to update. A URL to a
+single skill directory (`.../macos-plugin/skills/<skill>`) is rejected with
+`could not detect plugin structure`: the smallest unit agy installs is a plugin.
 
 ---
 
@@ -123,7 +148,7 @@ Claude Code plugins declare hooks in `hooks.json` or `.claude-plugin/plugin.json
 
 Run:
 ```bash
-just install-antigravity-hooks    # installs safety hooks + runner into ~/.gemini/config
+just install-antigravity-hooks    # installs safety hooks + runner into ~/.gemini/config (optional plugin names)
 ```
 
 ### Claude Code Variable Emulation
@@ -172,6 +197,28 @@ The rewrite maps to `deny` because Antigravity documents no way for a hook to re
 ```bash
 just agy-check                   # verify agy binary, skills.json, subagents, and hooks
 just setup-antigravity           # end-to-end configuration and installation
+just setup-antigravity git-plugin     # same, limited to the named plugins' skills, subagents and safety hooks
 just export-antigravity          # dry-run export to dist/antigravity
 just unconfigure-antigravity     # unregister skills from skills.json
 ```
+
+---
+
+## Parity with pi and OpenCode
+
+The three harness integrations cover the same surfaces; how each one gets there
+differs. The per-harness pages carry the detail:
+[`pi-export.md`](pi-export.md), [`opencode-export.md`](opencode-export.md).
+
+| Surface | agy | pi | OpenCode |
+|---|---|---|---|
+| Skills | in-place `skills.json` registration (`configure-antigravity`) | ADR-0022 adapter (`pi-adapter-register`) | ADR-0022 adapter, entry in `opencode.json` (`configure-opencode`) |
+| Subagents | exported `agent.md` (`install-antigravity-agents`) | exported for `@tintinweb/pi-subagents` (`install-pi-agents`) | exported `agents/*.md` (`install-opencode`) |
+| Safety hooks | `PreToolUse` runner in `hooks.json` (`install-antigravity-hooks`) | one `plugin-hooks` extension (`install-pi-hooks`) | one `<plugin>-hooks.js` per plugin (`install-opencode`) |
+| Plugin-scoped setup | `just setup-antigravity <plugin>...` | `just setup-pi <plugin>...` (adapter `"plugins"` key) | `just setup-opencode <plugin>...` (adapter `"plugins"` option) |
+| Check recipe | `just agy-check` | `just pi-adapter-check` | `just oc-adapter-check` |
+| Undo | `just unconfigure-antigravity` | `just pi-adapter-unregister`; delete `plugin-hooks` | `just oc-adapter-unregister` |
+
+In all three, an unknown plugin name exits 2 before anything is written, a
+selected plugin with no subagents or safety hooks is not an error, and running
+setup with no names covers every plugin.

@@ -177,6 +177,7 @@ const FINDINGS_SCHEMA = {
 
 // `could-not-verify` is deliberately absent: refute-by-default is the point.
 // A refutation for lack of a reproduction says so in `evidence`.
+// <fv-shared:verdict-schema:begin> — keep byte-identical with pr-review.workflow.js (git-pr-sweep test-pr-sweep-workflows.sh)
 const VERDICT_SCHEMA = {
   type: 'object',
   required: ['verdict', 'evidence', 'corrected_claim', 'fix_recommendation', 'severity', 'distinct_also'],
@@ -195,6 +196,7 @@ const VERDICT_SCHEMA = {
     },
   },
 }
+// <fv-shared:verdict-schema:end>
 
 // ---------------------------------------------------------------------------
 // Prompts — ADAPT the wording, keep the clauses.
@@ -359,11 +361,13 @@ const verifierFailed = []
 const control = { sampled: controls.length, confirmed: 0, partially: 0, refuted: 0, failed: 0 }
 // Indexes of the `also` entries the verifier called a different defect; null
 // when it did not rule on them.
+// <fv-shared:distinct-also:begin> — keep byte-identical with pr-review.workflow.js (git-pr-sweep test-pr-sweep-workflows.sh)
 const distinctOf = (f, v) => {
   if (!f.also.length) return []
   if (!Array.isArray(v.distinct_also)) return null
   return [...new Set(v.distinct_also)].filter((j) => Number.isInteger(j) && j >= 0 && j < f.also.length)
 }
+// <fv-shared:distinct-also:end>
 picked.forEach((p, i) => {
   const v = verdicts[i]
   const onEnum = v && ['confirmed', 'partially', 'refuted'].includes(v.verdict)

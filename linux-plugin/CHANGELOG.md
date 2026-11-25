@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/linux-plugin-v1.1.1...linux-plugin-v1.2.0) (2026-11-25)
+
+
+### Features
+
+* **linux-plugin:** add linux-battery-drain skill ([#3713](https://github.com/laurigates/claude-plugins/issues/3713)) ([2ff9080](https://github.com/laurigates/claude-plugins/commit/2ff90800893d80bd82aa6b55582cd881b9f34904))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/linux-plugin-v1.1.0...linux-plugin-v1.1.1) (2026-11-16)
 
 

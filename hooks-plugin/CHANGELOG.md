@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.22.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.5...hooks-plugin-v2.22.6) (2026-11-25)
+
+
+### Documentation
+
+* **session-plugin:** catalog the session-ledger flags ([074f413](https://github.com/laurigates/claude-plugins/commit/074f41395771baf6f0b02f46a2822e53e55e3996))
+
+## [2.22.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.4...hooks-plugin-v2.22.5) (2026-11-24)
+
+
+### Documentation
+
+* **claude:** context diet 2026-11-24 ([#3788](https://github.com/laurigates/claude-plugins/issues/3788)) ([a4e0432](https://github.com/laurigates/claude-plugins/commit/a4e04323190f5e81715ed2a843ff7afdb916b971))
+
+## [2.22.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.3...hooks-plugin-v2.22.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** let TaskCompleted pass confirmed external deliverables ([#3770](https://github.com/laurigates/claude-plugins/issues/3770)) ([b830eb2](https://github.com/laurigates/claude-plugins/commit/b830eb23234496b17e95a428b7807f1bb9c3ff58)), closes [#3449](https://github.com/laurigates/claude-plugins/issues/3449)
+
 ## [2.22.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.2...hooks-plugin-v2.22.3) (2026-11-16)
 
 

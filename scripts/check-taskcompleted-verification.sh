@@ -25,7 +25,10 @@
 # tree + commits shape is success, the working-tree fallback survives for
 # genuinely-unstarted tasks, scope is judged against the branch diff rather than
 # raw `git status`, and the guard STILL blocks a task with no supporting change
-# anywhere.
+# anywhere. Issue #3449 added two more: a task whose deliverable is a GitHub
+# issue/PR/comment passes only after a gh api read confirms it (skipping the
+# change-set checks), and a verifier that lacks the tools withholds with a
+# reason naming the missing tool, never ok.
 #
 # ONE PROMPT, NEVER A UNION (issue #2335)
 # The rule set is evaluated against the VERIFIER prompt alone. Joining every
@@ -398,5 +401,68 @@ require_any "still_blocks_without_evidence" \
 require_any "blocking_response_preserved" \
     "prompt no longer documents the blocking {\"ok\": false} response" \
     '"ok" *: *false'
+
+# --- Concept 7: external deliverables pass only once confirmed (#3449) -----
+# A task whose output is a GitHub issue, PR or comment cannot satisfy the
+# change-set withhold condition, so before #3449 it could pass only when the
+# verifier ignored its own rule. Owner decision (issue #3449, question 1 option
+# B): such a task passes only after a gh api read confirms the artifact exists,
+# and then the change-set checks are skipped. Trusting the task text alone
+# (option A) is not an accepted spelling of the confirmation rule.
+require_any "external_deliverable_recognised" \
+    "prompt no longer recognises a task whose deliverable lives outside the repository (a GitHub issue/PR/comment, owner/repo#N)" \
+    'external (artifact|deliverable)' \
+    'outside the repositor(y|ies)' \
+    'owner/repo#'
+
+require_any "external_confirmed_via_gh_api" \
+    "prompt no longer confirms an external deliverable exists with a gh api read before passing it" \
+    'confirm[^.]*gh api' \
+    'gh api[^.]*(confirm|exist)' \
+    'verif(y|ies)[^.]*exist[^.]*gh api'
+
+require_any "external_skips_change_set" \
+    "prompt no longer skips the change-set checks for a confirmed external deliverable" \
+    'skip (steps )?1-8' \
+    'skip[^.]*change[- ]set (checks|conditions)' \
+    '(change[- ]set (checks|conditions)|steps 1-8)[^.]*(do not|does not|don.t) apply'
+
+require_any "external_unconfirmed_never_ok" \
+    "prompt no longer refuses ok for an external deliverable it could not confirm" \
+    'never (return|respond)[^.]*ok[^.]*(could not|cannot|unable to|did not) (be )?confirm' \
+    '(unconfirmed|could not be confirmed)[^.]*(never|not)[^.]*ok'
+
+# The owner asked for the fall direction to be stated: with no GitHub-capable
+# tool, an external deliverable cannot be confirmed and is withheld.
+require_any "external_no_github_tool_withheld" \
+    "prompt no longer states that an external deliverable is withheld when no GitHub-capable tool is available" \
+    '\b(no|without|lacking|lack)\b[^.]*(github|gh\b)[^.]*(withhold|refuse|reject|"ok" *: *false)'
+
+# --- Concept 8: missing tools withhold, and the reason says so (#3449) ----
+# Question 2 option C: a lack of tools is never grounds for ok. Code-change
+# tasks keep the fail-closed gate, but the reason names the missing tool so the
+# agent stops retrying a verdict that no change on its side can alter.
+require_any "missing_tools_not_ok" \
+    "prompt no longer states that missing tools (no Bash, no GitHub tool) are never grounds for ok" \
+    'lack of tools is never grounds' \
+    'missing tools?[^.]*never[^.]*ok'
+
+require_any "missing_tool_named_in_reason" \
+    "prompt no longer makes a missing-tool withhold name the missing tool in its reason" \
+    'reason[^.]*(names?|naming|identif(y|ies))[^.]*missing tool' \
+    'missing tool[^.]*(in|as) the reason' \
+    '(say|state|name)s? which tool (is|was) missing'
+
+require_any "retry_will_not_help" \
+    "prompt no longer tells the agent that retrying a missing-tool withhold will not help" \
+    'retry(ing)? (will|would) not help' \
+    'retr(y|ies|ying) (is|are) (futile|pointless)'
+
+# Question 2 option A (fail open: "return ok with a note") was rejected.
+forbid_all "missing_tools_fail_open" \
+    "prompt returns ok when the verifier cannot run its commands; issue #3449 decided a lack of tools withholds" \
+    '(return|respond with)[^.]*ok[^.]*with a note' \
+    '"ok" *: *true *, *"(note|reason)"' \
+    '(could not|cannot) verify[^.]*(return|respond)[^.]*"ok" *: *true'
 
 emit true "$prompt_chars" "$rules_checked"

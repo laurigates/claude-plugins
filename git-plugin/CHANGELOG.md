@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.75.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.4...git-plugin-v2.75.5) (2026-11-25)
+
+
+### Documentation
+
+* **git-plugin:** correct issue-field endpoints and add field guidance ([#3828](https://github.com/laurigates/claude-plugins/issues/3828)) ([2b7cbc9](https://github.com/laurigates/claude-plugins/commit/2b7cbc9ff37e82aceabd2f79366f32351601715b))
+
+## [2.75.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.3...git-plugin-v2.75.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** close issue-labels.py gaps and route by bracketed title prefix ([#3769](https://github.com/laurigates/claude-plugins/issues/3769)) ([de8d48f](https://github.com/laurigates/claude-plugins/commit/de8d48fb8635c9b31c923b8ab9ba72fc56af7399))
+
+## [2.75.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.2...git-plugin-v2.75.3) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** let merge-sync pushes past the PR-metadata gate ([#3767](https://github.com/laurigates/claude-plugins/issues/3767)) ([185fb4d](https://github.com/laurigates/claude-plugins/commit/185fb4dc2a9e96b33e31255c7c017d3fac7edd76)), closes [#3331](https://github.com/laurigates/claude-plugins/issues/3331)
+
+## [2.75.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.1...git-plugin-v2.75.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* **git-plugin:** fall back to REST in git-triage collector when GraphQL is blocked ([#3765](https://github.com/laurigates/claude-plugins/issues/3765)) ([2a4b09b](https://github.com/laurigates/claude-plugins/commit/2a4b09bb7bc083fefc9038e6affcb4c782e93a7e)), closes [#3362](https://github.com/laurigates/claude-plugins/issues/3362)
+
+## [2.75.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.0...git-plugin-v2.75.1) (2026-11-23)
+
+
+### Documentation
+
+* **git-plugin:** compare failing tests, not check names, before merging red ([#3756](https://github.com/laurigates/claude-plugins/issues/3756)) ([bc41c76](https://github.com/laurigates/claude-plugins/commit/bc41c766c6a884fc5d3c5b340645e0c22f2db362))
+
+## [2.75.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.4...git-plugin-v2.75.0) (2026-11-23)
+
+
+### Features
+
+* **git-plugin:** add git-pr-sweep review, fix and merge workflows ([#3752](https://github.com/laurigates/claude-plugins/issues/3752)) ([e468a4b](https://github.com/laurigates/claude-plugins/commit/e468a4bdaf66a8fdcba3cd35b7f04037b5dfe42a))
+
+## [2.74.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.3...git-plugin-v2.74.4) (2026-11-20)
+
+
+### Documentation
+
+* **git-plugin:** show pr-merge-method.py invocation in git-merge-hazards ([#3721](https://github.com/laurigates/claude-plugins/issues/3721)) ([e414137](https://github.com/laurigates/claude-plugins/commit/e414137bf15c7e8c148c5f0a6dc711faa4ded07b))
+
 ## [2.74.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.74.2...git-plugin-v2.74.3) (2026-11-16)
 
 

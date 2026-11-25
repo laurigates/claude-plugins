@@ -4,16 +4,15 @@ Custom issue fields, issue management commands, GitHub URL resolution, and compl
 
 ## Custom Issue Fields
 
+Read-side commands. The endpoint table (org and personal-account routes, PUT/DELETE, the write body, limits) lives in `git-issue-manage`: [Custom Issue Fields API](../git-issue-manage/REFERENCE.md#custom-issue-fields-api). No `gh issue` flag sets fields; `--type`/`--remove-type` set the issue type only.
+
 ```bash
-# List available fields for an org
-gh api orgs/{org}/issue-fields --jq '.[].name'
+# Field definitions: integer id, name, data_type (org; personal account: user/issue-fields)
+gh api orgs/{org}/issue-fields --jq '.[] | {id, name, data_type}'
 
-# Get field values for an issue
-gh api repos/{owner}/{repo}/issues/{N}/issue-field-values
-
-# Set field value
+# Values on one issue; a single_select value reads back as the option id
 gh api repos/{owner}/{repo}/issues/{N}/issue-field-values \
-  -X POST -f field_id={id} -f value='{value}'
+  --jq '.[] | "\(.issue_field_name): \(.single_select_option.name // .value)"'
 ```
 
 ## Issue Management

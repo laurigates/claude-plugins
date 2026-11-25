@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Read and analyze workflow metadata embedded in ComfyUI output files.
 
-Library + CLI. Run with the project venv:
+Library + CLI. This file is scripts/comfy_meta.py inside the comfy-metadata
+skill directory; the skill runs it with the project venv as:
 
-    .venv/bin/python .claude/skills/comfy-metadata/scripts/comfy_meta.py <cmd> ...
+    .venv/bin/python ${CLAUDE_SKILL_DIR}/scripts/comfy_meta.py <cmd> ...
+
+where ${CLAUDE_SKILL_DIR} is the skill directory (substituted by Claude Code
+in the skill's commands, not set in this process).
 
 Subcommands:
     extract  <file>             dump prompt+workflow JSON (or one half via -k)

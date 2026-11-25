@@ -4,84 +4,103 @@ Extended reference for the `git-issue-manage` skill.
 
 ## Custom Issue Fields API
 
+This section is the single source for issue-field endpoints in git-plugin; other skills link here.
+
 ### Overview
 
-Custom issue fields are org-level configurations that add structured metadata to issues beyond labels and milestones. Fields have types (text, number, date, single_select, iteration) and can be set per-issue.
+Issue fields are owner-level definitions (an organization, or a personal account) that add structured metadata to issues beyond labels and milestones. They are separate from issue types: an issue has one type, and fields apply across types. Projects v2 fields are separate objects; an org issue field is attached to a project with the GraphQL mutation `createProjectV2IssueField`.
+
+Data types (REST `data_type`): `text`, `date`, `single_select`, `multi_select`, `number`. `iteration` is a Projects v2 field type only; there is no iteration issue field.
+
+Limits (GitHub docs): 25 issue fields per organization, 100 options per single-select field, 10 pinned fields per issue type.
 
 ### Endpoints
 
+Field definitions. Organization writes need an org administrator (classic token: `read:org` to list, `admin:org` to write). Personal accounts use `/user/...` for the authenticated user only (classic token: `read:user` to list, `user` to write); `/users/{name}/issue-fields` does not exist.
+
+| Method | Organization | Personal account | Description |
+|--------|--------------|------------------|-------------|
+| `GET` | `/orgs/{org}/issue-fields` | `/user/issue-fields` | List field definitions |
+| `POST` | `/orgs/{org}/issue-fields` | `/user/issue-fields` | Create a field |
+| `PATCH` | `/orgs/{org}/issue-fields/{field_id}` | `/user/issue-fields/{field_id}` | Update a field; an `options` array replaces the whole option set |
+| `DELETE` | `/orgs/{org}/issue-fields/{field_id}` | `/user/issue-fields/{field_id}` | Delete a field |
+
+Per-issue values (push access to the repository; classic token: `repo`):
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/orgs/{org}/issue-fields` | List all fields for org |
-| `POST` | `/orgs/{org}/issue-fields` | Create a new field |
-| `PATCH` | `/orgs/{org}/issue-fields/{field_id}` | Update field definition |
-| `DELETE` | `/orgs/{org}/issue-fields/{field_id}` | Delete field |
-| `GET` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values` | Get values for issue |
-| `POST` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values` | Set value for issue |
-| `DELETE` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values/{field_id}` | Clear value |
+| `GET` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values` | List the issue's values |
+| `POST` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values` | Add values; an empty array clears all values |
+| `PUT` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values` | Replace all values |
+| `DELETE` | `/repos/{owner}/{repo}/issues/{number}/issue-field-values/{field_id}` | Clear one value (404 if unset) |
 
-### Field Types
+`POST /repos/{owner}/{repo}/issues` and `PATCH /repos/{owner}/{repo}/issues/{number}` also accept `issue_field_values[]` and `type`, and `GET` on an issue returns both inline.
 
-| Type | Value Format | Example |
-|------|-------------|---------|
-| `text` | String | `"High priority migration"` |
-| `number` | Numeric | `42` |
-| `date` | ISO 8601 | `"2026-03-19"` |
-| `single_select` | Option ID | `"option-id-abc123"` |
-| `iteration` | Iteration ID | `"iteration-id-xyz789"` |
+Field ids are integers. A live organization returned, for example, `Priority` 1416532, `Start date` 1416533, `Target date` 1416534 and `Effort` 1416535.
+
+### Value Formats
+
+The POST/PUT body is `{"issue_field_values": [{"field_id": <int>, "value": ...}]}`.
+
+| Type | Value written (REST) | Value read back (REST) |
+|------|----------------------|------------------------|
+| `text` | String | String |
+| `number` | Number | Number |
+| `date` | ISO 8601 date string, e.g. `"2026-04-01"` | Date string |
+| `single_select` | Option **name** string, matching an existing option | Option **id**, with a `single_select_option` object holding `id`, `name`, `color` |
+| `multi_select` | Array of option names | (not observed) |
+
+GraphQL (`setIssueFieldValue`, `IssueFieldCreateOrUpdateInput`) takes option **ids** (`singleSelectOptionId`, `multiSelectOptionIds`) where REST takes names.
 
 ### Example: List Fields
 
 ```bash
-gh api orgs/my-org/issue-fields --jq '.[] | {name, type, id}'
+gh api orgs/my-org/issue-fields --jq '.[] | {id, name, data_type}'
 ```
 
-Response:
-```json
-[
-  {"name": "Priority", "type": "single_select", "id": "field_001"},
-  {"name": "Sprint", "type": "iteration", "id": "field_002"},
-  {"name": "Story Points", "type": "number", "id": "field_003"},
-  {"name": "Due Date", "type": "date", "id": "field_004"}
-]
-```
+For a personal account, use `gh api user/issue-fields` with the same filter.
 
-### Example: Set Field Value
+### Example: Look Up a Field Id by Name
 
 ```bash
-# Set a number field
-gh api repos/my-org/my-repo/issues/42/issue-field-values \
-  -X POST -f field_id="field_003" -f value="8"
-
-# Set a date field
-gh api repos/my-org/my-repo/issues/42/issue-field-values \
-  -X POST -f field_id="field_004" -f value="2026-04-01"
-
-# Set a single_select field (use option ID)
-gh api repos/my-org/my-repo/issues/42/issue-field-values \
-  -X POST -f field_id="field_001" -f value="option-id-high"
+gh api orgs/my-org/issue-fields | jq --arg name "Target date" '.[] | select(.name == $name) | .id'
 ```
+
+`gh api --jq` takes no `--arg`, so pass the name through `jq --arg`. A name written inside the single-quoted filter (`select(.name == "$FIELD_NAME")`) is a literal string, not a shell variable.
 
 ### Example: Get All Field Values for an Issue
 
 ```bash
 gh api repos/my-org/my-repo/issues/42/issue-field-values \
-  --jq '.[] | "\(.field.name): \(.value)"'
+  --jq '.[] | "\(.issue_field_name): \(.single_select_option.name // .value)"'
 ```
 
-Output:
-```
-Priority: High
-Sprint: Sprint 12
-Story Points: 8
-Due Date: 2026-04-01
-```
+Read-back items carry `issue_field_id`, `data_type`, `issue_field_name` and `value`; a single-select item's `value` is the option id, so print `single_select_option.name` for the label.
 
-### Example: Clear a Field Value
+### Setting and Clearing Values (unverified)
+
+The write path in this subsection comes from the REST OpenAPI description only; no write call has been exercised live. Fine-grained token permission names for these endpoints are not documented in the OpenAPI description, and whether `multi_select` is generally available in the UI is unverified.
+
+Write the body to a file and pass it with `--input`, because `-f`/`-F` cannot build an array of objects:
+
+```json
+{"issue_field_values": [{"field_id": 1416534, "value": "2026-04-01"}]}
+```
 
 ```bash
-gh api repos/my-org/my-repo/issues/42/issue-field-values/field_003 -X DELETE
+gh api repos/my-org/my-repo/issues/42/issue-field-values -X POST --input /tmp/fields.json
 ```
+
+Use `-X PUT` to replace every value instead of adding. To clear one value:
+
+```bash
+gh api repos/my-org/my-repo/issues/42/issue-field-values/1416534 -X DELETE
+```
+
+### Tooling Coverage
+
+- `gh` (2.103.3) has `gh issue create/edit --type` and `--remove-type` for issue types, and no flag for issue fields; use `gh api`.
+- The GitHub MCP server exposes `list_issue_fields` (read). Whether `issue_write` can set field values is unverified.
 
 ## Transfer Prerequisites
 

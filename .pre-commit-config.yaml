@@ -587,6 +587,18 @@ repos:
         language: script
         files: '^scripts/(check-justfile-module-paths\.sh|tests/test-check-justfile-module-paths\.sh)$'
         pass_filenames: false
+      - id: check-justfile-script-modes
+        name: scripts a justfile recipe runs directly are git mode 100755 (#3695)
+        entry: ./scripts/check-justfile-script-modes.sh
+        language: script
+        files: '(^|/)justfile$|\.(sh|py)$'
+        pass_filenames: false
+      - id: check-justfile-script-modes-test
+        name: justfile script-modes check regression
+        entry: ./scripts/tests/test-check-justfile-script-modes.sh
+        language: script
+        files: '^scripts/(check-justfile-script-modes\.sh|tests/test-check-justfile-script-modes\.sh)$'
+        pass_filenames: false
       - id: check-justfile-expert-gotchas
         name: justfile-expert links references/gotchas.md and keeps its five gotchas (#3305)
         entry: ./scripts/check-justfile-expert-gotchas.sh
@@ -1085,6 +1097,18 @@ repos:
         entry: bash ./scripts/tests/test-check-mktemp-canonical.sh
         language: system
         files: '^scripts/(check-mktemp-canonical\.sh|tests/test-check-mktemp-canonical\.sh)$'
+        pass_filenames: false
+      - id: check-module-registration
+        name: path-loaded Python modules are registered in sys.modules before exec_module (#3805)
+        entry: bash ./scripts/check-module-registration.sh --strict
+        language: system
+        files: '\.(py|sh|bash)$'
+        pass_filenames: false
+      - id: test-check-module-registration
+        name: module-registration guard regression
+        entry: bash ./scripts/tests/test-check-module-registration.sh
+        language: system
+        files: '^scripts/(check-module-registration\.sh|tests/test-check-module-registration\.sh)$'
         pass_filenames: false
       - id: test-resolve-additive-conflicts
         name: additive-conflict union resolver regression (no-LLM pre-pass)

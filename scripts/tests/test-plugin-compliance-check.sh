@@ -1170,6 +1170,11 @@ printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.jso
 # into a copy of the shipped reference (a `#` line inside the first
 # `plugins: |`, or the review job's `id-token: write` removed) exits 1 naming
 # that defect.
+#
+# Issue #3726: the review template ran on every pull_request with no actor
+# guard, and claude-code-action refuses Bot actors not in `allowed_bots`, so
+# the job went red on every release-please and Renovate PR. The `bot-guard`
+# mutation drops the review job's `if:` guard and expects the check to name it.
 cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
 ccp_ref="$root/$PLUGIN/skills/configure-claude-plugins/references/workflow-templates.md"
 cp "$ccp_ref" "$tmp/ccp-ref.orig"
@@ -1178,7 +1183,7 @@ run_check; out_ccp="$OUT"; rc_ccp="$RC"
 assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
 assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
 
-for ccp_mutation in plugins-comment id-token; do
+for ccp_mutation in plugins-comment id-token bot-guard; do
   python3 - "$tmp/ccp-ref.orig" "$ccp_ref" "$ccp_mutation" <<'PY'
 import sys
 src, dst, mutation = sys.argv[1:4]
@@ -1187,6 +1192,10 @@ if mutation == "plugins-comment":
     anchor = "          plugins: |\n"
     assert anchor in text, "fixture precondition: no `plugins: |` line in the shipped reference"
     text = text.replace(anchor, anchor + "            # a comment line inside the block scalar\n", 1)
+elif mutation == "bot-guard":
+    guard = "    if: github.event.pull_request.user.type != 'Bot'\n"
+    assert guard in text, "fixture precondition: review template has no bot guard"
+    text = text.replace(guard, "", 1)
 else:
     review = text.index("name: Claude Code Review")
     head, tail = text[:review], text[review:]
@@ -1199,8 +1208,9 @@ PY
   case "$ccp_mutation" in
     plugins-comment) ccp_needle="inside its plugins: block scalar" ;;
     id-token) ccp_needle="without id-token: write" ;;
+    bot-guard) ccp_needle="no guard against Bot-authored pull requests" ;;
   esac
-  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named (#3443)" \
+  assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named" \
     "$out_ccp_red" "$ccp_needle"
 done
 rm -rf "${root:?}/$PLUGIN/skills/configure-claude-plugins"
@@ -1268,15 +1278,19 @@ rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
 # appears only in the Step 5 (issue creation) section; any mention of it before
 # Step 5 is ❌ (exit 1), and a Step 5 that never creates the labels is ❌ too.
 # ---------------------------------------------------------------------------
+FB_ISSUE_CREATE='Refuse a body that is only an @path reference.
+
+gh issue create --title "feedback(<plugin>): <desc>" --body-file "$BODY_DIR/1.md"'
 make_feedback_skill() {
-  # make_feedback_skill <step1-label-line> <step5-label-line>
+  # make_feedback_skill <step1-label-line> <step5-label-line> [<issue-create-block>]
+  # FB_ALLOWED_TOOLS overrides the allowed-tools line (default: Read).
   local dir="$root/$PLUGIN/skills/feedback-session"
   mkdir -p "$dir"
   {
     printf -- '---\n'
     printf 'name: feedback-session\n'
     printf 'description: Fixture feedback-session. Use when exercising the compliance self-test.\n'
-    printf 'allowed-tools: Read\n'
+    printf 'allowed-tools: %s\n' "${FB_ALLOWED_TOOLS:-Read}"
     printf 'created: 2026-11-07\n'
     printf 'modified: 2026-11-07\n'
     printf 'reviewed: 2026-11-07\n'
@@ -1288,7 +1302,7 @@ make_feedback_skill() {
     printf '%s\n\n' "$1"
     printf '### Step 4: Present findings for review\n\nIf `--dry-run`, stop here.\n\n'
     printf '### Step 5: Create approved issues\n\n%s\n\n' "$2"
-    printf 'gh issue create --title "feedback(<plugin>): <desc>"\n\n'
+    printf '%s\n\n' "${3:-$FB_ISSUE_CREATE}"
     printf '### Step 6: Report summary\n\nPrint the table.\n'
   } > "$dir/SKILL.md"
 }
@@ -1325,6 +1339,45 @@ run_check; out_fbl4="$OUT"; rc_fbl4="$RC"
 assert_eq "feedback-session: create-at-apply-time shape exits 0" "$rc_fbl4" "0"
 assert_absent "feedback-session: compliant shape raises no label issue" \
   "$out_fbl4" "label creation must happen in Step 5"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# ---------------------------------------------------------------------------
+# #3680: feedback-session files bodies with --body-file and grants gh repo view.
+#
+# Step 5 passed the multi-line, backtick-bearing body inline (`--body "<body>"`),
+# and Step 1C ran `gh repo view` with no allowed-tools grant, so a --confirmed
+# run could stop at a permission prompt. THE SEMANTIC INVARIANT UNDER TEST: an
+# inline --body on `gh issue create` is ❌, a Step 5 without the `@path` guard
+# (#3434) is ❌, and showing `gh repo view` without `Bash(gh repo view *)` is ❌.
+# The compliant shape (fbl4 above) already exits 0 with the --body-file block.
+# ---------------------------------------------------------------------------
+
+# --- Inline --body (the pre-fix shape) must FAIL ----------------------------
+make_feedback_skill "$FB_CHECK_IAC" "$FB_CREATE" \
+  'gh issue create --title "feedback(<plugin>): <desc>" --body "<body>"'
+run_check; out_fbb1="$OUT"; rc_fbb1="$RC"
+assert_eq "feedback-session: inline --body exits 1" "$rc_fbb1" "1"
+assert_contains "feedback-session: inline --body is named" \
+  "$out_fbb1" "must pass the body with --body-file"
+assert_contains "feedback-session: missing @path guard is named" \
+  "$out_fbb1" "only an '@path' reference"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# --- gh repo view without its grant must FAIL --------------------------------
+make_feedback_skill "$FB_CHECK_IAC Run \`gh repo view --json nameWithOwner\`." "$FB_CREATE"
+run_check; out_fbb2="$OUT"; rc_fbb2="$RC"
+assert_eq "feedback-session: ungranted gh repo view exits 1" "$rc_fbb2" "1"
+assert_contains "feedback-session: ungranted gh repo view is named" \
+  "$out_fbb2" "allowed-tools must grant 'Bash(gh repo view *)'"
+rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
+
+# --- Guard integrity: gh repo view WITH its grant PASSES ---------------------
+FB_ALLOWED_TOOLS='Bash(gh repo view *), Read' \
+  make_feedback_skill "$FB_CHECK_IAC Run \`gh repo view --json nameWithOwner\`." "$FB_CREATE"
+run_check; out_fbb3="$OUT"; rc_fbb3="$RC"
+assert_eq "feedback-session: granted gh repo view exits 0" "$rc_fbb3" "0"
+assert_absent "feedback-session: granted gh repo view raises no grant issue" \
+  "$out_fbb3" "Bash(gh repo view *)"
 rm -rf "${root:?}/$PLUGIN/skills/feedback-session"
 
 # ============================================================================

@@ -1,6 +1,6 @@
 ---
 created: 2026-03-19
-modified: 2026-08-15
+modified: 2026-11-25
 reviewed: 2026-06-15
 name: git-issue-manage
 description: "Transfer, pin, lock, or open a dev branch from a GitHub issue. Use when moving an issue between repos, pinning or locking it, or bulk-editing custom fields."
@@ -44,7 +44,7 @@ current remote, pass `-R <owner>/<repo>` to the `gh` calls for that issue.
 | `unlock` | `unlock <N...>` | Unlock issue discussions |
 | `develop` | `develop <N> [--branch <name>] [--checkout]` | Create branch from issue |
 | `bulk` | `bulk <sub-op> <N...> [options]` | Bulk operations on multiple issues |
-| `fields` | `fields <N> [--set <field>=<value>] [--list]` | Manage custom issue fields |
+| `fields` | `fields <N> [--set <field>=<value>] [--list]` | List or set issue field values (org or personal-account fields) |
 
 Lock reasons: `off-topic`, `too heated`, `resolved`, `spam`
 
@@ -187,32 +187,32 @@ Report success/failure count after bulk operations.
 
 #### Custom Fields
 
-Manage custom issue fields (requires org-level issue field configuration).
+Manage issue fields. Fields are defined on the repository owner: an organization (`orgs/$OWNER/issue-fields`) or, for a personal account, the authenticated user (`user/issue-fields`; there is no `users/{name}` route). Endpoints, value formats, and limits: [REFERENCE.md](REFERENCE.md#custom-issue-fields-api).
 
-**List available fields:**
+**Resolve the owner's field list:**
 ```bash
-# Get org name from repo
-ORG=$(gh repo view --json owner --jq '.owner.login')
-
-# List fields
-gh api orgs/$ORG/issue-fields --jq '.[] | "\(.id): \(.name) (\(.type))"'
+gh api repos/$OWNER/$REPO --jq '.owner.type + " " + .owner.login'
 ```
 
-**Get field values for an issue:**
+List with `gh api orgs/$OWNER/issue-fields` when the type is `Organization`, or `gh api user/issue-fields` when it is `User` and the owner is the authenticated user. Show `id`, `name`, `data_type`:
+```bash
+gh api orgs/$OWNER/issue-fields --jq '.[] | "\(.id): \(.name) (\(.data_type))"'
+```
+
+**`--list` — get field values for an issue:**
 ```bash
 gh api repos/$OWNER/$REPO/issues/$N/issue-field-values \
-  --jq '.[] | "\(.field.name): \(.value)"'
+  --jq '.[] | "\(.issue_field_name): \(.single_select_option.name // .value)"'
 ```
 
-**Set a field value:**
-```bash
-FIELD_ID=$(gh api orgs/$ORG/issue-fields --jq '.[] | select(.name == "$FIELD_NAME") | .id')
+**`--set <field>=<value>` — set a value (write path unverified):**
 
-gh api repos/$OWNER/$REPO/issues/$N/issue-field-values \
-  -X POST -f field_id=$FIELD_ID -f value="$VALUE"
-```
+1. Look up the integer field id by name: `gh api orgs/$OWNER/issue-fields | jq --arg name "$FIELD_NAME" '.[] | select(.name == $name) | .id'`.
+2. Write the body `{"issue_field_values":[{"field_id":<id>,"value":<value>}]}` to a file with the Write tool. A single-select value is the option **name**; a number is a JSON number; a date is ISO 8601.
+3. Send it: `gh api repos/$OWNER/$REPO/issues/$N/issue-field-values -X POST --input <file>` (POST adds; PUT replaces all values).
+4. Re-read the values with the `--list` command and report what the issue now holds. Report the write as unconfirmed if the re-read does not show the value; the write contract comes from the API schema and has not been exercised.
 
-If the repo is not in an organization, report: "Custom issue fields require an organization-level repository."
+If the owner has no fields defined, the list is empty: report "No issue fields are defined for $OWNER."
 
 ### Step 3: Report Results
 
@@ -232,7 +232,8 @@ If the repo is not in an organization, report: "Custom issue fields require an o
 | `unknown command "develop"` | Older `gh` CLI version | Report: "gh issue develop requires gh CLI 2.30+. Update with: gh upgrade" |
 | 403 on transfer | No write access to target | Report permission requirement |
 | 422 on pin | Already 3 pinned issues | List current pins, ask which to replace |
-| 404 on issue-fields | Org doesn't have custom fields | Report: "Custom fields not configured for this organization" |
+| 404 on `orgs/{org}/issue-fields` | Owner is a user account, or no access to the org | Retry with `user/issue-fields` for the authenticated user's own repos; otherwise report the access gap |
+| Empty list from `issue-fields` | Owner has defined no fields | Report: "No issue fields are defined for this owner" |
 
 ## Agentic Optimizations
 
@@ -243,7 +244,7 @@ If the repo is not in an organization, report: "Custom issue fields require an o
 | Lock issue | `gh issue lock N --reason resolved` |
 | Create dev branch | `gh issue develop N --checkout` |
 | Bulk close | Loop: `gh issue close N` for each N |
-| List custom fields | `gh api orgs/{org}/issue-fields --jq '.[].name'` |
+| List issue fields | `gh api orgs/{org}/issue-fields --jq '.[] \| {id, name, data_type}'` (personal: `user/issue-fields`) |
 | Get field values | `gh api repos/{o}/{r}/issues/N/issue-field-values` |
 
 ## See Also
@@ -252,4 +253,4 @@ If the repo is not in an organization, report: "Custom issue fields require an o
 - **github-issue-writing** skill for creating new issues
 - **git:issue** skill for implementing/processing issues
 - **gh-cli-agentic** skill for raw API command patterns
-- [REFERENCE.md](REFERENCE.md) for custom fields API details
+- [REFERENCE.md](REFERENCE.md) for issue-field endpoints, value formats, and limits

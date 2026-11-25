@@ -49,6 +49,9 @@
 #      flagged; a baselined omission is skipped, and a baseline entry that is now
 #      mentioned or whose directory is gone is flagged (WARN
 #      readme_baseline_stale) (#3164)
+#   O. a checkout whose root directory itself matches `*-plugin` (a worktree
+#      named `x-plugin`) is NOT counted as a plugin dir on disk, so no
+#      plugin_map_drift names the root (#3724)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -597,6 +600,21 @@ assert "a baseline entry whose directory is gone should be flagged readme_baseli
 assert "README_SKILLS_CHECKED should count the 5 skill directories" \
   "$([ "$(field "$rv_out" README_SKILLS_CHECKED)" = "5" ] && echo true || echo false)"
 rm -rf "$rv_fx"
+
+echo "=== TEST O: a checkout root named *-plugin is not a plugin dir (#3724) ==="
+wt_parent="$(mktemp -d)"
+if [ -z "$wt_parent" ] || [ ! -d "$wt_parent" ]; then echo "mktemp failed" >&2; exit 1; fi
+wt_root="$wt_parent/x-plugin"
+mkdir -p "$wt_root/.claude-plugin" "$wt_root/alpha-plugin"
+printf '{ "plugins": [ { "name": "alpha-plugin" } ] }\n' > "$wt_root/.claude-plugin/marketplace.json"
+printf '{ "packages": { "alpha-plugin": {} } }\n' > "$wt_root/release-please-config.json"
+printf '{ "alpha-plugin": "1.0.0" }\n' > "$wt_root/.release-please-manifest.json"
+wt_out="$(bash "$checker" --project-dir "$wt_root")"
+assert "the checkout root should not be flagged plugin_map_drift" \
+  "$(not_true "$(contains "$wt_out" "plugin_map_drift MSG=$wt_root ")")"
+assert "no plugin_map_drift at all when the maps agree" \
+  "$(not_true "$(contains "$wt_out" "plugin_map_drift")")"
+rm -rf "$wt_parent"
 
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"

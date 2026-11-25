@@ -1,12 +1,15 @@
 ---
 created: 2026-01-01
-modified: 2026-09-02
+modified: 2026-11-24
 reviewed: 2026-09-02
 ---
 
 # Handling Blocked Hooks
 
 When a PreToolUse hook blocks a command, follow this decision process.
+
+Unscoped on purpose: a block can land on any command in any session, which no
+`paths:` glob can see.
 
 ## How Hook Blocks Work
 
@@ -38,44 +41,7 @@ When the blocked command is genuinely required and alternatives are insufficient
 3. Provide the exact command for the user to run manually
 4. Let the user decide whether to run it themselves
 
-## Response Template
-
-```
-The hook blocked `[command]` because [reason from hook message].
-
-I considered these alternatives:
-- [Alternative 1]: [Why it's insufficient in this case]
-- [Alternative 2]: [Why it's insufficient in this case]
-
-If you need to proceed, please run this command manually:
-`[exact command]`
-
-This is needed because [specific justification for this edge case].
-```
-
-## Example
-
-```
-[Hook blocks git reset --hard]
-Claude: "The hook blocked this command because git reset --hard
-discards uncommitted changes. I considered these alternatives:
-- git restore: Insufficient because we need to reset the index too
-- git checkout: Insufficient because it preserves staged changes
-
-If you need to proceed with the reset, please run this command manually:
-git reset --hard <commit>
-
-This is needed because the repository is in a corrupted state after
-the failed merge."
-```
-
-## Legitimate Use Cases
-
-| Blocked Command | Legitimate Use Case |
-|-----------------|---------------------|
-| `git reset --hard` | Recovering from corrupted git state |
-| `rm -rf` | Cleaning build artifacts when other methods are insufficient |
-| Chained git commands | Complex atomic operations |
+The response template, a worked example and a table of legitimate use cases are in [`docs/rules/handling-blocked-hooks.md`](../../docs/rules/handling-blocked-hooks.md).
 
 ## Branch Protection: Do Not Self-Serve the Bypass
 

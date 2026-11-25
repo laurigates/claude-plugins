@@ -33,6 +33,8 @@
 #   - after update-branch reports an update, reads that still show the
 #     pre-update head are not judged: that head's failed run does not stop the
 #     PR, and a head that never moves is ERROR head_not_updated (#3421).
+#   - a completed CheckRun passes only on SUCCESS, NEUTRAL or SKIPPED: a null
+#     or unknown conclusion is CI_RED, not green (#3771).
 #   - in a fork, a PR whose base branch is the head of an open PR against the
 #     parent is SKIPPED (merging it would push into that PR), and a failed
 #     lookup is ERROR; a same-repo stacked base is not checked (#3445).
@@ -490,6 +492,24 @@ mkpr 316 '.statusCheckRollup = [
      status: "COMPLETED", conclusion: "CANCELLED", startedAt: "2026-11-02T19:28:23Z", completedAt: "2026-11-02T19:28:24Z"}]'
 run_chain 316
 expect_line "startedAt tie decided by completedAt -> MERGED" "$(section 316)" "STATUS=MERGED"
+
+# A completed CheckRun passes only on SUCCESS, NEUTRAL or SKIPPED (#3771). A
+# blocklist read a null conclusion, or a value GitHub adds later, as green.
+mkpr 320 '.statusCheckRollup = [{__typename: "CheckRun", name: "nullcheck", status: "COMPLETED", conclusion: null}]'
+run_chain 320
+expect_line "completed run with a null conclusion -> CI_RED" "$(section 320)" "STATUS=CI_RED"
+expect_has "REASON names the null-conclusion check" "$(section 320)" "^REASON=check_failed: nullcheck$"
+expect_no "no merge over a null conclusion" "$LOG" "pr merge"
+mkpr 321 '.statusCheckRollup = [{__typename: "CheckRun", name: "future", status: "COMPLETED", conclusion: "SOME_FUTURE_VALUE"}]'
+run_chain 321
+expect_line "completed run with an unknown conclusion -> CI_RED" "$(section 321)" "STATUS=CI_RED"
+expect_has "REASON names the unknown-conclusion check" "$(section 321)" "^REASON=check_failed: future$"
+expect_no "no merge over an unknown conclusion" "$LOG" "pr merge"
+mkpr 322 '.statusCheckRollup = [{__typename: "CheckRun", name: "a", status: "COMPLETED", conclusion: "SUCCESS"},
+                                {__typename: "CheckRun", name: "b", status: "COMPLETED", conclusion: "NEUTRAL"},
+                                {__typename: "CheckRun", name: "c", status: "COMPLETED", conclusion: "SKIPPED"}]'
+run_chain 322
+expect_line "control: SUCCESS, NEUTRAL and SKIPPED all pass -> MERGED" "$(section 322)" "STATUS=MERGED"
 
 # update-branch said "updated", but the first checks read still returns the
 # pre-update head and that head's failed run (#3421: gitleaks failed on

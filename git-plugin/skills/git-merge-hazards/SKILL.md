@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-12
+modified: 2026-11-25
 reviewed: 2026-08-21
 ---
 
@@ -69,23 +69,11 @@ branch is gone **cannot be reopened**.
 - **Fork PR on an open upstream PR's head (skill-only)**: merging pushes into that PR too: [references/fork-upstream-base.md](references/fork-upstream-base.md).
 - **If already auto-closed**: the head branch survives — rebase as above,
   `gh pr create` fresh, comment "Superseded by #new" on the closed one.
-- **Nothing tells you this happened.** The auto-close is silent: no failed
-  check, no notification, and the PR list just looks one shorter. claude-plugins
-  #2049 sat stranded for a day; a sweep then found 26 dead branches, two carrying
-  work that had **never had a PR opened at all** (so no event ever fired for
-  them either). A scheduled sweep is the only thing that finds this class —
-  an event handler on `pull_request: closed` is too late by construction (the
-  base ref is already deleted, so the reopen window is gone) and is blind to
-  never-PR'd branches. `claude-plugins scripts/check-stranded-work.sh` is the
-  encoded audit; it takes `--repo`, so one run sweeps the portfolio.
-- **Telling an accident from a decision**: a closed-unmerged PR whose base ref
-  **404s** was auto-closed; one whose base ref is still **alive** was closed by a
-  human (duplicate/superseded). That single check is the discriminator — 11 of
-  those 26 branches were deliberate closes and must not be resurrected.
+- **Nothing tells you this happened**, and only a scheduled sweep finds it; a dead base ref tells an auto-close from a human close: [references/stranded-child-audit.md](references/stranded-child-audit.md).
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
-Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form (braced variable, full `refs/heads/` refname, the zsh word-modifier table), the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
+Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form, the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
 
@@ -94,7 +82,7 @@ refused) from merely-present ones (`UNSTABLE` — plain `gh pr merge` works), so
 `--admin` on an `UNSTABLE` PR takes a privilege you didn't need. Read it first.
 
 Merging over red needs **two** checks: `--json files` (config/docs can't break
-a compile) **and** the same check already failing on `main`. Either alone is a
+a compile) **and** the same tests already failing on `main`. Either alone is a
 guess — and a stale-green `main` lies, so check `createdAt` (2026-07: a "green"
 run was 21 days old; main hadn't compiled for three weeks).
 
@@ -121,7 +109,7 @@ Does **not** close #162   →   GitHub reads `close #162`, and closes it
 - **Recovery**: `gh issue reopen` works (nothing was deleted, unlike #2), then
   comment so the next reader doesn't re-derive it.
 
-The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases, the audit-with-a-control procedure, and the incidents.
+The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases and the audit procedure.
 
 ## 6. A serial merge chain merges commits nobody verified
 
@@ -140,10 +128,15 @@ fix is unreviewed: pass it through
 `workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`:
 [references/merge-shepherd.md](references/merge-shepherd.md).
 
+## Rebase or squash
+
+`pr-merge-method.py` decides, by the table in [merge-strategies.md](../github-pr-title/merge-strategies.md). Two or more independent conventional commits rebase; everything else squashes, including single commits, merge-synced branches, fixups and bot PRs. Commits that all share one `type(scope)` count as a single concern and squash (`single_concern`), however many there are.
+
 ## Agentic Optimizations
 
 | Context | Command |
 |---|---|
 | Did the branch land? (§1, authoritative) | `gh pr list --state all --head <branch> --json number,state,mergedAt` |
 | Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
+| Rebase or squash? (§2, §6) | `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --pr <n>` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |

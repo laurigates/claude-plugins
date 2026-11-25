@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
-reviewed: 2026-07-05
+modified: 2026-11-25
+reviewed: 2026-11-25
 description: "Set up .pre-commit-config.yaml: hooks for the project type at current revs. Use when installing pre-commit in a repo, auditing stale hook revs, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(pre-commit install *), Bash(pre-commit autoupdate *), Bash(pre-commit validate-config *), Bash(grep *), Bash(sed *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
@@ -27,7 +27,6 @@ Check and configure pre-commit hooks against project standards.
 
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
-- Project type in standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
 - Has package.json: !`find . -maxdepth 1 -name 'package.json'`
@@ -51,6 +50,7 @@ Execute this pre-commit compliance check:
 2. If not found, auto-detect:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies
+   - **node**: Has any other `package.json`
    - **python**: Has `pyproject.toml` or `requirements.txt`
 3. Apply `--type` flag override if provided
 
@@ -61,13 +61,9 @@ Execute this pre-commit compliance check:
 
 ### Step 3: Verify hook versions against latest releases
 
-**CRITICAL**: Before flagging outdated hooks, verify latest releases using WebSearch or WebFetch:
+**CRITICAL**: Take the latest revs from the tool, not from a pinned list or memory. After writing or auditing the config, run `pre-commit autoupdate` (it resolves each hook repo's newest tag), then `pre-commit validate-config .pre-commit-config.yaml`. A new config written from a template with older revs moved `pre-commit-hooks` v5.0.0 to v6.0.0, `conventional-pre-commit` v4.3.0 to v4.5.0, `gitleaks` v8.22.1 to v8.30.0 and `actionlint` v1.7.7 to v1.7.12 in one run.
 
-1. **pre-commit-hooks**: [GitHub releases](https://github.com/pre-commit/pre-commit-hooks/releases)
-2. **conventional-pre-commit**: [GitHub releases](https://github.com/compilerla/conventional-pre-commit/releases)
-3. **biome**: [GitHub releases](https://github.com/biomejs/biome/releases)
-4. **ruff-pre-commit**: [GitHub releases](https://github.com/astral-sh/ruff-pre-commit/releases)
-5. **gitleaks**: [GitHub releases](https://github.com/gitleaks/gitleaks/releases)
+`autoupdate` cannot resolve a `repo: local` hook; read a local hook's version from where it is pinned (for a Biome hook, `package.json`). Use WebSearch or WebFetch on a hook repo's releases page only when `autoupdate` fails for it. For `--check-only`, run it on a copy (`cp .pre-commit-config.yaml tmp/pc.yaml && pre-commit autoupdate --config tmp/pc.yaml`) and diff, so the audit writes nothing.
 
 ### Step 4: Analyze compliance
 

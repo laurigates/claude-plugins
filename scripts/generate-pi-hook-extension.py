@@ -46,7 +46,13 @@ Skipped, loudly (reported on stdout and in the generated header):
 A script missing or crashing at RUN time fails open (console.error + allow),
 the same contract as the OpenCode export.
 
-Usage: generate-pi-hook-extension.py <repo_root> <out_dir> [--allow <plugin>/<script>]...
+`--plugin <name>` (repeatable) limits the export to the hooks those plugins
+own; none means every plugin. A name that is not a plugin directory exits 2.
+When the selected plugins own no exported hook, nothing is written (a
+previously generated extension in <out_dir> is removed) and the report says
+EXTENSION=none, so the installer has nothing to install.
+
+Usage: generate-pi-hook-extension.py <repo_root> <out_dir> [--allow <plugin>/<script>]... [--plugin <name>]...
 """
 
 import importlib.util
@@ -62,6 +68,7 @@ from pathlib import Path
 _OC_PATH = Path(__file__).with_name("generate-opencode-hook-plugins.py")
 _spec = importlib.util.spec_from_file_location("opencode_hooks", _OC_PATH)
 _oc = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = _oc  # before exec_module (#3805)
 _spec.loader.exec_module(_oc)
 glob_to_regex = _oc.glob_to_regex
 normalize_timeout = _oc.normalize_timeout
@@ -182,9 +189,10 @@ def parse_tool_matcher(matcher):
     return entries, unmapped
 
 
-def collect(repo_root, allowlist):
+def collect(repo_root, allowlist, selected=frozenset()):
     """Walk every manifest; return (plugins, tool_call, tool_result,
-    session_start, skipped, notes, scripts) where scripts maps plugin -> set."""
+    session_start, skipped, notes, scripts) where scripts maps plugin -> set.
+    A non-empty `selected` limits the walk to those plugin directories."""
     plugins = {}
     slots = {"tool_call": [], "tool_result": [], "session_start": []}
     skipped, notes = [], []
@@ -192,6 +200,8 @@ def collect(repo_root, allowlist):
 
     for plugin_dir, source, manifest in discover_manifests(repo_root):
         plugin = plugin_dir.name
+        if selected and plugin not in selected:
+            continue
         stats = plugins.setdefault(plugin, {"sources": [], "exported": 0, "skipped": 0})
         stats["sources"].append(source)
 
@@ -637,13 +647,32 @@ def render(slots, skipped, notes):
     )
 
 
+def plugin_name_error(repo_root, name):
+    """Why `name` is not a plugin of `repo_root`, or None when it is.
+
+    Mirrors scripts/lib/plugin-args.sh `require_plugin`."""
+    if not name or "/" in name or name.startswith("."):
+        return (
+            f"invalid plugin name {name!r} (expected a directory name like git-plugin)"
+        )
+    if not (repo_root / name / ".claude-plugin" / "plugin.json").is_file():
+        return f"{name!r} is not a plugin in {repo_root} (no {name}/.claude-plugin/plugin.json)"
+    return None
+
+
 def parse_args(argv):
     usage = __doc__.strip().splitlines()[-1]
-    positional, extra = [], set()
+    positional, extra, selected = [], set(), set()
     i = 0
     while i < len(argv):
         arg = argv[i]
-        if arg == "--allow" and i + 1 < len(argv):
+        if arg == "--plugin" and i + 1 < len(argv):
+            selected.add(argv[i + 1])
+            i += 2
+        elif arg.startswith("--plugin="):
+            selected.add(arg.split("=", 1)[1])
+            i += 1
+        elif arg == "--allow" and i + 1 < len(argv):
             extra.add(argv[i + 1])
             i += 2
         elif arg.startswith("--allow="):
@@ -661,16 +690,23 @@ def parse_args(argv):
     if len(positional) != 2:
         print(usage, file=sys.stderr)
         sys.exit(2)
-    return Path(positional[0]).resolve(), Path(positional[1]).resolve(), extra
+    repo_root = Path(positional[0]).resolve()
+    for name in sorted(selected):
+        bad = plugin_name_error(repo_root, name)
+        if bad:
+            print(f"generate-pi-hook-extension.py: error: {bad}", file=sys.stderr)
+            sys.exit(2)
+    return repo_root, Path(positional[1]).resolve(), extra, frozenset(selected)
 
 
 def main(argv):
-    repo_root, out_dir, extra = parse_args(argv)
+    repo_root, out_dir, extra, selected = parse_args(argv)
     allowlist = set(PI_SAFETY_ALLOWLIST) | extra
 
     print("=== PI HOOK EXPORT ===")
+    print("PLUGINS=" + (",".join(sorted(selected)) or "all"))
     plugin_dirs = [p for p in repo_root.glob("*-plugin") if p.is_dir()]
-    plugins, slots, skipped, notes, scripts = collect(repo_root, allowlist)
+    plugins, slots, skipped, notes, scripts = collect(repo_root, allowlist, selected)
 
     ext_dir = out_dir / "extensions" / EXTENSION_NAME
     if ext_dir.exists():
@@ -685,6 +721,16 @@ def main(argv):
             print("=== END PI HOOK EXPORT ===")
             return 1
         shutil.rmtree(ext_dir)
+    if selected and not any(s["exported"] for s in plugins.values()):
+        # The selected plugins own no safety hook: write nothing, so the
+        # installer finds no extension and installs none.
+        print(f"HOOK_PLUGINS_SCANNED={len(plugins)}")
+        print("EXPORTED_HOOKS=0")
+        print("EXTENSION=none")
+        print("STATUS=OK")
+        print("ISSUE_COUNT=0")
+        print("=== END PI HOOK EXPORT ===")
+        return 0
     ext_dir.mkdir(parents=True)
     copied, libs = copy_scripts(repo_root, scripts, ext_dir)
     (ext_dir / "index.ts").write_text(render(slots, skipped, notes))
@@ -709,7 +755,10 @@ def main(argv):
     exported = sum(s["exported"] for s in plugins.values())
     inline = sum(1 for s in plugins.values() if "plugin.json" in s["sources"])
     issues = []
-    if plugin_dirs and not plugins:
+    # A filtered export may select plugins with no hook manifest at all (and
+    # returned above when nothing was exported); only an unfiltered one that
+    # finds nothing means discovery broke.
+    if not selected and plugin_dirs and not plugins:
         issues.append(
             "SEVERITY=ERROR TYPE=nothing_scanned MSG=plugin dirs present "
             "but no hook manifest was discovered"

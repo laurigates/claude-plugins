@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal__listmodels, mcp__pal__chat, mcp__pal__consensus, mcp__pal__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-11-12
+modified: 2026-11-25
 reviewed: 2026-08-21
 ---
 
@@ -45,7 +45,7 @@ So read the registration rather than a file — `claude mcp list` is
 authoritative in every scope, and `claude mcp get` names the scope that owns it:
 
 ```bash
-claude mcp list                 # "pal: uvx pal-mcp-server@latest - ✔ Connected"
+claude mcp list                 # "pal: uvx palaver-mcp-server@latest - ✔ Connected"
 claude mcp get pal              # Scope: Project config (shared via .mcp.json)
 ```
 
@@ -154,11 +154,11 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 
 | Mechanic | Symptom | Fix |
 |---|---|---|
-| `kimi-k2.7-code` 400s whenever `temperature` is sent (OpenCode Go) | Opaque `Error from provider (Console Go): Upstream request failed` — names neither parameter nor constraint, so it reads as flakiness or "prompt too long" | Omit `temperature` for kimi; `glm-5.2` accepts it fine. Prompt length, attachments, `thinking_mode` are all innocent. [pal#67](https://github.com/laurigates/pal-mcp-server/issues/67) |
+| `kimi-k2.7-code` 400s whenever `temperature` is sent (OpenCode Go) | Opaque `Error from provider (Console Go): Upstream request failed` — names neither parameter nor constraint, so it reads as flakiness or "prompt too long" | Omit `temperature` for kimi; `glm-5.2` accepts it fine. Prompt length, attachments, `thinking_mode` are all innocent. [pal#67](https://github.com/laurigates/palaver-mcp-server/issues/67) |
 | `absolute_file_paths` is capped at ~60% of context headroom, and the cap varies **wildly** by model | The attachment set is rejected for exceeding the budget. Observed on a 262K context: `gpt-5.3-codex` ≈ 76,800 tokens but `kimi-k2.7-code` only ≈ 28,311 — one ~84K, 7-file set bounced on **both** | Size attachments to the **smallest** target model's budget. Because the identical-briefs invariant is load-bearing, one model's ceiling trims the set for *all* of them — build a curated excerpt bundle instead |
 | `working_directory_absolute_path` must live inside `PAL_WORKSPACE_ROOT` | A scratchpad path outside the repo is rejected: `must reside within the PAL workspace root` | Work in `<repo>/tmp/<consult>/`, never a system temp dir. Diffs and files from another repository (PRs under review elsewhere) are exported there first, e.g. `gh pr diff <n> -R <owner>/<repo> > <repo>/tmp/<consult>/pr-<n>.diff` |
 | External models are third-party services | Sending a **private** repo's diff or files is denied by auto mode as data exfiltration; a public repo's content goes through | Consult external models only on content that is already public; review private code with a Claude agent instead |
-| `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/pal-mcp-server/issues/68) |
+| `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/palaver-mcp-server/issues/68) |
 | Registry models get retired upstream mid-consult | A `listmodels`-listed id 404s ("no longer available") | Pick a same-provider fallback *before* dispatching, and re-send the **identical** brief — a reworded one breaks the invariant |
 | `glm-5.3` at `thinking_mode: high` times out on large attachments (OpenCode Go) | `Request timed out` after one attempt, many minutes in; observed on PR diffs of ~1,200 and ~3,500 lines, while a 585-line diff finished | Use `thinking_mode: medium` for attachments over ~30K tokens; the same 3,500-line diff then completed |
 | OpenCode Go enforces a **5-hour usage window** and a **monthly** one | `429 GoUsageLimitError: Go usage limit exceeded`, with `limitName: '5 hour'` (retried 4× then failed; hit after ~10 high-thinking review calls, one alone used ~123K tokens) or `limitName: 'monthly'` (every model, every call, until the monthly reset) | Budget the fan-out before dispatching. Either limit applies to the whole workspace, so every OpenCode Go model and every session sharing the key is out until it resets: finish the round on another provider or stop |

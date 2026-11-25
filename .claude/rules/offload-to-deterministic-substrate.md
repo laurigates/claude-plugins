@@ -1,7 +1,13 @@
 ---
 created: 2026-06-25
-modified: 2026-06-25
+modified: 2026-11-24
 reviewed: 2026-07-04
+paths:
+  - "**/SKILL.md"
+  - "**/skills/**"
+  - "**/hooks/**"
+  - "**/scripts/**"
+  - ".claude/rules/**"
 ---
 
 # Offload Mechanical Work to a Deterministic Substrate — plugin-authoring deltas
@@ -11,6 +17,9 @@ The canonical statement of this principle is the global rule
 `exact_dot_claude/rules/offload-to-deterministic-substrate.md`). Read it first
 — this file holds only what is specific to authoring plugins, skills, and hooks
 in *this* repo, and names the children that already implement the law here.
+
+Path-scoped on purpose: every row below fires while you write a skill, hook,
+script or rule, so it loads on those paths rather than on every turn.
 
 > **The law (short form):** anything mechanical, repeatable, and verifiable
 > belongs outside the agent's reasoning loop — in a script, hook, or
@@ -30,7 +39,7 @@ spends context re-implementing it slightly differently.
 | Skill that runs diagnostics | A `check-*.sh` emitting `STATUS=`/`KEY=VALUE` (`structured-script-output.md`) | Prose the agent parses by eye |
 | Skill that detects drift | The existing sweep script + an autonomous trigger (`drift-detection-triggering.md`) | A "remember to check X" instruction |
 | Self-continuing / looping skill | A mechanical stop gate or fresh independent verifier (`loop-integrity.md`) | The worker agent judging its own "done" |
-| Guardrail that must always fire | A PreToolUse/SessionStart hook in `hooks-plugin` | A rule the agent is asked to honor each time |
+| Guardrail that must always fire | A PreToolUse/SessionStart hook in the plugin that owns the domain (`hooks-plugin` for cross-cutting ones) | A rule the agent is asked to honor each time |
 | Bug fix in a skill | A `scripts/check-*.sh` regression check (`regression-testing.md`) | A changelog note and hope |
 
 ## The children (each applies the law to one situation)

@@ -1,12 +1,12 @@
 ---
 created: 2026-08-27
-modified: 2026-11-16
+modified: 2026-11-25
 reviewed: 2026-08-27
 name: prose-check
 description: "Self-evaluate outward-bound prose against the house rubric — the three tics, end-on-the-fact, TL;DR footer. Use when drafting a PR body, issue body, doc, rule, or commit body before it ships."
-args: "[path to the draft] [--kind doc|answer|ticket]"
+args: "[path to the draft] [--kind doc|answer|ticket|email]"
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prose-check.sh *), Read, Edit, Grep, Glob
-argument-hint: <path to the draft> [--kind doc|answer|ticket]
+argument-hint: <path to the draft> [--kind doc|answer|ticket|email]
 ---
 
 # /prose:check
@@ -41,8 +41,9 @@ paragraph or section, *and* it generalizes past the specific claim.
 
 Everything under `styles/House/` and in `scripts/` is a **derived encoding** of
 that rule, not a second source of truth. Each rule file carries a `link:` back
-to the rule that owns its criterion, and `scripts/check-prose-house-style.sh` in
-the repo root pins the derived copy against drift.
+to the rule that owns its criterion. A maintainer check in the marketplace's
+source repository, `check-prose-house-style.sh` (it does not ship with the
+plugin), pins the derived copy against drift.
 
 ## Execution
 
@@ -55,6 +56,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/prose-check.sh --kind doc path/to/draft.md
 | `--kind doc` | default; the three tics plus token and grammar layers |
 | `--kind answer` | adds the TL;DR (ELI5) footer check for a complex answer |
 | `--kind ticket` | same checks; ticket rules (`TicketHype`, `TicketPlaceholder`) carry their own weight |
+| `--kind email` | scores only the author's text in a plain-text mail draft: skips the leading header block (to the first blank line, folded lines included), the `On <date>, X wrote:` attribution, lines starting with `>`, and everything after a `-- ` signature line. Line numbers still match the draft. Explicit only, never auto-detected |
 | `--long-words N` | paragraph-final sentence word threshold (default 40) |
 | `--strict` | exit 1 when any candidate is found |
 

@@ -13,7 +13,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { documentText, scanSkills } from "../core/indexer.ts";
+import { documentText, isUnknownPluginWarning, scanSkills } from "../core/indexer.ts";
 
 const FIXTURE_SRC = join(import.meta.dir, "fixtures", "mini-marketplace-src");
 const ADAPTERS_ROOT = resolve(import.meta.dir, "..");
@@ -109,6 +109,43 @@ describe("scanSkills over the mini marketplace", () => {
     );
     // Keywords/category stay out of the scored text.
     expect(documentText(normal as NonNullable<typeof normal>)).not.toContain("test-a");
+  });
+});
+
+describe("scanSkills plugin filter", () => {
+  test("a plugins list keeps only those plugins' skills", () => {
+    const { entries, warnings } = scanSkills(fixtureRoot, "foreign", ["gamma-plugin"]);
+    expect(entries.map((e) => e.id).sort()).toEqual([
+      "gamma-plugin:folded-description",
+      "gamma-plugin:quoted-description",
+    ]);
+    // beta-plugin was not scanned, so its description-less skill is not warned about.
+    expect(warnings.some((w) => w.includes("beta-plugin"))).toBe(false);
+  });
+
+  test("an empty plugins list means every plugin", () => {
+    const all = scanSkills(fixtureRoot, "foreign").entries.map((e) => e.id);
+    const empty = scanSkills(fixtureRoot, "foreign", []).entries.map((e) => e.id);
+    expect(empty).toEqual(all);
+    expect(empty).toHaveLength(4);
+  });
+
+  test("a name not in the marketplace warns and is ignored, not thrown", () => {
+    const { entries, warnings } = scanSkills(fixtureRoot, "foreign", [
+      "alpha-plugin",
+      "nope-plugin",
+    ]);
+    expect(entries.map((e) => e.id)).toEqual(["alpha-plugin:normal-skill"]);
+    expect(warnings).toContain('plugin "nope-plugin" is not in the marketplace — ignored');
+    expect(warnings.filter(isUnknownPluginWarning)).toEqual([
+      'plugin "nope-plugin" is not in the marketplace — ignored',
+    ]);
+  });
+
+  test("only unknown names selects nothing", () => {
+    const { entries, warnings } = scanSkills(fixtureRoot, "foreign", ["nope-plugin"]);
+    expect(entries).toEqual([]);
+    expect(warnings.filter(isUnknownPluginWarning)).toHaveLength(1);
   });
 });
 
