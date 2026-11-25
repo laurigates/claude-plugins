@@ -425,6 +425,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
 
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(mod)
 print(mod.frontmatter(sys.argv[2]).get(sys.argv[3], "<absent>"))
 PYFM
@@ -809,6 +810,7 @@ sys.path.insert(0, str(pathlib.Path(analyzer).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("config_drift", analyzer)
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(mod)
 
 # Two skills whose FILE BYTES never change across runs. Only alpha's parsed
@@ -2786,6 +2788,7 @@ last_change() {  # the shipped git_last_change() on one file, as "date shallow"
 from pathlib import Path
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 m = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = m  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(m)
 d, b = m.git_last_change(Path(sys.argv[2]))
 print(d, b)' "$ANALYZER" "$1" 2>/dev/null || echo ERR
@@ -2811,6 +2814,7 @@ assert_eq "a walk killed by the timeout returns an unknown date" \
 from pathlib import Path
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 m = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = m  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(m)
 blob = "a" * 40
 log = "".join(
@@ -2947,6 +2951,7 @@ review_cache_after() {  # review_cache_after <stubbed date or None>: cache JSON
     PYTHONPATH="$LIB_PARENT" python3 -c 'import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 m = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = m  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(m)
 stub = None if sys.argv[2] == "None" else sys.argv[2]
 m.git_last_change = lambda path: (stub, False)
