@@ -42,6 +42,7 @@ from pathlib import Path
 _PI_PATH = Path(__file__).with_name("generate-pi-hook-extension.py")
 _spec = importlib.util.spec_from_file_location("pi_hooks", _PI_PATH)
 _pi = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = _pi  # before exec_module (dataclass + future annotations)
 _spec.loader.exec_module(_pi)
 COMMAND_RE = _pi.COMMAND_RE
 normalize_timeout = _pi.normalize_timeout

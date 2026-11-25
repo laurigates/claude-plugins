@@ -229,7 +229,7 @@ echo "== CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT sets each parser attempt (#3005, #2
 # The per-attempt limit: 2 s by default and on any value that is not a positive
 # finite number; scripts/check-workflow-js-model.sh raises it for CI.
 read_timeout() {
-    python3 -c 'import importlib.util as u, sys; s = u.spec_from_file_location("e", sys.argv[1]); m = u.module_from_spec(s); s.loader.exec_module(m); print(m.parse_timeout())' "$ESTIMATOR"
+    python3 -c 'import importlib.util as u, sys; s = u.spec_from_file_location("e", sys.argv[1]); m = u.module_from_spec(s); sys.modules[s.name] = m; s.loader.exec_module(m); print(m.parse_timeout())' "$ESTIMATOR"
 }
 got=$(for v in unset "" 30 0.5 abc 0 -3 nan inf; do
     if [ "$v" = unset ]; then

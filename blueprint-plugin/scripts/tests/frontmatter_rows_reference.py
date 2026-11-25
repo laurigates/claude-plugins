@@ -23,6 +23,7 @@ RS = "\x1e"
 def load_split(checker: str):
     spec = importlib.util.spec_from_file_location("check_schema", checker)
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
     spec.loader.exec_module(mod)
     return mod.split_frontmatter
 
