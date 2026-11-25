@@ -1098,6 +1098,18 @@ repos:
         language: system
         files: '^scripts/(check-mktemp-canonical\.sh|tests/test-check-mktemp-canonical\.sh)$'
         pass_filenames: false
+      - id: check-module-registration
+        name: path-loaded Python modules are registered in sys.modules before exec_module (#3805)
+        entry: bash ./scripts/check-module-registration.sh --strict
+        language: system
+        files: '\.(py|sh|bash)$'
+        pass_filenames: false
+      - id: test-check-module-registration
+        name: module-registration guard regression
+        entry: bash ./scripts/tests/test-check-module-registration.sh
+        language: system
+        files: '^scripts/(check-module-registration\.sh|tests/test-check-module-registration\.sh)$'
+        pass_filenames: false
       - id: test-resolve-additive-conflicts
         name: additive-conflict union resolver regression (no-LLM pre-pass)
         entry: bash ./scripts/tests/test-resolve-additive-conflicts.sh
