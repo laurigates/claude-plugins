@@ -190,7 +190,7 @@ Install based on your project's tech stack and domain.
 | api-plugin | Building or testing REST APIs |
 | langchain-plugin | Building AI agents with LangChain/LangGraph |
 | home-assistant-plugin | Home Assistant configuration management |
-| linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives |
+| linux-plugin | Linux workstation operations — disk-usage forensics and space recovery across root and data drives, laptop battery drain measurement |
 | kernel-plugin | Investigating or reporting Linux kernel behaviour — source history across tags, lore research, standalone reproducers, mailing-list reports |
 | bios-plugin | BIOS/UEFI firmware — fetching vendor firmware from the vendor's update service, installing UEFI capsules from Linux through fwupd, hidden setup options via efivarfs, SPI flash protection audit and backup, external SPI programming, EC firmware analysis |
 | reverse-engineering-plugin | Low-level reverse-engineering — headless Ghidra decompilation, firmware-dump region mapping, deterministic binary-format examiners, ACPI table RE, SGX/TEE-sealed-secret recovery reasoning, and device/physical-memory passthrough feasibility |

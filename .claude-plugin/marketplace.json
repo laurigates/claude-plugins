@@ -669,7 +669,7 @@
     {
       "name": "linux-plugin",
       "source": "./linux-plugin",
-      "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores",
+      "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores, and laptop battery drain measurement while off, suspended or idle",
       "version": "1.1.1",
       "author": {
         "name": "Lauri Gates"
@@ -686,7 +686,12 @@
         "cache-cleanup",
         "reflink",
         "xfs",
-        "zram"
+        "zram",
+        "battery",
+        "power-management",
+        "suspend",
+        "rtcwake",
+        "upower"
       ],
       "category": "development"
     },
