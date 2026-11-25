@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.11](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.10...python-plugin-v1.5.11) (2026-11-25)
+
+
+### Documentation
+
+* **python-plugin:** register a path-loaded module in sys.modules first ([#3806](https://github.com/laurigates/claude-plugins/issues/3806)) ([d6a92a0](https://github.com/laurigates/claude-plugins/commit/d6a92a090b577a6881828e750dff65b3a4406089))
+
 ## [1.5.10](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.9...python-plugin-v1.5.10) (2026-11-16)
 
 

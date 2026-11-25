@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.4...feedback-plugin-v1.17.0) (2026-11-25)
+
+
+### Features
+
+* **feedback-plugin:** confirm the target repo when origin shares no history ([2871389](https://github.com/laurigates/claude-plugins/commit/2871389e697ddfc0a7bf9db81e6b1492195b42ba)), closes [#3450](https://github.com/laurigates/claude-plugins/issues/3450)
+
 ## [1.16.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.3...feedback-plugin-v1.16.4) (2026-11-23)
 
 
