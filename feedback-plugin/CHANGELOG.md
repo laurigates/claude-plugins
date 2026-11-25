@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.17.0...feedback-plugin-v1.17.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** key the harness Edit/Write worktree guard in friction_parse ([#3815](https://github.com/laurigates/claude-plugins/issues/3815)) ([d848b8f](https://github.com/laurigates/claude-plugins/commit/d848b8fe53472f7ac7cfecd5281f64d76809d4d8)), closes [#2371](https://github.com/laurigates/claude-plugins/issues/2371) [#3532](https://github.com/laurigates/claude-plugins/issues/3532)
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.16.4...feedback-plugin-v1.17.0) (2026-11-25)
 
 

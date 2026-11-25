@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.20.0...session-plugin-v1.20.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **session-plugin:** make session-end's Step 4 question survive a worker restart ([#3739](https://github.com/laurigates/claude-plugins/issues/3739)) ([39b768f](https://github.com/laurigates/claude-plugins/commit/39b768fd596531c734c70f154ffd014399498521)), closes [#3689](https://github.com/laurigates/claude-plugins/issues/3689)
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.19.0...session-plugin-v1.20.0) (2026-11-25)
 
 
