@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-11-06
+modified: 2026-11-25
 reviewed: 2026-11-06
 paths:
   - "**/skills/**"
@@ -174,7 +174,7 @@ Each classifier check adds a round-trip. A local-classifier check also consumes 
 | Skill area | Guidance under auto mode |
 |------------|--------------------------|
 | `allowed-tools` in frontmatter | Narrow `Bash(<command> *)` patterns, never a bare `Bash`: the field pre-approves tools for the invoking turn. `.claude/rules/agentic-permissions.md` § Skill `allowed-tools` is a pre-approval, so the standard is narrow patterns owns the standard. It is not a tool boundary; `disallowed-tools` removes tools. |
-| `:ask` suffix | Still useful for genuinely dangerous operations the user should always confirm regardless of mode. |
+| `ask` rules | `allowed-tools` has no `:ask` suffix (#3583). For an operation the user should always confirm, document a `permissions.ask` entry for `settings.json`. |
 | Hostile-content surface | Tool results are stripped from classifier input, but skill-emitted text the user reads is not. Continue to validate web fetches and untrusted file content as usual. |
 | Subagent skills | Do not rely on `permissionMode` in subagent frontmatter under auto mode — it is ignored. Lean on the agent's `tools:` list and `allow`/`deny` rules. |
 | Stated boundaries | If a skill's prompts ask the user to set a boundary ("I won't push until you say so"), document that the boundary can be lost on context compaction; suggest a deny rule for hard guarantees. |
