@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.76.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.0...git-plugin-v2.76.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **git-plugin:** move single-package release-please trap to troubleshooting reference ([#3834](https://github.com/laurigates/claude-plugins/issues/3834)) ([bf35c33](https://github.com/laurigates/claude-plugins/commit/bf35c331e0f971e4d9682d2183a6462eb2d9f63d))
+
 ## [2.76.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.5...git-plugin-v2.76.0) (2026-11-25)
 
 
