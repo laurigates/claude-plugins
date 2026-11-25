@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.44.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.44.0...configure-plugin-v1.44.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **configure-plugin:** launch PAL as palaver-mcp-server ([#3825](https://github.com/laurigates/claude-plugins/issues/3825)) ([82ef769](https://github.com/laurigates/claude-plugins/commit/82ef7690b2e7fade05ee0afe8104aaef1aa7859a))
+
 ## [1.44.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.13...configure-plugin-v1.44.0) (2026-11-25)
 
 

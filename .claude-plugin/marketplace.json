@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.58.6",
+      "version": "2.58.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -305,7 +305,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.44.0",
+      "version": "1.44.1",
       "author": {
         "name": "Lauri Gates"
       },
