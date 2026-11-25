@@ -57,6 +57,9 @@ on:
       # evals.json files, which no other entry here matches. Without these, a PR
       # editing only eval-grader.md ran the suite in pre-commit but not in CI (#2890).
       - 'evaluate-plugin/agents/**'
+      # test-evaluate-workflow-registration.sh reads the manifest's `workflows`
+      # field, which no other entry here matches (#3684).
+      - 'evaluate-plugin/.claude-plugin/plugin.json'
       - '**/evals.json'
       - '*-plugin/hooks.json'
       - 'justfile'
@@ -124,6 +127,9 @@ on:
       - 'experiments/**'
       - '.github/workflows/golden-set-evaluation.yml'
       - 'evaluate-plugin/agents/**'
+      # test-evaluate-workflow-registration.sh reads the manifest's `workflows`
+      # field, which no other entry here matches (#3684).
+      - 'evaluate-plugin/.claude-plugin/plugin.json'
       - '**/evals.json'
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
