@@ -61,6 +61,7 @@ user-local by convention (`agent-patterns-plugin:plugin-settings`).
 |---|---|---|
 | `session-spinup-nudge.sh` | SessionStart (startup/resume) | Injects a one-time context note when open threads exist (dirty tree, unpushed commits, open tasks for the cwd project, assigned GitHub issues). Names the scope the task count actually came from, so a remote-resolved or all-projects-fallback count is not passed off as `project:<basename>`. Informational only — never blocks |
 | `session-end-nudge.sh` | Stop | Offers `session-plugin:session-end` at most once per session when the user's own messages carry a wind-down phrase. Collapses the former separate wrap + distill nudges (design D4). When taskwarrior is on PATH and the project has open/active tasks, the offer also mentions a taskwarrior state-sync pass |
+| `session-ledger.sh` | Stop, SessionEnd | Records each session with 3+ genuine user turns in a ledger until an end-of-session skill appears in its transcript, so closing a session without `session-end` leaves a resumable record. Prints nothing; see [Unfinished-session ledger](#unfinished-session-ledger) |
 
 The Stop nudge is deliberately conservative:
 
@@ -91,7 +92,40 @@ touch ~/.cache/claude-session-spinup-nudge/<session_id>
 ```
 
 Regression tests: `hooks/test-session-end-nudge.sh`,
-`hooks/test-session-spinup-nudge.sh` (run directly with bash).
+`hooks/test-session-spinup-nudge.sh`, `hooks/test-session-ledger.sh`
+(run directly with bash).
+
+### Unfinished-session ledger
+
+No hook can stop a session from closing: SessionEnd is notify-only, and a
+closed terminal window or a killed process may fire nothing. The ledger
+therefore writes early and clears late:
+
+1. On every Stop, once the session has 3+ genuine user turns
+   (`SESSION_LEDGER_MIN_TURNS`), `session-ledger.sh` writes
+   `<session_id>.json` (cwd, transcript path, turn count, last user message)
+   to `${XDG_STATE_HOME:-~/.local/state}/claude-session-plugin/unfinished/`
+   (`SESSION_LEDGER_DIR` overrides).
+2. SessionEnd stamps `ended_at` and the reason. An entry without one is a
+   session still running, or one that was killed.
+3. Once session-wrap, session-end, session-distill or
+   session-workflow-capture appears in the transcript, the next Stop or
+   SessionEnd deletes the entry. `claude --resume <id>` keeps the session
+   id, so resuming and running `/session-plugin:session-end` clears it.
+4. At the next startup, `session-spinup-nudge.sh` names the unwrapped
+   sessions in the same repo with their resume command and counts the rest.
+
+```
+bash session-plugin/scripts/unfinished-sessions.sh --list            # all, most recent first
+bash session-plugin/scripts/unfinished-sessions.sh --dismiss <id>    # nothing left to capture
+bash session-plugin/scripts/unfinished-sessions.sh --prune           # transcript deleted
+```
+
+`CLAUDE_HOOKS_DISABLE_SESSION_LEDGER=1` turns the hook off. The ledger is
+local to the machine the session ran on: a cloud session writes it inside
+its container, which is discarded, so cloud sessions are not covered.
+Regression tests: `hooks/test-session-ledger.sh`,
+`scripts/tests/test-unfinished-sessions.sh`.
 
 ## Shared collector (`scripts/session-survey.sh`)
 

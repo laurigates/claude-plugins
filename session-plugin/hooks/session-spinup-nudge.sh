@@ -76,12 +76,37 @@ fi
 [ "${recent_tasks:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${recent_tasks} recently-touched taskwarrior task(s) in other projects — nothing under project:${project}, so the detected slug may be wrong; "
 [ "${assigned_issues:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${assigned_issues} assigned GitHub issue(s); "
 
+# Sessions closed without an end-of-session skill (hooks/session-ledger.sh).
+# Local and cheap: reads the ledger dir only. The asking session is excluded,
+# so a resumed session is not told about itself.
+ledger_reader="$(cd "$script_dir/../scripts" 2>/dev/null && pwd)/unfinished-sessions.sh"
+unfinished_cue=""
+if [ -f "$ledger_reader" ]; then
+    ledger=$(bash "$ledger_reader" --summary --cwd "$cwd" --exclude "$session_id" 2>/dev/null || echo "")
+    lget() { printf '%s\n' "$ledger" | grep -m1 "^$1=" | cut -d= -f2- || echo ""; }
+    u_total=$(lget UNFINISHED_COUNT)
+    u_here=$(lget UNFINISHED_HERE)
+    u_ids=$(lget HERE_IDS)
+    u_else=$(( ${u_total:-0} - ${u_here:-0} ))
+    if [ "${u_total:-0}" -gt 0 ] 2>/dev/null; then
+        u_text=""
+        if [ "${u_here:-0}" -gt 0 ] 2>/dev/null; then
+            u_text="${u_here} earlier session(s) in this repo ended without session-end (resume: claude --resume ${u_ids//,/ or claude --resume })"
+            [ "$u_else" -gt 0 ] && u_text="${u_text}, ${u_else} more elsewhere"
+        else
+            u_text="${u_total} earlier session(s) in other directories ended without session-end"
+        fi
+        threads="${threads}${u_text}; "
+        unfinished_cue=" Unwrapped sessions may hold uncaptured learnings or manual steps: mention them, and that resuming one and running session-plugin:session-end captures them, while \`bash ${ledger_reader} --list\` lists them all and \`--dismiss <id>\` drops one that needs nothing."
+    fi
+fi
+
 # Nothing open — stay silent; spinup doesn't nudge for nothing
 [ -z "$threads" ] && exit 0
 
 touch "$state_file"
 
-context="Open threads detected at session start (${threads%; }). If the user seems to be resuming work, offer to run session-plugin:session-spinup for a read-only briefing of the open threads. Offer once — do not run it unprompted, and drop it if the user starts a clearly unrelated task."
+context="Open threads detected at session start (${threads%; }). If the user seems to be resuming work, offer to run session-plugin:session-spinup for a read-only briefing of the open threads. Offer once — do not run it unprompted, and drop it if the user starts a clearly unrelated task.${unfinished_cue}"
 
 jq -nc --arg c "$context" \
     '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $c}}'
