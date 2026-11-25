@@ -763,6 +763,32 @@ def test_external_pr_merge_guard_block_has_own_signature():
     assert sig == "hook:external-pr-merge-guard", sig
 
 
+def test_harness_worktree_edit_guard_has_own_signature():
+    """2026-W48: the Claude Code binary's Edit/Write worktree guard carries no
+    [bash …] or [command hook N] wrapper, so it fell through to
+    `hook:unclassified` -- 20 of the 48 unclassified hook_block events that
+    week. It must cluster under its own key, split by target kind.
+    """
+    p = _parser_module()
+    base = (
+        "PreToolUse:Edit hook error: This session is running in an isolated git "
+        "worktree at `$HOME/repos/.claude/worktrees/x`, but "
+        "`$HOME/repos/laurigates/r/f.sh` is in the base repo checkout. Edits "
+        "there do not land on this session's branch"
+    )
+    other = (
+        "PreToolUse:Write hook error: This session is running in an isolated git "
+        "worktree at `$HOME/repos/.claude/worktrees/x`, but "
+        "`$HOME/repos/.claude/worktrees/y/j` belongs to a different worktree."
+    )
+    assert p.canonical_signature("hook_block", "Edit", base) == (
+        "hook:harness-worktree-guard:base-repo"
+    )
+    assert p.canonical_signature("hook_block", "Write", other) == (
+        "hook:harness-worktree-guard:other-worktree"
+    )
+
+
 def test_stop_hook_feedback_emits_one_event_per_record():
     """Issue #2659: a Stop-hook block reaches the transcript as an isMeta user
     record (`Stop hook feedback:\\n<reason>`), not a tool_result, so the parser
