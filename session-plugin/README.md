@@ -305,6 +305,7 @@ full digest; `--summary` carries none of them.
 | `UNDRAINED_WOS_NO_EVIDENCE` | `BLUEPRINT` | The subset of `UNDRAINED_WOS` none of whose closed tasks carries a non-blank annotation, so a drain has no completion evidence to cite. Present only when non-empty |
 | `TASK_n_BPID` | `TASKWARRIOR` | The blueprint work order a pending task is linked to, sanitised like `TASK_n_DESC`. Absent when unlinked |
 | `REPO` | `GIT` | `<owner>/<repo>` of the cwd checkout's `origin`, parsed from the URL with **no `gh` call**. Always emitted in the full digest (never in `--summary`); empty when there is no origin or it is not an unambiguous GitHub `owner/repo` URL (another host, a local path, a nested path, an ssh-config alias host) |
+| `REPO_CONFIDENCE` | `GIT` | Whether `origin` holds this checkout's history, from local refs only (#3450). `high`: some `refs/remotes/origin/*` ref shares history with HEAD. `low`: origin refs exist and **none** shares history, so `REPO` names a repository the checkout is not a copy of; confirm the target before filing. `unknown`: no origin refs to compare (never fetched, no origin, unborn HEAD, not a repo), which is not a warning. Full digest only; `STATUS` stays `OK` |
 
 `UNDRAINED_WOS`, `UNDRAINED_WOS_NO_EVIDENCE` and `INFLIGHT_WOS` flatten any
 tab or newline in a work-order id, so an id can never mint a second `KEY=` line.
