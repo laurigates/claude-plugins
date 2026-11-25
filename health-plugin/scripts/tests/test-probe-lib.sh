@@ -1656,6 +1656,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
 spec.loader.exec_module(mod)
 
 # The two duplicate kinds' severities come from the shipped constructor.

@@ -96,6 +96,7 @@ def load_scaffold() -> Any:
     if spec is None or spec.loader is None:  # pragma: no cover - import plumbing
         raise RuntimeError(f"cannot import {SCAFFOLD_PY}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # before exec_module (dataclass + future annotations)
     spec.loader.exec_module(module)
     return module
 
