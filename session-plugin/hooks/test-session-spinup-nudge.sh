@@ -204,6 +204,28 @@ assert_contains "a stale checkout fires the nudge" 'additionalContext' "$output"
 assert_contains "the nudge names the behind count" '2 commit(s) behind upstream' "$output"
 
 echo ""
+echo "sessions closed without session-end surface (session-ledger.sh):"
+LEDGER_DIR="$TEST_HOME/.local/state/claude-session-plugin/unfinished"
+mkdir -p "$LEDGER_DIR"
+ledger_entry() { # id cwd
+    jq -n --arg id "$1" --arg cwd "$2" \
+        '{session_id: $id, cwd: $cwd, transcript_path: "/x", first_seen: "2026-11-24T10:00:00Z",
+          last_active: "2026-11-24T10:00:00Z", ended_at: "2026-11-24T11:00:00Z",
+          end_reason: "other", user_turns: 5, last_user_message: "m"}' > "$LEDGER_DIR/$1.json"
+}
+ledger_entry sp-ledger-self "$REPO_CLEAN"
+output=$(run_hook_output "sp-ledger-self" "$REPO_CLEAN" "startup")
+assert_silent "the session's own entry is not reported to itself" "$output"
+ledger_entry sp-ledger-here "$REPO_CLEAN"
+ledger_entry sp-ledger-far "$REPO_DIRTY"
+output=$(run_hook_output "sp-ledger-new" "$REPO_CLEAN" "startup")
+assert_contains "an unwrapped session in this repo fires the nudge" 'additionalContext' "$output"
+assert_contains "the nudge gives the resume command" 'claude --resume sp-ledger-here' "$output"
+assert_contains "the nudge counts sessions elsewhere" '1 more elsewhere' "$output"
+assert_contains "the nudge names the end-of-session skill" 'session-plugin:session-end' "$output"
+rm -rf "$LEDGER_DIR"
+
+echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
 [ "$FAIL" -gt 0 ] && exit 1
 exit 0

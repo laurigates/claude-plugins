@@ -20,7 +20,8 @@
     "orchestrator",
     "blueprint",
     "workflow-capture",
-    "dynamic-workflows"
+    "dynamic-workflows",
+    "session-ledger"
   ],
   "hooks": {
     "SessionStart": [
@@ -42,6 +43,22 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end-nudge.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.sh\"",
+            "timeout": 5
           }
         ]
       }
