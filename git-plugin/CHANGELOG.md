@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.76.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.5...git-plugin-v2.76.0) (2026-11-25)
+
+
+### Features
+
+* **git-plugin:** classify a local branch with pr-merge-method --local ([#3785](https://github.com/laurigates/claude-plugins/issues/3785)) ([1ce252f](https://github.com/laurigates/claude-plugins/commit/1ce252ffa44e7919555625b995c19a44e8591913)), closes [#3686](https://github.com/laurigates/claude-plugins/issues/3686)
+
+
+### Bug Fixes
+
+* **git-plugin:** treat only SUCCESS/NEUTRAL/SKIPPED as passing in merge-chain.sh ([31a778c](https://github.com/laurigates/claude-plugins/commit/31a778caa2e31093850ec0f78496a45b9b72684d)), closes [#3771](https://github.com/laurigates/claude-plugins/issues/3771)
+
+
+### Documentation
+
+* **git-plugin:** name the single_concern squash case in git-merge-hazards ([#3811](https://github.com/laurigates/claude-plugins/issues/3811)) ([77a7e8e](https://github.com/laurigates/claude-plugins/commit/77a7e8ec4bc9d676a886ee1e97d72548ee518037)), closes [#3644](https://github.com/laurigates/claude-plugins/issues/3644)
+* **git-plugin:** single-package separate-pull-requests:false trap in release-please-configuration ([#3804](https://github.com/laurigates/claude-plugins/issues/3804)) ([1ab46e2](https://github.com/laurigates/claude-plugins/commit/1ab46e29223aeae5eabfb4f51ba112a3577b80b0))
+
 ## [2.75.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.4...git-plugin-v2.75.5) (2026-11-25)
 
 
