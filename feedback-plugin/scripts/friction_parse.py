@@ -295,6 +295,18 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
         # so the legacy needle table doesn't false-positive on hook prose
         # that mentions a sibling concept (e.g. a branch-protection
         # message that references "pr metadata" in passing).
+        # The Claude Code binary's own Edit/Write worktree guard. It arrives as
+        # "PreToolUse:<Edit|Write> hook error:" with no [bash …] or
+        # [command hook N] wrapper, so no hook needle matches it (2026-W48:
+        # 20 of 48 hook:unclassified). base-repo = a path outside the session
+        # worktree's repo (13/13 in W48 were nested checkouts under
+        # ~/repos/<org>/, #2371's shape); other-worktree = a sibling worktree.
+        if "this session is running in an isolated git worktree" in ev:
+            if "base repo checkout" in ev:
+                return "hook:harness-worktree-guard:base-repo"
+            if "different worktree" in ev:
+                return "hook:harness-worktree-guard:other-worktree"
+            return "hook:harness-worktree-guard:other"
         if "secret-protection" in ev:
             return "hook:secret-protection"
         for needle, sig in [
