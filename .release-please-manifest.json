@@ -30,7 +30,7 @@
   "kitty-plugin": "2.0.0",
   "kubernetes-plugin": "1.10.4",
   "langchain-plugin": "1.5.10",
-  "linux-plugin": "1.1.1",
+  "linux-plugin": "1.2.0",
   "macos-plugin": "2.0.2",
   "migration-patterns-plugin": "1.7.1",
   "networking-plugin": "1.4.4",
