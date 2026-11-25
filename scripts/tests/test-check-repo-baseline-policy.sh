@@ -160,14 +160,14 @@ assert_strict_fails "a restated policy server fails --strict" "$l"
 l2="$tmp_root/l2"
 make_fixture "$l2" "$(policy_with '.')"
 mkdir -p "$l2/agent-patterns-plugin/skills/mcp-demo"
-printf '%s\n' '"args": ["--from", "git+https://github.com/owner/repo.git", "pal-mcp-server"]' \
+printf '%s\n' '"args": ["--from", "git+https://github.com/owner/repo.git", "palaver-mcp-server"]' \
   > "$l2/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
 out_l2="$(bash "$check" --project-dir "$l2")"
 assert_has "a policy server package in a git+ registration flagged doc_restates_policy_server" "$out_l2" "TYPE=doc_restates_policy_server MSG=agent-patterns-plugin/skills/mcp-demo/SKILL.md:1"
 l3="$tmp_root/l3"
 make_fixture "$l3" "$(policy_with '.')"
 mkdir -p "$l3/agent-patterns-plugin/skills/mcp-demo"
-printf '%s\n' '"my-local-server": {' 'bunx -y @upstash/context7-mcp  # manual start' 'PAL registers as `uvx pal-mcp-server@latest`.' \
+printf '%s\n' '"my-local-server": {' 'bunx -y @upstash/context7-mcp  # manual start' 'PAL registers as `uvx palaver-mcp-server@latest`.' \
   > "$l3/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
 out_l3="$(bash "$check" --project-dir "$l3")"
 assert_has "a placeholder server, a manual start line and a prose mention pass" "$out_l3" "^STATUS=OK$"
