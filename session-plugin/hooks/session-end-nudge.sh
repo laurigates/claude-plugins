@@ -2,7 +2,7 @@
 # Stop hook — offers the session-plugin:session-end orchestrator when the user
 # signals end-of-session. Collapses the former user-level session-wrap-nudge
 # and project-plugin's project-distill-nudge into ONE nudge (decision D4 in
-# docs/session-plugin-workflow.md), so wind-down produces a single offer
+# docs/archive/session-plugin-workflow.md), so wind-down produces a single offer
 # instead of competing hook injections.
 #
 # Fires at most once per session_id (state file). Conservative gates:

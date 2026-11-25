@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.58.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.5...agent-patterns-plugin-v2.58.6) (2026-11-24)
+
+
+### Bug Fixes
+
+* **scripts:** check plugin README links and fix the 15 dead ones ([#3790](https://github.com/laurigates/claude-plugins/issues/3790)) ([2442b2d](https://github.com/laurigates/claude-plugins/commit/2442b2d3fcd0c03a08cb47d135a0ecd60c1da0d8))
+
+## [2.58.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.4...agent-patterns-plugin-v2.58.5) (2026-11-20)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** note cloud network secrets in the direct-gateway reference ([#3743](https://github.com/laurigates/claude-plugins/issues/3743)) ([f559045](https://github.com/laurigates/claude-plugins/commit/f559045b5fe63c292dd85b03b8fcf829a7330f13))
+
+## [2.58.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.3...agent-patterns-plugin-v2.58.4) (2026-11-17)
+
+
+### Documentation
+
+* **agent-patterns:** cross-check a synthesis against its finders ([#3710](https://github.com/laurigates/claude-plugins/issues/3710)) ([4c0dc2f](https://github.com/laurigates/claude-plugins/commit/4c0dc2fbb53f290b47d932d009b8deff2e87c840))
+
 ## [2.58.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.2...agent-patterns-plugin-v2.58.3) (2026-11-16)
 
 

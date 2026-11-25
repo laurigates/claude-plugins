@@ -37,6 +37,7 @@ import {
   buildIndex,
   DEFAULT_K,
   INJECTED_BLOCK_TRAILER,
+  isUnknownPluginWarning,
   renderInjectedBlock,
   renderToolResult,
   SEARCH_SKILLS_TOOL_DESCRIPTION,
@@ -346,8 +347,12 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
       const config = getConfig();
       const built = buildIndex({
         repoRoot: config.repoRoot,
+        plugins: config.plugins,
         embed: { endpoint: config.endpoint, model: config.model },
       }).then((index) => {
+        // A `plugins` name the marketplace lacks is a config typo the user
+        // should see; the other scan warnings stay silent (DESIGN §2.5).
+        emitWarningsOnce(warned, index.warnings.filter(isUnknownPluginWarning));
         // DESIGN §2.5: degradation is silent in the core; the binding logs
         // the resolved mode once.
         if (index.mode === "bm25-only") emitWarningsOnce(warned, [BM25_ONLY_MODE_WARNING]);

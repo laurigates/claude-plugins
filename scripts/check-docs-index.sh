@@ -165,7 +165,9 @@ rules_table_count="$(printf '%s\n' "$rules_in_table" | grep -c . || true)"
 mkt_set="$(jq -r '.plugins[].name' "$marketplace" 2>/dev/null | sort)"
 rp_set="$(jq -r '.packages | keys[]' "$rp_config" 2>/dev/null | grep -v '^\.$' | sort)"
 manifest_set="$(jq -r 'keys[]' "$rp_manifest" 2>/dev/null | grep -v '^\.$' | sort)"
-disk_set="$(find "$proj_dir" -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' 2>/dev/null \
+# -mindepth 1: a checkout whose own basename matches *-plugin (a worktree named
+# x-plugin) must not count itself as a plugin dir (#3724).
+disk_set="$(find "$proj_dir" -mindepth 1 -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' 2>/dev/null \
   | sed "s#$proj_dir/##" | sort)"
 
 compare_sets() {

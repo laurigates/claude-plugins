@@ -41,6 +41,11 @@ export interface SkillDiscoveryConfig {
   model: string;
   /** Always-injected skill ids ("plugin:skill"); ranked results fill k after pins. */
   pins: string[];
+  /**
+   * Index only these marketplace plugins ("git-plugin"); empty = every plugin.
+   * Written by `just setup-pi <plugin>...`; unknown names warn and are ignored.
+   */
+  plugins: string[];
   /** false = pull-only (debug/ablation). */
   push: boolean;
   /** false turns off session-plugin's spinup and end nudges (session-nudges.ts). */
@@ -54,6 +59,7 @@ export function defaultConfig(defaultRepoRoot: string): SkillDiscoveryConfig {
     endpoint: DEFAULT_ENDPOINT,
     model: DEFAULT_MODEL,
     pins: [],
+    plugins: [],
     push: true,
     sessionNudges: true,
   };
@@ -61,6 +67,11 @@ export function defaultConfig(defaultRepoRoot: string): SkillDiscoveryConfig {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+/** A `plugins` value both bindings accept: an array of non-empty strings. */
+export function isPluginNameArray(value: unknown): value is string[] {
+  return isStringArray(value) && value.every((item) => item.length > 0);
 }
 
 /**
@@ -105,6 +116,16 @@ export function parseConfigText(
       case "pins":
         if (isStringArray(value)) partial.pins = value;
         else ignore(key, "an array of strings");
+        break;
+      case "plugins":
+        // All or nothing, as in the OpenCode binding: keeping the valid part
+        // of a list would scope to a selection nobody wrote, and keeping none
+        // of it reads the same as "every plugin", so say so.
+        if (isPluginNameArray(value)) partial.plugins = value;
+        else
+          warnings.push(
+            `${source}: "plugins" is not an array of non-empty strings — field ignored, indexing every plugin`,
+          );
         break;
       case "push":
       case "sessionNudges":

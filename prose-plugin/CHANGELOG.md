@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.5](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.4...prose-plugin-v1.4.5) (2026-11-20)
+
+
+### Documentation
+
+* **comfyui-plugin:** replace maintainer-layout paths in comfy-metadata, banner scripts and prose-check ([#3719](https://github.com/laurigates/claude-plugins/issues/3719)) ([944e1da](https://github.com/laurigates/claude-plugins/commit/944e1da7e67d548d235d422ef380be44de78fc50)), closes [#3709](https://github.com/laurigates/claude-plugins/issues/3709)
+
+## [1.4.4](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.3...prose-plugin-v1.4.4) (2026-11-17)
+
+
+### Bug Fixes
+
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.4.2...prose-plugin-v1.4.3) (2026-11-16)
 
 

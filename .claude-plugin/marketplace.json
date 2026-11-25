@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 49 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -29,7 +29,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.58.3",
+      "version": "2.58.6",
       "author": {
         "name": "Lauri Gates"
       },
@@ -108,7 +108,7 @@
       "name": "bios-plugin",
       "source": "./bios-plugin",
       "description": "BIOS/UEFI firmware workflows - fetch vendor firmware from the vendor's own update service, install UEFI capsules from Linux via fwupd, change hidden setup options, audit and back up the SPI flash, write it with an external programmer, and analyse EC firmware",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -157,7 +157,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.51.11",
+      "version": "3.52.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -244,7 +244,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.15.5",
+      "version": "1.15.9",
       "author": {
         "name": "Lauri Gates"
       },
@@ -305,7 +305,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.43.11",
+      "version": "1.43.12",
       "author": {
         "name": "Lauri Gates"
       },
@@ -399,7 +399,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.16.2",
+      "version": "1.16.4",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -419,7 +419,7 @@
       "name": "finops-plugin",
       "source": "./finops-plugin",
       "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
-      "version": "1.4.6",
+      "version": "1.4.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -462,7 +462,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.74.3",
+      "version": "2.75.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -562,7 +562,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.22.3",
+      "version": "2.22.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -605,7 +605,7 @@
     {
       "name": "kitty-plugin",
       "source": "./kitty-plugin",
-      "description": "kitty terminal for agents \u2014 safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
+      "description": "kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore",
       "version": "2.0.0",
       "author": {
         "name": "Lauri Gates",
@@ -699,7 +699,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -743,7 +743,7 @@
       "name": "networking-plugin",
       "source": "./networking-plugin",
       "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
-      "version": "1.4.3",
+      "version": "1.4.4",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -793,7 +793,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.16",
+      "version": "1.21.17",
       "author": {
         "name": "Lauri Gates"
       },
@@ -813,7 +813,7 @@
     {
       "name": "prompt-engineering-plugin",
       "source": "./prompt-engineering-plugin",
-      "description": "Prompt engineering techniques for accurate, grounded Claude responses \u2014 anti-hallucination workflow with citation-backed analysis",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
       "version": "1.1.4",
       "author": {
         "name": "Lauri Gates"
@@ -833,7 +833,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.3",
+      "version": "1.4.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -901,7 +901,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, knowledge distillation, and Workflow-script capture",
-      "version": "1.18.2",
+      "version": "1.18.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -945,7 +945,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.16.4",
+      "version": "1.16.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -966,7 +966,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.12",
+      "version": "1.7.13",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1044,7 +1044,7 @@
       "name": "video-plugin",
       "source": "./video-plugin",
       "description": "Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -1069,7 +1069,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.19.2",
+      "version": "1.20.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -1111,7 +1111,7 @@
       "name": "reverse-engineering-plugin",
       "source": "./reverse-engineering-plugin",
       "description": "Low-level reverse-engineering workflows - headless Ghidra decompilation, firmware-dump region mapping, deterministic binary-format examiners, ACPI table RE, SGX/TEE-sealed-secret recovery reasoning, and device/physical-memory passthrough feasibility",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Lauri Gates"
       },

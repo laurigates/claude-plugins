@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/laurigates/claude-plugins/compare/video-plugin-v2.0.1...video-plugin-v2.0.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [2.0.1](https://github.com/laurigates/claude-plugins/compare/video-plugin-v2.0.0...video-plugin-v2.0.1) (2026-11-16)
 
 

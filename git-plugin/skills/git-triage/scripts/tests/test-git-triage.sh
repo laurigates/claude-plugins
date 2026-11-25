@@ -709,4 +709,101 @@ for prog_field in 'subIssuesSummary{total completed}' 'CROSS_REFERENCED_EVENT' '
 done
 pass "#2904 (live): one paginated progress query follows endCursor and asks the camelCase fields"
 
+# -----------------------------------------------------------------------------
+# Issue #3362: REST fallback when GraphQL is blocked. Claude Code cloud sessions
+# answer every GraphQL call (gh issue list, gh pr list, gh api graphql) with an
+# HTTP 403. The collector must then read issues and PRs from the REST API,
+# paginating with an explicit &page=N loop (never --paginate, whose Link-header
+# pages use repositories/{id} paths the proxy rejects), and still populate the
+# coverage keys. GIT_TRIAGE_REST_PER_PAGE=2 shrinks pages so the loop runs.
+# -----------------------------------------------------------------------------
+rest_stub_dir="${work_dir}/stub-rest-bin"
+mkdir -p "$rest_stub_dir"
+cat > "${rest_stub_dir}/gh" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${GH_STUB_LOG:?}"
+gql_403() {
+  printf '%s\n' '{"message":"GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...)."}'
+  printf '%s\n' 'gh: GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...). (HTTP 403)' >&2
+  exit 1
+}
+case "$1 $2" in
+  "issue list"|"pr list"|"api graphql") gql_403 ;;
+esac
+[ "$1" = "api" ] || exit 1
+case "$*" in *--paginate*) echo "stub: --paginate is refused by the proxy" >&2; exit 1 ;; esac
+case "$2" in
+  'search/issues?q=repo:acme/widgets+is:issue+is:open&per_page=1') printf '{"total_count":31}\n' ;;
+  'search/issues?q=repo:acme/widgets+is:pr+is:open&per_page=1') printf '{"total_count":5}\n' ;;
+  repos/acme/widgets/issues\?*page=1)
+    printf '%s\n' '[{"number":9,"title":"rest issue","body":"see #4","labels":[{"name":"bug"}],"created_at":"2026-06-01T00:00:00Z","updated_at":"2026-06-08T00:00:00Z","comments":3,"assignees":[],"user":{"login":"x"},"sub_issues_summary":{"total":2,"completed":1,"percent_completed":50}},{"number":8,"title":"a pull request","body":"","created_at":"2026-05-30T00:00:00Z","updated_at":"2026-06-08T00:00:00Z","comments":0,"user":{"login":"y"},"pull_request":{"url":"x"}}]' ;;
+  repos/acme/widgets/issues\?*page=2)
+    printf '%s\n' '[{"number":7,"title":"older rest issue","body":"","labels":[],"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-02T00:00:00Z","comments":0,"assignees":[],"user":{"login":"z"}}]' ;;
+  repos/acme/widgets/pulls\?*page=1)
+    printf '%s\n' '[{"number":8,"title":"a pull request","body":"Fixes #9","draft":false,"created_at":"2026-05-30T00:00:00Z","updated_at":"2026-06-08T00:00:00Z","base":{"ref":"main"},"head":{"ref":"fix/x","sha":"SHA8"},"user":{"login":"y","type":"User"},"labels":[]}]' ;;
+  repos/acme/widgets/pulls/8) printf '%s\n' '{"number":8,"mergeable":false,"mergeable_state":"dirty"}' ;;
+  repos/acme/widgets/pulls/8/reviews*)
+    printf '%s\n' '[{"user":{"login":"r1"},"state":"CHANGES_REQUESTED"},{"user":{"login":"r1"},"state":"APPROVED"},{"user":{"login":"r2"},"state":"COMMENTED"}]' ;;
+  repos/acme/widgets/commits/SHA8/check-runs*) printf '%s\n' '{"total_count":1,"check_runs":[{"name":"lint","conclusion":"success"}]}' ;;
+  repos/acme/widgets/commits/SHA8/status) printf '%s\n' '{"state":"success","statuses":[{"context":"ci/legacy","state":"success"}]}' ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "${rest_stub_dir}/gh"
+[ -x "${rest_stub_dir}/gh" ] || fail "#3362: stub gh is not executable"
+[ "$(PATH="${rest_stub_dir}:$PATH" command -v gh)" = "${rest_stub_dir}/gh" ] \
+  || fail "#3362: stub gh is not the gh in effect on PATH"
+
+rest_log="${work_dir}/gh-rest.log"
+rest_out="$(env -u GIT_TRIAGE_NO_FETCH -u GIT_TRIAGE_ISSUES_FIXTURE -u GIT_TRIAGE_PRS_FIXTURE \
+  -u GIT_TRIAGE_COUNTS_FIXTURE -u GIT_TRIAGE_PROGRESS_FIXTURE \
+  PATH="${rest_stub_dir}:$PATH" GH_STUB_LOG="$rest_log" GIT_TRIAGE_REST_PER_PAGE=2 \
+  bash "$triage_script" --type both --repo acme/widgets --batch 10)"
+[ -s "$rest_log" ] || fail "#3362: the stub gh was never called"
+grep -q 'GraphQL\|^api graphql\|^issue list' "$rest_log" \
+  || fail "#3362: the GraphQL path must be tried first (option B), log: $(cat "$rest_log")"
+
+assert_line "$rest_out" "GRAPHQL_BLOCKED=true" "#3362"
+assert_line "$rest_out" "ISSUES_FETCHED=2" "#3362 (PR entries split out of /issues)"
+assert_line "$rest_out" "ISSUES_TOTAL=31" "#3362 (REST count)"
+assert_line "$rest_out" "ISSUES_TRUNCATED=true" "#3362"
+assert_line "$rest_out" "PRS_FETCHED=1" "#3362"
+assert_line "$rest_out" "PRS_TOTAL=5" "#3362 (REST count)"
+assert_line "$rest_out" "TRUNCATED=true" "#3362"
+assert_line "$rest_out" "ISSUE_9_TITLE=rest issue" "#3362"
+assert_line "$rest_out" "ISSUE_9_COMMENTS=3" "#3362 (REST comments is a count)"
+assert_line "$rest_out" "ISSUE_9_REFS=#4" "#3362"
+assert_line "$rest_out" "ISSUE_9_SUBISSUES=1/2" "#3362 (sub_issues_summary)"
+assert_line "$rest_out" "ISSUE_7_SUBISSUES=unknown" "#3362 (no sub_issues_summary)"
+assert_line "$rest_out" "ISSUE_9_MERGED_PRS=unknown" "#3362 (no cheap REST equivalent)"
+assert_line "$rest_out" "ISSUE_7_STALE_CANDIDATE=true" "#3362"
+refute_key "$rest_out" ISSUE_8_TITLE "#3362 (a pull_request entry is not an issue)"
+assert_line "$rest_out" "PR_8_DRAFT=false" "#3362"
+assert_line "$rest_out" "PR_8_MERGEABLE=CONFLICTING" "#3362 (pulls/{n} mergeable)"
+assert_line "$rest_out" "PR_8_MERGE_STATE=DIRTY" "#3362 (pulls/{n} mergeable_state)"
+assert_line "$rest_out" "PR_8_REVIEW=APPROVED" "#3362 (latest review per reviewer)"
+assert_line "$rest_out" "PR_8_WORST_CHECK=SUCCESS" "#3362 (check-runs + status)"
+assert_line "$rest_out" "PR_8_CATEGORY=needs-rebase" "#3362"
+assert_line "$rest_out" "PR_8_CLOSES=#9" "#3362"
+assert_line "$rest_out" "REST_FALLBACK_UNKNOWN=MERGED_PRS" "#3362"
+assert_line "$rest_out" "REST_FALLBACK_APPROXIMATED=REVIEW" "#3362"
+assert_line "$rest_out" "STATUS=OK" "#3362"
+grep -q '^api repos/acme/widgets/issues?.*&page=2$' "$rest_log" \
+  || fail "#3362: a full first page must be followed by &page=2, log: $(grep issues "$rest_log")"
+if grep -q '^api repos/acme/widgets/issues?.*&page=3$' "$rest_log"; then
+  fail "#3362: a short page (< per_page) must stop the issue pagination"
+fi
+if grep -q '^api repos/acme/widgets/pulls?.*&page=2$' "$rest_log"; then
+  fail "#3362: a short first PR page must stop the PR pagination"
+fi
+if grep -q -- '--paginate' "$rest_log"; then
+  fail "#3362: the REST fallback must not use gh api --paginate"
+fi
+pass "#3362: a GraphQL 403 falls back to REST issues/PRs/counts with manual &page=N pagination"
+
+# GraphQL path untouched: none of the fallback keys appear when GraphQL answers.
+refute_key "$live_out" GRAPHQL_BLOCKED "#3362 (graphql path)"
+refute_key "$live_out" REST_FALLBACK_UNKNOWN "#3362 (graphql path)"
+pass "#3362: the GraphQL path emits no fallback keys"
+
 echo "ALL TESTS PASSED"

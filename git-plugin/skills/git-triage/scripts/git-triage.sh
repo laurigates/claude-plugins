@@ -37,6 +37,21 @@
 # ISSUE_COUNT= / ISSUES: are NOT GitHub issues: they are this collector's own
 # diagnostics, per .claude/rules/structured-script-output.md.
 #
+# REST fallback (issue #3362). Claude Code cloud sessions answer every GraphQL
+# call (gh issue list, gh pr list, gh api graphql) with "HTTP 403: GitHub GraphQL
+# is not available". The collector keeps GraphQL first and, on that 403 only,
+# reads everything from REST instead: repos/{o}/{r}/issues (entries carrying
+# `pull_request` are split out), repos/{o}/{r}/pulls plus per-PR pulls/{n},
+# pulls/{n}/reviews, commits/{sha}/check-runs and commits/{sha}/status, and the
+# open totals from search/issues total_count. Pages are walked with an explicit
+# &page=N loop that stops on a short page, never `gh api --paginate`: its Link
+# header points at repositories/{id} paths the proxy rejects. The fallback emits
+# GRAPHQL_BLOCKED=true plus
+#   REST_FALLBACK_UNKNOWN       keys with no cheap REST source (MERGED_PRS), or none
+#   REST_FALLBACK_APPROXIMATED  keys derived differently (REVIEW: latest review per
+#                               reviewer, not branch-protection reviewDecision), or none
+# GIT_TRIAGE_REST_PER_PAGE (default 100) is the REST page size, a test seam.
+#
 # gh --json fields: PR merge state is `state`/`mergedAt` (never `merged`);
 # CI status lives in `statusCheckRollup[].conclusion` (never a flat field).
 
@@ -82,6 +97,20 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 echo "JQ_AVAILABLE=true"
+
+# Scratch space for the REST fallback (issue #3362): a marker file records that
+# GraphQL answered with the proxy's 403, so every later fetch (each runs in its
+# own command-substitution subshell) goes straight to REST. Without a scratch
+# dir the fallback is disabled and the GraphQL path behaves as before.
+triage_tmp="$(mktemp -d 2>/dev/null)" || triage_tmp=""
+if [ -n "$triage_tmp" ]; then
+  trap 'rm -rf "$triage_tmp"' EXIT
+fi
+rest_marker="${triage_tmp:+${triage_tmp}/graphql-blocked}"
+rest_per_page="${GIT_TRIAGE_REST_PER_PAGE:-100}"
+case "$rest_per_page" in ''|*[!0-9]*|0) rest_per_page=100 ;; esac
+rest_repo="$repo"
+[ -n "$rest_repo" ] || rest_repo='{owner}/{repo}'
 
 # now_epoch is overridable for deterministic age tests.
 now_epoch="${GIT_TRIAGE_NOW_EPOCH:-$(date +%s)}"
@@ -143,6 +172,142 @@ categorize_pr() {
   echo "uncategorized"
 }
 
+# --- GraphQL call with 403 detection (issue #3362) -------------------------
+rest_mode() {
+  [ -n "$rest_marker" ] && [ -e "$rest_marker" ]
+}
+
+# Run a GraphQL-backed gh command. Prints its stdout and returns its exit code,
+# as `gh … 2>/dev/null` did. When the proxy refuses GraphQL, prints nothing,
+# drops the marker, and returns non-zero; the caller then checks rest_mode.
+run_gql() {
+  local gql_err_file="/dev/null" gql_out="" gql_rc=0
+  [ -n "$triage_tmp" ] && gql_err_file="${triage_tmp}/gql-err"
+  gql_out=$(gh "$@" 2>"$gql_err_file") || gql_rc=$?
+  if [ "$gql_rc" -ne 0 ] && [ -n "$rest_marker" ] \
+     && grep -qF 'GraphQL is not available' "$gql_err_file" 2>/dev/null; then
+    : > "$rest_marker"
+    return 2
+  fi
+  [ -n "$gql_out" ] && printf '%s\n' "$gql_out"
+  return "$gql_rc"
+}
+
+# --- REST fallback helpers (issue #3362) ------------------------------------
+# Walk a REST list endpoint page by page (&per_page=…&page=N) and print each
+# page's items that pass the jq filter as one JSON array per line. Stops on a
+# short page (fewer than per_page raw items), once <want> filtered items are in
+# hand, on a failed or non-array page, or after 20 pages.
+rest_get_pages() {
+  local rest_ep="$1" rest_want="$2" rest_filter="$3"
+  local rest_page_no=1 rest_raw="" rest_raw_n=0 rest_kept="" rest_got=0
+  case "$rest_want" in ''|*[!0-9]*) return ;; esac
+  while [ "$rest_page_no" -le 20 ] && [ "$rest_got" -lt "$rest_want" ]; do
+    rest_raw=$(gh api "${rest_ep}&per_page=${rest_per_page}&page=${rest_page_no}" 2>/dev/null) || break
+    jq -e 'type == "array"' >/dev/null 2>&1 <<<"$rest_raw" || break
+    rest_raw_n=$(jq 'length' <<<"$rest_raw")
+    rest_kept=$(jq -c "[ .[] | ${rest_filter} ]" <<<"$rest_raw") || break
+    printf '%s\n' "$rest_kept"
+    rest_got=$((rest_got + $(jq 'length' <<<"$rest_kept")))
+    [ "$rest_raw_n" -lt "$rest_per_page" ] && break
+    rest_page_no=$((rest_page_no + 1))
+  done
+}
+
+# Fetch one REST object into a file; writes `null` when the call or JSON fails,
+# so the jq that reads it maps the field to UNKNOWN/null instead of failing.
+rest_fetch_json() {
+  local rest_file="$1" rest_ep="$2"
+  if ! gh api "$rest_ep" >"$rest_file" 2>/dev/null || ! jq -e . "$rest_file" >/dev/null 2>&1; then
+    printf 'null\n' >"$rest_file"
+  fi
+}
+
+# Issues in `gh issue list --json` shape. REST `comments` is a count, not an
+# array; the per-issue jq's `length` returns a number's own value, so
+# ISSUE_<n>_COMMENTS is the same either way. sub_issues_summary becomes
+# subIssuesSummary for the progress keys.
+fetch_issues_rest() {
+  rest_get_pages "repos/${rest_repo}/issues?state=open&sort=created&direction=desc" "$batch" \
+      'select(.pull_request == null)' \
+    | jq -s --argjson n "$batch" '(add // []) | .[:$n] | map({
+        number, title, body,
+        labels: [.labels[]? | {name}],
+        createdAt: .created_at, updatedAt: .updated_at,
+        comments: (.comments // 0),
+        assignees: [.assignees[]? | {login}],
+        author: {login: .user.login},
+        subIssuesSummary: (.sub_issues_summary | if type == "object" then {total, completed} else null end)
+      })' 2>/dev/null || echo "[]"
+}
+
+# PRs in `gh pr list --json` shape. mergeable/mergeStateStatus come from
+# pulls/{n} (mergeable true/false/null, mergeable_state upper-cased: the same
+# enum as GraphQL's mergeStateStatus); reviewDecision is approximated from the
+# latest APPROVED/CHANGES_REQUESTED/DISMISSED review per reviewer;
+# statusCheckRollup merges the first 100 check-runs and the commit statuses.
+fetch_prs_rest() {
+  local rest_pr="" rest_pr_num="" rest_pr_sha=""
+  case "$batch" in ''|*[!0-9]*) echo "[]"; return ;; esac
+  rest_get_pages "repos/${rest_repo}/pulls?state=open&sort=created&direction=desc" "$batch" '.' \
+    | jq -c -s --argjson n "$batch" '(add // []) | .[:$n] | .[]' 2>/dev/null \
+    | while IFS= read -r rest_pr; do
+        rest_pr_num=$(jq -r '.number // empty' <<<"$rest_pr")
+        [ -n "$rest_pr_num" ] || continue
+        rest_pr_sha=$(jq -r '.head.sha // empty' <<<"$rest_pr")
+        rest_fetch_json "${triage_tmp}/pr-detail.json" "repos/${rest_repo}/pulls/${rest_pr_num}"
+        rest_fetch_json "${triage_tmp}/pr-reviews.json" "repos/${rest_repo}/pulls/${rest_pr_num}/reviews?per_page=100"
+        if [ -n "$rest_pr_sha" ]; then
+          rest_fetch_json "${triage_tmp}/pr-checks.json" "repos/${rest_repo}/commits/${rest_pr_sha}/check-runs?per_page=100"
+          rest_fetch_json "${triage_tmp}/pr-status.json" "repos/${rest_repo}/commits/${rest_pr_sha}/status"
+        else
+          printf 'null\n' >"${triage_tmp}/pr-checks.json"
+          printf 'null\n' >"${triage_tmp}/pr-status.json"
+        fi
+        jq -c --slurpfile d "${triage_tmp}/pr-detail.json" --slurpfile rv "${triage_tmp}/pr-reviews.json" \
+              --slurpfile ck "${triage_tmp}/pr-checks.json" --slurpfile st "${triage_tmp}/pr-status.json" '
+          ($d[0]) as $d | ($rv[0]) as $rv | ($ck[0]) as $ck | ($st[0]) as $st
+          | {
+              number, title, body,
+              createdAt: .created_at, updatedAt: .updated_at,
+              isDraft: (.draft == true),
+              baseRefName: .base.ref, headRefName: .head.ref,
+              author: {login: .user.login, is_bot: (.user.type == "Bot")},
+              labels: [.labels[]? | {name}],
+              mergeable: (if ($d | type) != "object" then "UNKNOWN"
+                          elif $d.mergeable == true then "MERGEABLE"
+                          elif $d.mergeable == false then "CONFLICTING"
+                          else "UNKNOWN" end),
+              mergeStateStatus: (if ($d | type) == "object" and ($d.mergeable_state | type) == "string"
+                                 then ($d.mergeable_state | ascii_upcase) else "UNKNOWN" end),
+              reviewDecision: (if ($rv | type) != "array" then null else
+                ([ $rv[] | select(.state == "APPROVED" or .state == "CHANGES_REQUESTED" or .state == "DISMISSED") ]
+                 | group_by(.user.login) | map(last.state)) as $latest
+                | if any($latest[]; . == "CHANGES_REQUESTED") then "CHANGES_REQUESTED"
+                  elif any($latest[]; . == "APPROVED") then "APPROVED"
+                  else null end end),
+              statusCheckRollup: (
+                [ (if ($ck | type) == "object" then ($ck.check_runs // []) else [] end)[]?
+                  | {name, conclusion: (if (.conclusion | type) == "string" then (.conclusion | ascii_upcase) else null end)} ]
+                + [ (if ($st | type) == "object" then ($st.statuses // []) else [] end)[]?
+                  | {context, conclusion: ({"failure":"FAILURE","error":"FAILURE","success":"SUCCESS"}[.state // ""] // null)} ])
+            }' <<<"$rest_pr" 2>/dev/null
+      done | jq -s '.' 2>/dev/null || echo "[]"
+}
+
+# Open totals from search/issues total_count, in the GraphQL count response's
+# shape so count_of reads both paths; a failed search leaves its half unknown.
+fetch_counts_rest() {
+  local rest_ic="" rest_pc=""
+  rest_ic=$(gh api "search/issues?q=repo:${rest_repo}+is:issue+is:open&per_page=1" 2>/dev/null \
+    | jq -r '.total_count // empty' 2>/dev/null)
+  rest_pc=$(gh api "search/issues?q=repo:${rest_repo}+is:pr+is:open&per_page=1" 2>/dev/null \
+    | jq -r '.total_count // empty' 2>/dev/null)
+  jq -nc --arg ic "$rest_ic" --arg pc "$rest_pc" '{data:{repository:(
+      (if ($ic | test("^[0-9]+$")) then {issues:{totalCount:($ic | tonumber)}} else {} end)
+      + (if ($pc | test("^[0-9]+$")) then {pullRequests:{totalCount:($pc | tonumber)}} else {} end))}}'
+}
+
 # --- Fetch issues ---------------------------------------------------------
 fetch_issues() {
   if [ -n "${GIT_TRIAGE_ISSUES_FIXTURE:-}" ]; then
@@ -153,10 +318,14 @@ fetch_issues() {
     echo "[]"
     return
   fi
-  local repo_flag=()
+  if rest_mode; then fetch_issues_rest; return; fi
+  local repo_flag=() issues_out="" issues_rc=0
   [ -n "$repo" ] && repo_flag=(--repo "$repo")
-  gh issue list "${repo_flag[@]}" --state open --limit "$batch" \
-    --json number,title,body,labels,createdAt,updatedAt,comments,assignees,author 2>/dev/null || echo "[]"
+  issues_out=$(run_gql issue list "${repo_flag[@]}" --state open --limit "$batch" \
+    --json number,title,body,labels,createdAt,updatedAt,comments,assignees,author) || issues_rc=$?
+  if rest_mode; then fetch_issues_rest; return; fi
+  [ -n "$issues_out" ] && printf '%s\n' "$issues_out"
+  [ "$issues_rc" -eq 0 ] || echo "[]"
 }
 
 # --- Fetch PRs ------------------------------------------------------------
@@ -169,10 +338,14 @@ fetch_prs() {
     echo "[]"
     return
   fi
-  local repo_flag=()
+  if rest_mode; then fetch_prs_rest; return; fi
+  local repo_flag=() prs_out="" prs_rc=0
   [ -n "$repo" ] && repo_flag=(--repo "$repo")
-  gh pr list "${repo_flag[@]}" --state open --limit "$batch" \
-    --json number,title,createdAt,updatedAt,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,baseRefName,headRefName,author,labels,body 2>/dev/null || echo "[]"
+  prs_out=$(run_gql pr list "${repo_flag[@]}" --state open --limit "$batch" \
+    --json number,title,createdAt,updatedAt,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,baseRefName,headRefName,author,labels,body) || prs_rc=$?
+  if rest_mode; then fetch_prs_rest; return; fi
+  [ -n "$prs_out" ] && printf '%s\n' "$prs_out"
+  [ "$prs_rc" -eq 0 ] || echo "[]"
 }
 
 # --- Fetch unbounded open counts (issue #2714) -----------------------------
@@ -193,11 +366,13 @@ fetch_counts() {
   fi
   # shellcheck disable=SC2016  # $owner/$name are GraphQL variables, not shell
   local count_query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount}}}'
+  if rest_mode; then fetch_counts_rest; return; fi
   if [ -n "$repo" ]; then
-    gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -f query="$count_query" 2>/dev/null
+    run_gql api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -f query="$count_query"
   else
-    gh api graphql -F owner='{owner}' -F name='{repo}' -f query="$count_query" 2>/dev/null
+    run_gql api graphql -F owner='{owner}' -F name='{repo}' -f query="$count_query"
   fi
+  if rest_mode; then fetch_counts_rest; fi
 }
 
 # --- Fetch per-issue progress (issue #2904) --------------------------------
@@ -217,6 +392,8 @@ fetch_progress() {
     return
   fi
   case "$batch" in ''|*[!0-9]*) return ;; esac
+  # On the REST fallback (#3362) the caller builds progress from the issues.
+  rest_mode && return
   # shellcheck disable=SC2016  # $owner/$name/$first/$cursor are GraphQL variables, not shell
   local progress_query='query($owner:String!,$name:String!,$first:Int!,$cursor:String){repository(owner:$owner,name:$name){issues(states:OPEN,first:$first,after:$cursor,orderBy:{field:CREATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor} nodes{number subIssuesSummary{total completed} timelineItems(last:100,itemTypes:[CROSS_REFERENCED_EVENT,CONNECTED_EVENT,DISCONNECTED_EVENT]){nodes{__typename ... on CrossReferencedEvent{willCloseTarget source{__typename ... on PullRequest{number state mergedAt repository{nameWithOwner}}}} ... on ConnectedEvent{subject{__typename ... on PullRequest{number state mergedAt repository{nameWithOwner}}}} ... on DisconnectedEvent{subject{__typename ... on PullRequest{number repository{nameWithOwner}}}}}}}}}}'
   local repo_args=()
@@ -232,8 +409,8 @@ fetch_progress() {
     progress_size=$(( progress_remaining < 50 ? progress_remaining : 50 ))
     cursor_args=()
     [ -n "$progress_cursor" ] && cursor_args=(-f cursor="$progress_cursor")
-    progress_page=$(gh api graphql "${repo_args[@]}" -F first="$progress_size" "${cursor_args[@]}" \
-      -f query="$progress_query" 2>/dev/null) || break
+    progress_page=$(run_gql api graphql "${repo_args[@]}" -F first="$progress_size" "${cursor_args[@]}" \
+      -f query="$progress_query") || break
     jq -e '.data.repository.issues.nodes | type == "array"' >/dev/null 2>&1 <<<"$progress_page" || break
     printf '%s\n' "$progress_page"
     progress_pages=$((progress_pages + 1))
@@ -305,12 +482,20 @@ if [ "$triage_type" != "prs" ]; then
   declare -A prog_sub_map=()
   declare -A prog_prs_map=()
   declare -A prog_closing_map=()
+  # On the REST fallback (#3362) the issues already carry subIssuesSummary;
+  # there is no cheap REST source for the timeline, so restFallback nodes read
+  # MERGED_PRS=unknown.
+  progress_src=$(fetch_progress)
+  if rest_mode; then
+    progress_src=$(jq -c '{data:{repository:{issues:{nodes:[ .[] | {number, subIssuesSummary, restFallback: true} ]}}}}' \
+      <<<"$issues_json" 2>/dev/null)
+  fi
   while IFS=$'\t' read -r prog_num prog_sub prog_prs prog_closing; do
     [ -z "$prog_num" ] && continue
     prog_sub_map["$prog_num"]="$prog_sub"
     prog_prs_map["$prog_num"]="$prog_prs"
     prog_closing_map["$prog_num"]="$prog_closing"
-  done < <(fetch_progress | jq -rs '
+  done < <(printf '%s\n' "$progress_src" | jq -rs '
     def pr_key($pr): ($pr.repository.nameWithOwner // "") + "#" + ($pr.number | tostring);
     def is_pr($pr): ($pr | type) == "object" and $pr.__typename == "PullRequest" and $pr.number != null;
     [ .[] | objects | .data.repository.issues.nodes? // empty | .[]? | objects | select(.number != null) ]
@@ -339,8 +524,9 @@ if [ "$triage_type" != "prs" ]; then
         (if ($issue.subIssuesSummary | type) == "object"
            then "\($issue.subIssuesSummary.completed // 0)/\($issue.subIssuesSummary.total // 0)"
            else "unknown" end),
-        ([ $merged[] | "\(.repo)#\(.num)" + (if (.xclose or .linked) then "*" else "" end) ]
-          | join(",") | if . == "" then "none" else . end),
+        (if $issue.restFallback == true then "unknown" else
+          ([ $merged[] | "\(.repo)#\(.num)" + (if (.xclose or .linked) then "*" else "" end) ]
+            | join(",") | if . == "" then "none" else . end) end),
         ([ $merged[] | select(.xclose or .linked) ] | length > 0 | tostring)
       ] | @tsv' 2>/dev/null)
 
@@ -538,6 +724,14 @@ if [ "$triage_type" != "issues" ]; then
     done < <(printf '%s\n' "${!sys_prs[@]}" | sort)
   fi
   echo "SYSTEMATIC_FAILURE_COUNT=${sys_idx}"
+fi
+
+# REST fallback roll-up (#3362), emitted only when GraphQL was refused, so the
+# GraphQL path's output is unchanged.
+if rest_mode; then
+  echo "GRAPHQL_BLOCKED=true"
+  if [ "$triage_type" != "prs" ]; then echo "REST_FALLBACK_UNKNOWN=MERGED_PRS"; else echo "REST_FALLBACK_UNKNOWN=none"; fi
+  if [ "$triage_type" != "issues" ]; then echo "REST_FALLBACK_APPROXIMATED=REVIEW"; else echo "REST_FALLBACK_APPROXIMATED=none"; fi
 fi
 
 # Coverage roll-up (#2714). A truncated batch is a caveat on what was triaged,

@@ -26,11 +26,18 @@
 # NOT the common-but-wrong shape (`providers`/`api_base`/`tools:` list). See
 # docs/opencode-export.md "Gotchas".
 #
-# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins "a b c"] [--no-adapter]
+# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins "a b c"]
+#                                          [--plugin NAME ...] [--no-adapter]
+#   --plugins "a b c"  OpenCode ecosystem npm plugins for the `plugin` array.
+#   --plugin NAME      (repeatable) a marketplace plugin the adapter indexes;
+#                      written as the adapter options' "plugins" list. None
+#                      means every plugin. An unknown name exits 2.
 set -euo pipefail
 
 config_script_dir="$(cd "$(dirname "$0")" && pwd)"
 config_repo_root="$(cd "$config_script_dir/.." && pwd)"
+# shellcheck source=/dev/null  # lib/plugin-args.sh, linted on its own
+. "$config_script_dir/lib/plugin-args.sh"
 
 config_target="${1:?usage: configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins LIST]}"
 shift || true
@@ -43,6 +50,7 @@ config_port="8080"
 config_plugins="@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp"
 config_adapter=1
 config_adapter_k=5
+config_skill_plugins=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -50,6 +58,12 @@ while [ $# -gt 0 ]; do
         --model)    config_model="$2";    shift 2 ;;
         --port)     config_port="$2";     shift 2 ;;
         --plugins)  config_plugins="$2";  shift 2 ;;
+        --plugin)
+            [ "$#" -ge 2 ] || { echo "--plugin needs a plugin name" >&2; exit 2; }
+            require_plugin "$config_repo_root" "$2"
+            config_skill_plugins+=("$2")
+            shift 2
+            ;;
         --no-adapter) config_adapter=0;   shift 1 ;;
         --adapter-k)  config_adapter_k="$2"; shift 2 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
@@ -85,10 +99,21 @@ echo "PLUGINS=$config_plugins"
 config_adapter_entry="$config_repo_root/adapters/opencode/index.ts"
 config_skill_permission=""
 if [ "$config_adapter" -eq 1 ]; then
+    # Marketplace plugin names are validated directory names (no JSON
+    # metacharacters), so manual quoting is safe here too.
+    config_adapter_opts="\"k\": $config_adapter_k, \"pins\": []"
+    if [ "${#config_skill_plugins[@]}" -gt 0 ]; then
+        config_skill_plugins_json=""
+        for config_skill_plugin in "${config_skill_plugins[@]}"; do
+            config_skill_plugins_json="${config_skill_plugins_json:+$config_skill_plugins_json, }\"$config_skill_plugin\""
+        done
+        config_adapter_opts="$config_adapter_opts, \"plugins\": [$config_skill_plugins_json]"
+    fi
+    config_adapter_tuple="[\"$config_adapter_entry\", { $config_adapter_opts }]"
     if [ -z "$config_plugins_json" ]; then
-        config_plugins_json="[\"$config_adapter_entry\", { \"k\": $config_adapter_k, \"pins\": [] }]"
+        config_plugins_json="$config_adapter_tuple"
     else
-        config_plugins_json="$config_plugins_json, [\"$config_adapter_entry\", { \"k\": $config_adapter_k, \"pins\": [] }]"
+        config_plugins_json="$config_plugins_json, $config_adapter_tuple"
     fi
     # Suppresses OpenCode's own uncapped <available_skills> block AND the native
     # `skill` tool, so the adapter is the single skill surface. Note this also
@@ -97,6 +122,7 @@ if [ "$config_adapter" -eq 1 ]; then
   "permission": { "skill": "deny" },'
     echo "ADAPTER=$config_adapter_entry"
     echo "ADAPTER_K=$config_adapter_k"
+    echo "ADAPTER_PLUGINS=${config_skill_plugins[*]:-all}"
     if [ -d "$config_repo_root/adapters/node_modules" ]; then
         echo "ADAPTER_NODE_MODULES=present"
     else

@@ -704,6 +704,8 @@ A `type: "agent"` hook that verifies task implementation quality when a team tas
 | Checks | TODO/FIXME comments, debug artifacts, test presence — judged against the change set only |
 | Scope | The branch diff plus the files this task touched, not raw `git status`; pre-existing and concurrent files are not scope violations |
 | Still blocks | No supporting change anywhere, or nothing in the change set corresponding to the task in Context (branch commits are *candidate* evidence — a branch can carry an earlier task's work) |
+| External deliverables | When Context names a GitHub issue, PR or comment (a URL or `owner/repo#N`) as the deliverable, the verifier passes the task only after a `gh api` read confirms the artifact exists, and skips the change-set checks. If it has no Bash or other GitHub-capable tool it cannot confirm the artifact, so it withholds (#3449) |
+| Missing tools | A lack of tools is never grounds for `ok`. A verifier that cannot run the commands it needs withholds with a `reason` naming the missing tool, so the agent knows a retry will not help; code-change tasks stay fail-closed (#3449) |
 
 **Guard:** `bash scripts/check-taskcompleted-verification.sh --strict` pins these
 behaviours as a semantic gate over the prompt (the artefact is a string inside

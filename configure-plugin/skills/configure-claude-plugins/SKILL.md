@@ -98,6 +98,8 @@ When the decision is **scaffold**, create `.github/workflows/claude.yml` using t
 
 When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews from the template in [references/workflow-templates.md](references/workflow-templates.md#claude-code-reviewyml-step-5).
 
+Keep the template's job-level `if: github.event.pull_request.user.type != 'Bot'`: claude-code-action fails on a Bot-authored PR (release-please, Renovate) unless the bot is in `allowed_bots`. To review bot PRs as well, replace the `if:` with an `allowed_bots` input on the step.
+
 ### Step 6: Report results
 
 Print the status report (settings, git remote, each workflow's status incl. `SKIPPED` reasons, next steps) from [references/report-template.md](references/report-template.md).

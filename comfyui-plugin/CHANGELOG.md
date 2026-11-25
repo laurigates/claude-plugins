@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.15.9](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.8...comfyui-plugin-v1.15.9) (2026-11-23)
+
+
+### Documentation
+
+* **comfyui-plugin:** describe comfy-cli's own venv instead of the pipx path ([#3764](https://github.com/laurigates/claude-plugins/issues/3764)) ([3f12b37](https://github.com/laurigates/claude-plugins/commit/3f12b379c8ebf34606b4c6b8248625b3e6411c9e)), closes [#3524](https://github.com/laurigates/claude-plugins/issues/3524)
+
+## [1.15.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.7...comfyui-plugin-v1.15.8) (2026-11-23)
+
+
+### Documentation
+
+* **comfyui-plugin:** document scripted first-load traps in comfyui-pack-live-smoke ([#3754](https://github.com/laurigates/claude-plugins/issues/3754)) ([7f7b287](https://github.com/laurigates/claude-plugins/commit/7f7b287c44fc20113d635d5ae593e9bc91d6c485)), closes [#3742](https://github.com/laurigates/claude-plugins/issues/3742)
+
+## [1.15.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.6...comfyui-plugin-v1.15.7) (2026-11-20)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** make check-fleet-drift.py executable and guard justfile script modes ([#3720](https://github.com/laurigates/claude-plugins/issues/3720)) ([42a4ec7](https://github.com/laurigates/claude-plugins/commit/42a4ec7c7cf44df994540a994656058fdd20c919)), closes [#3695](https://github.com/laurigates/claude-plugins/issues/3695)
+* **comfyui-plugin:** move scaffold frontend-types pin to ^1.60.0 ([#3730](https://github.com/laurigates/claude-plugins/issues/3730)) ([8b0f4c9](https://github.com/laurigates/claude-plugins/commit/8b0f4c92925f02c9157c500cef539e9385d40877)), closes [#3705](https://github.com/laurigates/claude-plugins/issues/3705)
+
+
+### Documentation
+
+* **comfyui-plugin:** replace maintainer-layout paths in comfy-metadata, banner scripts and prose-check ([#3719](https://github.com/laurigates/claude-plugins/issues/3719)) ([944e1da](https://github.com/laurigates/claude-plugins/commit/944e1da7e67d548d235d422ef380be44de78fc50)), closes [#3709](https://github.com/laurigates/claude-plugins/issues/3709)
+
+## [1.15.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.5...comfyui-plugin-v1.15.6) (2026-11-17)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** keep a phantom version visible behind an unchanged Flagged verdict in registry-health ([#3694](https://github.com/laurigates/claude-plugins/issues/3694)) ([6540029](https://github.com/laurigates/claude-plugins/commit/6540029d89f1c3c157a1752c5eeac612ead38268)), closes [#3675](https://github.com/laurigates/claude-plugins/issues/3675) [#2994](https://github.com/laurigates/claude-plugins/issues/2994)
+* **skills:** stop test-loop pattern eval and anchor bundled script paths ([#3708](https://github.com/laurigates/claude-plugins/issues/3708)) ([0658c31](https://github.com/laurigates/claude-plugins/commit/0658c313953478603550b4464f71310221b93ddc))
+
 ## [1.15.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.4...comfyui-plugin-v1.15.5) (2026-11-16)
 
 

@@ -6,16 +6,16 @@ registry_banner_compose.py. So the prompt aims for clean, dark, on-brand
 abstract texture with negative space and NO text/symbols (diffusion can't be
 trusted to spell, and the icon/wordmark are added sharply in the compose step).
 
-Flux2 Klein topology mirrors tooling/.claude/rules/flux2-klein.md (distilled:
-UNETLoader + CLIPLoader type=flux2 + Qwen3-8B encoder + Flux2 VAE +
-EmptyFlux2LatentImage + FluxGuidance=4 + KSampler euler/simple 4 steps cfg=1 +
+Flux2 Klein topology (UNETLoader + CLIPLoader type=flux2 + Qwen3-8B encoder +
+Flux2 VAE + EmptyFlux2LatentImage + FluxGuidance=4 + KSampler euler/simple 4 steps cfg=1 +
 ConditioningZeroOut negative).
 
-Run under the ComfyUI venv (stdlib only, but keeps things uniform):
-  ComfyUI/.venv/bin/python tooling/scripts/registry_banner_bg.py \
+Stdlib only. This file is scripts/registry_banner_bg.py inside the
+comfy-registry-lifecycle skill directory; the skill runs it as:
+  python3 ${CLAUDE_SKILL_DIR}/scripts/registry_banner_bg.py \
     --accent "warm amber and orange" --seed 101 --out bg.png
 
-See also: tooling/.claude/rules/comfy-registry-icons-banners.md
+See also: references/icons-and-banners.md in the same skill directory.
 """
 
 import argparse

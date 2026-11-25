@@ -9,16 +9,21 @@
  *   <sha256(absRepoRoot).slice(0,16)>.json — XDG, never in-repo (in-repo
  *   caches dirty `git clean -x`, multiply per-worktree, and trip
  *   coworker-detection). Per-repo-path filename isolates checkouts.
- * - Write: atomic (.tmp + rename); each build rewrites with only-current
- *   entries (self-pruning, no LRU bookkeeping).
+ * - Write: atomic (unique per-writer temp file + rename, so two sessions
+ *   saving at once never share a temp path); each unfiltered build rewrites with
+ *   only-current entries (self-pruning, no LRU bookkeeping). A build limited
+ *   to some plugins (IndexOptions.plugins) merges into the existing cache
+ *   instead, so it does not evict the other plugins' vectors.
  */
 
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 export const CACHE_SCHEMA_VERSION = "1";
+/** The `version` field a cache file is written with; a different one is invalid. */
+export const CACHE_FILE_VERSION = Number(CACHE_SCHEMA_VERSION);
 
 export interface CacheFile {
   version: number;
@@ -86,10 +91,32 @@ export function loadCache(filePath: string): CacheFile | null {
   }
 }
 
-/** Atomic write: serialize to <file>.tmp, then rename over the target. */
+/**
+ * True when a loaded cache was written for this file version, model and
+ * width, so its entries may be reused (or merged into).
+ */
+export function cacheMatches(cache: CacheFile | null, model: string, dims: number): boolean {
+  return (
+    cache !== null &&
+    cache.version === CACHE_FILE_VERSION &&
+    cache.model === model &&
+    cache.dims === dims
+  );
+}
+
+/**
+ * Atomic write: serialize to a temp file unique to this writer (pid + random
+ * suffix), then rename over the target. A fixed temp name would let two
+ * concurrent sessions interleave writes into one file.
+ */
 export function saveCache(filePath: string, cache: CacheFile): void {
   mkdirSync(dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.tmp`;
-  writeFileSync(tmpPath, JSON.stringify(cache), "utf8");
-  renameSync(tmpPath, filePath);
+  const tmpPath = `${filePath}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
+  try {
+    writeFileSync(tmpPath, JSON.stringify(cache), "utf8");
+    renameSync(tmpPath, filePath);
+  } catch (error) {
+    rmSync(tmpPath, { force: true });
+    throw error;
+  }
 }

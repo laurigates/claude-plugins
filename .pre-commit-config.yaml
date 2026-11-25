@@ -587,6 +587,18 @@ repos:
         language: script
         files: '^scripts/(check-justfile-module-paths\.sh|tests/test-check-justfile-module-paths\.sh)$'
         pass_filenames: false
+      - id: check-justfile-script-modes
+        name: scripts a justfile recipe runs directly are git mode 100755 (#3695)
+        entry: ./scripts/check-justfile-script-modes.sh
+        language: script
+        files: '(^|/)justfile$|\.(sh|py)$'
+        pass_filenames: false
+      - id: check-justfile-script-modes-test
+        name: justfile script-modes check regression
+        entry: ./scripts/tests/test-check-justfile-script-modes.sh
+        language: script
+        files: '^scripts/(check-justfile-script-modes\.sh|tests/test-check-justfile-script-modes\.sh)$'
+        pass_filenames: false
       - id: check-justfile-expert-gotchas
         name: justfile-expert links references/gotchas.md and keeps its five gotchas (#3305)
         entry: ./scripts/check-justfile-expert-gotchas.sh

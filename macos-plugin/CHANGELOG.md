@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v2.0.1...macos-plugin-v2.0.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* **scripts:** check plugin README links and fix the 15 dead ones ([#3790](https://github.com/laurigates/claude-plugins/issues/3790)) ([2442b2d](https://github.com/laurigates/claude-plugins/commit/2442b2d3fcd0c03a08cb47d135a0ecd60c1da0d8))
+
 ## [2.0.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v2.0.0...macos-plugin-v2.0.1) (2026-11-16)
 
 

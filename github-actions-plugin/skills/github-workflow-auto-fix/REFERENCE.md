@@ -266,7 +266,7 @@ jobs:
       - name: Run Claude auto-fix analysis
         if: steps.dedup.outputs.skip != 'true'
         id: claude
-        uses: anthropics/claude-code-action@v1.0.273
+        uses: anthropics/claude-code-action@v1.0.283
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_API_KEY }}
 

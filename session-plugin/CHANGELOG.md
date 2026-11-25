@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.2...session-plugin-v1.18.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **session-plugin:** replace two stale references in session-wrap and the session-end nudge ([#3736](https://github.com/laurigates/claude-plugins/issues/3736)) ([de92819](https://github.com/laurigates/claude-plugins/commit/de928199021424172bf142ca98b802c75cbc477f)), closes [#3682](https://github.com/laurigates/claude-plugins/issues/3682)
+
 ## [1.18.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.1...session-plugin-v1.18.2) (2026-11-16)
 
 

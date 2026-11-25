@@ -1,6 +1,6 @@
 ---
 created: 2026-08-27
-modified: 2026-11-16
+modified: 2026-11-17
 reviewed: 2026-08-27
 name: prose-check
 description: "Self-evaluate outward-bound prose against the house rubric — the three tics, end-on-the-fact, TL;DR footer. Use when drafting a PR body, issue body, doc, rule, or commit body before it ships."
@@ -41,8 +41,9 @@ paragraph or section, *and* it generalizes past the specific claim.
 
 Everything under `styles/House/` and in `scripts/` is a **derived encoding** of
 that rule, not a second source of truth. Each rule file carries a `link:` back
-to the rule that owns its criterion, and `scripts/check-prose-house-style.sh` in
-the repo root pins the derived copy against drift.
+to the rule that owns its criterion. A maintainer check in the marketplace's
+source repository, `check-prose-house-style.sh` (it does not ship with the
+plugin), pins the derived copy against drift.
 
 ## Execution
 
