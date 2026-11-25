@@ -19,7 +19,7 @@
  * Four things this deliberately does NOT do:
  *   1. No `workflow()` call. Nesting is ONE level only and this file is the
  *      child — `evaluate-plugin:evaluate-plugin-batch` calls
- *      `workflow('evaluate-skill', {...})`, so a `workflow()` here would throw
+ *      `workflow('evaluate-plugin:evaluate-skill', {...})`, so a `workflow()` here would throw
  *      and kill the whole batch.
  *   2. No worktree isolation on any agent. Every rollout agent writes its run
  *      dir into the shared checkout (`tmp/eval-runs/`, staged by

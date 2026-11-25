@@ -9,6 +9,9 @@
   },
   "repository": "https://github.com/laurigates/claude-plugins",
   "license": "MIT",
+  "workflows": [
+    "./skills/evaluate-skill/workflows/evaluate-skill.workflow.js"
+  ],
   "hooks": {
     "SessionStart": [
       {
@@ -17,11 +20,6 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate-drift-probe.sh\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync-evaluate-skill-workflow.sh\"",
             "timeout": 5
           }
         ]
