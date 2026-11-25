@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.5...hooks-plugin-v2.22.6) (2026-11-25)
+
+
+### Documentation
+
+* **session-plugin:** catalog the session-ledger flags ([074f413](https://github.com/laurigates/claude-plugins/commit/074f41395771baf6f0b02f46a2822e53e55e3996))
+
 ## [2.22.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.4...hooks-plugin-v2.22.5) (2026-11-24)
 
 

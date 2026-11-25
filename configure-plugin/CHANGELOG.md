@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.44.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.13...configure-plugin-v1.44.0) (2026-11-25)
+
+
+### Features
+
+* **configure-plugin:** rank configure-all components by relevance, fix sibling templates ([#3820](https://github.com/laurigates/claude-plugins/issues/3820)) ([0358f4f](https://github.com/laurigates/claude-plugins/commit/0358f4f035fdf7123609825e5ed96b9a57a86750))
+
 ## [1.43.13](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.12...configure-plugin-v1.43.13) (2026-11-25)
 
 
