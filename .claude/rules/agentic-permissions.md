@@ -1,6 +1,6 @@
 ---
 created: 2026-01-16
-modified: 2026-11-06
+modified: 2026-11-25
 reviewed: 2026-11-06
 paths:
   - "**/skills/**"
@@ -103,11 +103,7 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 - Uses **space separator** between command and wildcard: `Bash(command *)`
 - **Prefix matching**: `Bash(git diff *)` matches `git diff`, `git diff --cached`, `git diff --stat`
 - Comma-separated list of tool permissions
-- **`ask` tier**: Use `ask` to prompt the user for confirmation (neither auto-allow nor auto-deny):
-  ```yaml
-  allowed-tools: Bash(git push *):ask, Bash(git status *), Read
-  ```
-  The `:ask` suffix on a pattern means Claude can use the tool but will always prompt for confirmation.
+- **No `ask` tier**: an entry has no `:ask` suffix. `Bash(git push *):ask` is ignored, and the command runs without a prompt (probed 2026-11-25, #3583). To make a command always prompt, put it in `permissions.ask` in `settings.json`.
 
 ### Pattern Examples
 
@@ -492,13 +488,7 @@ picture this changes.
 
 ### Auto Mode Dialog Reasons (2.1.141+)
 
-When auto mode surfaces a permission prompt, the dialog now explains **why** — including when a `permissions.ask` rule triggered the prompt. Previously, users saw a generic "Claude wants permission" prompt and had to infer which rule fired. Authors writing `:ask` patterns can rely on the dialog to surface their rule:
-
-```yaml
-allowed-tools: Bash(git push *):ask, Bash(git status *), Read
-```
-
-The dialog now shows "Matched `Bash(git push *):ask` — confirm before push", giving the human the context to decide.
+When auto mode surfaces a permission prompt, the dialog explains **why**, including when a `permissions.ask` rule in `settings.json` triggered the prompt. Previously, users saw a generic "Claude wants permission" prompt and had to infer which rule fired.
 
 ### `permissions.defaultMode` in Background Sessions (2.1.143+)
 

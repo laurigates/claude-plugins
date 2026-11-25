@@ -264,6 +264,15 @@ check_skill_frontmatter() {
       continue
     fi
 
+    # Detect an `:ask` suffix on an allowed-tools entry.
+    # Regression: agentic-permissions.md documented `Bash(git push *):ask` as an
+    # always-prompt tier; a 2026-11-25 probe showed the suffix is ignored and the
+    # command runs unprompted (issue #3583).
+    if grep -qE '\):ask' <<<"$fm_allowed_tools"; then
+      issues+=("❌ ${plugin}/${skill_name}: allowed-tools has an ':ask' suffix, which Claude Code ignores (the command runs unprompted); use permissions.ask in settings.json instead (issue #3583)")
+      has_errors=true
+    fi
+
     local fm_model fm_created fm_modified fm_reviewed
     fm_model=$(extract_field "$skill_file" "model")
     fm_created=$(extract_field "$skill_file" "created")

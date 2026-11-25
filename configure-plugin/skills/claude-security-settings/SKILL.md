@@ -4,7 +4,7 @@ description: "Claude Code security settings: permission wildcards, shell operato
 user-invocable: false
 allowed-tools: Bash(jq *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-11-13
+modified: 2026-11-25
 compatibility: claude-code
 reviewed: 2026-11-11
 ---
@@ -72,14 +72,14 @@ Bash(command *)
 - `Bash()` - Tool identifier
 - `command` - Command prefix to match
 - `*` - Wildcard suffix matching any arguments
-- `:ask` suffix - Always prompt for user confirmation (e.g., `Bash(git push *):ask`)
+- No `:ask` suffix exists: `Bash(git push *):ask` is ignored. Put the pattern in the `ask` list instead
 
 ### Permission Tiers
 
 | Tier | Behavior | Example |
 |------|----------|---------|
 | `allow` | Auto-allowed, no prompt | `"allow": ["Bash(git status *)"]` |
-| `ask` | Always prompts for confirmation | `"allow": ["Bash(git push *):ask"]` |
+| `ask` | Always prompts for confirmation | `"ask": ["Bash(git push *)"]` |
 | `deny` | Auto-denied, blocked | `"deny": ["Bash(rm -rf *)"]` |
 
 ### Pattern Examples
@@ -167,8 +167,8 @@ Claude Code splits a compound command on `&&`, `||`, `;`, `|`, `|&`, `&` and new
 ### Auto mode (the default permission mode)
 
 In auto mode there is no approval prompt for most actions. A command matching
-a narrow `allow` rule (`Bash(git status *)`) runs immediately; `deny` rules and
-`:ask` suffixes still resolve first in every mode. Anything else — including
+a narrow `allow` rule (`Bash(git status *)`) runs immediately; `deny` and `ask`
+rules still resolve first in every mode. Anything else — including
 shell-operator compounds that no wildcard matches — goes to the safety
 classifier, which allows or blocks it; on a block Claude receives the reason
 and tries an alternative (3 consecutive or 20 total blocks pause auto mode and
