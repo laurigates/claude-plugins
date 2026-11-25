@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.21.1...evaluate-plugin-v1.22.0) (2026-11-25)
+
+
+### Features
+
+* **evaluate-plugin:** register evaluate-skill through plugin.json workflows ([bbae369](https://github.com/laurigates/claude-plugins/commit/bbae36949af1bf8faf0ef0d4af685e75292be93e)), closes [#3684](https://github.com/laurigates/claude-plugins/issues/3684)
+
 ## [1.21.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.21.0...evaluate-plugin-v1.21.1) (2026-11-15)
 
 

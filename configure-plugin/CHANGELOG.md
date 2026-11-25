@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.13](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.12...configure-plugin-v1.43.13) (2026-11-25)
+
+
+### Documentation
+
+* **rules:** drop the ignored :ask suffix from allowed-tools guidance ([135d89d](https://github.com/laurigates/claude-plugins/commit/135d89d8c0d839a09db6ddb1d76d073c063c0cce)), closes [#3583](https://github.com/laurigates/claude-plugins/issues/3583)
+
 ## [1.43.12](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.43.11...configure-plugin-v1.43.12) (2026-11-20)
 
 
