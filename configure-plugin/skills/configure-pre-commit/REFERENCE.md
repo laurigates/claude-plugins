@@ -257,4 +257,36 @@ To update all hooks to latest versions:
 pre-commit autoupdate
 ```
 
-Then verify versions match project standards.
+Then verify versions match project standards. `autoupdate` skips `repo: local`
+hooks and accepts `--config <file>`, so an audit can run it on a copy and diff
+without touching the real config.
+
+## Gitleaks and documentation placeholders
+
+gitleaks' default `curl-auth-header` rule matches an API-key header in a docs
+`curl` example, so a README or usage page with a placeholder key blocks the
+commit that adds it (three hits on one `docs/usage.md`). Allowlist the
+placeholder string, not the file, so a real key in the same file is still caught:
+
+```toml
+# .gitleaks.toml
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation placeholders, not credentials"
+regexes = ['''YOUR_API_KEY''', '''your_api_key''']
+```
+
+`gitleaks protect --staged -c .gitleaks.toml` reports `no leaks found` with
+this file and exits 1 without it. The pre-commit hook scans staged changes, so a
+placeholder committed before the hook existed surfaces only when a later commit
+touches that text.
+
+## First commit after adding hooks
+
+`trailing-whitespace` and `end-of-file-fixer` rewrite every file a commit
+touches, not just the changed lines. The first commit that stages an old file
+fails with "files were modified by this hook"; `git add -- <paths>` the rewrite
+and commit again. Expect the whole-file diff, and expect it to conflict with
+another open PR that edits the same file.

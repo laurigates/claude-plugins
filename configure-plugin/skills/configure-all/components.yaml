@@ -15,13 +15,18 @@
 # Schema (kept flat and awk-parseable — no yq dependency):
 #   domains:        domain-key: Human Title
 #   components:     - name / domain / has_script / types
-#     types: "all" or a comma-separated subset of frontend,infrastructure,python,rust
+#     types: "all" or a comma-separated subset of frontend,node,infrastructure,python,rust
+#       (node = package.json without vue/react; see scripts/detect-relevance.sh)
 #     has_script: true when skills/<name>/scripts/<name>.sh exists (detection-only script)
 #   orchestrators:  driver skills that are not components themselves
 #   advisory:       guidance-only skills (no check+fix contract)
 #   reference_skills: user-invocable: false knowledge bases loaded by other skills
 
 version: 1
+
+# Standards version stamped into .project-standards.yaml by /configure:all.
+# Defined once here; list-components.sh emits it as STANDARDS_VERSION=.
+standards_version: "2025.1"
 
 domains:
   ci-cd: CI/CD & Version Control
@@ -84,11 +89,11 @@ components:
   - name: configure-dockerfile
     domain: containers-deploy
     has_script: false
-    types: frontend,python,rust
+    types: frontend,node,python,rust
   - name: configure-container
     domain: containers-deploy
     has_script: false
-    types: frontend,python,rust
+    types: frontend,node,python,rust
   - name: configure-skaffold
     domain: containers-deploy
     has_script: false

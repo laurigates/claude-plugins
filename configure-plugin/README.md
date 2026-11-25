@@ -25,7 +25,7 @@ The domain grouping below mirrors the authoritative manifest
 | Skill | Description |
 |-------|-------------|
 | `configure-repo` | **End-to-end driver** — onboard any repo to Claude Code with marketplace enrollment, permissions, SessionStart hook, and health validation |
-| `configure-all` | Run every component check from the manifest roster |
+| `configure-all` | Rank the manifest roster by what the repo has (APPLY / REVIEW / SKIP), then run the applicable checks |
 | `configure-select` | Interactively select which manifest domains to configure |
 | `configure-status` | Show compliance status (read-only), rolling up component detection scripts |
 | `config-sync` | Extract, compare, and propagate tooling improvements across repos |

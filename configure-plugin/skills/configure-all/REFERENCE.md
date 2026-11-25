@@ -1,5 +1,57 @@
 # /configure:all Reference
 
+## Relevance Tiers
+
+`scripts/detect-relevance.sh` is the authority: it reads the roster from
+`components.yaml`, probes the repo once, and prints a tier per component. This
+section explains the tiers; read the script for the exact rule per component.
+
+| Tier | Meaning | What `/configure:all` does |
+|------|---------|----------------------------|
+| `APPLY` | The repo has the thing the component configures (a Dockerfile, tests, workflows, a release-please config) or the component is baseline hygiene | Checks it; fixes it under `--fix` |
+| `REVIEW` | Plausibly useful, no strong signal (load tests for an HTTP API, dead-code scan, two lockfiles) | Checks it; fixes only after a confirmation |
+| `SKIP` | The subject is absent (no Dockerfile, no Kubernetes, no Sentry SDK) or the component's `types` excludes the project type | Lists it with its reason; never runs it |
+
+### Project type
+
+Precedence: `--type` override, then `project_type:` in `.project-standards.yaml`,
+then file indicators in this order:
+
+| Type | Indicator |
+|------|-----------|
+| `infrastructure` | `*.tf`, `helm/` or `argocd/` |
+| `rust` | `Cargo.toml` |
+| `python` | `pyproject.toml` or `requirements.txt` |
+| `frontend` | `package.json` depending on vue, react, svelte, angular, next or nuxt |
+| `node` | any other `package.json` |
+| `unknown` | none of the above |
+
+`types` in `components.yaml` names the project types a component runs for
+(`configure-memory-profiling` is `python`, `configure-ux-testing` is `frontend`);
+any other type makes the row `SKIP`.
+
+### Signals
+
+The detector prints each probe as `SIGNAL_<NAME>=true|false`. Probes prune
+`node_modules`, `.git`, `target`, `.venv` and `.claude/worktrees`.
+
+| Signal | Probe |
+|--------|-------|
+| `DOCKERFILE` | `Dockerfile`, `Dockerfile.*` or `*.Dockerfile` within 3 levels |
+| `TESTS` | `tests/`, `test/`, `__tests__/`, `*.test.*`, `*.spec.*` or `test_*.py` |
+| `INTEGRATION` | an `integration/` or `e2e/` directory |
+| `HTTP_API` | express, fastify, koa, hono or `@nestjs/core` in any `package.json`; fastapi, flask or django in Python manifests |
+| `WORKFLOWS` | `.github/workflows/` |
+| `RELPLEASE` | `release-please-config.json` or `.release-please-manifest.json` |
+| `LOCKFILES` | count of npm, bun, pnpm, yarn and uv lockfiles within 2 levels |
+| `MCP_JSON` / `MCP_ENABLED` | `.mcp.json` / `enabledMcpjsonServers` in `.claude/settings.json` |
+| `SENTRY`, `FLAGS` | a Sentry, OpenFeature, flagd or LaunchDarkly dependency |
+| `K8S`, `SKAFFOLD`, `ARGOCD` | `k8s/` or `kubernetes/`, `skaffold.yaml`, `argocd/` |
+
+A component without a rule in the script falls to `REVIEW` ("unknown component,
+no rule"). When `components.yaml` gains a component, add its rule to `tier_for`
+in the script and a case to `scripts/tests/test-detect-relevance.sh`.
+
 ## Report Template
 
 ```
@@ -7,34 +59,25 @@
 ║           Infrastructure Standards Compliance            ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Repository:    <repo-name>                                    ║
-║  Project Type:  <type> (detected)                              ║
-║  Standards:     2025.1                                         ║
+║  Project Type:  <type> (<override|standards_file|detected>)    ║
+║  Standards:     <STANDARDS_VERSION>                            ║
 ║  Last Check:    <timestamp>                                    ║
 ╚══════════════════════════════════════════════════════════════╝
 
-Component Summary:
+APPLY (<n> checked)
 ┌─────────────────┬──────────┬─────────────────────────────────┐
 │ Component       │ Status   │ Notes                           │
 ├─────────────────┼──────────┼─────────────────────────────────┤
-│ Makefile        │ ✅ PASS  │ All targets present             │
 │ Pre-commit      │ ⚠️ WARN  │ 2 outdated hooks                │
-│ Release-please  │ ✅ PASS  │ Fully compliant                 │
-│ Dockerfile      │ ❌ FAIL  │ Missing healthcheck             │
-│ Container       │ ⚠️ WARN  │ Missing vulnerability scan      │
-│ Skaffold        │ ✅ PASS  │ 3 profiles configured           │
-│ CI Workflows    │ ⚠️ WARN  │ Missing test workflow           │
-│ Sentry          │ ✅ PASS  │ SDK configured                  │
-│ Documentation   │ ⚠️ WARN  │ Generator configured, no deploy │
-│ GitHub Pages    │ ❌ FAIL  │ No workflow configured          │
-│ Cache Busting   │ ✅ PASS  │ Content hashing enabled         │
-│ Tests           │ ✅ PASS  │ Vitest configured               │
-│ Coverage        │ ⚠️ WARN  │ Below 80% threshold             │
-│ Linting         │ ✅ PASS  │ Biome configured                │
-│ Formatting      │ ✅ PASS  │ Biome configured                │
-│ Dead Code       │ ⚠️ WARN  │ 3 unused exports                │
-│ Editor          │ ✅ PASS  │ .editorconfig present           │
-│ Security        │ ✅ PASS  │ Dependency audit enabled        │
+│ Dockerfile      │ ❌ FAIL  │ Base image end-of-life          │
+│ Tests           │ ✅ PASS  │ Jest configured                 │
 └─────────────────┴──────────┴─────────────────────────────────┘
+
+REVIEW (<n> checked)
+  <component>   <status>   <note>
+
+SKIP (<n> not run)
+  <component>   <reason from RELEVANCE= REASON=>
 
 Overall Status: X FAIL, Y WARN, Z PASS
 
@@ -45,58 +88,22 @@ Issues to Fix:
 Run with --fix to apply automatic fixes.
 ```
 
-## Component Applicability by Project Type
-
-| Component | Frontend | Infrastructure | Python | Rust |
-|-----------|----------|----------------|--------|------|
-| Pre-commit | ✅ | ✅ | ✅ | ✅ |
-| Release-please | ✅ | Optional | ✅ | ✅ |
-| Dockerfile | ✅ | ⏭️ SKIP | ✅ | ✅ |
-| Container | ✅ | ⏭️ SKIP | ✅ | ✅ |
-| Skaffold | If k8s/ | ⏭️ SKIP | If k8s/ | If k8s/ |
-| CI Workflows | ✅ | ✅ | ✅ | ✅ |
-| Sentry | ✅ | Optional | ✅ | Optional |
-| Documentation | ✅ | Optional | ✅ | ✅ |
-| GitHub Pages | ✅ | Optional | ✅ | ✅ |
-| Cache Busting | ✅ | ⏭️ SKIP | Optional | ⏭️ SKIP |
-| Tests | ✅ | Optional | ✅ | ✅ |
-| Coverage | ✅ | Optional | ✅ | ✅ |
-| Memory Profiling | ⏭️ SKIP | ⏭️ SKIP | ✅ | ⏭️ SKIP |
-| Linting | ✅ | Optional | ✅ | ✅ |
-| Formatting | ✅ | Optional | ✅ | ✅ |
-| Dead Code | ✅ | Optional | ✅ | ✅ |
-| Editor | ✅ | ✅ | ✅ | ✅ |
-| Security | ✅ | ✅ | ✅ | ✅ |
-
 ## Standards Tracking Template
+
+`standards_version` is `STANDARDS_VERSION=` from the detector, which reads it
+from the top of `components.yaml`. Do not write another value.
 
 ```yaml
 # Standards Tracking
 # Generated by /configure:all
-standards_version: "2025.1"
+standards_version: "<STANDARDS_VERSION>"
 project_type: "<detected>"
-last_configured: "<timestamp>"
+last_configured: "<date>"
 
 components:
-  pre-commit: "2025.1"
-  release-please: "2025.1"
-  dockerfile: "2025.1"
-  container: "2025.1"
-  skaffold: "2025.1"
-  workflows: "2025.1"
-  sentry: "2025.1"
-  docs: "2025.1"
-  github-pages: "2025.1"
-  cache-busting: "2025.1"
-  tests: "2025.1"
-  coverage: "2025.1"
-  memory_profiling: "2025.1"
-  linting: "2025.1"
-  formatting: "2025.1"
-  dead-code: "2025.1"
-  editor: "2025.1"
-  security: "2025.1"
-  completions: "2025.1"
+  # one entry per component that was checked or fixed, e.g.
+  pre-commit: "<STANDARDS_VERSION>"
+  tests: "<STANDARDS_VERSION>"
 
 # Documented deviations from standard
 deviations: []
@@ -106,5 +113,6 @@ deviations: []
 
 When `--fix` is requested, re-run each component that reported WARN or FAIL
 with `--fix` — e.g. a failing `COMPONENT=configure-tests` becomes
-`/configure:tests --fix`. The component roster comes from the Step 2 lister
-output (`components.yaml`), never from a hardcoded list.
+`/configure:tests --fix`. The component roster comes from the detector output
+(`components.yaml`), never from a hardcoded list. Order, branching and merging:
+[references/fix-phase.md](references/fix-phase.md).
