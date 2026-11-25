@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.75.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.4...git-plugin-v2.75.5) (2026-11-25)
+
+
+### Documentation
+
+* **git-plugin:** correct issue-field endpoints and add field guidance ([#3828](https://github.com/laurigates/claude-plugins/issues/3828)) ([2b7cbc9](https://github.com/laurigates/claude-plugins/commit/2b7cbc9ff37e82aceabd2f79366f32351601715b))
+
 ## [2.75.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.75.3...git-plugin-v2.75.4) (2026-11-23)
 
 

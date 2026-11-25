@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-21
+modified: 2026-11-25
 reviewed: 2026-08-21
 ---
 
@@ -69,19 +69,7 @@ branch is gone **cannot be reopened**.
 - **Fork PR on an open upstream PR's head (skill-only)**: merging pushes into that PR too: [references/fork-upstream-base.md](references/fork-upstream-base.md).
 - **If already auto-closed**: the head branch survives — rebase as above,
   `gh pr create` fresh, comment "Superseded by #new" on the closed one.
-- **Nothing tells you this happened.** The auto-close is silent: no failed
-  check, no notification, and the PR list just looks one shorter. claude-plugins
-  #2049 sat stranded for a day; a sweep then found 26 dead branches, two carrying
-  work that had **never had a PR opened at all** (so no event ever fired for
-  them either). A scheduled sweep is the only thing that finds this class —
-  an event handler on `pull_request: closed` is too late by construction (the
-  base ref is already deleted, so the reopen window is gone) and is blind to
-  never-PR'd branches. `claude-plugins scripts/check-stranded-work.sh` is the
-  encoded audit; it takes `--repo`, so one run sweeps the portfolio.
-- **Telling an accident from a decision**: a closed-unmerged PR whose base ref
-  **404s** was auto-closed; one whose base ref is still **alive** was closed by a
-  human (duplicate/superseded). That single check is the discriminator — 11 of
-  those 26 branches were deliberate closes and must not be resurrected.
+- **Nothing tells you this happened**, and only a scheduled sweep finds it; a dead base ref tells an auto-close from a human close: [references/stranded-child-audit.md](references/stranded-child-audit.md).
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
@@ -139,6 +127,10 @@ For an ordered PR list run `scripts/merge-chain.sh`. An agent's `CONFLICT`/`CI_R
 fix is unreviewed: pass it through
 `workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`:
 [references/merge-shepherd.md](references/merge-shepherd.md).
+
+## Rebase or squash
+
+`pr-merge-method.py` decides, by the table in [merge-strategies.md](../github-pr-title/merge-strategies.md). Two or more independent conventional commits rebase; everything else squashes, including single commits, merge-synced branches, fixups and bot PRs. Commits that all share one `type(scope)` count as a single concern and squash (`single_concern`), however many there are.
 
 ## Agentic Optimizations
 

@@ -16,6 +16,7 @@ SCRIPT = HERE.parent / "friction_open_prs.py"
 spec = importlib.util.spec_from_file_location("friction_open_prs", SCRIPT)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module  # before exec_module (#3805)
 spec.loader.exec_module(module)  # type: ignore[union-attr]
 
 

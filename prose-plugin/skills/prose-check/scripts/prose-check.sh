@@ -43,8 +43,12 @@ usage() {
     cat <<'USAGE'
 Usage: prose-check.sh [OPTIONS] FILE...
 
-  --kind doc|answer|ticket   what the draft is (default: doc)
+  --kind doc|answer|ticket|email
+                             what the draft is (default: doc)
                              `answer` adds the TL;DR (ELI5) footer check
+                             `email` scores only the author's own text: skips
+                             the leading header block, the "On ... wrote:"
+                             attribution, `>` lines, and the `-- ` signature
   --config PATH              vale config (default: <plugin>/styles/.vale.ini)
   --long-words N             paragraph-final sentence word threshold (default: 40)
   --strict                   exit 1 when any candidate is found
@@ -114,6 +118,66 @@ for f in "${FILES[@]}"; do
     fi
 done
 
+# ------------------------------------------------------------ email mode -----
+#
+# `--kind email` (issue #3740): a mail draft carries text the author did not
+# write -- the RFC 822 header block, the "On <date>, X wrote:" attribution, the
+# `>`-quoted message, and the signature after a `-- ` delimiter. Scored as
+# prose, the header block reads as one long final sentence and the quote as
+# long sentences. Each draft is copied with those lines BLANKED (not deleted),
+# so every layer reports the draft's own line numbers, and the copy's path is
+# mapped back to the draft's path in the output. Explicit only: no other kind,
+# and no call that omits --kind, takes this path.
+declare -a SCAN_FILES=("${FILES[@]}")
+EMAIL_TMP=""
+if [ "$KIND" = "email" ]; then
+    EMAIL_TMP="$(mktemp -d "${TMPDIR:-/tmp}/prose-check-email.XXXXXX")" || EMAIL_TMP=""
+    if [ -z "$EMAIL_TMP" ] || [ ! -d "$EMAIL_TMP" ]; then
+        echo "=== PROSE CHECK ==="
+        echo "STATUS=ERROR"
+        echo "REASON=email_tmp: could not create a temp dir for the stripped draft"
+        echo "ISSUE_COUNT=1"
+        echo "ISSUES:"
+        echo "  - SEVERITY=ERROR TYPE=email_tmp MSG=could not create a temp dir for the stripped draft"
+        echo "=== END PROSE CHECK ==="
+        exit 1
+    fi
+    trap 'rm -rf "$EMAIL_TMP"' EXIT
+    for i in "${!FILES[@]}"; do
+        # One subdir per file keeps the basename (vale picks its format from
+        # the extension) without two same-named drafts colliding.
+        mkdir -p "$EMAIL_TMP/$i"
+        stripped="$EMAIL_TMP/$i/$(basename "${FILES[$i]}")"
+        awk '
+            { sub(/\r$/, "") }
+            # Signature: everything from a "-- " delimiter line to EOF.
+            in_sig { print ""; next }
+            $0 == "-- " { in_sig = 1; print ""; next }
+            # Leading header block: "Name: value" lines up to the first blank
+            # line, with folded continuation lines (leading whitespace).
+            NR == 1 && /^[A-Za-z][A-Za-z0-9-]*:([ \t]|$)/ { in_hdr = 1 }
+            in_hdr && /^[ \t]*$/ { in_hdr = 0 }
+            in_hdr { print ""; next }
+            # Attribution line and quoted text.
+            /^On .+ wrote:[ \t]*$/ { print ""; next }
+            /^>/ { print ""; next }
+            { print }
+        ' "${FILES[$i]}" > "$stripped"
+        SCAN_FILES[i]="$stripped"
+    done
+fi
+
+# unmap TEXT -- replace each stripped copy's path with its draft's path.
+unmap() {
+    local text="$1" i
+    if [ -n "$EMAIL_TMP" ]; then
+        for i in "${!FILES[@]}"; do
+            text="${text//"${SCAN_FILES[$i]}"/"${FILES[$i]}"}"
+        done
+    fi
+    printf '%s' "$text"
+}
+
 total_issues=0
 
 # ---------------------------------------------------------------- vale -------
@@ -149,7 +213,7 @@ else
 
     # --no-exit keeps an error-level alert from ending the run; severity is
     # carried by STATUS= and the issue rows, not by vale's exit code.
-    vale_out=$("$VALE_BIN" --config "$VALE_CONFIG" --output=line --no-exit "${FILES[@]}" 2>/dev/null)
+    vale_out=$(unmap "$("$VALE_BIN" --config "$VALE_CONFIG" --output=line --no-exit "${SCAN_FILES[@]}" 2>/dev/null)")
     vale_count=$(printf '%s' "$vale_out" | grep -c . )
     echo "STATUS=$([ "$vale_count" -gt 0 ] && echo WARN || echo OK)"
     echo "ISSUE_COUNT=$vale_count"
@@ -186,7 +250,8 @@ else
         --ignore SplitWords \
         --ignore UseTitleCase \
         --ignore ExplainLikeImFive \
-        "${FILES[@]}" 2>/dev/null | grep -v '^Note: ' )
+        "${SCAN_FILES[@]}" 2>/dev/null | grep -v '^Note: ' )
+    harper_out=$(unmap "$harper_out")
     harper_count=$(printf '%s' "$harper_out" | grep -c . )
     echo "STATUS=$([ "$harper_count" -gt 0 ] && echo WARN || echo OK)"
     echo "ISSUE_COUNT=$harper_count"
@@ -209,7 +274,7 @@ if ! command -v uv >/dev/null 2>&1; then
 else
     declare -a tics_args=("--long-words" "$LONG_WORDS")
     [ "$KIND" = "answer" ] && tics_args+=("--check-tldr")
-    tics_out=$("$SCRIPT_DIR/positional-tics.py" "${tics_args[@]}" "${FILES[@]}" 2>/dev/null)
+    tics_out=$(unmap "$("$SCRIPT_DIR/positional-tics.py" "${tics_args[@]}" "${SCAN_FILES[@]}" 2>/dev/null)")
     printf '%s\n' "$tics_out"
     tics_count=$(printf '%s\n' "$tics_out" | sed -n 's/^ISSUE_COUNT=//p' | head -1)
     total_issues=$((total_issues + ${tics_count:-0}))

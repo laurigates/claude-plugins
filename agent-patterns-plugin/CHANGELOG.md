@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.7](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.6...agent-patterns-plugin-v2.58.7) (2026-11-25)
+
+
+### Bug Fixes
+
+* **configure-plugin:** launch PAL as palaver-mcp-server ([#3825](https://github.com/laurigates/claude-plugins/issues/3825)) ([82ef769](https://github.com/laurigates/claude-plugins/commit/82ef7690b2e7fade05ee0afe8104aaef1aa7859a))
+
 ## [2.58.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.5...agent-patterns-plugin-v2.58.6) (2026-11-24)
 
 

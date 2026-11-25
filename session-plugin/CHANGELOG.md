@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.3...session-plugin-v1.19.0) (2026-11-25)
+
+
+### Features
+
+* **session-plugin:** keep a ledger of sessions closed without session-end ([6b758f4](https://github.com/laurigates/claude-plugins/commit/6b758f459b13e195a073a41463e3a0bceb9e6511))
+
 ## [1.18.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.18.2...session-plugin-v1.18.3) (2026-11-20)
 
 

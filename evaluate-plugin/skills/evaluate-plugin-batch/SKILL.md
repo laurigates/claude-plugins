@@ -61,7 +61,7 @@ script; (c) the Aggregate stage is a barrier — `aggregate_benchmark.sh` walks
 the filesystem for every skill's `eval-results/benchmark.json`, so its
 denominators are only correct once the last cell has finished writing, and no
 single cell can see the plugin-level numbers. The `harness` arg is forwarded
-verbatim to every `workflow('evaluate-skill', …)` child — never mixed within one
+verbatim to every `workflow('evaluate-plugin:evaluate-skill', …)` child — never mixed within one
 batch, because subagent and headless pass rates are not comparable.
 
 Three consequences of (a)–(c) that are also non-negotiable:

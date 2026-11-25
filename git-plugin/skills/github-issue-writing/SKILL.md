@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-11-10
+modified: 2026-11-25
 reviewed: 2026-04-29
 name: github-issue-writing
 description: "GitHub issue body and `[Type] Component:` title — bug/feature templates, repro steps, acceptance criteria. Use when filing a bug or feature request with gh."
@@ -111,6 +111,16 @@ GitHub supports first-class issue types. Use `--type` when creating issues:
 | Task | General work item |
 
 Note: Available types depend on repository/org configuration. Use `gh issue create --type "Bug"` to leverage them.
+
+### Issue fields
+
+Set issue fields (Priority, Effort, Target date and the like) when the repository owner defines them and the work has a value for one; an empty field is better than a guessed one. List the owner's fields first (`gh api orgs/{org}/issue-fields`, or `user/issue-fields` for a personal account); an empty list means the owner has none.
+
+- `gh issue create --type` is the only gh flag for this metadata, and it sets the issue type, not fields. Create the issue, then set fields with `gh api`.
+- Read before writing: field ids are integers from the list call, never names or placeholders. A single-select is written by option **name** but read back as an option **id**.
+- The write path (`POST .../issues/{N}/issue-field-values` with an `issue_field_values` array) comes from the API schema and is unverified live: re-read the values after writing and report the result.
+
+Endpoints and value formats: `git-issue-manage` [REFERENCE.md](../git-issue-manage/REFERENCE.md#custom-issue-fields-api).
 
 ## Body Content: Use `--body-file`
 

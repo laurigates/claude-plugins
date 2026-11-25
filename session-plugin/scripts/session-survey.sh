@@ -18,6 +18,10 @@
 # CHECKOUTS / CHECKOUT_PRS sections, one CHECKOUT_<n>_ row set per direct child
 # checkout, in full mode only (#3435).
 #
+# GIT carries REPO= (origin's <owner>/<repo>) and REPO_CONFIDENCE=high|low|unknown
+# (#3450): low = no local origin/* ref shares HEAD's history, so REPO= may name a
+# different repository than the checkout. Local refs only, no network.
+#
 # Every section is exit-0 on empty (parallel-safe-queries.md). Each task carries
 # its stable UUID so callers never operate on a volatile numeric ID (#1417).
 #
@@ -614,6 +618,30 @@ repo_slug=""
 if [ "$in_git" = true ]; then
   repo_origin_url=$("$git_bin" -C "$project_dir" remote get-url origin 2>/dev/null) || repo_origin_url=""
   [ -n "$repo_origin_url" ] && repo_slug=$(repo_slug_of "$repo_origin_url")
+fi
+
+# Does `origin` hold this checkout's history at all? (#3450) The URL alone can
+# name a different repository: a cloud clone carried ForumViriumHelsinki/.github's
+# history while `origin` pointed at laurigates/.github, so REPO= named a repo
+# the checkout is not a copy of. Local refs only, no network: `git merge-base A
+# B C…` finds a common ancestor of A and ANY of B, C…, so ONE call over every
+# refs/remotes/origin/* tip answers "does any of them share history with HEAD".
+#   high    — some origin ref shares history with HEAD
+#   low     — origin refs exist and none shares history (the #3450 case)
+#   unknown — no origin refs (never fetched, no origin, unborn HEAD, not a
+#             repo): absence of evidence, so never reported as low
+repo_confidence=unknown
+if [ "$in_git" = true ] \
+   && "$git_bin" -C "$project_dir" rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  mapfile -t repo_origin_tips < <("$git_bin" -C "$project_dir" for-each-ref \
+    --format='%(objectname)' refs/remotes/origin 2>/dev/null)
+  if [ "${#repo_origin_tips[@]}" -gt 0 ]; then
+    if "$git_bin" -C "$project_dir" merge-base HEAD "${repo_origin_tips[@]}" >/dev/null 2>&1; then
+      repo_confidence=high
+    else
+      repo_confidence=low
+    fi
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -1595,6 +1623,10 @@ echo "GIT_CONFIDENCE=${git_confidence}"
 # call (#2360); empty when there is no origin or it is not an unambiguous
 # GitHub URL. Always emitted, so an empty value is an answer, not an omission.
 echo "REPO=${repo_slug}"
+# Whether origin shares HEAD's history (#3450): high / low / unknown. `low`
+# means REPO= may name a different repository than this checkout — confirm the
+# target before filing against it. A caveat, so STATUS stays OK.
+echo "REPO_CONFIDENCE=${repo_confidence}"
 echo "STATUS=OK"
 echo "=== END GIT ==="
 

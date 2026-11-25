@@ -164,6 +164,7 @@ jobs:
             --only 'scripts/tests/test-check-issue-processing.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
+            --only 'scripts/tests/test-check-module-registration.sh' \
             --only 'scripts/tests/test-check-mktemp-canonical.sh' \
             --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
             --only 'scripts/tests/test-check-positional-references.sh' \
@@ -438,6 +439,15 @@ jobs:
         # Linux CI never sees it (#2939, #2949). The self-test step above proves
         # the guard before it gates the tree.
         run: bash scripts/check-mktemp-canonical.sh --strict
+
+      - name: Check path-loaded modules register in sys.modules before exec_module
+        # A module loaded by path that combines `from __future__ import
+        # annotations` with `@dataclass` fails with AttributeError on Python
+        # 3.12-3.14 unless it is in sys.modules first; 3.15 loads it, so a
+        # loader passes locally and fails on an older interpreter (#3790,
+        # #3805). The self-test step above proves the guard before it gates
+        # the tree.
+        run: bash scripts/check-module-registration.sh --strict
 
       - name: Check House vale rules still encode communication.md
         # The House style package and positional-tics.py are a DERIVED encoding

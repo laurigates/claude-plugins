@@ -1,6 +1,6 @@
 ---
 created: 2026-01-18
-modified: 2026-10-09
+modified: 2026-11-24
 reviewed: 2026-08-08
 requires: bash 5+
 paths:
@@ -421,6 +421,17 @@ Even with bash 5+, some CLI tools differ between macOS (BSD) and Linux (GNU). Us
 | `sed -i` | `sed -i ''` | `sed -i` | Use `sed -i.bak` + `rm` |
 | `grep -P` | Not available | PCRE support | Use `grep -E` (extended regex) |
 | `grep -r <one file>` | Prints `file:line:text` | Prints `line:text` | Always pass `-H` (see below) |
+| `stat` (file mode) | `stat -f '%Lp'` | `stat -c '%a'` | `python3 -c 'import os,sys; print(oct(os.stat(sys.argv[1]).st_mode & 0o7777)[2:])'` (see below) |
+
+#### `stat -f … || stat -c …` is not a portable fallback
+
+`stat -f '%Lp' "$f" 2>/dev/null || stat -c '%a' "$f"` reads as "try BSD, else
+GNU", but on GNU `-f` means *filesystem* status. It treats `'%Lp'` as a second
+file name, prints the filesystem block to stdout and exits 1, so the fallback
+runs and the captured value is that block followed by the mode. Every mode
+comparison then fails on Linux while passing on macOS (2026-11,
+`scripts/tests/test-set-adapter-plugins.sh`, three checks red in CI). Read the
+mode with python3, as above; the same applies to any `stat` format flag.
 
 #### `grep -r` on a *single* file omits the filename on GNU, keeps it on BSD
 

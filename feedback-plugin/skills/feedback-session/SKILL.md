@@ -2,11 +2,11 @@
 name: feedback-session
 description: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well.
 args: "[--dry-run] [--confirmed] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
-allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo view *), Bash(mktemp *), Bash(git remote *), Bash(grep -q *), Read, Write, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo view *), Bash(mktemp *), Bash(git remote *), Bash(git for-each-ref *), Bash(git merge-base *), Bash(grep -q *), Read, Write, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
 argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-11-19
+modified: 2026-11-25
 compatibility: claude-code
 reviewed: 2026-06-28
 ---
@@ -80,7 +80,18 @@ Compute the share per entry. If the top entry accounts for **more than ~70%** of
 
 Run `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If it succeeds, record the result as `$CWD_REPO`.
 
+Then check that `origin` holds this checkout's history, since the URL alone can name a different repository (#3450). Local refs only, no network:
+
+```bash
+git for-each-ref --format='%(objectname)' refs/remotes/origin
+git merge-base HEAD <every SHA the first command printed>
+```
+
+If the first command prints SHAs and `git merge-base` exits non-zero, no origin ref shares history with HEAD: set `$CWD_REPO_UNRELATED=true` and ask before filing, per [references/target-repo-resolution.md](references/target-repo-resolution.md#when-origin-shares-no-history-with-the-checkout). That prompt replaces Step D's prompts. No SHAs (origin never fetched) or a zero exit means nothing to flag.
+
 **Step D: Branch on the combination.**
+
+Skip this step when `$CWD_REPO_UNRELATED=true`: the Step C prompt already resolved the target.
 
 - **No `$CWD_REPO`** — prompt per [references/target-repo-resolution.md](references/target-repo-resolution.md#step-d-branches-when-the-cwd-has-no-git-remote), then continue to Step 1b.
 

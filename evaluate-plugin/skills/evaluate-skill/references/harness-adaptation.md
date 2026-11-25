@@ -10,8 +10,8 @@ Four consequences:
 
 - **This is the only template in the marketplace that also registers a name.** The
   bundled copy is the source of truth, but `evaluate-plugin:evaluate-plugin-batch`
-  resolves it as `workflow('evaluate-skill', ...)`, so a copy must also live in
-  `~/.claude/workflows/` (the plugin's SessionStart hook copies it there) and
+  resolves it as `workflow('evaluate-plugin:evaluate-skill', ...)`: the plugin's
+  `plugin.json` `workflows` field registers it as `<plugin>:<meta.name>`, so
   `meta.name` must be exactly `evaluate-skill`. Both
   children have to agree on that literal. Registration, the one-level nesting limit,
   and what to do when the name does not resolve are in

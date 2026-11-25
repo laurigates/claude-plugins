@@ -71,6 +71,12 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC` | PreToolUse nudge when a PR branch is behind / merged before commit/push | `git-plugin/hooks/check-branch-sync-on-push.sh` |
 | `CLAUDE_HOOKS_DISABLE_WORKTREES_IGNORE_NUDGE` | The `worktrees_not_ignored` SessionStart drift signal alone (main checkout's `.claude/worktrees/` not git-ignored; `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` also silences it, via the aggregator) | `git-plugin/hooks/git-drift-probe.sh` |
 
+### session-plugin
+
+| Flag | Disables | Source |
+|---|---|---|
+| `CLAUDE_HOOKS_DISABLE_SESSION_LEDGER` | The Stop/SessionEnd ledger of sessions closed without an end-of-session skill (and so the spinup nudge's report of them) | `session-plugin/hooks/session-ledger.sh` |
+
 ### taskwarrior-plugin
 
 | Flag | Disables | Source |
@@ -115,6 +121,8 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` | `$TMPDIR/claude-subagent-count-<uid>` | Per-session subagent-count state directory (the test suite points it at a scratch dir). Ignored unless owned by the current user and not a symlink; stale-file cleanup runs only in a directory the hook created | `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` | unset (`80000,95000` on Claude Haiku 5.5 only) | Comma-separated prompt-token thresholds; with at least one all-digit entry they apply to every model. Other entries are dropped | `hooks/context-threshold-nudge.sh` |
 | `CLAUDE_HOOKS_CONTEXT_THRESHOLD_DIR` | `$TMPDIR/claude-context-threshold-<uid>` | Per-session (and per-subagent) reported-threshold state (the test suite points it at a scratch dir). Ignored unless owned by the current user and not a symlink | `hooks/context-threshold-nudge.sh` |
+| `SESSION_LEDGER_MIN_TURNS` | `3` | Genuine user turns before a session gets a ledger entry | `session-plugin/hooks/session-ledger.sh` |
+| `SESSION_LEDGER_DIR` | `${XDG_STATE_HOME:-~/.local/state}/claude-session-plugin/unfinished` | Ledger directory, read by `scripts/unfinished-sessions.sh` too | `session-plugin/hooks/session-ledger.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |

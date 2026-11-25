@@ -117,6 +117,7 @@ python3 - "$SCAFFOLD" "$STEP" <<'PY'
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("scaffold", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod  # before exec_module (#3805)
 spec.loader.exec_module(mod)
 lines = mod.REGISTRY_HEALTH_YML.splitlines()
 start = next(i for i, l in enumerate(lines) if l.strip() == "- name: Evaluate registry status")
@@ -634,6 +635,7 @@ CONC_OUT="$(python3 - "$SCAFFOLD" <<'PY'
 import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("scaffold", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod  # before exec_module (#3805)
 spec.loader.exec_module(mod)
 try:
     import yaml

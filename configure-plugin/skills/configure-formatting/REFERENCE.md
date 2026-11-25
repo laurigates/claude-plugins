@@ -7,19 +7,33 @@ Configuration templates, migration guides, and pre-commit configurations for cod
 ### Install
 
 ```bash
-npm install --save-dev @biomejs/biome
+npm install --save-dev --save-exact @biomejs/biome
 # or
-bun add --dev @biomejs/biome
+bun add --dev --exact @biomejs/biome
 ```
+
+Pin the exact version: the pre-commit hook, CI and the editor then run the same Biome.
 
 ### `biome.json`
 
+Biome 2.x syntax (`files.includes` with `!` negations; the 1.x keys `include` and `ignore` are an error: ``Found an unknown key `include` ``). Match the style the code already has (quotes, semicolons, trailing commas) so the reformat stays small; these values are a starting point.
+
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "*.{js,ts}",
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/coverage",
+      "!.claude/worktrees"
+    ]
+  },
   "formatter": {
     "enabled": true,
-    "formatWithErrors": false,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100,
@@ -30,30 +44,17 @@ bun add --dev @biomejs/biome
       "quoteStyle": "single",
       "semicolons": "always",
       "trailingCommas": "all",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "jsxQuoteStyle": "double"
+      "arrowParentheses": "always"
     }
   },
-  "json": {
-    "formatter": {
-      "enabled": true,
-      "indentWidth": 2
-    }
-  },
-  "files": {
-    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "*.json"],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      ".next",
-      "coverage",
-      "*.min.js"
-    ]
-  }
+  "linter": { "enabled": false },
+  "assist": { "enabled": false }
 }
 ```
+
+- **Scope.** `"includes": ["**"]` also formats Markdown and JSON: it rewrote README and CLAUDE.md tables and `.claude/settings.json` in a run on a repo that wanted JavaScript only. List the language globs instead. A fixture with one `.js` file, `README.md` and a file under `.claude/worktrees/` was checked as 2 files with the language globs and 4 with `["**"]`. The `biome.json` itself is always checked.
+- **`vcs.useIgnoreFile`** needs a `.gitignore` at the project root; without one Biome stops with `couldn't find an ignore file`.
+- **`linter` and `assist` off** when ESLint stays the linter. Set `linter.enabled` to `true` (and add rules) only when the repo is dropping ESLint.
 
 ### package.json Scripts
 
@@ -237,14 +238,20 @@ uv remove black
 
 ### Biome
 
+A local hook runs the Biome pinned in `package.json`, so nothing else carries a version:
+
 ```yaml
 repos:
-  - repo: https://github.com/biomejs/pre-commit
-    rev: v2.6.8
+  - repo: local
     hooks:
-      - id: biome-check
-        additional_dependencies: ["@biomejs/biome@2.4.16"]
+      - id: biome-format
+        name: Biome format
+        entry: npx --no-install biome format --write --no-errors-on-unmatched
+        language: system
+        types: [javascript]
 ```
+
+The mirror hook (`https://github.com/biomejs/pre-commit`) installs its own Biome from `additional_dependencies`, a second pin that has to be bumped with `package.json` and with the hook's `rev`. Its `biome-check` id also runs the linter and, on 2.6+, the Markdown formatter. Use the mirror only for a repo with no `package.json`, pin `additional_dependencies` to the same version, and pick `biome-format` rather than `biome-check` when ESLint stays the linter.
 
 ### Ruff Format
 
@@ -272,7 +279,7 @@ repos:
 
 ```yaml
 - name: Check formatting
-  run: npx @biomejs/biome format .
+  run: npm run format:check   # biome format ., the version pinned in package.json
 ```
 
 ### GitHub Actions - Ruff

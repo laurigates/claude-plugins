@@ -5,9 +5,9 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-10-30
+modified: 2026-11-25
 compatibility: claude-code
-reviewed: 2026-11-12
+reviewed: 2026-11-25
 ---
 
 # /configure:repo
@@ -68,7 +68,8 @@ This step:
 - Selects recommended plugins based on detected stack
 - Writes `permissions.allow` (common + stack-aware) to `.claude/settings.json`
 - Merges the repo baseline policy's settings floor (`$schema`, `extraKnownMarketplaces`, `enabledMcpjsonServers`) and writes `enabledPlugins` to `.claude/settings.json` (critical for web sessions)
-- Creates/updates `.github/workflows/claude.yml` and `claude-code-review.yml`
+- Creates/updates `.github/workflows/claude.yml` and `claude-code-review.yml` as callers of the org's reusable Claude workflows
+- Checks that every `enabledMcpjsonServers` name is defined by a repo `.mcp.json`
 
 ### Step 3: Configure SessionStart hook and install script
 

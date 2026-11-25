@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-11-13
-reviewed: 2026-08-25
+modified: 2026-11-25
+reviewed: 2026-11-25
 description: "Set up formatters (Biome, Ruff format, rustfmt) with pre-commit and CI format checks. Use when a repo has no formatter, replacing Prettier or Black, or unifying monorepo style."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(bash ${CLAUDE_SKILL_DIR}/scripts/configure-formatting.sh *), Bash(find *), Bash(npm install *), Bash(npm uninstall *), Bash(bun add *), Bash(uv add *), Bash(uv remove *), Bash(uv run ruff *), Bash(biome format *), Bash(ruff format *), Bash(cargo fmt *), AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
@@ -27,8 +27,6 @@ Check and configure code formatting tools against modern best practices.
 
 - Biome config: !`find . -maxdepth 1 -name 'biome.json'`
 - Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \)`
-- Ruff config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.ruff.format' {} +`
-- Black config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.black' {} +`
 - Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \)`
 - EditorConfig: !`find . -maxdepth 1 -name '.editorconfig'`
 - Package JSON: !`find . -maxdepth 1 -name 'package.json'`
@@ -90,7 +88,7 @@ absent, unparseable, or has no `scripts` key — or `jq` is unavailable — the
 lookup degrades silently to the direct-command scan (no stderr, exit 0).
 
 **Modern formatting preferences:**
-- **JavaScript/TypeScript**: Biome (replaces Prettier + ESLint). On `RECOMMENDATION=migrate` with Prettier present, offer migration to Biome — do not configure Prettier as the target formatter.
+- **JavaScript/TypeScript**: Biome (replaces Prettier; replaces ESLint only when the repo is dropping it). A repo that keeps ESLint gets Biome as a formatter only. On `RECOMMENDATION=migrate` with Prettier present, offer migration to Biome — do not configure Prettier as the target formatter.
 - **Python**: Ruff format (replaces Black)
 - **Rust**: rustfmt (standard)
 
@@ -125,6 +123,8 @@ Based on detected language and formatter preference, install and configure. Use 
 3. Add format scripts to package.json or Makefile/justfile
 4. Configure ignore patterns in the formatter config (e.g. `files.includes` in biome.json)
 
+**Scope Biome to the languages you mean to format.** Biome 2.6 formats Markdown and JSON as well, so `"includes": ["**"]` rewrites README and CLAUDE.md tables and `.claude/settings.json` (`.claude/rules/biome-markdown.md` records the same for this marketplace). For a JavaScript repo list the JS globs (`*.js`, `src/**/*.js`), negate `node_modules`, `coverage` and `.claude/worktrees` (agent checkouts hold full copies of every file), and set `linter` and `assist` to `enabled: false` when ESLint stays the linter. `vcs.useIgnoreFile: true` errors when the repo has no `.gitignore`. Land the reformat as its own commit after the config commit, and as the last PR of a run: it rewrites every file other PRs touch.
+
 ### Step 4: Create EditorConfig integration
 
 Create or update `.editorconfig` with settings matching the formatter configuration.
@@ -142,7 +142,7 @@ Use migration guides from [REFERENCE.md](REFERENCE.md).
 
 ### Step 6: Configure pre-commit hooks
 
-Add formatter to `.pre-commit-config.yaml` using the appropriate hook repository.
+Add formatter to `.pre-commit-config.yaml`. For Biome, prefer a local hook that runs the version pinned in `package.json`, so the hook, CI and the editor share one version; the mirror hook takes its version from a second pin (`additional_dependencies`) that drifts. Templates: [REFERENCE.md](REFERENCE.md#pre-commit-hooks).
 
 ### Step 7: Configure CI/CD integration
 
@@ -207,6 +207,7 @@ For detailed configuration templates, migration guides, and pre-commit configura
 - **No package manager found**: Cannot install formatter, error
 - **Invalid configuration**: Report parse error, offer to replace with template
 - **Formatting conflicts**: Report files that would be reformatted
+- **Biome rewrites Markdown or JSON you did not mean to format**: `files.includes` reaches them; narrow it to the language globs (Step 3) and restore the files with `git restore -- <paths>`
 
 ## See Also
 

@@ -68,6 +68,7 @@ from pathlib import Path
 _OC_PATH = Path(__file__).with_name("generate-opencode-hook-plugins.py")
 _spec = importlib.util.spec_from_file_location("opencode_hooks", _OC_PATH)
 _oc = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = _oc  # before exec_module (#3805)
 _spec.loader.exec_module(_oc)
 glob_to_regex = _oc.glob_to_regex
 normalize_timeout = _oc.normalize_timeout

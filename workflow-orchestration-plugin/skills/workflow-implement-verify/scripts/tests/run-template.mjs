@@ -7,7 +7,8 @@ import { basename } from 'node:path'
 const file = process.argv[2]
 const src = readFileSync(file, 'utf8').replace(/^export const meta/m, 'const meta')
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
-const body = new AsyncFunction('agent', 'parallel', 'pipeline', 'phase', 'log', 'args', src)
+const makeBody = (s) => new AsyncFunction('agent', 'parallel', 'pipeline', 'phase', 'log', 'args', s)
+const body = makeBody(src)
 
 const pipeline = async (items, ...stages) =>
   Promise.all(
@@ -25,7 +26,7 @@ const pipeline = async (items, ...stages) =>
   )
 const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)))
 
-async function run(argsIn, script) {
+async function run(argsIn, script, runBody = body) {
   const calls = []
   const sent = {}
   const agent = async (prompt, opts) => {
@@ -36,7 +37,7 @@ async function run(argsIn, script) {
     const r = script(kind, unit)
     return r === undefined ? null : r
   }
-  const result = await body(agent, parallel, pipeline, () => {}, () => {}, argsIn)
+  const result = await runBody(agent, parallel, pipeline, () => {}, () => {}, argsIn)
   return { result, calls, sent }
 }
 
@@ -260,10 +261,12 @@ if (isImpl) {
         && !p('implement:b').includes('bash run-gate.sh'), p('implement:b'))
     check('foreign unit: implementer worktree under its root',
       p('implement:b').includes('git -C /clones/other/ worktree add -b fix/a /clones/other/.claude/worktrees/b origin/main'), p('implement:b'))
+    // The repair round works under round2/, so the repairer and re-verifier never
+    // reuse a path a first-round agent may still hold (#3749).
     check('foreign unit: verifier, repairer and re-verifier worktrees under its root',
       p('verify:b').includes('worktree add --detach /clones/other/.claude/worktrees/verify-b fix/a')
-        && p('repair:b').includes('worktree add /clones/other/.claude/worktrees/repair-b fix/a')
-        && p('reverify:b').includes('/clones/other/.claude/worktrees/verify-b'), [p('verify:b'), p('repair:b')])
+        && p('repair:b').includes('worktree add /clones/other/.claude/worktrees/round2/repair-b fix/a')
+        && p('reverify:b').includes('worktree add --detach /clones/other/.claude/worktrees/round2/verify-b fix/a'), [p('verify:b'), p('repair:b'), p('reverify:b')])
     check('foreign unit: no harness isolation on any of its agents',
       ['implement:b', 'verify:b', 'repair:b', 'reverify:b'].every((l) => r.sent[l] && iso(l) === undefined), r.calls)
     const plan = Object.fromEntries((r.result.finalisePlan ?? []).map((e) => [e.unit, e]))
@@ -286,6 +289,24 @@ if (isImpl) {
   const m = await run(units(['a', 'b']), (k, u) =>
     k === 'fix' ? (u === 'a' ? fix(u, { status: 'blocked', commits: [] }) : fix(u)) : k === 'verify' ? verdict(u, 'pass') : { pushed: [] })
   check('blocked fixer → BLOCKED, unverified', statuses(m).a === 'BLOCKED' && !m.calls.includes('verify:a'), m.calls)
+  // 10. With ctx.worktrees set (an adaptation such as git-pr-sweep's pr-fix), the
+  // fixer and the repairer share FIX_PROMPT; each must get its own worktree path,
+  // or the repairer's `git worktree add` fails on the fixer's leftover (#3749).
+  // Same for the verifier and re-verifier.
+  const ctxLine = 'const ctxFor = (u) => ({ ...CTX, base: u.base })'
+  if (!src.includes(ctxLine)) {
+    check('repair-round ctxFor line found for the worktrees variant', false, ctxLine)
+  } else {
+    const wtBody = makeBody(src.replace(ctxLine, "const ctxFor = (u) => ({ ...CTX, base: u.base, worktrees: '/wt' })"))
+    const w = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) =>
+      k === 'fix' ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u, { head_sha: 'def5678' }) : verdict(u, 'pass'), wtBody)
+    const path = (label) => ((w.sent[label]?.prompt ?? '').match(/worktree add (?:--detach )?(\S+)/) ?? [])[1]
+    const paths = ['fix:a', 'verify:a', 'repair:a', 'reverify:a'].map(path)
+    check('worktrees mode: fixer and repairer get different worktree paths',
+      paths[0] && paths[2] && paths[0] !== paths[2], paths)
+    check('worktrees mode: verifier and re-verifier get different worktree paths',
+      paths[1] && paths[3] && paths[1] !== paths[3], paths)
+  }
 }
 
 process.exit(failed ? 1 : 0)

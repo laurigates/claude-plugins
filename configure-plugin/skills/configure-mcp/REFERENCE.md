@@ -2,7 +2,7 @@
 
 ## Server Configurations
 
-**Core servers come from the policy.** The canonical `.mcp.json` entries for the core servers (`pal`, `context7`, `sequential-thinking`) are the `mcpServers` object of [`configure-plugin/policy/repo-baseline.json`](../../policy/repo-baseline.json). Copy each entry from there verbatim: add a missing one, and replace a `pal` entry in any other form (a bare `pal-mcp-server` command, a `uvx --from git+…` source) with the policy entry's `command`, `args` and named `env` values, keeping any extra `env` keys it carries. The same policy's `settings.floor.enabledMcpjsonServers` lists the servers `.claude/settings.json` approves.
+**Core servers come from the policy.** The canonical `.mcp.json` entries for the core servers (`pal`, `context7`, `sequential-thinking`) are the `mcpServers` object of [`configure-plugin/policy/repo-baseline.json`](../../policy/repo-baseline.json). Copy each entry from there verbatim: add a missing one, and replace a `pal` entry in any other form (a bare `pal-mcp-server` command, a `uvx --from git+…` source, the pre-rename `uvx pal-mcp-server@latest`) with the policy entry's `command`, `args` and named `env` values, keeping any extra `env` keys it carries. The same policy's `settings.floor.enabledMcpjsonServers` lists the servers `.claude/settings.json` approves.
 
 Use these JSON configurations when adding the other servers to `.mcp.json`:
 
@@ -64,7 +64,7 @@ Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens. Claude Co
 - `github` - GitHub API integration (requires `GITHUB_TOKEN`)
 
 **Productivity:**
-- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration. Runs from PyPI as `uvx pal-mcp-server@latest`, so each launch resolves the latest release and nothing is installed beforehand. Takes provider keys and a local endpoint through `env` (see the env-var table). Entry: the policy's `mcpServers.pal`.
+- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration. Runs from PyPI as `uvx palaver-mcp-server@latest`, so each launch resolves the latest release and nothing is installed beforehand. Takes provider keys and a local endpoint through `env` (see the env-var table). Entry: the policy's `mcpServers.pal`.
 
 **Infrastructure & Monitoring:**
 - `argocd-mcp` - ArgoCD GitOps deployment management (requires `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN`)
