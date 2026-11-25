@@ -70,7 +70,7 @@ out=$(python3 - "$TOOL" <<'PY'
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("pmm", sys.argv[1])
 m = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = m  # before exec_module (dataclass + future annotations)
+sys.modules[spec.name] = m  # before exec_module (#3805)
 spec.loader.exec_module(m)
 text = "* text=auto eol=lf\n# docs/x.md merge=union\ndocs/regression-ledger.md merge=union\nlogs/*.log  merge=union -diff\n*.svg linguist-generated=true\n"
 print(m.union_paths(text))

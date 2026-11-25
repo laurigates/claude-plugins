@@ -487,7 +487,7 @@ def analyze(src: str, limit: int) -> dict:
 def fallback(src: str, limit: int, width: int, reason: str) -> dict:
     spec = importlib.util.spec_from_file_location("workflow_scale_fallback", FALLBACK)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module  # before exec_module (dataclass + future annotations)
+    sys.modules[spec.name] = module  # before exec_module (#3805)
     spec.loader.exec_module(module)
     result = module.analyze(src, limit, width)
     result.update(PARSER="fallback", FALLBACK=reason)
