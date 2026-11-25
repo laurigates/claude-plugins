@@ -805,7 +805,7 @@ out=$(python3 - "$TOOL" <<'PY'
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("il", sys.argv[1])
 m = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = m  # before exec_module (dataclass + future annotations)
+sys.modules[spec.name] = m  # before exec_module (#3805)
 spec.loader.exec_module(m)
 body = (
     "See `main/ota.c:245-247`, [the doc](docs/a/b.md) and tools/x.py.\n"

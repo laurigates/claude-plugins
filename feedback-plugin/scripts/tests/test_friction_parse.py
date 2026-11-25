@@ -382,7 +382,7 @@ def _detector_generator():
         "hook_detector_split_generate", DETECTOR_FIXTURE / "generate.py"
     )
     mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
+    sys.modules[spec.name] = mod  # before exec_module (#3805)
     spec.loader.exec_module(mod)
     return mod
 
@@ -607,7 +607,7 @@ def _stop_generator():
         "stop_gen", STOP_FIXTURE / "generate.py"
     )
     mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
+    sys.modules[spec.name] = mod  # before exec_module (#3805)
     spec.loader.exec_module(mod)
     return mod
 
@@ -617,7 +617,7 @@ def _parser_module():
 
     spec = importlib.util.spec_from_file_location("friction_parse_mod", PARSER)
     mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod  # before exec_module (dataclass + future annotations)
+    sys.modules[spec.name] = mod  # before exec_module (#3805)
     spec.loader.exec_module(mod)
     return mod
 
