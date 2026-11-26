@@ -160,6 +160,7 @@ jobs:
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-hook-fail-closed.sh' \
             --only 'scripts/tests/test-check-hook-matchers.sh' \
+            --only 'scripts/tests/test-check-hooks-json-wired.sh' \
             --only 'scripts/tests/test-check-hook-timeout-units.sh' \
             --only 'scripts/tests/test-check-issue-processing.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
@@ -510,6 +511,12 @@ jobs:
         # fires (17 blueprint-plugin hooks never ran). Whole-repo invariant,
         # always-on; the self-test step above proves the guard first.
         run: bash scripts/check-hook-matchers.sh
+
+      - name: Check every root-level plugin hooks.json is loaded
+        # A root <plugin>/hooks.json loads only when plugin.json names it in
+        # "hooks"; documentation-plugin's leak gate never ran without it
+        # (#3794). Whole-repo invariant, always-on.
+        run: bash scripts/check-hooks-json-wired.sh
 
       - name: Check onFailure "block" stays on the safety hooks only
         # Claude Code 2.1.295's onFailure "block" turns a crashing hook into a
