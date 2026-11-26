@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.59.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.7...agent-patterns-plugin-v2.59.0) (2026-11-26)
+
+
+### Features
+
+* **agent-patterns-plugin:** add local-run-handoff skill ([#3852](https://github.com/laurigates/claude-plugins/issues/3852)) ([1cac84e](https://github.com/laurigates/claude-plugins/commit/1cac84e0a7fc8e3652bdedb45375be019fe19706))
+
+
+### Documentation
+
+* inject workstation secrets per command instead of exporting them ([#3862](https://github.com/laurigates/claude-plugins/issues/3862)) ([30f6b89](https://github.com/laurigates/claude-plugins/commit/30f6b89ebef673a90b0316d0429d6279c5296834))
+
 ## [2.58.7](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.6...agent-patterns-plugin-v2.58.7) (2026-11-25)
 
 
