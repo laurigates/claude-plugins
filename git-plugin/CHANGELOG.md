@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.76.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.1...git-plugin-v2.76.2) (2026-11-26)
+
+
+### Bug Fixes
+
+* **git-plugin:** name the release-please flow in merge-chain's skip reason ([#3842](https://github.com/laurigates/claude-plugins/issues/3842)) ([ab81d40](https://github.com/laurigates/claude-plugins/commit/ab81d40511e49af7e9ab428bd4f6167f012fb899)), closes [#3802](https://github.com/laurigates/claude-plugins/issues/3802)
+
 ## [2.76.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.0...git-plugin-v2.76.1) (2026-11-25)
 
 
