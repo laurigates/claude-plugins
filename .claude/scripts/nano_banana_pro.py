@@ -21,7 +21,8 @@ Usage as script:
     python nano_banana_pro.py "Portrait photo" --reference image.png --aspect 3:4
 
 Environment:
-    GOOGLE_API_KEY or GEMINI_API_KEY must be set
+    GOOGLE_API_KEY or GEMINI_API_KEY must be set, ideally only for this run:
+    fnox exec --only GEMINI_API_KEY -- python nano_banana_pro.py ...
 
 Model:
     Nano Banana Pro (gemini-3-pro-image)
@@ -84,6 +85,9 @@ def get_api_key() -> str:
     key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not key:
         print("Error: GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set.")
+        print(
+            "Inject it for this run, e.g.: fnox exec --only GEMINI_API_KEY -- python nano_banana_pro.py ..."
+        )
         print("Get your API key from: https://aistudio.google.com/apikey")
         sys.exit(1)
     return key

@@ -5,28 +5,23 @@
 # surface (via a per-arm $HOME; see arm-prep.sh / docs/config-arms.md). Runs from
 # a neutral fixture repo so no project .mcp.json / .claude confounds the arms.
 #
-# The isolated arms have no OAuth login, so this sources a subscription token
-# from ~/.api_tokens. One-time:  claude setup-token
-#   then:  echo 'export CLAUDE_CODE_OAUTH_TOKEN="sk-ant-oat01-..."' >> ~/.api_tokens
+# The isolated arms have no OAuth login, so this needs a subscription token:
+# exported, or read from the OS keychain through fnox. One-time:
+#   claude setup-token, then:  fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN
 #
 # Usage: run-config.sh [--filter <glob>] [--runs <n>] [--run-id <id>]
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Load auth token without letting a stray line in ~/.api_tokens abort the run.
-if [ -f "$HOME/.api_tokens" ]; then
-  set +e +u
-  set -a
-  # shellcheck disable=SC1091
-  . "$HOME/.api_tokens" 2>/dev/null
-  set +a
-  set -e -u
+# Exported token wins; otherwise read it from the keychain through fnox.
+if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ] && command -v fnox >/dev/null 2>&1; then
+  CLAUDE_CODE_OAUTH_TOKEN="$(fnox get CLAUDE_CODE_OAUTH_TOKEN 2>/dev/null || true)"
 fi
 if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "ERROR: no CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) in ~/.api_tokens." >&2
+  echo "ERROR: no CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) exported or in the keychain." >&2
   echo "       Run:  claude setup-token" >&2
-  echo "       Then: echo 'export CLAUDE_CODE_OAUTH_TOKEN=\"<token>\"' >> ~/.api_tokens" >&2
+  echo "       Then: fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN" >&2
   exit 1
 fi
 export CLAUDE_CODE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}"

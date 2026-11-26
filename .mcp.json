@@ -1,27 +1,22 @@
 {
   "mcpServers": {
     "github": {
-      "command": "go",
+      "command": "sh",
       "args": [
-        "run",
-        "github.com/github/github-mcp-server/cmd/github-mcp-server@latest",
-        "stdio"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
+        "-c",
+        "set -e; [ -n \"$GITHUB_PERSONAL_ACCESS_TOKEN\" ] || GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token); export GITHUB_PERSONAL_ACCESS_TOKEN; exec go run github.com/github/github-mcp-server/cmd/github-mcp-server@latest stdio"
+      ]
     },
     "pal": {
-      "command": "uvx",
+      "command": "sh",
       "args": [
-        "palaver-mcp-server@latest"
+        "-c",
+        "if command -v fnox >/dev/null 2>&1; then exec fnox exec --only GEMINI_API_KEY,OPENAI_API_KEY --replace -- uvx palaver-mcp-server@latest; fi; exec uvx palaver-mcp-server@latest"
       ],
       "env": {
         "CUSTOM_API_URL": "http://localhost:11434/v1",
         "CUSTOM_API_KEY": "",
-        "DEFAULT_MODEL": "auto",
-        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+        "DEFAULT_MODEL": "auto"
       }
     },
     "context7": {

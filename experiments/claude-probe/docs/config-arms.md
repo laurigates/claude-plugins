@@ -65,14 +65,14 @@ toolchain download.
 ## Auth (one-time)
 
 Both isolated arms lose the interactive OAuth login, so they authenticate from a
-token. Mint a subscription-billed one and add it to `~/.api_tokens`:
+token. Mint a subscription-billed one and store it in the OS keychain:
 
 ```
 claude setup-token
-echo 'export CLAUDE_CODE_OAUTH_TOKEN="sk-ant-oat01-..."' >> ~/.api_tokens
+fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN
 ```
 
-`run-config.sh` sources it automatically. `ANTHROPIC_API_KEY` also works (bills
+`run-config.sh` reads it through `fnox get` when it is not exported. `ANTHROPIC_API_KEY` also works (bills
 the API account instead of the subscription).
 
 ## Run
