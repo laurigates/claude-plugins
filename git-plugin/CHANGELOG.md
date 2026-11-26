@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.77.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.3...git-plugin-v2.77.0) (2026-11-26)
+
+
+### Features
+
+* **git-plugin:** add git-issue-converge skill for shrinking issue backlogs ([#3864](https://github.com/laurigates/claude-plugins/issues/3864)) ([4805670](https://github.com/laurigates/claude-plugins/commit/48056705e4a46e186ce9a4509a2669d4752c8e4e))
+
 ## [2.76.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.2...git-plugin-v2.76.3) (2026-11-26)
 
 
