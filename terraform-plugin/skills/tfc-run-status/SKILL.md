@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: tfc-run-status
 description: "Terraform Cloud run status with resource counts and actions. Use when polling a run, checking pass/fail, or seeing if it can be applied or canceled. Requires TFE_TOKEN."
@@ -24,7 +24,9 @@ Quick status check for Terraform Cloud runs with resource change counts, timesta
 ## Prerequisites
 
 ```bash
-export TFE_TOKEN="your-api-token"        # User or team token
+# TFE_TOKEN: user or team token.
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional
 ```
 

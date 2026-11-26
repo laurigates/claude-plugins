@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: tfc-workspace-runs
 description: "List TFC runs across known workspaces (github, sentry, gcp, onelogin, twingate). Use when checking TFC status or listing runs by workspace. Requires TFE_TOKEN."
@@ -24,7 +24,9 @@ Convenience wrapper for quick access to runs in Forum Virium Helsinki Terraform 
 ## Prerequisites
 
 ```bash
-export TFE_TOKEN="your-api-token"        # User or team token
+# TFE_TOKEN: user or team token.
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional
 ```
 
