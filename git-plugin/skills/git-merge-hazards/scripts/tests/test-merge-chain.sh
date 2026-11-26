@@ -294,6 +294,7 @@ mkpr 115
 run_chain 111,112,113,114,115
 expect_has "stranger skipped as non_self_author" "$(section 111)" "^REASON=non_self_author: author 'stranger'"
 expect_has "release-please skipped" "$(section 112)" "^REASON=release_please:"
+expect_has "release-please skip names its merge flow" "$(section 112)" "^REASON=release_please: .*git-plugin:release-please-pr-workflow"
 expect_has "renovate skipped" "$(section 113)" "^REASON=renovate:"
 expect_has "closed skipped" "$(section 114)" "^REASON=closed:"
 expect_no "a skipped PR is never updated or merged" "$LOG" "pr (update-branch|merge) 11[1-4] "

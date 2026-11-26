@@ -306,7 +306,7 @@ process_pr() {
   esac
   if [ "$draft" = "true" ]; then result SKIPPED "draft: PR is a draft"; return; fi
   if [[ "$head_ref" == release-please--* || "$login" == *release-please* ]]; then
-    result SKIPPED "release_please: release PRs merge through their own flow"; return
+    result SKIPPED "release_please: release PRs merge via git-plugin:release-please-pr-workflow, not this chain"; return
   fi
   if [[ "$head_ref" == renovate/* || "$login" == *renovate* ]]; then
     result SKIPPED "renovate: dependency PRs merge through their own flow"; return
