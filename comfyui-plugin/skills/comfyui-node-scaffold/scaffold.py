@@ -2303,6 +2303,7 @@ renovate.json
 .gitignore
 justfile
 CLAUDE.md
+.mcp.json
 RELEASE-CHECKLIST.md
 .comfyignore
 
