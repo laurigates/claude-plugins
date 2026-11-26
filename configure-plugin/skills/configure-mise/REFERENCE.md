@@ -89,7 +89,7 @@ _.file = ".env.local"
 # _.source = "./scripts/env.sh"
 ```
 
-`_.file` values are not committed; keep the referenced file in `.gitignore`. For the dotfiles global config this is how `~/.api_tokens` is loaded (`_.file = "~/.api_tokens"`).
+`_.file` values are not committed; keep the referenced file in `.gitignore`.
 
 ## `[tasks]` — replacing Make/just
 

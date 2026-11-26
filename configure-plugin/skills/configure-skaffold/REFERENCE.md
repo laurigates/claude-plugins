@@ -191,8 +191,9 @@ dotenvx set SECRET_KEY "..."
 # Encrypt existing .env
 dotenvx encrypt
 
-# Store private key securely (NOT in git)
-echo "DOTENV_PRIVATE_KEY=..." >> ~/.zshrc
+# Store private key in a secret manager (NOT in git, not exported from a shell profile)
+# and inject it only into the command that needs it
+fnox exec --only DOTENV_PRIVATE_KEY -- skaffold dev   # or: op run -- skaffold dev
 ```
 
 ### Hook Placement Patterns
