@@ -21,11 +21,10 @@ Use these JSON configurations when adding the other servers to `.mcp.json`:
     ]
   },
   "argocd-mcp": {
-    "command": "bunx",
-    "args": ["-y", "argocd-mcp@latest", "stdio"],
+    "command": "fnox",
+    "args": ["exec", "--only", "ARGOCD_AUTH_TOKEN", "--replace", "--", "bunx", "-y", "argocd-mcp@latest", "stdio"],
     "env": {
-      "ARGOCD_SERVER": "${ARGOCD_SERVER}",
-      "ARGOCD_AUTH_TOKEN": "${ARGOCD_AUTH_TOKEN}"
+      "ARGOCD_SERVER": "${ARGOCD_SERVER}"
     }
   }
 }
@@ -42,12 +41,12 @@ to load.
 
 | Server | Required Variables | Where to Set |
 |--------|-------------------|--------------|
-| `github` | `GITHUB_TOKEN` | `~/.api_tokens` |
-| `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | project `.env` |
-| `sentry` | `SENTRY_AUTH_TOKEN` | `~/.api_tokens` |
-| `pal` | Optional: the `${VAR}` keys in the policy entry's `env` (`GEMINI_API_KEY`, `OPENAI_API_KEY`); with neither set, PAL uses only the local endpoint its `CUSTOM_API_URL` names | `~/.api_tokens` |
+| `github` | `GITHUB_TOKEN` | secret manager wrapping the server command |
+| `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | `ARGOCD_SERVER` (not a secret): project `.env`; `ARGOCD_AUTH_TOKEN`: secret manager wrapping the server command |
+| `sentry` | `SENTRY_AUTH_TOKEN` | secret manager wrapping the server command |
+| `pal` | Optional: the `${VAR}` keys in the policy entry's `env` (`GEMINI_API_KEY`, `OPENAI_API_KEY`); with neither set, PAL uses only the local endpoint its `CUSTOM_API_URL` names | Claude Code's environment (the policy entry uses `${VAR}`) |
 
-Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens. Claude Code expands variables in a server's `command`, `args`, `env`, `url` and `headers`, and its docs list only two forms, `${VAR}` and `${VAR:-default}`. Write `${VAR}`: a bare `$VAR` is not one of the expanded forms. An unset `${VAR}` with no default is passed to the server as the literal text.
+Never hardcode tokens in `.mcp.json`, and on a workstation do not export them globally either: every child process inherits an exported token, and an environment dump puts it in a transcript. Inject each secret into the one server that needs it. For a stdio server, wrap the server command in a secret manager that runs it with only the named secrets set, as the `argocd-mcp` entry in [Server Configurations](#server-configurations) does with `fnox exec --only VAR --replace -- <original command and args>` (1Password's `op run -- <command>` is the equivalent). For an HTTP server, use `headersHelper` (see [Remote MCP Servers](#remote-mcp-servers-httpsse-with-oauth)). `${VAR_NAME}` references expand only variables already exported in Claude Code's own environment, so they suit CI and cloud environments where secrets are injected as env vars. Claude Code expands variables in a server's `command`, `args`, `env`, `url` and `headers`, and its docs list only two forms, `${VAR}` and `${VAR:-default}`. Write `${VAR}`: a bare `$VAR` is not one of the expanded forms. An unset `${VAR}` with no default is passed to the server as the literal text.
 
 ## Available Servers (Full Registry)
 
@@ -99,8 +98,8 @@ Installed Servers:
   sequential-thinking       npx              [✅ CONFIGURED]
 
 Environment Variables:
-  GITHUB_TOKEN              ~/.api_tokens    [✅ SET | ❌ MISSING]
-  GEMINI_API_KEY            ~/.api_tokens    [✅ SET | ⚠️ UNSET (optional, pal)]
+  GITHUB_TOKEN              [wrapper | env]  [✅ SET | ❌ MISSING]
+  GEMINI_API_KEY            [wrapper | env]  [✅ SET | ⚠️ UNSET (optional, pal)]
 
 Git Tracking:
   .mcp.json                 .gitignore       [✅ IGNORED | ⚠️ TRACKED | ❌ NOT FOUND]
@@ -120,14 +119,14 @@ Servers Added:
   ✅ context7
 
 Environment Variables:
-  ⚠️ Set GITHUB_TOKEN in ~/.api_tokens or project .env
+  ⚠️ Provide GITHUB_TOKEN: wrap the server command in a secret manager (CI: inject it as an env var)
 
 Git Tracking:
   ✅ .mcp.json added to .gitignore
 
 Next Steps:
   1. Restart Claude Code to load new MCP servers
-  2. Set required environment variables
+  2. Provide required secrets (see Environment Variable Reference)
   3. Verify servers are loaded (check status bar)
 ```
 
@@ -139,12 +138,12 @@ For remote servers using HTTP+SSE transport (Claude Code 2.1.50+):
 {
   "my-remote-server": {
     "url": "https://mcp.example.com/sse",
-    "headers": {
-      "Authorization": "Bearer ${MY_API_TOKEN}"
-    }
+    "headersHelper": "/path/to/print-mcp-headers.sh"
   }
 }
 ```
+
+`headersHelper` is a command that reads the token from your secret store and prints the headers as a JSON object, for example `{"Authorization": "Bearer <token>"}`; Claude Code runs it at connect time. In CI, where the token is already an exported env var, a static `"headers": {"Authorization": "Bearer ${MY_API_TOKEN}"}` does the same.
 
 ### OAuth Authentication Flow
 
@@ -155,9 +154,9 @@ For remote servers using HTTP+SSE transport (Claude Code 2.1.50+):
 
 ### Remote Server Notes
 
-- Use `${VAR_NAME}` in header values — never hardcode tokens
+- Never hardcode tokens: use `headersHelper` on a workstation, `${VAR_NAME}` in header values where the token is exported (CI)
 - Discovery metadata is cached; use `/mcp disable` + `/mcp enable` to force refresh
-- Remote servers using OAuth do not need `env` block; use `headers` with Bearer token instead
+- Remote servers using OAuth do not need `env` block; a server that takes a static Bearer token gets it through `headersHelper` (or `headers` in CI) instead
 - Step-up auth is automatic — Claude Code handles re-authorization prompts
 
 ## Standards Tracking Template

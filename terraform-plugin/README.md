@@ -65,7 +65,9 @@ unreviewed apply.
 All skills require a Terraform Cloud API token:
 
 ```bash
-export TFE_TOKEN="your-api-token"        # User or team token (not organization token)
+# TFE_TOKEN: user or team token (not organization token).
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional, defaults to app.terraform.io
 ```
 

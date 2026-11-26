@@ -45,16 +45,20 @@ Consumer-side registration of a stdio server (`.mcp.json`):
 {
   "mcpServers": {
     "my-server": {
-      "command": "uvx",
-      "args": ["my-server"],
-      "env": { "MY_API_TOKEN": "${MY_API_TOKEN}" }
+      "command": "fnox",
+      "args": ["exec", "--only", "MY_API_TOKEN", "--replace", "--", "uvx", "my-server"]
     }
   }
 }
 ```
 
-Reference secrets with `${VAR}` env indirection — never hardcode them. The
-consumer side is covered by `agent-patterns-plugin:mcp-management`.
+Never hardcode secrets. Read them from the environment in the server, and let
+the consumer inject them: the example wraps the server command in a secret
+manager (fnox here; `op run --` works the same way), so only this server sees
+the token. A `"env": { "MY_API_TOKEN": "${MY_API_TOKEN}" }` reference expands
+only variables already exported in Claude Code's environment, which suits CI
+and cloud sessions. The consumer side is covered by
+`agent-patterns-plugin:mcp-management`.
 
 ## Toolchain rationale
 

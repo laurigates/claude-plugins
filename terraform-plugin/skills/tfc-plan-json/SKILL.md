@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: tfc-plan-json
 description: "TFC plan JSON download and analysis. Use when diffing resource changes, inspecting replacements, or feeding plan data downstream. Requires TFE_TOKEN."
@@ -24,7 +24,9 @@ Download and analyze structured plan JSON output from Terraform Cloud runs for d
 ## Prerequisites
 
 ```bash
-export TFE_TOKEN="your-api-token"        # User or team token with admin workspace access
+# TFE_TOKEN: user or team token with admin workspace access.
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional
 ```
 

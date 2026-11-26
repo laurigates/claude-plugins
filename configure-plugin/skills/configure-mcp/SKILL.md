@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-25
+modified: 2026-11-26
 reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(find *), Bash(jq *), Bash(sort *), AskUserQuestion, TodoWrite
@@ -91,9 +91,9 @@ Handle git tracking:
 
 Print a summary using the report format from [REFERENCE.md](REFERENCE.md):
 - List all configured servers with their status
-- Flag missing environment variables with where to set them
+- Flag missing secrets and environment variables with how to provide them (a secret-manager wrapper on a workstation, an env var in CI)
 - Show git tracking status
-- If servers were added, show next steps (restart Claude Code, set env vars)
+- If servers were added, show next steps (restart Claude Code, provide required secrets)
 
 ### Step 5: Update standards tracking
 

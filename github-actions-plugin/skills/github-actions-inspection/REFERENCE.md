@@ -351,8 +351,9 @@ gh auth refresh -h github.com -s repo,workflow
 # Check rate limit
 gh api rate_limit
 
-# Use personal access token
-export GITHUB_TOKEN=<your-token>
+# gh already authenticates with the token in its keyring (gh auth status);
+# for a raw API call, pass that token to the one command instead of exporting one
+GITHUB_TOKEN=$(gh auth token) <cmd>
 
 # Reduce API calls with caching
 gh run list --limit 100 --json databaseId,conclusion > cache.json

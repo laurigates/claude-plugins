@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: tfc-run-logs
 description: "Retrieve plan and apply logs from Terraform Cloud runs. Use when debugging failed plans/applies or reviewing TFC run output. Requires TFE_TOKEN."
@@ -25,7 +25,9 @@ Retrieve and display plan and/or apply logs from Terraform Cloud runs directly i
 
 ```bash
 # Required environment variables
-export TFE_TOKEN="your-api-token"        # User or team token (not organization token)
+# TFE_TOKEN: user or team token (not organization token).
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional, defaults to app.terraform.io
 ```
 

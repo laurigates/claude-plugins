@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 description: "Image generation via Gemini 3 Pro Image: aspect ratio, resolution, reference images. Use when creating artwork, product photos, or mockups with AI."
 allowed-tools: Read, WebFetch
@@ -39,7 +39,7 @@ unquoted, every token before the first `--` flag):
 
 ## Environment Requirements
 
-Verify API key is set:
+The script reads `GOOGLE_API_KEY` or `GEMINI_API_KEY` from its environment. It may be exported, or injected into the one command by a secret manager (`fnox exec --only GEMINI_API_KEY -- <cmd>`, `op run -- <cmd>`). Check an exported key:
 ```bash
 echo "API Key: ${GOOGLE_API_KEY:+SET}${GEMINI_API_KEY:+SET}"
 ```
@@ -121,6 +121,6 @@ Maximum 5 reference images per generation.
 
 ## Error Handling
 
-- **No API key**: Set `GOOGLE_API_KEY` or `GEMINI_API_KEY`
+- **No API key**: Export `GOOGLE_API_KEY` or `GEMINI_API_KEY`, or inject it into the command with a secret manager
 - **Generation failed**: Simplify prompt or reduce references
 - **Rate limited**: Wait and retry

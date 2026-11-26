@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: tfc-list-runs
 description: "List Terraform Cloud workspace runs filtered by status or date. Use when reviewing run history, finding failed runs, or auditing infra changes. Requires TFE_TOKEN."
@@ -24,7 +24,9 @@ List and filter runs from Terraform Cloud workspaces with formatted output.
 ## Prerequisites
 
 ```bash
-export TFE_TOKEN="your-api-token"        # User or team token
+# TFE_TOKEN: user or team token.
+# Keep it in a secret manager and inject it into the command that needs it
+# instead of exporting it, e.g. `fnox exec --only TFE_TOKEN -- <cmd>` or `op run -- <cmd>`.
 export TFE_ADDRESS="app.terraform.io"    # Optional
 ```
 

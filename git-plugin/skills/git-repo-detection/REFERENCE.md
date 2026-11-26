@@ -12,8 +12,11 @@ REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
 OWNER=$(echo "$REPO" | cut -d'/' -f1)
 REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
 
-# API request
-curl -H "Authorization: token $GITHUB_TOKEN" \
+# API request (gh uses the token in its keyring)
+gh api "repos/$OWNER/$REPO_NAME"
+
+# Raw curl: take the token from gh for this one command
+curl -H "Authorization: token $(gh auth token)" \
   "https://api.github.com/repos/$OWNER/$REPO_NAME"
 ```
 

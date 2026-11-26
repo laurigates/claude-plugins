@@ -95,7 +95,7 @@ assert_silent() {
 
 # With the env var unset, the hook should always produce empty stdout.
 # Unset it explicitly: the developer's shell may export the opt-in var
-# (e.g. via ~/.api_tokens / .zshrc), which made this block fail locally
+# (e.g. via .zshrc), which made this block fail locally
 # while passing in clean CI.
 assert_disabled() {
     local desc="$1" cmd="$2"

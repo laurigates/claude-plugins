@@ -175,9 +175,11 @@ third-party credential denylist (`GH_TOKEN`, `GITHUB_TOKEN`, `AWS_*`,
 WARNs (`inherit_env`): the real HOME still exposes `~/.ssh`, `~/.aws` and user
 hooks to a child that bypasses permissions; `rollout-meta.json`
 `inherit_stripped_env` names what was stripped. A clean child that cannot
-authenticate is an ERROR (`auth_failed`) naming the fix -- export
-`CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) or `ANTHROPIC_API_KEY`, or put one
-in `~/.api_tokens`. It is never silently retried in inherit mode: that retry
+authenticate is an ERROR (`auth_failed`) naming the fix -- provide
+`CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) or `ANTHROPIC_API_KEY` in the
+run's environment: export it for the run, or inject it per command with a secret
+manager (`fnox exec --only CLAUDE_CODE_OAUTH_TOKEN -- <script>`, `op run -- <script>`).
+It is never silently retried in inherit mode: that retry
 handed every credential in the parent env to a `--dangerously-skip-permissions`
 child.
 

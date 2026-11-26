@@ -61,8 +61,10 @@ misses were anchoring, not missing context.
 PAL is the normal route. When its MCP server is not connected to the session,
 the same models are reachable at `https://opencode.ai/zen/go/v1/chat/completions`
 with `OPENCODE_API_KEY` — the endpoint PAL's own `opencode_go` provider uses.
-Take the key from the calling process's environment. Never have an agent read
-`~/.api_tokens`: the secret-protection hook blocks `source`, and an agent blocked
+Take the key from the calling process's environment, or run the call with the key
+injected by a secret manager (`fnox exec --only OPENCODE_API_KEY -- <cmd>`,
+`op run -- <cmd>`). Never have an agent read a token file such as a shell file of
+`export` lines: the secret-protection hook blocks `source`, and an agent blocked
 that way was observed extracting the key with `sed` onto a command line
 (2026-10-04), which puts it in the transcript.
 

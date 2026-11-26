@@ -283,19 +283,9 @@ jq -n '{hasCompletedOnboarding: true}' >"$fake_home/.claude.json"
 printf '[user]\n\tname = Eval Runner\n\temail = eval-runner@example.invalid\n[commit]\n\tgpgsign = false\n[init]\n\tdefaultBranch = main\n' \
   >"$fake_home/.gitconfig"
 
-# Local convenience (mirrors ctx-probe.sh): the fake HOME has no login, so pick
-# up a token from ~/.api_tokens when none is exported. Parsed, never sourced.
-if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -f "${HOME:-/nonexistent}/.api_tokens" ]; then
-  while IFS= read -r tok_line; do
-    tok_line="${tok_line#export }"
-    tok_name="${tok_line%%=*}"; tok_val="${tok_line#*=}"
-    tok_val="${tok_val%\"}"; tok_val="${tok_val#\"}"; tok_val="${tok_val%\'}"; tok_val="${tok_val#\'}"
-    case "$tok_name" in
-      CLAUDE_CODE_OAUTH_TOKEN) export CLAUDE_CODE_OAUTH_TOKEN="$tok_val" ;;
-      ANTHROPIC_API_KEY) export ANTHROPIC_API_KEY="$tok_val" ;;
-    esac
-  done < <(grep -E '^(export )?(CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_API_KEY)=' "$HOME/.api_tokens" 2>/dev/null)
-fi
+# The clean child authenticates with CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
+# from this run's environment: export it for the run, or inject it per command
+# (e.g. `fnox exec --only CLAUDE_CODE_OAUTH_TOKEN -- <this script> ...`).
 
 # The fake HOME has no login. A user logged in via /login keeps the OAuth
 # credential in ~/.claude/.credentials.json (Linux; macOS uses the keychain):
@@ -471,7 +461,7 @@ fi
 # parent's env and real HOME would hand it every credential the user holds.
 if auth_failed; then
   if [ "$effective_env_mode" = clean ]; then
-    add_issue ERROR auth_failed "the clean-env child could not authenticate: export CLAUDE_CODE_OAUTH_TOKEN (claude setup-token) or ANTHROPIC_API_KEY, or put one in ~/.api_tokens; --env-mode inherit is an explicit opt-in"
+    add_issue ERROR auth_failed "the clean-env child could not authenticate: provide CLAUDE_CODE_OAUTH_TOKEN (claude setup-token) or ANTHROPIC_API_KEY in this run's environment, exported for the run or injected per command (e.g. fnox exec --only CLAUDE_CODE_OAUTH_TOKEN -- <script>); --env-mode inherit is an explicit opt-in"
   else
     add_issue ERROR auth_failed "the child could not authenticate in inherit mode"
   fi
