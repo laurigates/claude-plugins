@@ -136,7 +136,7 @@ d2 --sketch diagram.d2 out.svg        # Hand-drawn style
 HF_HOME=/big/disk/hf-cache hf download <repo> <file> --local-dir /big/disk/staging
 
 # Fix gated-repo 401s under HF_HOME (token read from $HF_HOME/token, not ~/.cache)
-export HF_TOKEN="$(cat ~/.cache/huggingface/token)"
+HF_TOKEN="$(cat ~/.cache/huggingface/token)" HF_HOME=/big/disk/hf-cache hf download <repo> <file> --local-dir /big/disk/staging
 ```
 
 ## Installation

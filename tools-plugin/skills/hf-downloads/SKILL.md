@@ -3,7 +3,7 @@ name: hf-downloads
 description: "Hugging Face model downloads without filling root disk — HF_HOME/xet cache redirection, token/gated-repo auth, staging pattern. Use when downloading HF models, hf download errors, ENOSPC during downloads, or GatedRepoError/401s."
 allowed-tools: Bash(hf download *), Bash(mkdir *), Bash(mv *), Bash(cp *), Bash(stat *), Read
 created: 2026-07-05
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-07-05
 ---
 
@@ -51,7 +51,7 @@ Setting `HF_HOME` relocates both `HF_HUB_CACHE` (`$HF_HOME/hub`) and `HF_XET_CAC
 HF_HOME=/big/disk/hf-cache hf download <repo> <file> --local-dir /big/disk/staging
 ```
 
-Persist it for a session by exporting in `.zshrc`, `~/.api_tokens` (mise auto-sources), or a per-project `.envrc` (direnv). On a machine whose root is small:
+`HF_HOME` is a path, not a secret, so persist it by exporting in `.zshenv`/`.zshrc`, a mise `[env]` block, or a per-project `.envrc` (direnv). On a machine whose root is small:
 
 ```sh
 export HF_HOME=/mnt/big-disk/hf-cache
@@ -76,12 +76,13 @@ rm -rf /big/disk/staging
 
 **Signature of this mismatch:** `model_info()` calls succeed (metadata is public), `LICENSE.md` fetches return 200, but `*.safetensors` fetches under the same auth return 401.
 
-Two fixes — prefer `HF_TOKEN` for ephemeral shells, copy the file for persistent setups:
+Two fixes — prefer `HF_TOKEN` scoped to one command for ephemeral use, copy the file for persistent setups:
 
 ```sh
-# Ephemeral: HF_TOKEN is read directly, bypassing the file-location lookup
+# Ephemeral: HF_TOKEN is read directly, bypassing the file-location lookup.
+# Set it on the one command rather than exporting it into the shell.
 export HF_HOME=/big/disk/hf-cache
-export HF_TOKEN="$(cat ~/.cache/huggingface/token)"
+HF_TOKEN="$(cat ~/.cache/huggingface/token)" hf download <repo> <file> --local-dir /big/disk/staging
 
 # Persistent: copy the token into the HF_HOME location after login
 cp ~/.cache/huggingface/token "$HF_HOME/token"
@@ -118,7 +119,7 @@ stat -c '%s' /destination/<file>
 | Context | Command |
 |---------|---------|
 | Redirect all cache to the big disk | `HF_HOME=/big/disk/hf-cache hf download <repo> <file> --local-dir /big/disk/staging` |
-| Bypass token-location lookup | `export HF_TOKEN="$(cat ~/.cache/huggingface/token)"` |
+| Bypass token-location lookup | `HF_TOKEN="$(cat ~/.cache/huggingface/token)" hf download <repo> <file> ...` |
 | Verify final size vs Content-Length | `stat -c '%s' /destination/<file>` |
 | Confirm staging disk has room | `df -h /big/disk` |
 
