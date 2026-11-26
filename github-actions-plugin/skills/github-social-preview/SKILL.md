@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2025-12-16
 name: github-social-preview
 description: "Generate 1280x640 PNG social preview images for GitHub repos using nano-banana-pro. Use when asked for social preview, Open Graph image, or repo images for social media."
@@ -15,7 +15,7 @@ Generate professional social preview images for GitHub repositories. These image
 ## Requirements
 
 This skill piggybacks on the **nano-banana-pro** skill for image generation. Ensure:
-- `GOOGLE_API_KEY` or `GEMINI_API_KEY` is set
+- `GOOGLE_API_KEY` or `GEMINI_API_KEY` is available to the generation command, exported or injected per command by a secret manager (`fnox exec --only GEMINI_API_KEY -- <cmd>`, `op run -- <cmd>`)
 - Dependencies: `pip install google-genai Pillow` (or use `uv run`)
 
 ## GitHub Specifications
