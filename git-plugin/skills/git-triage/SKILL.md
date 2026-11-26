@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(python3 *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-11-22
+modified: 2026-11-26
 reviewed: 2026-09-23
 ---
 
@@ -22,6 +22,7 @@ Unified issue and PR triage: scan, categorize, cross-link, and optionally act.
 | Cleaning up after a busy week of PRs and issues | Applying review feedback on one PR → `/git:pr-feedback` |
 | Auditing what's still relevant across the queue | Creating new sub-issue hierarchy → `/git:issue-hierarchy` |
 | Deciding which issues are "quick wins" next | Administrative ops on one issue → `/git:issue-manage` |
+| Producing a report on the backlog | Bringing a growing backlog down and capping its inflow → `git-plugin:git-issue-converge` |
 
 ## Context
 

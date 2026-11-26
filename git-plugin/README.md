@@ -74,6 +74,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `github-comment-content` | What a PR or issue comment should say — cut every fact the GitHub page already renders, keep what it cannot show |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | gitleaks secret scanning and `.gitleaks.toml` allowlists — including why the hook ignores `--files` and has to be run after staging |
+| `git-issue-converge` | Shrink a growing issue backlog: measure inflow vs outflow (`issue-flow.sh`), close what is fixed, fold the rest into checklists, ship fixes as one batched PR, one rollup per PR |
 | `git-issue-scoping` | Read an issue's full comment thread and re-verify its cited `file:line` evidence at HEAD before scoping a PR or plan |
 | `upstream-pr-contribution` | Read CONTRIBUTING.md and the PR template in full before an upstream PR — the issue-first and no-AI-walls-of-text gates live below the fold and are enforced by bots on a timer |
 | `worktree-stale-base-merge` | A parallel worktree-agent branch's green CI is about a `main` that no longer exists — merge-base equality as the gate, and the `update-branch` vs rebase choice |
