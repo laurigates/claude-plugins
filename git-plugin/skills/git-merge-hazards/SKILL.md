@@ -126,7 +126,7 @@ full 40-character SHA into `--match-head-commit`
 For an ordered PR list run `scripts/merge-chain.sh`. An agent's `CONFLICT`/`CI_RED`
 fix is unreviewed: pass it through
 `workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`:
-[references/merge-shepherd.md](references/merge-shepherd.md).
+[references/merge-shepherd.md](references/merge-shepherd.md). A skipped release-please PR merges via `git-plugin:release-please-pr-workflow`.
 
 ## Rebase or squash
 
