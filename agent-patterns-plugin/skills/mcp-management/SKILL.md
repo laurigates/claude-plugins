@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-25
+modified: 2026-11-26
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
@@ -36,7 +36,10 @@ MCP connects Claude Code to external tools and data sources via two transport ty
 | **HTTP+SSE** (remote) | URL-based servers hosted externally | OAuth 2.1 | `.mcp.json` with `url` field |
 
 Local servers declare a `command` + `args`; remote servers declare a `url` +
-`headers` (with `${VAR_NAME}` token references, never hardcoded). See
+`headersHelper` or `headers`. Never hardcode tokens: on a workstation, inject
+them per server (a secret-manager wrapper around the `command`, or a
+`headersHelper` that prints the headers); `${VAR_NAME}` references expand only
+variables already exported in Claude Code's environment, as in CI. See
 [REFERENCE.md → Server configuration examples](REFERENCE.md#server-configuration-examples).
 
 ## Runtime Server Management

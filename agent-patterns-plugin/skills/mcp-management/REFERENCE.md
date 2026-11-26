@@ -27,16 +27,21 @@ scripts, and full configuration-pattern examples.
   "mcpServers": {
     "my-remote-server": {
       "url": "https://mcp.example.com/sse",
-      "headers": {
-        "Authorization": "Bearer ${MY_API_TOKEN}"
-      }
+      "headersHelper": "/path/to/print-mcp-headers.sh"
     }
   }
 }
 ```
 
-Use `${VAR_NAME}` syntax for environment variable references — never hardcode
-tokens.
+Never hardcode tokens. `headersHelper` is a command that reads the token from
+your secret store and prints the headers as a JSON object (for example
+`{"Authorization": "Bearer <token>"}`); Claude Code runs it at connect time.
+For a stdio server, wrap its `command` in a secret manager instead
+(`"command": "fnox", "args": ["exec", "--only", "MY_API_TOKEN", "--replace", "--", <original command and args>]`,
+or `op run --`), so only that server sees the token. `${VAR_NAME}` references
+(`"headers": {"Authorization": "Bearer ${MY_API_TOKEN}"}`, or in `env`) expand
+only variables already exported in Claude Code's environment, which suits CI and
+cloud sessions where secrets are injected as env vars.
 
 Do not name a server `anthropic-skills`: that name is reserved, and a server
 registered under it lists no skills or prompts (2.1.283).
