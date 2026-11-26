@@ -3,9 +3,9 @@
 # surfaces.
 #
 # Workflow linting is enforced twice: locally by the rhysd/actionlint hook in
-# .pre-commit-config.yaml (`rev: vX.Y.Z`), and in CI by
-# `go install github.com/rhysd/actionlint/cmd/actionlint@vX.Y.Z` in
-# .github/workflows/plugin-pr-checks.yml. Today the only thing holding them
+# .pre-commit-config.yaml (`rev: vX.Y.Z`), and in CI by a pinned release binary
+# (`ACTIONLINT_VERSION: "X.Y.Z"` + ACTIONLINT_SHA256, #3385) or, in older
+# workflows, `go install github.com/rhysd/actionlint/cmd/actionlint@vX.Y.Z`. Today the only thing holding them
 # together is a comment that says "Keep in sync with the actionlint CI step in
 # plugin-pr-checks.yml".
 #
@@ -117,6 +117,21 @@ if [ -d "$workflow_dir" ]; then
       ci_unpinned+=("$rel")
     fi
   done < <(grep -rnE 'go install[[:space:]]+github\.com/rhysd/actionlint' "$workflow_dir" 2>/dev/null || true)
+
+  # Pinned-binary form (#3385): an `ACTIONLINT_VERSION: "X.Y.Z"` env entry
+  # feeding a release download checked against ACTIONLINT_SHA256.
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    file="${line%%:*}"
+    rel="${file#"$proj_dir"/}"
+    pin="$(grep -oE 'ACTIONLINT_VERSION:[[:space:]]*["'"'"']?v?[0-9]+\.[0-9]+\.[0-9]+' <<<"$line" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+    if [ -n "$pin" ]; then
+      case "$pin" in v*) : ;; *) pin="v$pin" ;; esac
+      ci_pins+=("$rel=$pin")
+    else
+      ci_unpinned+=("$rel")
+    fi
+  done < <(grep -rnE '^[[:space:]]*ACTIONLINT_VERSION:' "$workflow_dir" 2>/dev/null || true)
 fi
 
 # --- Check 1: CI pinned ------------------------------------------------------

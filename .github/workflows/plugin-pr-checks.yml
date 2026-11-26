@@ -609,12 +609,26 @@ jobs:
 
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
-        # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does
-        # NOT put $(go env GOPATH)/bin on PATH, so the installed binary is invisible
-        # to the next (fresh-shell) step unless we add it to $GITHUB_PATH here.
+        # check-workflow-model.sh does not cover. A pinned release binary checked
+        # against its sha256, not `go install`: building from source failed on a
+        # transient Go module proxy stream error (#3385). The version must equal
+        # the rhysd/actionlint `rev:` in .pre-commit-config.yaml
+        # (check-actionlint-version-sync.sh). Renovate bumps ACTIONLINT_VERSION
+        # but cannot compute ACTIONLINT_SHA256: its bump PR fails here until the
+        # new checksum from actionlint_<ver>_checksums.txt is pasted in.
+        env:
+          # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.+)$
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
         run: |
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          set -euo pipefail
+          dir="$RUNNER_TEMP/actionlint"
+          mkdir -p "$dir"
+          curl -fsSL --retry 3 -o "$dir/al.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $dir/al.tgz" | sha256sum -c -
+          tar -xzf "$dir/al.tgz" -C "$dir" actionlint
+          echo "$dir" >> "$GITHUB_PATH"
 
       - name: Lint workflows with actionlint
         # No suppressions remain — this is a fully green blocking gate that

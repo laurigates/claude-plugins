@@ -153,6 +153,18 @@ out="$(bash "$checker" --not-a-real-flag 2>&1)"; rc=$?
 assert "H exits 2" "$(is_true "$([ $rc -eq 2 ] && echo true)")"
 assert "H names the offending flag" "$(contains "$out" 'unknown argument')"
 
+# --- TEST I: the pinned-binary env form (#3385) -------------------------------
+echo "=== TEST I: ACTIONLINT_VERSION env pins are read and compared ==="
+d="$(mkrepo i 'v1.7.12' 'curl -fsSL -o /tmp/al.tgz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/x.tar.gz"')"
+sed -i 's/^      - name: Install actionlint$/      - name: Install actionlint\n        env:\n          ACTIONLINT_VERSION: "1.7.11"/' "$d/.github/workflows/plugin-pr-checks.yml"
+out="$(bash "$checker" --project-dir "$d" --strict 2>&1)"; rc=$?
+assert "I exits 1 on env-form skew" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "I names the skew type" "$(contains "$out" 'TYPE=actionlint_version_skew')"
+sed -i 's/ACTIONLINT_VERSION: "1.7.11"/ACTIONLINT_VERSION: "1.7.12"/' "$d/.github/workflows/plugin-pr-checks.yml"
+out="$(bash "$checker" --project-dir "$d" --strict 2>&1)"; rc=$?
+assert "I exits 0 when the env pin matches" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "I counted the env pin" "$(contains "$out" 'CI_PIN_COUNT=1')"
+
 echo ""
 echo "=== RESULTS ==="
 echo "PASSED=$pass_count"
