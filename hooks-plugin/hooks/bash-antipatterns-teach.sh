@@ -85,6 +85,9 @@ if [ -z "${COMMAND_SHELL_ONLY//[[:space:]]/}" ]; then
 fi
 
 # Compose the hint based on which soft-teach pattern (if any) the command matched.
+# A hook cannot see the session's tool list, and subagents and some harnesses
+# have no Grep/Glob tool, so the Grep/Glob hints are conditional and name the
+# shell fallback (#3858).
 # A command can match at most one hint - we pick the most specific. hint_key is a
 # stable identifier for the matched pattern, used below for session-scoped dedup.
 hint=""
@@ -114,7 +117,7 @@ fi
 if [ -z "$hint" ] && \
    grep -Eq '^\s*find\s+' <<<"$COMMAND_SHELL_ONLY" && \
    ! grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)' <<<"$COMMAND_SHELL_ONLY"; then
-    hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0, or a -delete action."
+    hint="If this session has a Glob tool, use it for filename matching: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' for -maxdepth/-type d/-print0 or -delete. With no Glob tool in this session, 'find' is the right call."
     hint_key="glob-find"
 fi
 
@@ -126,14 +129,14 @@ if [ -z "$hint" ] && \
    ! grep -q '|' <<<"$COMMAND_SHELL_ONLY" && \
    ! grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' <<<"$COMMAND_SHELL_ONLY" && \
    ! grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))' <<<"$COMMAND_SHELL_ONLY"; then
-    hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes."
+    hint="If this session has a Grep tool, use it for codebase searches: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes. With no Grep tool in this session, grep/rg via Bash is the right call."
     hint_key="grep"
 fi
 
 # ls with a glob
 if [ -z "$hint" ] && \
    grep -Eq '^\s*ls\s+.*\*' <<<"$COMMAND_SHELL_ONLY"; then
-    hint="Use the Glob tool for pattern-based file listing - it returns paths sorted by modification time and handles large directories better."
+    hint="If this session has a Glob tool, use it for pattern-based file listing: it returns paths sorted by modification time. With no Glob tool in this session, 'ls' or 'find' is the right call."
     hint_key="glob-ls"
 fi
 
