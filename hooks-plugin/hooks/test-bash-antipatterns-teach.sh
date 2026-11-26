@@ -139,6 +139,12 @@ echo "ls with glob:"
 assert_emits "ls *.md emits Glob hint" "ls *.md" "Glob tool"
 
 echo ""
+echo "Grep/Glob hints are conditional on the tool existing (#3858):"
+assert_emits "Grep hint gives the no-Grep-tool fallback" "rg foo --type ts" "no Grep tool"
+assert_emits "find Glob hint gives the no-Glob-tool fallback" "find . -name '*.ts'" "no Glob tool"
+assert_emits "ls Glob hint gives the no-Glob-tool fallback" "ls *.md" "no Glob tool"
+
+echo ""
 echo "long pipeline nudge (demoted from the hard block, #1873/#2051/#2052):"
 assert_emits "6-pipe cat-headed text-scrape emits long-pipeline hint" \
     "cat f.log | grep a | grep -v b | awk '{print}' | sort | uniq -c | sort -rn" \
