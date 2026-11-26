@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-11-10
+modified: 2026-11-26
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -33,16 +33,13 @@ Supporting material is split across `references/` by the path that needs it;
 
 ## Dispatch from the Main Thread When Possible
 
-`Agent` and other parallel-spawn tools may be absent from a sub-agent's sandbox
-even when available in the main conversation, so designing a fan-out from inside
-a coordinating sub-agent risks silent degradation to sequential execution.
+A sub-agent may lack `Agent` and the other spawn tools, so a fan-out designed
+inside one can silently degrade to sequential execution.
 
-- **Default**: dispatch from the main conversation — the full tool surface is
-  guaranteed.
-- **Sub-agent orchestrator**: only when the team's outputs need not feed back
-  into the main thread. Brief it to verify tool availability up front and report
-  sequential fallback as a first-class outcome (`agent-teams` → "Sub-Agent
-  Caveat").
+- **Default**: dispatch from the main conversation.
+- **Sub-agent orchestrator**: only when its outputs need not feed back into the
+  main thread. Brief it to check tool availability first and report a
+  sequential fallback as an outcome (`agent-teams` → "Sub-Agent Caveat").
 
 ## The Three Pillars
 
@@ -314,9 +311,8 @@ intact: a pre-commit hook blocking `git commit`, or a rate-limit cut-off after
 the implementation but before the StructuredOutput call (issue
 [#1491](https://github.com/laurigates/claude-plugins/issues/1491)).
 
-Defensive mitigation: instruct worktree-isolated agents to commit
-**WIP at checkpoints** — after each substantive slice and before they would
-terminate — so partial work survives a lost structured result. See
+Mitigation: have worktree agents commit **WIP at checkpoints** so partial work
+survives a lost structured result. See
 [references/failure-recovery.md → Agent stalled at commit / push](references/failure-recovery.md#agent-stalled-at-commit--push--salvage-routine)
 and [references/failure-recovery.md → WIP salvage before re-dispatch](references/failure-recovery.md#wip-salvage-before-re-dispatch-1491).
 
@@ -348,27 +344,21 @@ a guarantee. **Start conservative, then scale up:**
 | Heavy (installs / builds / long tool chains) | **2–3** |
 | Light (read-only analysis, single-file edits) | up to 5 |
 
-Prefer **sequential waves of small batches** over one big fan-out beyond ~4
-heavy agents, and treat the rate-limit signal as **backoff-and-retry, not task
-failure** — re-dispatch rejected agents with backoff *and reduced concurrency*.
-When the burst killed agents **at startup**, the dead worktrees leave empty
-branch refs behind: `git worktree prune` and delete them before the retry, or
-each agent's `git switch -c <branch>` collides with the leftover ref.
-See [references/failure-recovery.md → Concurrent rate-limit recovery](references/failure-recovery.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
+Prefer **sequential waves of small batches** beyond ~4 heavy agents, and treat
+the rate-limit signal as **backoff-and-retry with reduced concurrency, not task
+failure**. Agents killed at startup leave empty branch refs: `git worktree
+prune` and delete them before the retry. See
+[references/failure-recovery.md → Concurrent rate-limit recovery](references/failure-recovery.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
 and `.claude/rules/skill-fork-context.md`.
 
 ## Skill-less agentType for Read-Only Fan-Out
 
-For read-only / structured-output fan-out — classification, verification, audit
-sweeps where each agent **reads files and emits a result, nothing more** —
-dispatch a **Skill-less agentType** rather than `general-purpose`. A
-`general-purpose` subagent carries the `Skill` tool, which injects a
-**`skill_listing` attachment (~88k chars / ~22k tokens)** plus a
-`deferred_tools_delta` (~3k tokens) *before its first tool call*; add file reads
-and a forced `StructuredOutput` schema and that ~25k fixed tax pushes the
-subagent over its window (`Prompt is too long`, 40–100% batch failures — issue
-[#1549](https://github.com/laurigates/claude-plugins/issues/1549)). Agents
-without the `Skill` tool receive **no `skill_listing` injection at all**.
+For read-only / structured-output fan-out (classify, verify, audit: each agent
+reads files and emits a result), dispatch a **Skill-less agentType**, not
+`general-purpose`. A `Skill`-bearing subagent receives a ~25k-token
+`skill_listing` + `deferred_tools_delta` before its first tool call, which
+pushed read-only classifiers over their window (`Prompt is too long`, 40–100%
+batch failures, issue [#1549](https://github.com/laurigates/claude-plugins/issues/1549)).
 
 | Fan-out need | agentType | Why |
 |---|---|---|
@@ -383,18 +373,16 @@ sibling authoring guidance is in `custom-agent-definitions`.
 
 ## Composition with agent-teams
 
-`agent-teams` covers the implicit-team / SendMessage / TaskUpdate mechanics; this
-skill adds the dispatch-time contract that applies to both team and non-team
-fan-out. When both apply, follow both — the out-of-scope protocol from
-`agent-teams` slots into the `Issues encountered` / `Deferred` sections here.
+`agent-teams` covers the team / SendMessage / TaskUpdate mechanics; this skill
+adds the dispatch contract. Follow both: `agent-teams`' out-of-scope protocol
+fills the `Issues encountered` / `Deferred` sections here.
 
 ### Resuming agents: SendMessage re-enters only a kept worktree
 
-The harness keeps a completed agent's worktree only if the agent left changes
-in it. A `SendMessage`-resume re-enters a kept worktree; when the worktree was
-removed, the resume runs in the orchestrator's main checkout and
-**loses worktree isolation** ([#1546](https://github.com/laurigates/claude-plugins/issues/1546);
-measured in [references/worktree-hazards.md](references/worktree-hazards.md), #2330).
+A worktree is kept only if the agent left changes in it; a resume after it was
+removed runs in the main checkout and **loses worktree isolation**
+([#1546](https://github.com/laurigates/claude-plugins/issues/1546);
+[references/worktree-hazards.md](references/worktree-hazards.md), #2330).
 
 | Continuation | Do |
 |---|---|
@@ -403,25 +391,14 @@ measured in [references/worktree-hazards.md](references/worktree-hazards.md), #2
 
 ### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents
 
-`Workflow({resumeFromRunId})`'s "completed `agent()` calls return cached
-results" holds for ordinary agents but **not** for `isolation: "worktree"`
-ones: a worktree agent that **already succeeded** is **re-executed** on resume,
-re-firing its outward side effects — an agent that opened a PR opens a
-**duplicate** (PR #1858 dup of #1857; issue
-[#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Opposite
-failure to the `SendMessage` case above (there the resume loses its worktree;
-here it re-runs the whole agent).
-
-Claude Code 2.1.305 says resume no longer re-runs completed `pipeline()` and
-`parallel()` agents and serves them from the run's journal. That is unverified
-here for worktree agents, so the guidance in this section stands until a
-resume on 2.1.305+ is shown not to re-open a PR.
-
-So to retry a few failed worktree agents, do **not** resume the whole run —
-**re-dispatch only the failed agents** in a fresh **sequential** pass (which
-also dodges the burst rate limit), checking for an already-open PR first
-(`gh pr list --state all --search …`, reading `state`/`mergedAt` per
-`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly.
+`Workflow({resumeFromRunId})` serves ordinary agents from cache, but a worktree
+agent that **already succeeded** is **re-executed** and re-fires its side
+effects: an agent that opened a PR opens a **duplicate** (PR #1858 dup of #1857;
+issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). The
+2.1.305 journal fix is unverified for worktree agents. To retry a few failed
+worktree agents, **re-dispatch only those** in a fresh **sequential** pass,
+after checking no PR is already open (`gh pr list --state all --search …`). See
+[references/failure-recovery.md → Concurrent rate-limit recovery](references/failure-recovery.md#concurrent-rate-limit-risk--recovery-dispatch-routine).
 
 ## Quick Reference
 
