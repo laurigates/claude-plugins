@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-26
 reviewed: 2026-04-25
 name: container-development
-description: "Container development — Docker, multi-stage builds, Skaffold, non-root users, Alpine/slim images, security hardening. Use when working with Docker, Dockerfiles, docker-compose, or container security."
+description: "Dockerfiles and containers — multi-stage builds, non-root, slim images, CVE/Trivy fixes in a base image. Use when writing or patching a Dockerfile, docker-compose, or a container scan finding."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(docker build *), Bash(docker images *), Bash(docker history *), Bash(docker scout cves *), Bash(docker inspect *), Bash(head *), Bash(jq *), Bash(trivy image *), Bash(grype *), Bash(dive *), Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
@@ -20,6 +20,7 @@ Expert knowledge for containerization and orchestration with focus on **security
 | Authoring multi-stage build patterns or 12-factor configuration | The image-size goal is dominated by language runtime choices (scratch, distroless, musl/glibc) |
 | Hardening containers (non-root, minimal base, secrets) | Running Skaffold sync (`skaffold-filesync`) or OrbStack networking (`skaffold-orbstack`) |
 | Composing services with Docker Compose | The work is purely a Skaffold pre-deploy test (`skaffold-testing`) |
+| Fixing a CVE or Trivy finding, or a stale CA bundle, in an existing Dockerfile | — |
 
 ## Security Philosophy (Non-Negotiable)
 
@@ -154,6 +155,10 @@ Start from the annotated builder/runtime template in [references/multi-stage-tem
 - Favor Skaffold over Docker Compose for local development
 - Continuous development loop with hot reload
 - Production-like local environment
+
+## Patching a Base Image for a CVE
+
+When a scan flags a package whose fix is published but the base tag predates it, bump the base tag if upstream has rebuilt it; otherwise upgrade the package in place **and fail the build if the installed version is still old**, since `apt-get install --only-upgrade` exits 0 when the fix is not in an enabled repository. Runtimes with their own root store (Python `certifi`, Java `cacerts`, Node.js) are not fixed by the OS `ca-certificates` package. Snippets, the verify step and the removal comment: [references/cve-patching.md](references/cve-patching.md).
 
 ## Container Labels (OCI Annotations)
 

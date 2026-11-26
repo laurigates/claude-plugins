@@ -23,6 +23,7 @@ Expert knowledge for containerization and orchestration with a focus on security
 - Security-first philosophy (mandatory non-root users, minimal base images)
 - Multi-stage Docker builds for production-ready images
 - Image optimization and vulnerability scanning
+- Patching a base image for a CVE or Trivy finding, with a build-time version check
 - 12-factor app compliance
 - Comprehensive reference documentation
 
@@ -30,6 +31,7 @@ Expert knowledge for containerization and orchestration with a focus on security
 - Working with Docker, Dockerfiles, or Containerfiles
 - Building container images
 - Implementing container security best practices
+- Fixing a scan finding or a stale CA bundle in an existing Dockerfile
 - Following 12-factor app principles
 - Optimizing container builds
 

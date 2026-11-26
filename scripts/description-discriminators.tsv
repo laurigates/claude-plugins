@@ -40,3 +40,8 @@ foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	require	^Local file
 foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	forbid	spinning up	standing a module up end to end is foundryvtt-module's trigger
 foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	require	gitops-adopted	the gitops adoption is what the scaffold does not do
 foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	forbid	releas	the body says a due release belongs to release-please, not this skill
+#
+# container-plugin: the CVE/Trivy patching trigger (#3824). Container work in real
+# sessions was patching scan findings in existing Dockerfiles, not authoring new ones.
+container-plugin/skills/container-development/SKILL.md	require	CVE/Trivy	scan-finding fixes in an existing Dockerfile route here (#3824)
+container-plugin/skills/container-development/SKILL.md	require	patching a Dockerfile	the edit-an-existing-Dockerfile intent, not only authoring (#3824)
