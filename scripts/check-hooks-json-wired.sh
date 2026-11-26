@@ -71,12 +71,16 @@ print(f"MANIFESTS={len(manifests)}")
 print(f"ROOT_HOOKS_JSON={with_root_hooks}")
 if not manifests:
     print("STATUS=ERROR")
+    print("REASON=nothing_scanned: no *-plugin/.claude-plugin/plugin.json found")
     print("TYPE=nothing_scanned")
     print("=== END HOOKS JSON WIRED ===")
     sys.exit(1)
 print(f"ISSUE_COUNT={len(issues)}")
 if issues:
+    kind, plugin, msg = issues[0]
+    more = f" (+{len(issues) - 1} more)" if len(issues) > 1 else ""
     print("STATUS=ERROR")
+    print(f"REASON={kind}: {msg}{more}")
     print("ISSUES:")
     for kind, plugin, msg in issues:
         print(f"  - SEVERITY=ERROR TYPE={kind} PLUGIN={plugin} MSG={msg}")
