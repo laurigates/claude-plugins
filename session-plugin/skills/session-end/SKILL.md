@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Runs reversible wrap/distill/taskwarrior work at once, asks once for outward filings. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-11-19
+modified: 2026-11-26
 reviewed: 2026-06-24
 ---
 
@@ -14,7 +14,7 @@ reviewed: 2026-06-24
 One survey, then the reversible work runs immediately and the
 outward-facing work waits for **one** question at the end — so a user who
 starts `/session-end` and walks away comes back to finished work and at
-most one question. This is the orchestrator
+most one question, followed by a handoff prompt for the next session. This is the orchestrator
 over the six end-of-session passes, which otherwise compete for the wind-down
 moment (design decisions D3/D4, `docs/archive/session-plugin-workflow.md`).
 
@@ -138,7 +138,7 @@ jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-
 For why all three are required and the safe default for a missing `enabled`
 key, see [REFERENCE.md](REFERENCE.md).
 
-If **nothing** qualifies, say so in one line and end — no question.
+If **nothing** qualifies, say so in one line and skip to Step 6 — no question.
 
 #### Backlog is reported, never walked
 
@@ -231,7 +231,8 @@ Then run the approved items:
 Never end the turn on a freeform "y/n" text question — ending the turn
 fires Stop hooks mid-confirmation (the race that motivated this
 orchestrator). AskUserQuestion keeps the turn open. Where `AskUserQuestion`
-is unavailable (a harness without the tool), ask in plain text and end the
+is unavailable (a harness without the tool), ask in plain text, print the
+Step 6 handoff prompt with the pending items under `Open items`, and end the
 turn.
 
 ### Step 5: Report
@@ -239,6 +240,19 @@ turn.
 One short block: what each pass wrote (tasks touched / closed with UUIDs,
 files edited, issues and PRs filed), which passes were skipped as not
 qualifying, the backlog line, and any `not queried` line.
+
+### Step 6: Handoff prompt
+
+End every run with a copyable prompt that continues the work in a new
+session, even when no pass qualified. Write it now, from the conversation
+and the Step 1–5 results, while the cache is warm: asked for later, it is
+built from a cold cache or a compacted summary. Print it as the last thing
+in the final message, one fenced `text` block, self-contained (full repo
+names, branches, PR and issue numbers, file paths, task UUIDs), covering the
+goal, current state, repos and branches, PRs and issues, key files,
+decisions made, open items (including Ask-lane items declined or
+unanswered), and next steps. The template and rules are in
+[references/handoff-prompt.md](references/handoff-prompt.md).
 
 ## Seam: distill vs feedback vs workflow capture
 

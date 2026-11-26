@@ -378,7 +378,18 @@ Feedback files its findings minus any workflow friction already filed.
 
 Print the pending Ask-lane items before the question, then ask once for the
 DEFERRED: lines. On a resume with no recorded answer, re-ask; that re-ask
-does not count as a second round.'
+does not count as a second round.
+
+If nothing qualifies, say so in one line and skip to Step 6.
+
+### Step 5: Report
+
+One short block.
+
+### Step 6: Handoff prompt
+
+End every run with a handoff prompt, printed as the last thing in the final
+message; template in references/handoff-prompt.md.'
 
 # --- The regression: old two-field form (no enabled check) must FAIL --------
 rm -rf "${root:?}/$PLUGIN/skills/headingonly"
@@ -470,6 +481,27 @@ run_check; out_resume="$OUT"; rc_resume="$RC"
 assert_eq "session-end: Step 4 without resume re-ask exits 1" "$rc_resume" "1"
 assert_contains "session-end: missing resume re-ask is named" \
   "$out_resume" "Step 4 must retain 'does not count as a second round'"
+# --- Handoff prompt: dropping Step 6 must FAIL ------------------------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/\#\#\# Step 6: Handoff prompt/### Notes}"
+run_check; out_ho="$OUT"; rc_ho="$RC"
+assert_eq "session-end: no Step 6 handoff exits 1" "$rc_ho" "1"
+assert_contains "session-end: missing Step 6 handoff is named" \
+  "$out_ho" "must end with '### Step 6: Handoff prompt' after Step 5"
+# --- Handoff prompt: made conditional (not every run) must FAIL -------------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/End every run with/When asked, end with}"
+run_check; out_hoc="$OUT"; rc_hoc="$RC"
+assert_eq "session-end: conditional handoff exits 1" "$rc_hoc" "1"
+assert_contains "session-end: conditional handoff is named" \
+  "$out_hoc" "Step 6 must retain 'End every run'"
+# --- Handoff prompt: nothing-qualifies exit ending before it must FAIL ------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill "$GATE3" "${SESSION_END_LANES_OK/say so in one line and skip to Step 6/say so in one line and end}"
+run_check; out_hon="$OUT"; rc_hon="$RC"
+assert_eq "session-end: nothing-qualifies exit skipping handoff exits 1" "$rc_hon" "1"
+assert_contains "session-end: nothing-qualifies exit is named" \
+  "$out_hon" "the nothing-qualifies exit must skip to Step 6"
 rm -rf "${root:?}/$PLUGIN/skills/session-end"
 make_session_end_skill "$GATE3"
 
