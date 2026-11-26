@@ -238,6 +238,19 @@ Never fabricate an identifier you are about to test against: take it from the sy
 - `sed -n` extraction of the shipped text, and borrowing a control set when yours is empty
 - `chmod +x` + `command -v` + an unmistakable sentinel for stubbed CLIs
 
+#### `local-run-handoff`
+Hand a probe, test or bug repro to the user's own machine as a one-command bundle (`just run <slug>`), and read the verdict back from `results/summary.txt` instead of asking for pasted output.
+
+**When to use:**
+- A check needs the user's workstation, OS, signed-in account, marketplace install or hardware
+- A repro must be confirmed on a real install, or carried to another machine or upstream
+
+**Features:**
+- `scripts/new-probe.sh` scaffolds a dated bundle with a control arm, verdict codes and `.handoff.json`
+- A fixed verdict contract: one `STATUS=` line, exit `0` decided / `1` ERROR / `2` INCONCLUSIVE / `3` SKIP
+- Return channels behind a secret scan: PR comment, `SendMessage` to a local session, opt-in `--clip`
+- `just list` and `just archive` (decided probes older than 14 days), `REQUIRES_OS` guard for Mac vs Linux
+
 #### `adversarial-review`
 Adversarial second-pass review that tries to break code, designs, plans, or ADRs — a thin posture (isolation, inverted objective, triage gate, bounded loop) layered on top of the existing domain review skills.
 

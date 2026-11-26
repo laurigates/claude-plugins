@@ -1,0 +1,21 @@
+# Local-run probes. Each probe is a dated directory with run.sh, README.md and results/.
+# Scaffolded by agent-patterns-plugin:local-run-handoff.
+
+default:
+    @just --list
+
+# Run a probe by slug: just run <slug> [--clip] [--no-notify]
+run slug *flags:
+    bash lib/probes.sh run {{slug}} {{flags}}
+
+# Table of probes: status, age, ref
+list:
+    bash lib/probes.sh list
+
+# Slug of the newest probe
+latest:
+    @bash lib/probes.sh latest
+
+# Move decided probes older than N days into archive/
+archive days="14":
+    bash lib/probes.sh archive {{days}}

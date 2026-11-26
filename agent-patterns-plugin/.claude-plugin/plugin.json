@@ -30,6 +30,9 @@
     "multi-model",
     "pal",
     "code-review",
-    "execution-grounded-review"
+    "execution-grounded-review",
+    "local-run-handoff",
+    "probes",
+    "repro"
   ]
 }
