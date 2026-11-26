@@ -12,7 +12,8 @@
 #   Q3  Does PreCompact fire inside a subagent, with an agent_id?    (HOOK_PreCompact, PRECOMPACT_WITH_AGENT_ID)
 #
 # Auth: the fake HOME has no login, so this sources CLAUDE_CODE_OAUTH_TOKEN (or
-# ANTHROPIC_API_KEY) from the environment or ~/.api_tokens (`claude setup-token`).
+# ANTHROPIC_API_KEY) from the environment or, through fnox, the OS keychain
+# (`claude setup-token`, then `fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN`).
 #
 # Usage: ctx-probe.sh [--models "opus[1m] sonnet[1m]"] [--arms "on off"] [--pct 10]
 #                     [--files 30] [--kb 40] [--run-id ID] [--results-root DIR] [--dry-run]
@@ -57,11 +58,9 @@ claude_bin="$(command -v claude || true)"
 [ -n "$claude_bin" ] || [ "$dry_run" -eq 1 ] || { echo "STATUS=missing_dependency DEP=claude"; exit 1; }
 
 if [ "$dry_run" -eq 0 ]; then
-  if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -f "$HOME/.api_tokens" ]; then
-    set +e +u; set -a
-    # shellcheck disable=SC1091
-    . "$HOME/.api_tokens" 2>/dev/null
-    set +a; set -e -u
+  if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ] && command -v fnox >/dev/null 2>&1; then
+    CLAUDE_CODE_OAUTH_TOKEN="$(fnox get CLAUDE_CODE_OAUTH_TOKEN 2>/dev/null || true)"
+    export CLAUDE_CODE_OAUTH_TOKEN
   fi
   if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
     echo "STATUS=no_auth (set CLAUDE_CODE_OAUTH_TOKEN via 'claude setup-token', or ANTHROPIC_API_KEY)"

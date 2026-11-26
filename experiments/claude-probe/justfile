@@ -25,7 +25,7 @@ run-full filter="*" runs="3":
     bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
 
 # Config-isolation sweep: clean-slate vs plugins-only vs full.
-# Needs CLAUDE_CODE_OAUTH_TOKEN in ~/.api_tokens (run `claude setup-token` once).
+# Needs CLAUDE_CODE_OAUTH_TOKEN exported or in the keychain via fnox (`claude setup-token` once).
 [group: "run"]
 run-config filter="*" runs="3":
     bash scripts/run-config.sh --filter "{{filter}}" --runs "{{runs}}"

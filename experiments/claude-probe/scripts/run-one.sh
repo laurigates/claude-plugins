@@ -115,7 +115,7 @@ if [ "$PROBE_CONFIG" != "full" ] \
    && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] \
    && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
   echo "ERROR: config=$PROBE_CONFIG needs CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) in env" >&2
-  echo "       run: claude setup-token   (then export CLAUDE_CODE_OAUTH_TOKEN=...)" >&2
+  echo "       run: claude setup-token   (then fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN, and run via run-config.sh)" >&2
   exit 1
 fi
 

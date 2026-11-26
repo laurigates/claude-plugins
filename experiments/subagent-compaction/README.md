@@ -101,8 +101,8 @@ Mechanics:
 ## Usage
 
 Requires `claude`, `jq`, `awk`, `sha256sum`, and a subscription token
-(`claude setup-token`, then `CLAUDE_CODE_OAUTH_TOKEN` in the environment or
-`~/.api_tokens`) or `ANTHROPIC_API_KEY`, since the fake `HOME` has no login.
+(`claude setup-token`, then `CLAUDE_CODE_OAUTH_TOKEN` exported or stored with
+`fnox -c ~/.config/fnox/local.toml set CLAUDE_CODE_OAUTH_TOKEN`) or `ANTHROPIC_API_KEY`, since the fake `HOME` has no login.
 
 ```sh
 # From the repo root (module) or this directory
