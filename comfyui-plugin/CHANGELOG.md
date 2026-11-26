@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.10](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.9...comfyui-plugin-v1.15.10) (2026-11-26)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** exclude .mcp.json from the scaffold's .comfyignore ([#3840](https://github.com/laurigates/claude-plugins/issues/3840)) ([f913f06](https://github.com/laurigates/claude-plugins/commit/f913f065bfc9e90de929deacd73d7b29a35678a2)), closes [#3838](https://github.com/laurigates/claude-plugins/issues/3838)
+
 ## [1.15.9](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.15.8...comfyui-plugin-v1.15.9) (2026-11-23)
 
 
