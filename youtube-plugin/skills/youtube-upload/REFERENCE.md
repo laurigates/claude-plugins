@@ -31,7 +31,8 @@ repository.
    code on a loopback redirect
    ([OAuth for installed apps](https://developers.google.com/youtube/v3/guides/auth/installed-apps)).
 6. **Point the script at it.** Store the JSON outside any repository with mode
-   0600, and export its path, for example from `~/.api_tokens`:
+   0600, and export its path (a path, not a secret, so a shell profile or a
+   mise `[env]` block is fine):
    ```
    export YOUTUBE_CLIENT_SECRETS="$HOME/.config/youtube-plugin/client_secret.json"
    ```
