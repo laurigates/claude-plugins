@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.5...container-plugin-v2.12.0) (2026-11-26)
+
+
+### Features
+
+* **container-plugin:** route CVE/Trivy base-image fixes to container-development ([#3843](https://github.com/laurigates/claude-plugins/issues/3843)) ([e7a4947](https://github.com/laurigates/claude-plugins/commit/e7a4947cdf9654716e0802ed91c8234af83a7edf)), closes [#3824](https://github.com/laurigates/claude-plugins/issues/3824)
+
 ## [2.11.5](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.4...container-plugin-v2.11.5) (2026-11-16)
 
 
