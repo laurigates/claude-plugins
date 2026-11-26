@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.76.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.2...git-plugin-v2.76.3) (2026-11-26)
+
+
+### Documentation
+
+* inject workstation secrets per command instead of exporting them ([#3862](https://github.com/laurigates/claude-plugins/issues/3862)) ([30f6b89](https://github.com/laurigates/claude-plugins/commit/30f6b89ebef673a90b0316d0429d6279c5296834))
+
 ## [2.76.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.1...git-plugin-v2.76.2) (2026-11-26)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.9](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.8...github-actions-plugin-v1.13.9) (2026-11-26)
+
+
+### Documentation
+
+* inject workstation secrets per command instead of exporting them ([#3862](https://github.com/laurigates/claude-plugins/issues/3862)) ([30f6b89](https://github.com/laurigates/claude-plugins/commit/30f6b89ebef673a90b0316d0429d6279c5296834))
+
 ## [1.13.8](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.7...github-actions-plugin-v1.13.8) (2026-11-16)
 
 

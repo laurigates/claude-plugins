@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.20.1...session-plugin-v1.21.0) (2026-11-26)
+
+
+### Features
+
+* **session-plugin:** end session-end with a handoff prompt ([#3861](https://github.com/laurigates/claude-plugins/issues/3861)) ([cf0b7a7](https://github.com/laurigates/claude-plugins/commit/cf0b7a76db822df120fd5f985aa3bbe53f8f288e))
+
 ## [1.20.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.20.0...session-plugin-v1.20.1) (2026-11-25)
 
 

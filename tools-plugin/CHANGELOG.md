@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.16.2...tools-plugin-v2.16.3) (2026-11-26)
+
+
+### Documentation
+
+* inject workstation secrets per command instead of exporting them ([#3862](https://github.com/laurigates/claude-plugins/issues/3862)) ([30f6b89](https://github.com/laurigates/claude-plugins/commit/30f6b89ebef673a90b0316d0429d6279c5296834))
+
 ## [2.16.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.16.1...tools-plugin-v2.16.2) (2026-11-16)
 
 

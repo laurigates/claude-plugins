@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.6...hooks-plugin-v2.22.7) (2026-11-26)
+
+
+### Documentation
+
+* inject workstation secrets per command instead of exporting them ([#3862](https://github.com/laurigates/claude-plugins/issues/3862)) ([30f6b89](https://github.com/laurigates/claude-plugins/commit/30f6b89ebef673a90b0316d0429d6279c5296834))
+
 ## [2.22.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.5...hooks-plugin-v2.22.6) (2026-11-25)
 
 
