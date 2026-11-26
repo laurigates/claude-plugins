@@ -1261,6 +1261,18 @@ repos:
         language: system
         files: '^scripts/(check-hook-matchers\.sh|tests/test-check-hook-matchers\.sh)$'
         pass_filenames: false
+      - id: check-hooks-json-wired
+        name: every root-level plugin hooks.json is named by plugin.json "hooks" (else it never loads)
+        entry: bash ./scripts/check-hooks-json-wired.sh
+        language: system
+        files: '([^/]*-plugin/(hooks\.json|\.claude-plugin/plugin\.json)|^scripts/check-hooks-json-wired\.sh)$'
+        pass_filenames: false
+      - id: test-check-hooks-json-wired
+        name: hooks.json wiring guard regression (unwired root hooks.json flagged, empty tree errors)
+        entry: bash ./scripts/tests/test-check-hooks-json-wired.sh
+        language: system
+        files: '^scripts/(check-hooks-json-wired\.sh|tests/test-check-hooks-json-wired\.sh)$'
+        pass_filenames: false
       - id: check-hook-timeout-units
         name: plugin hook timeouts are seconds, not milliseconds (>= 1000 flagged)
         entry: bash ./scripts/check-hook-timeout-units.sh

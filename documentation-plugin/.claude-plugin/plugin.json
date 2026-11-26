@@ -16,5 +16,6 @@
     "latex",
     "pdf",
     "tikz"
-  ]
+  ],
+  "hooks": "./hooks.json"
 }
