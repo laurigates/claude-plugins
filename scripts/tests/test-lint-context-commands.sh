@@ -64,7 +64,9 @@ mkdir -p "$workdir/which-ctx/skills/probe" \
          "$workdir/escaped-quote/skills/probe" \
          "$workdir/plain-quote/skills/probe" \
          "$workdir/name-slash/skills/probe" \
-         "$workdir/name-noslash/skills/probe"
+         "$workdir/name-noslash/skills/probe" \
+         "$workdir/home-ctx/skills/probe" \
+         "$workdir/home-body/skills/probe"
 
 # A fixture: the #2145 shape, verbatim.
 cat > "$workdir/which-ctx/skills/probe/SKILL.md" <<'EOF'
@@ -168,6 +170,35 @@ name: probe
 - Rules: !`find . -maxdepth 3 -name '*.md' -path './.claude/rules/*'`
 EOF
 
+# M fixture: a Context command on a home-directory path (both spellings).
+cat > "$workdir/home-ctx/skills/probe/SKILL.md" <<'EOF'
+---
+name: probe
+---
+## Context
+
+- Plugins: !`find ~/.claude/plugins -maxdepth 1`
+- Settings: !`jq . $HOME/.claude/settings.json`
+EOF
+
+# N fixture: $HOME/ and ~/ outside a Context command line (#3854).
+cat > "$workdir/home-body/skills/probe/SKILL.md" <<'EOF'
+---
+name: probe
+---
+## Context
+
+- Branch: !`git branch --show-current`
+
+## Layout
+
+```
+$LOCAL_PROBES_DIR/  # default $HOME/claude-probes
+```
+
+Results land in ~/claude-probes or $HOME/claude-probes by default.
+EOF
+
 run_lint() {
   # Run the linter with the fixture dir as cwd; capture output and exit code.
   ( cd "$workdir/$1" && bash "$linter" 2>&1 )
@@ -243,6 +274,18 @@ assert "K: -path rewrites and slash-free -name patterns are NOT flagged" "$k_ok"
 l_hits="$(grep -c '\[find-name-slash\]' <<<"$e_out" || true)"
 [ "$l_hits" -eq 0 ] && l_ok=true || l_ok=false
 assert "L: no Context find -name pattern in any SKILL.md contains a slash (found $l_hits)" "$l_ok"
+
+# M. Context command on ~/ or $HOME/ -> ERROR [home-dir-in-context] on both lines
+m_out="$(run_lint home-ctx)"
+m_rc="$(lint_rc home-ctx)"
+m_hits="$(grep -c 'ERROR \[home-dir-in-context\]' <<<"$m_out" || true)"
+[ "$m_hits" -eq 2 ] && [ "$m_rc" -eq 1 ] && m_ok=true || m_ok=false
+assert "M: Context ~/ and \$HOME/ commands are ERROR [home-dir-in-context] (found $m_hits)" "$m_ok"
+
+# N. $HOME/ in fenced code or prose -> not flagged (#3854: unanchored alternation)
+n_out="$(run_lint home-body)"
+grep -q 'All context commands OK' <<<"$n_out" && n_ok=true || n_ok=false
+assert "N: \$HOME/ and ~/ outside a Context command are NOT flagged (#3854)" "$n_ok"
 
 echo "----"
 echo "PASS=$pass_count FAIL=$fail_count"

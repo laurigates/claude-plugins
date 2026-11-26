@@ -163,9 +163,11 @@ check_pattern ERROR \
 
 # find/jq on home-directory paths blocked by sandbox (only working directories allowed)
 # Regression: health-check used `find ~/.claude/plugins ...` which was blocked by sandbox security (PR #TBD)
+# The alternation is grouped: an ungrouped \| left the $HOME/ branch unanchored,
+# so it matched fenced code and prose anywhere in a skill (issue #3854).
 check_pattern ERROR \
   "home-dir-in-context" \
-  '^- .*!`[^`]*[[:space:]]~/\|[[:space:]]\$HOME/' \
+  '^- .*!`[^`]*[[:space:]]\(~\|\$HOME\)/' \
   "remove home-directory context commands; check home-dir files during execution steps instead"
 
 # gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
