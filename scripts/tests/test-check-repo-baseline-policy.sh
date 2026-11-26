@@ -164,6 +164,16 @@ printf '%s\n' '"args": ["--from", "git+https://github.com/owner/repo.git", "pala
   > "$l2/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
 out_l2="$(bash "$check" --project-dir "$l2")"
 assert_has "a policy server package in a git+ registration flagged doc_restates_policy_server" "$out_l2" "TYPE=doc_restates_policy_server MSG=agent-patterns-plugin/skills/mcp-demo/SKILL.md:1"
+# The pre-rename name (#3826): a git+ registration under `pal-mcp-server`
+# restates the policy's pal entry just as much as one under the current name.
+l4="$tmp_root/l4"
+make_fixture "$l4" "$(policy_with '.')"
+mkdir -p "$l4/agent-patterns-plugin/skills/mcp-demo"
+printf '%s\n' '"args": ["--from", "git+https://github.com/owner/repo.git", "pal-mcp-server"]' \
+  > "$l4/agent-patterns-plugin/skills/mcp-demo/SKILL.md"
+out_l4="$(bash "$check" --project-dir "$l4")"
+assert_has "the pre-rename pal-mcp-server in a git+ registration flagged doc_restates_policy_server" "$out_l4" "TYPE=doc_restates_policy_server MSG=agent-patterns-plugin/skills/mcp-demo/SKILL.md:1 registers pal-mcp-server"
+assert_strict_fails "a git+ pal-mcp-server registration fails --strict" "$l4"
 l3="$tmp_root/l3"
 make_fixture "$l3" "$(policy_with '.')"
 mkdir -p "$l3/agent-patterns-plugin/skills/mcp-demo"

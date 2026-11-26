@@ -24,7 +24,8 @@
 #   5. Zero skill docs scanned is ERROR nothing_scanned, not a silent OK.
 #   6. No *-plugin/skills/**/*.md outside configure-plugin restates a policy
 #      mcpServers entry: a `"<server>": {` key, or a git+ line naming a policy
-#      server's package (#3321). Prose and manual-start lines stay allowed.
+#      server's package or PAL's pre-rename `pal-mcp-server` (#3321, #3826).
+#      Prose and manual-start lines stay allowed.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md).
@@ -186,6 +187,12 @@ else
     jq -r '(.mcpServers // {})[] | [.args[]? | select(startswith("-") | not)] | last // empty' "$policy" \
       | sed -E 's/(.)@[^@\/]*$/\1/'
   )
+  # PAL's package before the rename to palaver-mcp-server
+  # (laurigates/palaver-mcp-server#95). The policy names only the current
+  # package, so the old one is matched here too, as laurigates/gitops's
+  # reconciler does with its PAL_PACKAGES tuple (#3826).
+  pal_pre_rename_package="pal-mcp-server"
+  mcp_packages+=("$pal_pre_rename_package")
   mapfile -t mcp_doc_files < <(
     cd "$proj_dir" && find . -path './.claude' -prune -o -path './configure-plugin' -prune \
       -o -type f -name '*.md' -path './*-plugin/skills/*' -print | sed 's|^\./||' | sort
