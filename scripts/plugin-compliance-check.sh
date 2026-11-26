@@ -1019,6 +1019,28 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression: a handoff prompt asked for after session-end is built
+      # from a cold cache or a compacted summary, so session-end writes it
+      # itself. Invariants: Step 6 exists after Step 5, it runs on every run
+      # and prints last, and the nothing-qualifies exit still reaches it.
+      report_line=$(grep -n '^### Step 5: Report' "$skill_file" | head -1 | cut -d: -f1)
+      handoff_line=$(grep -n '^### Step 6: Handoff prompt' "$skill_file" | head -1 | cut -d: -f1)
+      if [ -z "$report_line" ] || [ -z "$handoff_line" ] || [ "$handoff_line" -lt "$report_line" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must end with '### Step 6: Handoff prompt' after Step 5 (the handoff is written while the cache is warm)")
+        has_errors=true
+      else
+        handoff_section=$(awk '/^### Step 6: Handoff prompt/{f=1; next} /^##+ /{f=0} f' "$skill_file")
+        for token in "End every run" "last thing" "references/handoff-prompt.md"; do
+          if ! grep -qF -- "$token" <<<"$handoff_section"; then
+            issues+=("❌ ${plugin}/${skill_name}: Step 6 must retain '${token}' (handoff prompt on every run, printed last)")
+            has_errors=true
+          fi
+        done
+      fi
+      if ! grep -qF -- "qualifies, say so in one line and skip to Step 6" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: the nothing-qualifies exit must skip to Step 6, not end before the handoff prompt")
+        has_errors=true
+      fi
     fi
     if [ "$skill_name" = "session-wrap" ] || [ "$skill_name" = "session-distill" ] || [ "$skill_name" = "session-workflow-capture" ]; then
       for token in "--orchestrated" "DEFERRED:"; do
