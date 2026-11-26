@@ -26,7 +26,7 @@ The same bundle format carries bug repros.
 ## Bundle contract
 
 ```
-$CLAUDE_PROBES_DIR/            # default $HOME/claude-probes
+$LOCAL_PROBES_DIR/             # unset: claude-probes/ in the home directory
   justfile                     # run <slug> [--clip] [--no-notify], list, latest, archive [days]
   lib/report.sh                # sourced by every run.sh: header, verdict, outbound channels
   lib/probes.sh                # run/list/archive logic behind the justfile
@@ -56,7 +56,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/new-probe.sh --slug <slug> --question "<the one
 
 Add `--repro` for a bug repro (codes `REPRODUCED` / `NOT_REPRODUCED`), or
 `--codes 'CODE=meaning;CODE=meaning'` for custom verdicts. Pass `--root` when
-`CLAUDE_PROBES_DIR` is unset and the user has a preferred folder; ask once and
+`LOCAL_PROBES_DIR` is unset and the user has a preferred folder; ask once and
 offer to save the answer as a rule in their own config.
 
 Where the bundle is written depends on where the agent runs:

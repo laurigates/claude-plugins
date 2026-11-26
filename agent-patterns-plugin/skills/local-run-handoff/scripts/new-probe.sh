@@ -6,7 +6,7 @@
 #                [--repro] [--notify-pr <owner/repo#N>] [--notify-session <name>]
 #                [--requester <text>] [--root <dir>] [--date YYYYMMDD] [--update-lib]
 #
-# Root: --root, else $CLAUDE_PROBES_DIR, else $HOME/claude-probes. The root's
+# Root: --root, else $LOCAL_PROBES_DIR, else $HOME/claude-probes. The root's
 # justfile and lib/ are written on first use and refreshed only with --update-lib.
 # Output: === NEW PROBE === block with PROBE_DIR=, RUN=, STATUS=.
 set -uo pipefail
@@ -14,7 +14,7 @@ set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 tpl="$here/../templates"
 
-np_root="${CLAUDE_PROBES_DIR:-$HOME/claude-probes}"
+np_root="${LOCAL_PROBES_DIR:-$HOME/claude-probes}"
 np_slug="" np_question="" np_ref="" np_os="any" np_codes="" np_repro=0
 np_pr="" np_session="" np_requester="" np_date="" np_update_lib=0
 
