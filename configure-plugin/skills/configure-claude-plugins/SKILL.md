@@ -61,6 +61,8 @@ Parse from command arguments:
 
 If `--plugins` is not specified, add the plugins of every [policy](../../policy/repo-baseline.json) stack whose `detect` matches the repo root, then the workflow plugins per indicator from [references/plugin-selection.md](references/plugin-selection.md); with no indicator, use the default set (`git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin`).
 
+Then evaluate each stack's `detect` one directory level down (Glob `*/<file>` for each `files` entry, `*/<glob>` for each `globs` entry). A stack that matches there but not at the root is a **candidate stack**: add none of its plugins, and list it in the Step 6 report with the directory that matched and the plugins it would add, so the user can opt in ([detect rules](references/settings-json.md#applying-the-repo-baseline-policy)).
+
 Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
 ### Step 3: Configure .claude/settings.json

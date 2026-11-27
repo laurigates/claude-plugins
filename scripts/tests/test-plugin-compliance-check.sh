@@ -1214,6 +1214,12 @@ printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.jso
 # the skill probes; and the permissions baseline wrote `Bash(git:*)`,
 # `Bash(gh:*)` and `Bash(python3:*)`, which auto mode drops. The `max-turns`,
 # `owner-constant`, `probe` and `broad-permission` mutations put each back.
+#
+# Issue #3728: stack detection read the repo root only, so a Rust service in
+# `server/` got no stack plugin and nothing told the user. The decision keeps
+# root matches as the only auto-selection and reports one-level-down matches as
+# candidate stacks. The `candidate-step2` and `candidate-report` mutations drop
+# the Step 2 instruction and the Step 6 report line.
 cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
 ccp_dir="$root/$PLUGIN/skills/configure-claude-plugins"
 mkdir -p "$tmp/ccp-orig"
@@ -1223,8 +1229,10 @@ run_check; out_ccp="$OUT"; rc_ccp="$RC"
 assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
 assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
 assert_absent "configure-claude-plugins: the shipped skill raises no #3536 issue" "$out_ccp" "#3536"
+assert_absent "configure-claude-plugins: the shipped skill raises no #3728 issue" "$out_ccp" "#3728"
 
-for ccp_mutation in plugins-comment id-token bot-guard max-turns owner-constant probe broad-permission; do
+for ccp_mutation in plugins-comment id-token bot-guard max-turns owner-constant probe broad-permission \
+    candidate-step2 candidate-report; do
   rm -rf "${ccp_dir:?}" && mkdir -p "$ccp_dir" && cp -R "$tmp/ccp-orig/." "$ccp_dir/"
   python3 - "$ccp_dir" "$ccp_mutation" <<'PY'
 import os
@@ -1234,6 +1242,10 @@ skill, mutation = sys.argv[1:3]
 path = os.path.join(skill, "references", "workflow-templates.md")
 if mutation == "broad-permission":
     path = os.path.join(skill, "references", "settings-json.md")
+elif mutation == "candidate-step2":
+    path = os.path.join(skill, "SKILL.md")
+elif mutation == "candidate-report":
+    path = os.path.join(skill, "references", "report-template.md")
 text = open(path, encoding="utf-8").read()
 
 def once(old, new):
@@ -1264,6 +1276,10 @@ elif mutation == "probe":
     text = text.replace(probe, "repos/acme/.github/contents/.github/workflows")
 elif mutation == "broad-permission":
     text = once('"Bash(git status *)"', '"Bash(git:*)"')
+elif mutation in ("candidate-step2", "candidate-report"):
+    word = "candidate stack" if mutation == "candidate-step2" else "Candidate stacks"
+    assert word in text, "fixture precondition: %r not in the shipped file" % word
+    text = text.replace(word, "subdirectory match")
 open(path, "w", encoding="utf-8").write(text)
 PY
   run_check; out_ccp_red="$OUT"; rc_ccp_red="$RC"
@@ -1276,6 +1292,8 @@ PY
     owner-constant) ccp_needle="names a fixed owner" ;;
     probe) ccp_needle="must probe repos/<owner>/.github" ;;
     broad-permission) ccp_needle="broad permission 'Bash(git:*)'" ;;
+    candidate-step2) ccp_needle="SKILL.md Step 2 must report one-level-down stack matches" ;;
+    candidate-report) ccp_needle="report-template.md must carry a 'Candidate stacks' line" ;;
   esac
   assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named" \
     "$out_ccp_red" "$ccp_needle"
