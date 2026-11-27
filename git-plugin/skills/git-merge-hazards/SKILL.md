@@ -77,13 +77,10 @@ Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
 
-Triage each red check in this order before judging it
-([references/merge-over-red-triage.md](references/merge-over-red-triage.md) has the commands):
-
-1. **Zero steps** (`gh api repos/<o>/<r>/actions/jobs/<id> --jq '.steps|length'` is 0): the job never ran, so the check is no signal. Read its annotation (`github-actions-plugin:actions-billing-usage`) and re-run once the block lifts.
-2. **Behind** (`compare/<default>...<head>` `behind_by` > 0): `gh pr update-branch`, then re-judge on the fresh run.
-3. **Stale rollup entry**: judge each check name by its latest `completedAt`, not by any red entry.
-4. **The two conditions**: the diff cannot break the check, and the same check already fails on `main`. When `main` has no recent run, re-run `main`'s latest run of that workflow, after grepping the workflow for publish, release or deploy steps.
+Triage a red check first, in order: a zero-step job is no signal; a PR behind
+its base is updated and re-judged; each check name is judged by its latest
+entry; then the two conditions in this section
+([references/merge-over-red-triage.md](references/merge-over-red-triage.md)).
 
 `mergeStateStatus` separates **required** failing checks (`BLOCKED` — merge
 refused) from merely-present ones (`UNSTABLE` — plain `gh pr merge` works), so

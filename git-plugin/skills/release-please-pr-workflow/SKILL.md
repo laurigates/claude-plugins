@@ -55,7 +55,6 @@ gh pr view <number> --json title,mergeable,mergeStateStatus
 | `CLEAN` / `MERGEABLE` | Ready to merge | Merge immediately |
 | `UNKNOWN` | GitHub computing | Wait 5-10 seconds, retry |
 | `DIRTY` / `CONFLICTING` | Has conflicts | Close and wait for recreation |
-| `BEHIND` | Behind base, no conflicts | [references/behind-release-pr.md](references/behind-release-pr.md) |
 
 ### Merge PRs
 
@@ -86,7 +85,7 @@ gh pr close <number> --comment "Closing due to conflicts from merged PRs. Releas
 # Trigger workflow (if workflow_dispatch enabled)
 gh workflow run release-please.yml
 
-# Otherwise, wait for push trigger or new commit
+# Otherwise wait for the next push
 ```
 
 ## Conflict Resolution Strategy
@@ -126,7 +125,7 @@ gh pr list --label "autorelease: pending" --json number,mergeable,mergeStateStat
 gh pr close 45 --comment "Closing for recreation"
 gh pr close 46 --comment "Closing for recreation"
 
-# Wait for recreation (5-10 seconds typically)
+# Wait for recreation (~5-10 s)
 sleep 5
 
 # Round 3: Check new PRs
@@ -192,7 +191,7 @@ gh pr view <number> --json mergeable,mergeStateStatus
 | `UNKNOWN` | Status being computed | Wait 5-10 seconds |
 | `DIRTY` | Has conflicts | Close PR |
 | `BLOCKED` | Branch protection blocking | Check required checks |
-| `BEHIND` | Branch is behind base | Update branch, wait for checks, merge pinned to the new head ([references/behind-release-pr.md](references/behind-release-pr.md)) |
+| `BEHIND` | Branch is behind base | [Update and merge](references/behind-release-pr.md) |
 
 ### mergeable Values
 
