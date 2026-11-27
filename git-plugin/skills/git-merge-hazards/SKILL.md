@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-11-25
+modified: 2026-11-27
 reviewed: 2026-08-21
 ---
 
@@ -76,6 +76,14 @@ branch is gone **cannot be reopened**.
 Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form, the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
+
+Triage each red check in this order before judging it
+([references/merge-over-red-triage.md](references/merge-over-red-triage.md) has the commands):
+
+1. **Zero steps** (`gh api repos/<o>/<r>/actions/jobs/<id> --jq '.steps|length'` is 0): the job never ran, so the check is no signal. Read its annotation (`github-actions-plugin:actions-billing-usage`) and re-run once the block lifts.
+2. **Behind** (`compare/<default>...<head>` `behind_by` > 0): `gh pr update-branch`, then re-judge on the fresh run.
+3. **Stale rollup entry**: judge each check name by its latest `completedAt`, not by any red entry.
+4. **The two conditions**: the diff cannot break the check, and the same check already fails on `main`. When `main` has no recent run, re-run `main`'s latest run of that workflow, after grepping the workflow for publish, release or deploy steps.
 
 `mergeStateStatus` separates **required** failing checks (`BLOCKED` — merge
 refused) from merely-present ones (`UNSTABLE` — plain `gh pr merge` works), so
