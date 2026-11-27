@@ -228,6 +228,39 @@
         "review",
         "inline"
       ]
+    },
+    {
+      "id": "ccp-008",
+      "description": "A stack one directory down is reported as a candidate, not enabled",
+      "prompt": "/configure:claude-plugins --fix --no-workflows\n\nThe repo root holds package.json and no .claude/settings.json yet. A server/ directory holds Cargo.toml and a Dockerfile; nothing else matches. `git remote -v` shows github.com/acme/app. Print the .claude/settings.json you would write and the Step 6 report.",
+      "expectations": [
+        {
+          "assertion": "Enables the root stack's plugin",
+          "check": "regex",
+          "pattern": "\"typescript-plugin@laurigates-claude-plugins\"\\s*:\\s*true"
+        },
+        {
+          "assertion": "Does not enable the Rust stack found only in server/",
+          "check": "absent_regex",
+          "pattern": "\"rust-plugin@laurigates-claude-plugins\"\\s*:\\s*true"
+        },
+        {
+          "assertion": "Does not enable the container stack found only in server/",
+          "check": "absent_regex",
+          "pattern": "\"container-plugin@laurigates-claude-plugins\"\\s*:\\s*true"
+        },
+        {
+          "assertion": "Reports the subdirectory match as a candidate stack",
+          "check": "regex",
+          "pattern": "candidate stacks?",
+          "flags": "i"
+        },
+        "Names server/ and the plugins the rust and container stacks would add, and says how to opt in"
+      ],
+      "tags": [
+        "detection",
+        "candidate-stacks"
+      ]
     }
   ]
 }

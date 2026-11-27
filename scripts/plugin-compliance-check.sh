@@ -733,6 +733,18 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#3728): stack detection read the repo root only, so a
+      # stack one directory down (a Rust service in `server/`) got no plugin
+      # and the report said nothing. Root matches stay the only auto-selection;
+      # one-level-down matches are reported as candidate stacks to opt in to.
+      if ! grep -qF 'matches the repo root' "$skill_file" || ! grep -qF 'candidate stack' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 2 must report one-level-down stack matches as candidate stacks and auto-select root matches only (issue #3728)")
+        has_errors=true
+      fi
+      if ! grep -qF 'Candidate stacks' "$(dirname "$skill_file")/references/report-template.md"; then
+        issues+=("❌ ${plugin}/${skill_name}: references/report-template.md must carry a 'Candidate stacks' line for one-level-down matches (issue #3728)")
+        has_errors=true
+      fi
     fi
 
     # Regression: configure-mcp's REFERENCE.md says a `pal` entry in a

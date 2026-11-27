@@ -2,7 +2,7 @@
 
 Used by Step 2 (Select plugins) of `/configure:claude-plugins` when `--plugins` is not specified.
 
-1. **Stack plugins come from the policy.** Each entry in the `stacks` array of [`configure-plugin/policy/repo-baseline.json`](../../../policy/repo-baseline.json) whose `detect` matches the repo root adds its `plugins`, including any official LSP plugin it names. Detection rules and the never-flip-`false` rule: [settings-json.md](settings-json.md#applying-the-repo-baseline-policy).
+1. **Stack plugins come from the policy.** Each entry in the `stacks` array of [`configure-plugin/policy/repo-baseline.json`](../../../policy/repo-baseline.json) whose `detect` matches the repo root adds its `plugins`, including any official LSP plugin it names. A match one directory down adds nothing and is reported as a candidate stack (SKILL.md Step 2). Detection rules and the never-flip-`false` rule: [settings-json.md](settings-json.md#applying-the-repo-baseline-policy).
 2. **Add the workflow plugins by indicator:**
 
 | Project Indicator | Recommended Plugins |
