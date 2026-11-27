@@ -1207,33 +1207,64 @@ printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.jso
 # guard, and claude-code-action refuses Bot actors not in `allowed_bots`, so
 # the job went red on every release-please and Renovate PR. The `bot-guard`
 # mutation drops the review job's `if:` guard and expects the check to name it.
+#
+# Issue #3536: the standalone review template kept `--max-turns 5`, which died
+# with `error_max_turns` at `num_turns 6` on nearly every PR; the caller
+# templates named one owner's `.github` repo as a constant instead of the owner
+# the skill probes; and the permissions baseline wrote `Bash(git:*)`,
+# `Bash(gh:*)` and `Bash(python3:*)`, which auto mode drops. The `max-turns`,
+# `owner-constant`, `probe` and `broad-permission` mutations put each back.
 cp -R "$REPO_ROOT/configure-plugin/skills/configure-claude-plugins" "$root/$PLUGIN/skills/"
-ccp_ref="$root/$PLUGIN/skills/configure-claude-plugins/references/workflow-templates.md"
-cp "$ccp_ref" "$tmp/ccp-ref.orig"
+ccp_dir="$root/$PLUGIN/skills/configure-claude-plugins"
+mkdir -p "$tmp/ccp-orig"
+cp -R "$ccp_dir/." "$tmp/ccp-orig/"
 
 run_check; out_ccp="$OUT"; rc_ccp="$RC"
 assert_eq "configure-claude-plugins: the shipped workflow templates exit 0" "$rc_ccp" "0"
 assert_absent "configure-claude-plugins: the shipped templates raise no #3443 issue" "$out_ccp" "#3443"
+assert_absent "configure-claude-plugins: the shipped skill raises no #3536 issue" "$out_ccp" "#3536"
 
-for ccp_mutation in plugins-comment id-token bot-guard; do
-  python3 - "$tmp/ccp-ref.orig" "$ccp_ref" "$ccp_mutation" <<'PY'
+for ccp_mutation in plugins-comment id-token bot-guard max-turns owner-constant probe broad-permission; do
+  rm -rf "${ccp_dir:?}" && mkdir -p "$ccp_dir" && cp -R "$tmp/ccp-orig/." "$ccp_dir/"
+  python3 - "$ccp_dir" "$ccp_mutation" <<'PY'
+import os
+import re
 import sys
-src, dst, mutation = sys.argv[1:4]
-text = open(src, encoding="utf-8").read()
+skill, mutation = sys.argv[1:3]
+path = os.path.join(skill, "references", "workflow-templates.md")
+if mutation == "broad-permission":
+    path = os.path.join(skill, "references", "settings-json.md")
+text = open(path, encoding="utf-8").read()
+
+def once(old, new):
+    # The mutation must land on exactly one site, or it may miss the one under test.
+    assert text.count(old) == 1, "fixture precondition: %r occurs %d times" % (old, text.count(old))
+    return text.replace(old, new)
+
 if mutation == "plugins-comment":
     anchor = "          plugins: |\n"
     assert anchor in text, "fixture precondition: no `plugins: |` line in the shipped reference"
     text = text.replace(anchor, anchor + "            # a comment line inside the block scalar\n", 1)
 elif mutation == "bot-guard":
-    guard = "    if: github.event.pull_request.user.type != 'Bot'\n"
-    assert guard in text, "fixture precondition: review template has no bot guard"
-    text = text.replace(guard, "", 1)
-else:
-    review = text.index("name: Claude Code Review")
+    text = once("    if: github.event.pull_request.user.type != 'Bot'\n", "")
+elif mutation == "id-token":
+    review = text.index("name: Claude Code Review\n")
     head, tail = text[:review], text[review:]
-    assert "  id-token: write\n" in tail, "fixture precondition: review template has no id-token: write"
-    text = head + tail.replace("  id-token: write\n", "", 1)
-open(dst, "w", encoding="utf-8").write(text)
+    tail, hits = re.subn(r"^[ \t]+id-token: write\n", "", tail, count=1, flags=re.M)
+    assert hits == 1, "fixture precondition: review template has no id-token: write"
+    text = head + tail
+elif mutation == "max-turns":
+    text = once('--effort medium --max-turns 50"', '--effort medium --max-turns 5"')
+elif mutation == "owner-constant":
+    text = once("uses: <owner>/.github/.github/workflows/reusable-claude-review.yml@main",
+                "uses: acme/.github/.github/workflows/reusable-claude-review.yml@main")
+elif mutation == "probe":
+    probe = "repos/<owner>/.github/contents/.github/workflows"
+    assert probe in text, "fixture precondition: no owner probe in the shipped reference"
+    text = text.replace(probe, "repos/acme/.github/contents/.github/workflows")
+elif mutation == "broad-permission":
+    text = once('"Bash(git status *)"', '"Bash(git:*)"')
+open(path, "w", encoding="utf-8").write(text)
 PY
   run_check; out_ccp_red="$OUT"; rc_ccp_red="$RC"
   assert_eq "configure-claude-plugins: reintroducing ${ccp_mutation} exits 1" "$rc_ccp_red" "1"
@@ -1241,6 +1272,10 @@ PY
     plugins-comment) ccp_needle="inside its plugins: block scalar" ;;
     id-token) ccp_needle="without id-token: write" ;;
     bot-guard) ccp_needle="no guard against Bot-authored pull requests" ;;
+    max-turns) ccp_needle="sets claude-code-action --max-turns below 50" ;;
+    owner-constant) ccp_needle="names a fixed owner" ;;
+    probe) ccp_needle="must probe repos/<owner>/.github" ;;
+    broad-permission) ccp_needle="broad permission 'Bash(git:*)'" ;;
   esac
   assert_contains "configure-claude-plugins: reintroducing ${ccp_mutation} is named" \
     "$out_ccp_red" "$ccp_needle"
