@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-27
 reviewed: 2026-04-25
 name: python-packaging
 description: Build and publish Python packages with uv. Use when the user mentions building packages, publishing to PyPI, wheel/sdist creation, or entry points.
@@ -190,6 +190,10 @@ uv publish --publish-url https://test.pypi.org/legacy/ \
 # Test installation
 pip install --index-url https://test.pypi.org/simple/ my-package
 ```
+
+### Renaming a Published Package
+
+Trusted publishers, per-project publish steps, a tombstone release under the old name, holding the release PR, and verification: [REFERENCE.md](REFERENCE.md#renaming-a-published-package).
 
 ## Package Classifiers
 
