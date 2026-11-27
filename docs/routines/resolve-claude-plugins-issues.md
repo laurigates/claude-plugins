@@ -138,6 +138,16 @@ For each labelled issue, fetch all comments
 - **later** = every comment after the anchor. Since none of them carry your
   footer, they are the owner's.
 
+**A decision record is the owner's reply, never the anchor** (#3787). An
+interactive session that records an answer Lauri gave elsewhere signs the record
+with the same footer. A footer-signed comment whose
+first line starts with `Decision (Lauri,` is therefore the owner's answer: skip
+it when you pick the anchor, and count it in **later**. Older records start
+`## Decision recorded (Lauri,` and count the same way. A comment that only quotes that prefix
+further down is not a record. Your own question posted *after* a record (a
+duplicate re-ask) does not hide it: when the newest record is newer than the
+newest marker comment that precedes it, take branch (c) against the record.
+
 Then, per NEEDS-DECISION issue, exactly one of four branches:
 
 **(a) Not yet labelled** — add the label and post ONE comment. The comment must

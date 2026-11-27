@@ -137,6 +137,12 @@ require "$PROMPT" "Answer recorded, work deferred:" \
 require "$PROMPT" "Reserve the literal phrase" \
     "prompt lost the reservation of 'Proceeding on:' for actual unblocking"
 
+# (5b) A footer-signed decision record written by an interactive session is the
+#      owner's answer, not the Routine's anchor (#3787). Without this, every
+#      recorded decision reads as an unanswered question and takes branch (b).
+require "$PROMPT" "first line starts with \`Decision (Lauri,\`" \
+    "prompt lost the decision-record rule (recorded decisions read as the Routine's own anchor again, #3787)"
+
 # (6) Non-silent default: every labelled issue is accounted for.
 require "$PROMPT" "must account for every labelled issue" \
     "prompt lost the run-summary accounting requirement (silence becomes undetectable again)"
