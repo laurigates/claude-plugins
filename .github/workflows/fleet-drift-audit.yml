@@ -57,7 +57,7 @@ jobs:
       # end to file the issue.
       - name: Ensure label and check for existing open issue
         id: check_issue
-        uses: ./.github/actions/script-to-issue
+        uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
           label: fleet-drift
           color: b60205
@@ -141,7 +141,7 @@ jobs:
       # semantics that do not belong in shared code.
       - name: Create fleet-drift issue
         if: steps.check_issue.outputs.exists == 'false'
-        uses: ./.github/actions/script-to-issue
+        uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
           label: fleet-drift
           color: b60205

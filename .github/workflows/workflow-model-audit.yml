@@ -68,7 +68,7 @@ jobs:
       # closed below.
       - name: Check for existing open issue
         id: check_issue
-        uses: ./.github/actions/script-to-issue
+        uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
           label: workflow-model-audit
           # The title this job's Claude prompt files. Without it, any open issue that

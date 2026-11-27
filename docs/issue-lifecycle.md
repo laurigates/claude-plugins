@@ -42,10 +42,10 @@ turns that around.
 
 | Step | Mechanism |
 |---|---|
-| Only this period's report blocks the run | `scripts/script-to-issue-guard.sh --current-title`, through the composite's `supersede: 'true'` input or the workflow's own guard |
+| Only this period's report blocks the run | The guard of the shared `script-to-issue` action in `laurigates/.github` (`guard.sh --current-title`), through its `supersede: 'true'` input or the workflow's own guard |
 | Script-built reports carry forward by recomputation | The audit script re-detects whatever is still wrong, so an unfixed item reappears in the new report |
 | Claude-written reports carry forward explicitly | The workflow writes the previous report to `previous-report.md`, and the prompt lists its still-open recommendations under `### Carried forward from #N` |
-| Earlier reports close after the new one is filed | `scripts/close-superseded-reports.sh`, which closes nothing if the new report is missing, and closes them with `--clean` when the run found nothing |
+| Earlier reports close after the new one is filed | `scripts/close-superseded-reports.sh` here (the shared action carries its own copy), which closes nothing if the new report is missing, and closes them with `--clean` when the run found nothing |
 
 A finding that needs more than a month of work belongs in its own issue, filed
 from the report, so it does not depend on being carried forward.

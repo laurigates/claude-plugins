@@ -424,7 +424,7 @@ repos:
         name: every machine-filed issue body states who processes it and when it closes (#3346)
         entry: ./scripts/check-issue-processing.sh
         language: script
-        files: '^(\.github/(workflows/.*\.ya?ml|actions/script-to-issue/action\.yml)|docs/issue-lifecycle\.md|feedback-plugin/skills/feedback-session/references/issue-format\.md|scripts/(check-issue-processing\.sh|issue-grouping-exempt\.txt))$'
+        files: '^(\.github/workflows/.*\.ya?ml|docs/issue-lifecycle\.md|feedback-plugin/skills/feedback-session/references/issue-format\.md|scripts/(check-issue-processing\.sh|issue-grouping-exempt\.txt))$'
         pass_filenames: false
       - id: test-check-issue-processing
         name: issue-processing guard regression
