@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-11-13
+modified: 2026-11-27
 reviewed: 2026-06-10
 name: git-pr
 description: "From an already-pushed branch: open the pull request with body, labels, reviewers and issue refs. Use when the user says \"create PR\", \"open pull request\", or \"submit for review\"."
@@ -196,6 +196,8 @@ Status: Open
 | Branch not pushed | Push first or use main-branch pattern |
 | PR exists | `gh pr view` or `gh pr edit` |
 | No commits | Commit changes first |
+
+Opening PRs from a script across many repos (`--head`, `update-branch` retry, fixer re-stage): [REFERENCE.md](REFERENCE.md#scripted-multi-repo-prs).
 
 ## Quick Reference
 
