@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.59.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.59.0...agent-patterns-plugin-v2.59.1) (2026-11-27)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** bring parallel-agent-dispatch under the size ceiling ([1b336ee](https://github.com/laurigates/claude-plugins/commit/1b336eee7c640f6c68194a61e32d3b10e881acdf)), closes [#3732](https://github.com/laurigates/claude-plugins/issues/3732)
+
 ## [2.59.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.58.7...agent-patterns-plugin-v2.59.0) (2026-11-26)
 
 

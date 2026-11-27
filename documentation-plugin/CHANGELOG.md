@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.16.1...documentation-plugin-v1.16.2) (2026-11-27)
+
+
+### Bug Fixes
+
+* **documentation-plugin:** load the public-repo leak gate hooks ([0c428c4](https://github.com/laurigates/claude-plugins/commit/0c428c41c208a40b04932b7f166989aa4cb573fe)), closes [#3794](https://github.com/laurigates/claude-plugins/issues/3794)
+
 ## [1.16.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.16.0...documentation-plugin-v1.16.1) (2026-11-16)
 
 

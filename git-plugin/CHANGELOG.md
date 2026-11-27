@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.77.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.77.0...git-plugin-v2.77.1) (2026-11-27)
+
+
+### Documentation
+
+* **git-plugin:** add merge-over-red triage to git-merge-hazards ([992afd2](https://github.com/laurigates/claude-plugins/commit/992afd25bcd4007c157a7a2439cb47924bdb3206)), closes [#3844](https://github.com/laurigates/claude-plugins/issues/3844)
+* **git-plugin:** document merging a BEHIND release-please PR ([84567bc](https://github.com/laurigates/claude-plugins/commit/84567bca5aed11f83f524e7165df628b99dd985c)), closes [#3841](https://github.com/laurigates/claude-plugins/issues/3841)
+* **git-plugin:** document scripted multi-repo PRs in git-pr ([0a69aad](https://github.com/laurigates/claude-plugins/commit/0a69aadb8f69df8a90ae3519667e626e46010e00)), closes [#3845](https://github.com/laurigates/claude-plugins/issues/3845)
+* **git-plugin:** guard gh-workflow-monitoring watches against early return ([fbf73ed](https://github.com/laurigates/claude-plugins/commit/fbf73eda531b63a3063369150c2070b71b994cfc)), closes [#3846](https://github.com/laurigates/claude-plugins/issues/3846)
+* **git-plugin:** keep two SKILL.md bodies under their 10,000-char pins ([8abae2e](https://github.com/laurigates/claude-plugins/commit/8abae2e0192dd40655ab965bea44638d7e043891)), closes [#3844](https://github.com/laurigates/claude-plugins/issues/3844) [#3841](https://github.com/laurigates/claude-plugins/issues/3841)
+
 ## [2.77.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.76.3...git-plugin-v2.77.0) (2026-11-26)
 
 
