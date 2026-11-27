@@ -21,11 +21,13 @@ Git remote:            <PRESENT|MISSING>
 
 .github/workflows/claude.yml:
   Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
+  Layout:              <CALLER (<owner>/.github reusable-claude.yml)|INLINE>
   Marketplace:         laurigates/claude-plugins
   Plugins:             <list>
 
 .github/workflows/claude-code-review.yml:
   Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
+  Layout:              <CALLER (<owner>/.github reusable-claude-review.yml)|INLINE>
   Trigger:             PR opened/synchronize/reopened
 
 Next Steps:

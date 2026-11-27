@@ -30,7 +30,7 @@ Pick `--exhaustive` for repos that need a self-documenting, drift-resistant plug
 Always include these common entries:
 
 ```json
-"Bash(git:*)", "Bash(gh:*)", "Bash(pre-commit:*)", "Bash(gitleaks:*)", "Bash(python3:*)"
+"Bash(git status *)", "Bash(git diff *)", "Bash(gh pr *)", "Bash(gh issue *)", "Bash(pre-commit:*)", "Bash(gitleaks:*)"
 ```
 
 Add stack-specific entries based on detected project type:
@@ -45,7 +45,7 @@ Add stack-specific entries based on detected project type:
 | ESP-IDF / embedded | `"Bash(idf.py:*)"`, `"Bash(esptool:*)"`, `"Bash(clang-format:*)"`, `"Bash(cppcheck:*)"`, `"Bash(docker:*)"`, `"Bash(docker compose:*)"`, `"Bash(just:*)"`, `"Bash(make:*)"` |
 | ESPHome | `"Bash(esphome:*)"`, `"Bash(uv:*)"`, `"Bash(uvx:*)"` |
 
-Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
+Use narrow subcommand patterns only. Auto mode drops broad and interpreter allow rules (`Bash(bash *)`, a `python3` wildcard), so the baseline names the git and gh subcommands an agent runs most, and anything else falls through to the normal permission prompt or classifier.
 
 ## Applying the repo baseline policy
 

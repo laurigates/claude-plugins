@@ -468,8 +468,14 @@ PY
 #   bot-guard        the workflow triggers on pull_request but the job has no
 #                    `github.event.pull_request.user.type` guard and the step no
 #                    `allowed_bots`; the action refuses Bot actors (issue #3726)
+#   max-turns        the step's `claude_args` sets `--max-turns` below 50, the
+#                    reusable review's default; `--max-turns 5` died with
+#                    error_max_turns at num_turns 6 on nearly every PR (#3536)
+#   owner-constant   a job calls `<x>/.github/.github/workflows/*claude*` with a
+#                    fixed owner instead of the `<owner>` the skill probes (#3536)
 # A fence that does not parse, or is not a workflow, is skipped (issue #3443).
 IFS= read -r -d '' CLAUDE_WORKFLOW_TEMPLATE_PY <<'PY' || true
+import re
 import sys
 import yaml
 
@@ -509,6 +515,9 @@ for path, start, end, lang in sorted(fences):
             perms = job.get("permissions", doc.get("permissions"))
             if not (perms == "write-all" or (isinstance(perms, dict) and perms.get("id-token") == "write")):
                 print(f"{path}:{start}\tid-token\t{job_name}")
+            owner = re.match(r"([^/]+)/\.github/\.github/workflows/", called)
+            if owner and owner.group(1) != "<owner>":
+                print(f"{path}:{start}\towner-constant\t{job_name}")
         for step in job.get("steps") or []:
             if not isinstance(step, dict):
                 continue
@@ -523,6 +532,9 @@ for path, start, end, lang in sorted(fences):
             if on_pr and "pull_request.user.type" not in str(job.get("if", "")) \
                     and "allowed_bots" not in (step.get("with") or {}):
                 print(f"{path}:{start}\tbot-guard\t{job_name}")
+            turns = re.search(r"--max-turns[ =](\d+)", str((step.get("with") or {}).get("claude_args", "")))
+            if turns and int(turns.group(1)) < 50:
+                print(f"{path}:{start}\tmax-turns\t{job_name}")
 PY
 
 check_skill_body() {
@@ -696,12 +708,31 @@ check_skill_body() {
           case "$ccp_kind" in
             id-token) ccp_hit="job '${ccp_job}' runs claude-code-action (directly or through a reusable workflow) without id-token: write in its permissions (the action fetches its token through OIDC) (issue #3443)" ;;
             bot-guard) ccp_hit="job '${ccp_job}' runs claude-code-action on pull_request with no guard against Bot-authored pull requests (add \`if: github.event.pull_request.user.type != 'Bot'\` or \`allowed_bots\`; the action refuses Bot actors) (issue #3726)" ;;
+            max-turns) ccp_hit="job '${ccp_job}' sets claude-code-action --max-turns below 50 (the reusable review's default; --max-turns 5 died with error_max_turns at num_turns 6) (issue #3536)" ;;
+            owner-constant) ccp_hit="job '${ccp_job}' calls a reusable Claude workflow that names a fixed owner; use the <owner> the skill probes (issue #3536)" ;;
             *) ccp_hit="job '${ccp_job}' has a '#' line inside its plugins: block scalar (content, not a YAML comment; read as a plugin name) (issue #3443)" ;;
           esac
           issues+=("❌ ${plugin}/${skill_name}: workflow fence at ${ccp_where}: ${ccp_hit}")
         done <<<"$ccp_hits"
         has_errors=true
       fi
+      # Regression (#3536): the templates hard-coded one owner's reusable
+      # workflows, so a repo outside that owner got a caller it cannot reach.
+      # The skill probes `<owner>/.github` once and emits callers only when
+      # the reusables are there. And the permissions baseline wrote broad
+      # git/gh rules and an interpreter wildcard, which auto mode drops.
+      local ccp_tpl ccp_rule
+      ccp_tpl="$(dirname "$skill_file")/references/workflow-templates.md"
+      if ! grep -qF 'repos/<owner>/.github/contents/.github/workflows' "$ccp_tpl"; then
+        issues+=("❌ ${plugin}/${skill_name}: references/workflow-templates.md must probe repos/<owner>/.github/contents/.github/workflows to choose caller or inline (issue #3536)")
+        has_errors=true
+      fi
+      for ccp_rule in 'Bash(git:*)' 'Bash(gh:*)' 'Bash(python3:*)'; do
+        if grep -qF -- "$ccp_rule" "$skill_file" "$settings_ref"; then
+          issues+=("❌ ${plugin}/${skill_name}: the permissions baseline lists broad permission '${ccp_rule}', which auto mode drops; use narrow subcommand rules (issue #3536)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: configure-mcp's REFERENCE.md says a `pal` entry in a

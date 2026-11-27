@@ -71,7 +71,7 @@
     {
       "id": "ccp-003",
       "description": "Merging into existing settings keeps hooks and env and adds no duplicate permission",
-      "prompt": "/configure:claude-plugins --fix --no-workflows --plugins git-plugin\n\nThe existing .claude/settings.json is:\n\n{\n  \"permissions\": { \"allow\": [\"Bash(git:*)\"] },\n  \"env\": { \"FOO\": \"bar\" },\n  \"hooks\": { \"PreToolUse\": [ { \"matcher\": \"Bash\", \"hooks\": [ { \"type\": \"command\", \"command\": \"./scripts/guard.sh\" } ] } ] }\n}\n\nPrint the complete resulting file.",
+      "prompt": "/configure:claude-plugins --fix --no-workflows --plugins git-plugin\n\nThe existing .claude/settings.json is:\n\n{\n  \"permissions\": { \"allow\": [\"Bash(git status *)\"] },\n  \"env\": { \"FOO\": \"bar\" },\n  \"hooks\": { \"PreToolUse\": [ { \"matcher\": \"Bash\", \"hooks\": [ { \"type\": \"command\", \"command\": \"./scripts/guard.sh\" } ] } ] }\n}\n\nPrint the complete resulting file.",
       "expectations": [
         {
           "assertion": "Keeps the existing PreToolUse hook",
@@ -89,9 +89,14 @@
           "value": "git-plugin@laurigates-claude-plugins"
         },
         {
-          "assertion": "Lists Bash(git:*) only once in an allow array",
+          "assertion": "Lists Bash(git status *) only once in an allow array",
           "check": "absent_regex",
-          "pattern": "\"allow\"\\s*:\\s*\\[[^\\]]*Bash\\(git:\\*\\)[^\\]]*Bash\\(git:\\*\\)"
+          "pattern": "\"allow\"\\s*:\\s*\\[[^\\]]*Bash\\(git status \\*\\)[^\\]]*Bash\\(git status \\*\\)"
+        },
+        {
+          "assertion": "Adds no broad git, gh or python3 rule (auto mode drops them)",
+          "check": "absent_regex",
+          "pattern": "Bash\\((git|gh|python3):\\*\\)"
         }
       ],
       "tags": [
@@ -101,8 +106,8 @@
     },
     {
       "id": "ccp-004",
-      "description": "A scaffolded claude.yml pins model and effort and uses the marketplace suffix",
-      "prompt": "/configure:claude-plugins --fix --plugins git-plugin,testing-plugin\n\nThe repo has a GitHub remote and no .github/workflows yet. Show the .github/workflows/claude.yml you would create.",
+      "description": "No reusable workflow at <owner>/.github: the inline claude.yml pins model and effort and uses the marketplace suffix",
+      "prompt": "/configure:claude-plugins --fix --plugins git-plugin,testing-plugin\n\nThe repo has a GitHub remote, github.com/acme/api, and no .github/workflows yet. `gh api repos/acme/.github/contents/.github/workflows` returns HTTP 404. Show the .github/workflows/claude.yml you would create.",
       "expectations": [
         {
           "assertion": "Pins the model",
@@ -158,6 +163,70 @@
       "tags": [
         "abstain",
         "impossible-task"
+      ]
+    },
+    {
+      "id": "ccp-006",
+      "description": "The owner's .github serves the reusable review: claude-code-review.yml is a caller with a job-level permissions block",
+      "prompt": "/configure:claude-plugins --fix --plugins code-quality-plugin,testing-plugin\n\nThe repo has a GitHub remote, github.com/acme/api, and no .github/workflows yet. `gh api repos/acme/.github/contents/.github/workflows --jq '.[].name'` prints:\n\nreusable-claude-review.yml\nreusable-claude.yml\n\nThe reusable review declares top-level permissions contents: read, pull-requests: write, issues: write, id-token: write, actions: read. Show the .github/workflows/claude-code-review.yml you would create.",
+      "expectations": [
+        {
+          "assertion": "Calls the owner's reusable review workflow",
+          "check": "regex",
+          "pattern": "uses:\\s*acme/\\.github/\\.github/workflows/reusable-claude-review\\.yml@"
+        },
+        {
+          "assertion": "Grants id-token: write in a job-level permissions block",
+          "check": "regex",
+          "pattern": "\\n {4}permissions:[ \\t]*\\n(?: {6}[a-z-]+: (?:read|write)[ \\t]*\\n)*? {6}id-token: write"
+        },
+        {
+          "assertion": "Does not inline claude-code-action",
+          "check": "absent_regex",
+          "pattern": "anthropics/claude-code-action"
+        },
+        {
+          "assertion": "References the OAuth token secret",
+          "check": "substring",
+          "value": "CLAUDE_CODE_OAUTH_TOKEN"
+        }
+      ],
+      "tags": [
+        "workflows",
+        "review",
+        "reusable-caller"
+      ]
+    },
+    {
+      "id": "ccp-007",
+      "description": "No reusable review at <owner>/.github: the inline review keeps a turn budget of 50, not 5",
+      "prompt": "/configure:claude-plugins --fix --plugins code-quality-plugin,testing-plugin\n\nThe repo has a GitHub remote, github.com/acme/api, and no .github/workflows yet. `gh api repos/acme/.github/contents/.github/workflows` returns HTTP 404. Show the .github/workflows/claude-code-review.yml you would create.",
+      "expectations": [
+        {
+          "assertion": "Runs claude-code-action inline",
+          "check": "substring",
+          "value": "anthropics/claude-code-action"
+        },
+        {
+          "assertion": "Sets --max-turns 50",
+          "check": "regex",
+          "pattern": "--max-turns[ =]50\\b"
+        },
+        {
+          "assertion": "Does not set a single-digit turn budget",
+          "check": "absent_regex",
+          "pattern": "--max-turns[ =]\\d\\b"
+        },
+        {
+          "assertion": "Names no reusable Claude workflow",
+          "check": "absent_regex",
+          "pattern": "\\.github/\\.github/workflows/reusable-claude"
+        }
+      ],
+      "tags": [
+        "workflows",
+        "review",
+        "inline"
       ]
     }
   ]
