@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.10](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.9...github-actions-plugin-v1.13.10) (2026-11-27)
+
+
+### Documentation
+
+* **git-plugin:** add merge-over-red triage to git-merge-hazards ([992afd2](https://github.com/laurigates/claude-plugins/commit/992afd25bcd4007c157a7a2439cb47924bdb3206)), closes [#3844](https://github.com/laurigates/claude-plugins/issues/3844)
+* **git-plugin:** keep two SKILL.md bodies under their 10,000-char pins ([8abae2e](https://github.com/laurigates/claude-plugins/commit/8abae2e0192dd40655ab965bea44638d7e043891)), closes [#3844](https://github.com/laurigates/claude-plugins/issues/3844) [#3841](https://github.com/laurigates/claude-plugins/issues/3841)
+* **github-actions-plugin:** verify PyPI releases via the simple index ([be691b0](https://github.com/laurigates/claude-plugins/commit/be691b0cff882900183ccb96368f498633689c38)), closes [#3847](https://github.com/laurigates/claude-plugins/issues/3847)
+
 ## [1.13.9](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.8...github-actions-plugin-v1.13.9) (2026-11-26)
 
 

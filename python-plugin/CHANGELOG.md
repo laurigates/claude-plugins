@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.12](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.11...python-plugin-v1.5.12) (2026-11-27)
+
+
+### Documentation
+
+* **git-plugin:** keep two SKILL.md bodies under their 10,000-char pins ([8abae2e](https://github.com/laurigates/claude-plugins/commit/8abae2e0192dd40655ab965bea44638d7e043891)), closes [#3844](https://github.com/laurigates/claude-plugins/issues/3844) [#3841](https://github.com/laurigates/claude-plugins/issues/3841)
+* **python-plugin:** add a playbook for renaming a published package ([e205a31](https://github.com/laurigates/claude-plugins/commit/e205a31c8460bf7fef9de5f447fec33379a7330b)), closes [#3848](https://github.com/laurigates/claude-plugins/issues/3848)
+
 ## [1.5.11](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.10...python-plugin-v1.5.11) (2026-11-25)
 
 

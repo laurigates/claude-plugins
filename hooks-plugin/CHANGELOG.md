@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.7...hooks-plugin-v2.22.8) (2026-11-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** make the bash-antipatterns Grep/Glob hints conditional ([5ac66f4](https://github.com/laurigates/claude-plugins/commit/5ac66f4bea0c27a9c7e38c57d5038b638363eadb)), closes [#3858](https://github.com/laurigates/claude-plugins/issues/3858)
+
 ## [2.22.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.6...hooks-plugin-v2.22.7) (2026-11-26)
 
 
