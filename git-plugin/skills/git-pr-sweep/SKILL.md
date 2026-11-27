@@ -5,7 +5,7 @@ args: "<owner/repo> [--stage review|fix|merge|all] [--root PATH] [--review FILE]
 argument-hint: "owner/repo [--stage all] [--root /abs/clone] [--dry-run]"
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/list-sweep-prs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/plan-review-runs.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prefetch-heads.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-review.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/review-to-units.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/merge-gate.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/scripts/prune-worktrees.sh *), Bash(bash ${CLAUDE_SKILL_DIR}/../git-merge-hazards/scripts/merge-chain.sh *), Bash(gh pr ready *), Bash(gh pr view *), Bash(gh pr list *), Bash(date -u *), Read, Write, Workflow, Skill
 created: 2026-11-20
-modified: 2026-11-23
+modified: 2026-11-27
 reviewed: 2026-11-20
 ---
 
@@ -105,6 +105,7 @@ Execute this PR sweep one stage at a time, reading each script's summary before 
 ### Step 4: Merge (`--stage merge|all`)
 
 Main session only, in order; stop handling: [references/merge-procedure.md](references/merge-procedure.md).
+A red check on a PR you mean to merge goes through `git-plugin:git-merge-hazards` § 4's triage first.
 
 1. Take the review timestamp first, before the re-list, so a later push stops merge-chain.sh:
    `date -u +%Y-%m-%dT%H:%M:%SZ`.

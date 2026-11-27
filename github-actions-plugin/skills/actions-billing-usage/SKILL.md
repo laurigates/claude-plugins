@@ -3,7 +3,7 @@ name: actions-billing-usage
 description: Measure GitHub Actions cost with the billing-usage API — per repo, month and SKU; net vs gross; per-job rounding; budgets and their hard stop. Use when optimizing CI cost or speed, before removing a workflow as expensive, or when jobs fail with zero steps because a budget ran out.
 allowed-tools: Bash(gh api *), Bash(gh run list *), Bash(jq *), Read, TodoWrite
 created: 2026-09-24
-modified: 2026-10-27
+modified: 2026-11-27
 reviewed: 2026-09-24
 ---
 
@@ -132,8 +132,9 @@ included. It reads as a code failure:
 | `gh api repos/<o>/<r>/actions/runs/<id>/jobs` | `steps` empty, `runner_name` empty |
 | `gh run view <id> --log-failed` | `log not found` |
 | `gh api repos/<o>/<r>/check-runs/<job-id>/annotations --jq '.[].message'` | **"The job was not started because an Actions budget is preventing further use."** |
+| The same annotation, for a payment or spending-limit block | **"The job was not started because recent account payments have failed or your spending limit needs to be increased."** |
 
-Read the annotation before the log: the log does not exist. Confirm with the
+Read the annotation before the log: the log does not exist. Confirm the budget wording with the
 budget list. The response carries no spend, so compare `budget_amount` with the
 month's net from the usage endpoint ([The endpoint](#the-endpoint-the-obvious-one-is-gone)):
 
