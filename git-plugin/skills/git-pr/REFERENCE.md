@@ -266,6 +266,50 @@ Post-merge steps never go in the body either. PR descriptions are closed and
 buried after merge, so post-merge actions are tracked as GitHub issues and
 linked with `Refs #N` (see [REFERENCE.md](REFERENCE.md) § Post-Merge Follow-up Issues).
 
+## Scripted multi-repo PRs
+
+A loop that opens or updates one-line PRs across many repos from fresh clones
+stops part-way on three failures that a single interactive PR rarely meets.
+Observed 2026-11-25 across 14 repos and 15 bot-branch fixes.
+
+**`gh pr create` says the branch is unpushed.** After a successful
+`git push -u origin <branch>`, upstream tracking can still be unset, and
+`gh pr create` aborts with *"you must first push the current branch to a
+remote, or use the --head flag"*. Check the push landed on the remote instead
+of trusting tracking, and name the branch:
+
+```bash
+git ls-remote --exit-code --heads origin "$branch" >/dev/null || { echo "push of $branch did not land" >&2; exit 1; }
+gh pr create --head "$branch" --title "$title" --body-file "$body_file"
+```
+
+**`gh pr update-branch` right after a push.** GitHub's PR head ref lags a push
+by a few seconds, so the call fails with *"head sha didn't match the current
+head ref"*. Retry a few times with a 5 s pause, then read `mergeStateStatus`
+rather than the exit code, so "already up to date" counts as success:
+
+```bash
+for i in 1 2 3 4; do
+  gh pr update-branch "$pr" && break
+  sleep 5
+done
+gh pr view "$pr" --json mergeStateStatus --jq .mergeStateStatus   # BEHIND here means the update did not land
+```
+
+**A pre-commit fixer rewrites a staged file.** A fixer such as
+`end-of-file-fixer` edits the file and fails the commit, leaving it `MM`.
+Re-stage the same paths once and retry, keeping the fixer's change:
+
+```bash
+git add -- "${paths[@]}"
+git commit -m "$msg" || { git add -- "${paths[@]}"; git commit -m "$msg"; }
+```
+
+**Write such loops as bash scripts, not zsh one-liners.** zsh does not
+word-split an unquoted parameter, so `set -- $spec` leaves `$2` empty and the
+loop runs with the wrong arguments (`tools-plugin:zsh-gotchas`). Put the loop
+in a file with a `#!/usr/bin/env bash` shebang and run it.
+
 ## Quick Reference
 
 | Action | Command |
