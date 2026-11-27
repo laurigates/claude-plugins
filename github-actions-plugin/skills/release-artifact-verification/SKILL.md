@@ -3,7 +3,7 @@ name: release-artifact-verification
 description: Confirm a release shipped by fetching the artifact at its public address — split publish jobs, source-tree shadowing, unsmoked images. Use when announcing a release or wiring a publish job.
 allowed-tools: Bash(curl *), Bash(gh api *), Bash(gh run *), Bash(npm view *), Bash(docker *), Bash(jq *), Read, TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-11-27
 reviewed: 2026-09-24
 ---
 
@@ -131,6 +131,30 @@ This is the same family as §2 and `agent-patterns-plugin:probe-input-integrity`
 nothing. It was caught only by **running the finished gate against a known-bad
 image** and requiring it to fail — do that before trusting any gate you just
 wrote.
+
+## 5. PyPI: read the simple index, then assert the installed version
+
+Two lags after a PyPI upload turn the § 1 check into a false "not shipped" or
+a false "shipped" (first release of a new project, 2026-11-25).
+
+- **The JSON API lags for a newly created project.** `pypi.org/pypi/<pkg>/json`
+  returned 404, cache-busting headers and query strings included, while the
+  simple index already listed the release with its wheel and sdist. Installers
+  read the simple index, so verify against it and treat a JSON-API 404 for a
+  project created minutes earlier as lag:
+  ```sh
+  curl -s -H 'Accept: application/vnd.pypi.simple.v1+json' https://pypi.org/simple/<pkg>/ | jq -e --arg v <version> '.versions | index($v) != null'
+  ```
+- **An installer can resolve the previous version for a few minutes.**
+  `UV_CACHE_DIR=$(mktemp -d) uvx --refresh <pkg>@latest` installed the old
+  release, exited 0 and started; a run shortly after installed the new one. A
+  smoke test that checks only "it runs" passes either way, so assert the
+  installed version before judging behaviour (from a neutral cwd, per § 2):
+  ```sh
+  uvx --from <pkg>@latest python -c "import importlib.metadata as m; print(m.version('<pkg>'))"
+  ```
+  If it prints the old version, wait a few minutes and retry with a fresh
+  `UV_CACHE_DIR` before calling the release broken.
 
 ## The litmus test
 
