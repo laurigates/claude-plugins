@@ -28,6 +28,7 @@ each issue stands alone, so none is grouped under an epic.
 | `changelog-review` | [`changelog-review.yml`](../.github/workflows/changelog-review.yml), body written by `laurigates/.github` `reusable-changelog-review.yml` | Lauri | Every listed action has been applied, filed or dismissed | By hand once processed |
 | `config-drift` | [`config-drift-audit.yml`](../.github/workflows/config-drift-audit.yml) (twice weekly) | Lauri reads each run's comment | Each finding is fixed or waived (`health-plugin/README.md`) | Never: it is a rolling issue. If it is closed, the next run with findings opens a new one |
 | Dependency Dashboard (title) | Renovate | Renovate | Not applicable | Never; Renovate owns it |
+| `Verification queue:` (title prefix) | By hand, from the 2026-11-26 convergence pass (#3868) | Lauri, or a session with the needed machine or account | Each line is ticked with a comment giving its evidence | When every line is ticked; new verification-only checks are added as lines, not filed as issues |
 
 "Monthly report" means a dated report from a monthly schedule. The supersede
 rule is Lauri's decision on #3346 (2026-11-01, decision 2, option A); the

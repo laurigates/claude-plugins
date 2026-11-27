@@ -30,3 +30,6 @@ label audit-liveness
 label docs-index
 label workflow-model-audit
 title ^Dependency Dashboard$
+# The standing verification queue (#3868): a checklist of live and hands-on
+# checks, itself the grouping for verification-only work.
+title ^Verification queue:
