@@ -111,6 +111,7 @@ for token in \
   "Do not fall through to (b)" \
   "issues/comments/<id> -X PATCH" \
   "Answer recorded, work deferred:" \
+  "first line starts with \`Decision (Lauri,\`" \
   "must account for every labelled issue" \
   "The unit of work is the group, not the lone issue." \
   "One subagent per work unit, never one per member" \
