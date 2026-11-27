@@ -147,7 +147,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/friction_parse.py" \
 The parser emits one friction event per line:
 
 ```json
-{"session": "…", "ts": "…", "kind": "hook_block|tool_error|user_reject|user_interrupt|plan_mode|push_to_pr_branch|stop_hook_feedback|hook_feedback", "signature": "…", "tool": "…", "evidence": "…"}
+{"session": "…", "ts": "…", "kind": "hook_block|tool_error|classifier_denial|user_reject|user_interrupt|plan_mode|push_to_pr_branch|stop_hook_feedback|hook_feedback", "signature": "…", "tool": "…", "evidence": "…"}
 ```
 
 A `hook_block` whose harness wrapper names the hook's install path
@@ -168,6 +168,16 @@ as `hook_feedback` with a `hook-feedback:<event>` / `hook-error:<event>`
 signature rather than dropped. `--list-prefixes` prints which of those
 prefixes the window contains and whether each has a dedicated branch
 (`STATUS=WARN` when one does not).
+
+An auto-mode classifier denial (an `is_error` result opening "Permission for
+this action was denied by the Claude Code auto mode classifier") is emitted as
+`classifier_denial` and keyed on its reason through a fixed needle table:
+`classifier:undermining-oversight`, `classifier:destructive-or-unwanted`, or
+`classifier:other` for a reason no needle matches (#3365). Attribute the
+classifier-denial rate to these reasons in the report, and state the
+`classifier:other` share of all classifier events; at 20% or more, sample its
+evidence and propose a needle for `CLASSIFIER_REASON_NEEDLES` in
+`friction_parse.py`. These clusters are measured, never prescribed.
 
 ### Step 1b: Pull skill usage, to target the analysis (optional)
 

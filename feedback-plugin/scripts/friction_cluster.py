@@ -19,6 +19,8 @@ Deliverable mapping:
     stop:*, hook-feedback:*, hook-error:*
                             -> watch: reported for prevalence, never prescribed; the
                                fix lives in the emitting hook (e.g. #2652). See #2659.
+    classifier:*            -> watch: auto-mode classifier denials keyed by reason
+                               (#3365); measured, never prescribed.
 
 Build share (#3220): every run also reports, per plugin, the share of
 build-stamped hook blocks (the `plugin`/`version` fields friction_parse.py
