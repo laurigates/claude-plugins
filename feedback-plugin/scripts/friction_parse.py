@@ -13,6 +13,8 @@ A hook_block whose harness wrapper names the plugin cache path also carries
 Kinds:
   hook_block         PreToolUse exit-2 or explicit "blocked by a hook" in content
   tool_error         tool_use_result with is_error: true that is not a hook block
+  classifier_denial  is_error opening with the auto-mode classifier's denial prose,
+                     keyed classifier:<reason> (needle table, `other` fallback)
   user_reject        is_error with content matching "user (doesn't|does not) want"
   user_interrupt     user message starts with "[Request interrupted"
   plan_mode          assistant tool_use name == "ExitPlanMode"
@@ -70,6 +72,30 @@ PUSH_PR_RE = re.compile(
     re.I,
 )
 INTERRUPT_RE = re.compile(r"^\[Request interrupted")
+
+# An auto-mode classifier denial reaches the transcript as an is_error
+# tool_result that opens with the harness's own prose (toolUseResult carries
+# the same text behind "Error: "). Anchored at the start, so a failing command
+# whose OUTPUT quotes a denial (a grep over transcripts) stays a tool_error.
+CLASSIFIER_DENIAL_RE = re.compile(
+    r'^\W*(?:Error:\s*)?Permission for this action (?:was|has been) denied by '
+    r"the Claude Code auto[- ]mode classifier",
+    re.I,
+)
+# The reason clause: "Reason: [<category>]." in the observed format, or free
+# text up to the sentence end if the brackets are ever dropped.
+CLASSIFIER_REASON_RE = re.compile(r"\bReason:\s*(?:\[([^\]\n]+)\]|([^\n.]+))")
+# Reason needles -> fixed slugs (#3365, decision A), the shape the
+# worktree-isolation variants use: the reason taxonomy is server-side and not
+# documented as stable, so a fixed table keeps signatures comparable week to
+# week, and a reason no needle matches lands in `classifier:other` instead of
+# minting a new slug. Every needle is a reason seen in real transcripts. When
+# `classifier:other` passes 20% of classifier events, read its evidence and add
+# a needle. Matched lowercase against the reason clause only.
+CLASSIFIER_REASON_NEEDLES = (
+    ("undermining oversight", "undermining-oversight"),
+    ("destructive or unwanted", "destructive-or-unwanted"),
+)
 SECRET_RE = re.compile(r"\b[A-Za-z0-9_\-]{32,}\b")
 
 # Hook output that is NOT a PreToolUse block reaches the transcript as a meta
@@ -190,6 +216,22 @@ _UNSTAMPED_BA_NEEDLES = (
     "instead of 'awk'",
     "piping network content directly to a shell",
 )
+
+
+def classifier_reason_slug(evidence: str) -> str:
+    """Slug of a classifier denial's reason, `other` when no needle matches.
+
+    Only the reason clause is searched, so needle text elsewhere in the
+    message cannot key the event; a denial with no reason clause is `other`.
+    """
+    m = CLASSIFIER_REASON_RE.search(evidence or "")
+    if not m:
+        return "other"
+    reason = (m.group(1) or m.group(2) or "").lower()
+    for needle, slug in CLASSIFIER_REASON_NEEDLES:
+        if needle in reason:
+            return slug
+    return "other"
 
 
 def canonical_signature(kind: str, tool: str, evidence: str) -> str:
@@ -320,6 +362,8 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
             if needle in ev:
                 return sig
         return "hook:unclassified"
+    if kind == "classifier_denial":
+        return f"classifier:{classifier_reason_slug(evidence)}"
     if kind == "push_to_pr_branch":
         return "push:branch-has-open-pr"
     if kind == "plan_mode":
@@ -642,7 +686,9 @@ def extract_frictions(path: Path) -> Iterator[dict]:
             if is_error:
                 tool = lookup_tool_name(rec, tool_index)
                 body = text or json.dumps(tur)[:EVIDENCE_MAX_CHARS]
-                if HOOK_BLOCK_RE.search(body):
+                if CLASSIFIER_DENIAL_RE.match(body):
+                    kind = "classifier_denial"
+                elif HOOK_BLOCK_RE.search(body):
                     kind = "hook_block"
                 elif USER_REJECT_RE.search(body):
                     kind = "user_reject"

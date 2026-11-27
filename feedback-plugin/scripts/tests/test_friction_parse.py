@@ -322,6 +322,161 @@ def test_plain_bash_error_still_classifies_as_error_bash():
 
 
 # --------------------------------------------------------------------------
+# Auto-mode classifier denials keyed by reason (issue #3365)
+# --------------------------------------------------------------------------
+
+CLASSIFIER_FIXTURE = FIXTURES / "classifier_denial"
+CLASSIFIER_LEAD = "Permission for this action was denied by the Claude Code auto mode classifier"
+CLUSTER_SCRIPT = HERE.parent / "friction_cluster.py"
+
+
+def test_classifier_denials_key_by_reason():
+    """Regression: a classifier denial carries `classifier:<reason>`, not the
+    generic `error:<tool>` bucket.
+
+    Before #3365 every denial fell into `error:bash` (or `error:<tool>`), so
+    the W45 report could count 31 denials in 25 sessions but not say which
+    reason was rising. The fixture's denial text is a real tool_result with
+    only the bracketed reason substituted; the two named reasons are the two
+    seen in real transcripts.
+    """
+    events = run_parser(CLASSIFIER_FIXTURE)
+    denials = [e for e in events if e["kind"] == "classifier_denial"]
+    sigs = sorted(e["signature"] for e in denials)
+    assert sigs == [
+        "classifier:destructive-or-unwanted",
+        "classifier:other",
+        "classifier:other",
+        "classifier:undermining-oversight",
+        "classifier:undermining-oversight",
+    ], f"unexpected classifier signatures: {sigs}"
+
+    # The tool stays on the event, out of the signature: a denial reason is
+    # the same cluster whichever tool the classifier refused.
+    webfetch = [e for e in denials if e["tool"] == "WebFetch"]
+    assert len(webfetch) == 1 and webfetch[0]["signature"] == "classifier:other", (
+        f"an unknown reason must land in classifier:other, tool kept: {webfetch}"
+    )
+    for ev in denials:
+        assert ev["evidence"].startswith(CLASSIFIER_LEAD), ev
+
+
+def test_classifier_denial_quoted_in_output_is_not_a_denial():
+    """Control: only a result that IS a denial is keyed as one.
+
+    A failing command whose output quotes a denial (a grep over transcripts)
+    stays `error:bash`, an ordinary failure stays `error:bash`, and a
+    successful result quoting the text is no event at all.
+    """
+    events = run_parser(CLASSIFIER_FIXTURE)
+    assert len(events) == 7, f"expected 5 denials + 2 controls, got {len(events)}"
+    controls = [e for e in events if e["kind"] != "classifier_denial"]
+    assert [e["signature"] for e in controls] == ["error:bash", "error:bash"], controls
+    assert any(CLASSIFIER_LEAD in e["evidence"] for e in controls), (
+        "fixture no longer exercises the quoted-denial control"
+    )
+
+
+def test_classifier_needle_table_keeps_other_as_fallback():
+    """Each needle maps to a fixed slug and nothing outside the table is
+    invented: an unmatched reason and a missing reason both read `other`.
+
+    That `other` share is the needle table's maintenance signal (#3365's
+    acceptance bar: under 20% of classifier events).
+    """
+    mod = _parser_module()
+    lead = CLASSIFIER_LEAD + "."
+    assert (
+        mod.canonical_signature("classifier_denial", "Bash", f"{lead} Reason: [Undermining Oversight].")
+        == "classifier:undermining-oversight"
+    )
+    assert (
+        mod.canonical_signature(
+            "classifier_denial", "Bash", f"{lead} Reason: [Destructive or Unwanted Actions]."
+        )
+        == "classifier:destructive-or-unwanted"
+    )
+    assert (
+        mod.canonical_signature("classifier_denial", "Bash", f"{lead} Reason: [Brand New].")
+        == "classifier:other"
+    )
+    assert mod.canonical_signature("classifier_denial", "Bash", lead) == "classifier:other"
+    # Needle text outside the reason clause must not key the event.
+    assert (
+        mod.canonical_signature(
+            "classifier_denial", "Bash", f"{lead} Reason: [Brand New]. Undermining Oversight"
+        )
+        == "classifier:other"
+    )
+
+
+def test_classifier_signatures_reach_clusters_json():
+    """#3365 acceptance: `clusters.json` contains a `classifier:<reason>` signature."""
+    events = run_parser(CLASSIFIER_FIXTURE)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(CLUSTER_SCRIPT),
+            "--in",
+            "-",
+            "--min-count",
+            "2",
+            "--out",
+            "-",
+            "--installed-plugins",
+            "",
+        ],
+        input="".join(json.dumps(e) + "\n" for e in events),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    clusters = json.loads(proc.stdout)
+    actionable = {p["signature"]: p for p in clusters["actionable"]}
+    assert "classifier:undermining-oversight" in actionable, sorted(actionable)
+    assert actionable["classifier:undermining-oversight"]["count"] == 2
+    # Measured, never prescribed: a rule file cannot change the classifier.
+    assert actionable["classifier:undermining-oversight"]["kind"] == "watch"
+
+
+def test_dual_parser_classifier_split_moves_only_denials():
+    """Old and new parser over the classifier fixture: the only change is that
+    denial events move from `tool_error` / `error:<tool>` to
+    `classifier_denial` / `classifier:<reason>`, with session, ts, tool and
+    evidence byte-identical. The controls do not move.
+    """
+    base_ref = os.environ.get("FRICTION_DUAL_PARSER_BASE", "origin/main")
+    show = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "show", f"{base_ref}:{PARSER.relative_to(REPO_ROOT)}"],
+        capture_output=True,
+        text=True,
+    )
+    if show.returncode != 0:
+        print(f"  SKIP classifier dual-parser check: `git show {base_ref}:...` failed")
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        baseline = Path(tmp) / "friction_parse_base.py"
+        baseline.write_text(show.stdout, encoding="utf-8")
+        old = _run_parser_at(baseline, CLASSIFIER_FIXTURE)
+    new = run_parser(CLASSIFIER_FIXTURE)
+    assert len(old) == len(new) == 7, (len(old), len(new))
+    moved = 0
+    for o, n in zip(old, new):
+        same = ("session", "ts", "tool", "evidence")
+        assert {k: o[k] for k in same} == {k: n[k] for k in same}, (o, n)
+        if o == n:
+            continue
+        assert n["kind"] == "classifier_denial" and n["signature"].startswith("classifier:"), n
+        assert o["kind"] == "tool_error" and o["signature"].startswith("error:"), o
+        moved += 1
+    # Post-merge the baseline keys denials too and nothing moves.
+    if any(e["kind"] == "classifier_denial" for e in old):
+        assert moved == 0, moved
+    else:
+        assert moved == 5, f"expected the 5 denials to move, saw {moved}"
+
+
+# --------------------------------------------------------------------------
 # hook:bash-antipatterns:other -> eight detector signatures (issue #2420)
 # --------------------------------------------------------------------------
 
@@ -936,6 +1091,9 @@ def test_dual_parser_stop_feedback_is_purely_additive():
     `meta_prompt_pollution` is excluded by design: it pins the one intended
     non-additive change (a plan_mode event the polluted prompt used to hide),
     asserted by test_meta_hook_record_does_not_pollute_plan_mode_classification.
+    `classifier_denial` is excluded the same way: its denials intentionally
+    move bucket (#3365), asserted by
+    test_dual_parser_classifier_split_moves_only_denials.
     """
     base_ref = os.environ.get("FRICTION_DUAL_PARSER_BASE", "origin/main")
     show = subprocess.run(
@@ -958,7 +1116,9 @@ def test_dual_parser_stop_feedback_is_purely_additive():
     dirs = sorted(
         d
         for d in FIXTURES.iterdir()
-        if d.is_dir() and (d / "t.jsonl").exists() and d != POLLUTION_FIXTURE
+        if d.is_dir()
+        and (d / "t.jsonl").exists()
+        and d not in (POLLUTION_FIXTURE, CLASSIFIER_FIXTURE)
     )
     old_all: list[dict] = []
     extras: list[dict] = []
