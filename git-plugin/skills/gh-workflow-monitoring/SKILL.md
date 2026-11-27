@@ -4,7 +4,7 @@ description: "`gh run watch` — block until a GitHub Actions run finishes, no p
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-11-11
+modified: 2026-11-27
 reviewed: 2026-04-25
 ---
 
@@ -215,6 +215,48 @@ rate_limit --jq .resources.core` shows what is left.
 > Evidence (2026-11-10): an `until` loop of that shape polled through
 > `HTTP 403: API rate limit exceeded` for about 25 minutes and used up the
 > account's 5,000/hour core REST limit.
+
+### Early Return After a Push or a Rerun
+
+Two watches return at once with a result about the wrong run. Both read as a
+confident "done" over nothing (`agent-patterns-plugin:tool-result-traps`), so
+wait for the new state to register before watching.
+
+**After a push**, `gh pr checks <n> --watch` exits 1 with *"no checks reported
+on the '<branch>' branch"* until the new head's checks register. Wait until
+the PR's head is the pushed SHA and at least one check is listed:
+
+```bash
+sha=$(git rev-parse HEAD)            # the commit just pushed
+deadline=$(( $(date +%s) + 300 ))
+until [ "$(gh pr view "$PR" --json headRefOid --jq .headRefOid)" = "$sha" ] \
+  && [ "$(gh pr checks "$PR" --json name --jq length 2>/dev/null || echo 0)" -gt 0 ]; do
+  [ "$(date +%s)" -lt "$deadline" ] || { echo "checks for $sha not registered after 5 min" >&2; exit 1; }
+  sleep 10
+done
+gh pr checks "$PR" --watch
+```
+
+**After `gh run rerun <id>`**, `gh run watch <id>` returns the previous
+attempt's conclusion while the run still shows `completed`. Record
+`run_attempt` before the rerun and wait until it increments or the status
+leaves `completed`:
+
+```bash
+before=$(gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID" --jq .run_attempt)
+gh run rerun "$RUN_ID"
+deadline=$(( $(date +%s) + 300 ))
+until state=$(gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID" --jq '"\(.run_attempt) \(.status)"') \
+  && { [ "${state% *}" -gt "$before" ] || [ "${state#* }" != completed ]; }; do
+  [ "$(date +%s)" -lt "$deadline" ] || { echo "rerun of $RUN_ID not queued after 5 min" >&2; exit 1; }
+  sleep 10
+done
+gh run watch "$RUN_ID" --compact --exit-status
+```
+
+A failed `gh api` call ends that `until` condition as false and the loop
+retries until the deadline. Jobs for one attempt:
+`gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID/attempts/<n>/jobs"`.
 
 ## Agentic Optimizations
 
