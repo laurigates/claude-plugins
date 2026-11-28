@@ -7,8 +7,9 @@ name: "Test: Skill scripts"
 # experiment harness self-tests (experiments/*/tests/test-*.sh, #2816), matching what
 # scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
 # shape of plugin-enablement-drift.yml so it fires only when skill scripts, hook
-# scripts, generator templates, or the runner itself change — independent of
-# plugin-pr-checks.yml, which gates the SKILL.md / compliance surface.
+# scripts, generator templates, skill markdown (SKILL.md, REFERENCE.md,
+# references/, whose content plugin-level suites pin, #3833) or the runner itself
+# change — independent of plugin-pr-checks.yml, which gates the compliance surface.
 #
 # The install steps below are load-bearing, not conveniences: each one exists so
 # a specific gate ACTUALLY RUNS here instead of taking its SKIP branch. The
@@ -111,6 +112,14 @@ on:
       - 'health-plugin/skills/**/*.md'
       - 'health-plugin/README.md'
       - 'health-plugin/docs/**'
+      # Plugin-level suites under <plugin>/scripts/tests/ pin SKILL.md content
+      # (size caps, required phrases), and moving text into REFERENCE.md or
+      # references/ moves the same pins. #3804 changed only a SKILL.md, skipped
+      # this workflow and left main red (#3833). Pinned by
+      # scripts/tests/test-skill-scripts-skill-doc-triggers.sh.
+      - '*-plugin/skills/**/SKILL.md'
+      - '*-plugin/skills/**/REFERENCE.md'
+      - '*-plugin/skills/**/references/**'
   push:
     branches: [main]
     paths:
@@ -147,6 +156,10 @@ on:
       - 'health-plugin/docs/**'
       - '.github/workflows/github-workflow-auto-fix.yml'
       - '.github/workflows/plugin-pr-checks.yml'
+      # Mirrors the pull_request list above (#3833).
+      - '*-plugin/skills/**/SKILL.md'
+      - '*-plugin/skills/**/REFERENCE.md'
+      - '*-plugin/skills/**/references/**'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
