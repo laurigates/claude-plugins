@@ -3,7 +3,8 @@ name: "Plugin: Config drift audit"
 # Runs the semantic tier of health-plugin/scripts/config-drift.py (embedding
 # overlap + promotion candidates) over this repository's own configuration
 # corpus and comments ONLY what is new since the last run into one rolling
-# issue labelled `config-drift` (#2554). No Claude model runs here: the
+# issue labelled `drift:config` (#2554; one `drift:<surface>` label per drift
+# audit, see docs/issue-lifecycle.md). No Claude model runs here: the
 # analyzer is a plain script, so the cost is Actions minutes only.
 #
 # This watches the corpus that lives in git -- findings a PR to this repo can
@@ -157,14 +158,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           COMMENT_FILE: ${{ steps.audit.outputs.comment_file }}
+          TITLE: "Config drift audit: new findings (rolling)"
         run: |
           # `gh issue create --label` hard-fails on an unknown label, so the
           # label is provisioned here, beside the only step that attaches it.
-          gh label create config-drift --repo "$GITHUB_REPOSITORY" --color c5def5 \
-            --description "Delta reports from the config-drift semantic audit" --force
-          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --label config-drift \
-            --state open --limit 1 --json number --jq '.[0].number // empty')
+          gh label create drift:config --repo "$GITHUB_REPOSITORY" --color c5def5 \
+            --description "Config drift audit: rolling report of new semantic findings" --force
+          # The rolling issue is found by its exact title, not by label alone: a
+          # label also used as a routing tag on related work (an epic, a bug)
+          # would otherwise pick that issue as the report.
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 \
+            --search "\"$TITLE\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
           if [ -n "$number" ]; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --add-label drift:config
             gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body-file "$COMMENT_FILE"
           else
             {
@@ -179,8 +186,8 @@ jobs:
               echo "- **Closes:** never; this is a rolling issue. If it is closed, the next run with findings opens a new one. See \`docs/issue-lifecycle.md\`."
             } > "$RUNNER_TEMP/issue-body.md"
             gh issue create --repo "$GITHUB_REPOSITORY" \
-              --title "Config drift audit: new findings (rolling)" \
-              --label "config-drift,maintenance" \
+              --title "$TITLE" \
+              --label "drift:config,maintenance" \
               --assignee laurigates \
               --body-file "$RUNNER_TEMP/issue-body.md"
           fi

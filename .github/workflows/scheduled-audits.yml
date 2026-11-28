@@ -437,7 +437,7 @@ jobs:
       - name: Docs-index drift audit
         uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
-          label: docs-index
+          label: drift:docs-index
           # Quoted: unquoted, YAML reads 5319e7 as a float (-> 53190000000) and
           # `gh label create` 422s, skipping every step behind it.
           color: "5319e7"

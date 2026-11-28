@@ -59,7 +59,7 @@ jobs:
         id: check_issue
         uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
-          label: fleet-drift
+          label: drift:fleet
           color: b60205
           description: Drift between the ComfyUI pack fleet and its scaffold
           title-prefix: 'Fleet drift:'
@@ -143,7 +143,7 @@ jobs:
         if: steps.check_issue.outputs.exists == 'false'
         uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
-          label: fleet-drift
+          label: drift:fleet
           color: b60205
           description: Drift between the ComfyUI pack fleet and its scaffold
           title-prefix: 'Fleet drift:'

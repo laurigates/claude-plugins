@@ -203,7 +203,7 @@ one genre of document, so baseline similarity is high.
 
 `.github/workflows/config-drift-audit.yml` (**Plugin: Config drift audit**) runs
 the semantic tier over this repository's own corpus on Mondays and Thursdays and
-comments only what is new into one rolling issue labelled `config-drift`. No
+comments only what is new into one rolling issue labelled `drift:config`. No
 Claude model runs; the cost is Actions minutes. The decisions live in
 `scripts/config-drift-audit.sh` and are tested by
 `scripts/tests/test-config-drift-audit.sh`.

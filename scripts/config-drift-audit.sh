@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One run of the scheduled config-drift audit (issue #2554): analyze this repo's
 # configuration corpus, report ONLY what is new since the last run, and write the
-# comment the workflow posts to the rolling `config-drift` issue.
+# comment the workflow posts to the rolling `drift:config` issue.
 #
 # The analyzer is health-plugin/scripts/config-drift.py (semantic tier:
 # embeddings + promotion candidates); the delta is health-plugin/scripts/
