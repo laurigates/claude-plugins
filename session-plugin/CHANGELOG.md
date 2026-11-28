@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.21.0...session-plugin-v1.21.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **session-plugin:** warn on an unrecognised workflow layout and skip version quads ([#3888](https://github.com/laurigates/claude-plugins/issues/3888)) ([85d1dcb](https://github.com/laurigates/claude-plugins/commit/85d1dcbbe57d17b0920a6d6827d0f77262bd5e60))
+
 ## [1.21.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.20.1...session-plugin-v1.21.0) (2026-11-26)
 
 

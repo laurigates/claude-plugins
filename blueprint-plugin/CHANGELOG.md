@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.52.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.52.1...blueprint-plugin-v3.52.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** drop the literal plugin version in generate-rules and the repeated labels in tracker-status ([#3887](https://github.com/laurigates/claude-plugins/issues/3887)) ([12d0d3f](https://github.com/laurigates/claude-plugins/commit/12d0d3f792585ef8736310cf066374cb84ca22ef)), closes [#3666](https://github.com/laurigates/claude-plugins/issues/3666)
+
 ## [3.52.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.52.0...blueprint-plugin-v3.52.1) (2026-11-28)
 
 
