@@ -1212,7 +1212,7 @@ printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.jso
 # with `error_max_turns` at `num_turns 6` on nearly every PR; the caller
 # templates named one owner's `.github` repo as a constant instead of the owner
 # the skill probes; and the permissions baseline wrote `Bash(git:*)`,
-# `Bash(gh:*)` and `Bash(python3:*)`, which auto mode drops. The `max-turns`,
+# `Bash(gh:*)` and `Bash(python3:*)` (broad: git/gh grant every subcommand; auto mode drops the interpreter wildcard). The `max-turns`,
 # `owner-constant`, `probe` and `broad-permission` mutations put each back.
 #
 # Issue #3728: stack detection read the repo root only, so a Rust service in
