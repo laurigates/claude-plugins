@@ -347,7 +347,10 @@
       "id": "t-dom-015",
       "prompt": "why is the build red on main?",
       "expected_skills": ["github-actions-plugin:github-actions-inspection"],
-      "acceptable_skills": ["github-actions-plugin:gh-workflow-monitoring", "git-plugin:gh-cli-agentic"],
+      "acceptable_skills": [
+        "github-actions-plugin:gh-workflow-monitoring",
+        "git-plugin:gh-cli-agentic"
+      ],
       "negative": false,
       "tags": ["stratum:terse", "domain:ci"],
       "provenance": "SKILL.md description of github-actions-plugin/skills/github-actions-inspection, read 2026-07-19; prompt hand-paraphrased (terse variant)"
@@ -519,7 +522,10 @@
       "id": "t-amb-013",
       "prompt": "CI went red on main — pull the failed workflow run's logs and figure out which step broke and why.",
       "expected_skills": ["github-actions-plugin:github-actions-inspection"],
-      "acceptable_skills": ["github-actions-plugin:gh-workflow-monitoring", "finops-plugin:finops-workflows"],
+      "acceptable_skills": [
+        "github-actions-plugin:gh-workflow-monitoring",
+        "finops-plugin:finops-workflows"
+      ],
       "negative": false,
       "tags": ["stratum:ambiguity", "domain:ci"],
       "provenance": "ambiguity-pair"
