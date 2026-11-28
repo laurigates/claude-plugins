@@ -299,7 +299,7 @@ bash health-plugin/skills/health-check/scripts/check-usage.sh \
 Findings are **advisory review candidates** (a skill can be correct yet rarely
 needed), feeding skill-consolidation and description-quality reviews. The audit
 is read-only and **local-leaning**: it needs a long-running local install and
-emits `STATUS=SKIP` in a fresh/remote checkout where there is no history. See
+reports `STATUS=OK` with `SKIPPED=true` in a fresh/remote checkout where there is no history. See
 [ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md).
 "Enabled" means enabled in settings and installed for this project: the
 inventory comes from `~/.claude/plugins/installed_plugins.json` and

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Regression test for check-usage.sh (ADR-0018, usage-telemetry scope).
 # Semantic invariants guarded:
-#   1. Insufficient history (fresh clone / remote) → STATUS=SKIP, never "all never-fired".
+#   1. Insufficient history (fresh clone / remote) → STATUS=OK + SKIPPED=true +
+#      SKIP_REASON= (formerly the non-canonical STATUS=SKIP, #3580), never
+#      "all never-fired".
 #   2. Schema-drift sentinel: transcripts present but zero tool_use parsed → STATUS=WARN schema_drift.
 #   3. Never-fired + dormant classification from transcript recency (file mtime vs window).
 #   4. --verbose lists the offending skill names.
@@ -14,6 +16,10 @@
 #      exact, so a skill whose name is a substring of a fired skill is not fired.
 #  14. One corrupt transcript line does not drop the other events in the scan batch.
 #  15. REASON= is emitted on WARN and omitted on OK.
+#  16. Output contract (#3580): the window_exceeds_retention INFO row counts in
+#      ISSUE_COUNT (cases 1, 7 and 7c fail against the pre-fix copy), and bash
+#      older than 4.3 gets STATUS=ERROR TYPE=bash_too_old instead of stopping
+#      at `declare -A` with no STATUS line.
 #
 # Hermetic: every path is a mktemp sandbox; HOME is never read (--home-dir and
 # --project-dir always point into the sandbox, CLAUDE_CODE_PLUGIN_CACHE_DIR is
@@ -25,6 +31,7 @@ set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 check_script="${CHECK_USAGE_SCRIPT:-${script_dir}/../check-usage.sh}"
+contract="${script_dir}/../../../../../scripts/check-structured-output-contract.sh"
 
 # CHECK_USAGE_KEEP_GOING=1 records failures and continues, so a replay against
 # a pre-fix copy shows every case it fails rather than only the first.
@@ -35,6 +42,14 @@ fail() {
   [ "${CHECK_USAGE_KEEP_GOING:-0}" = "1" ] || exit 1
 }
 pass() { echo "PASS: $1"; }
+
+# validate_block <label> <output>: the block passes the repo's contract
+# validator (canonical STATUS, ISSUE_COUNT = ISSUES rows, REASON iff non-OK).
+validate_block() {
+  [ -f "$contract" ] || { fail "$1: contract checker not found at $contract"; return; }
+  bash "$contract" --validate - <<<"$2" >/dev/null 2>&1 \
+    || fail "$1 output fails check-structured-output-contract.sh --validate:\n$2"
+}
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "SKIP: jq not installed; cannot run check-usage tests"
@@ -139,16 +154,19 @@ never_of() {  # $1 = verbose output → the never_fired SKILLS= list
 }
 
 # -----------------------------------------------------------------------------
-# Case 1: insufficient history (0 transcripts) → SKIP
+# Case 1: insufficient history (0 transcripts) → OK + SKIPPED=true
 # -----------------------------------------------------------------------------
 home1="$(sandbox)"; make_home "$home1"; proj1="$(sandbox)"
 skills1="$(sandbox)"; make_skills "$skills1" health-check git-commit
 out1="$(run_check --home-dir "$home1" --skills-dir "$skills1" --project-dir "$proj1")"
-grep -q "^STATUS=SKIP$" <<<"$out1" || fail "Case1 expected STATUS=SKIP, got:\n$out1"
+grep -q "^STATUS=OK$" <<<"$out1" || fail "Case1 expected STATUS=OK, got:\n$out1"
+grep -q "^SKIPPED=true$" <<<"$out1" || fail "Case1 expected SKIPPED=true:\n$out1"
+grep -q "^SKIP_REASON=insufficient_history: " <<<"$out1" || fail "Case1 expected SKIP_REASON=insufficient_history: …:\n$out1"
+grep -q "^REASON=" <<<"$out1" && fail "Case1 REASON= is reserved for WARN/ERROR:\n$out1"
 grep -q "^HISTORY_AVAILABLE=false$" <<<"$out1" || fail "Case1 expected HISTORY_AVAILABLE=false:\n$out1"
-grep -q "TYPE=insufficient_history" <<<"$out1" || fail "Case1 expected insufficient_history issue:\n$out1"
 grep -q "SKILLS_NEVER_FIRED=" <<<"$out1" && fail "Case1 must not report never-fired on skip:\n$out1"
-pass "insufficient history → SKIP (no all-never-fired on fresh clone)"
+validate_block "Case1" "$out1"
+pass "insufficient history → OK + SKIPPED=true (no all-never-fired on fresh clone)"
 rm -rf "$home1" "$skills1" "$proj1"
 
 # -----------------------------------------------------------------------------
@@ -163,6 +181,7 @@ out2="$(run_check --home-dir "$home2" --skills-dir "$skills2" --project-dir "$pr
 grep -q "^SCHEMA_DRIFT_SUSPECTED=true$" <<<"$out2" || fail "Case2 expected SCHEMA_DRIFT_SUSPECTED=true:\n$out2"
 grep -q "^STATUS=WARN$" <<<"$out2" || fail "Case2 expected STATUS=WARN:\n$out2"
 grep -q "TYPE=schema_drift" <<<"$out2" || fail "Case2 expected schema_drift issue:\n$out2"
+validate_block "Case2" "$out2"
 pass "transcripts present + zero tool_use → schema_drift WARN (not all never-fired)"
 rm -rf "$home2" "$skills2" "$proj2"
 
@@ -257,11 +276,23 @@ out7a="$(run_check --home-dir "$home7" --skills-dir "$skills7" --project-dir "$p
 grep -q "^RETENTION_DAYS=30$" <<<"$out7a" || fail "Case7 expected default RETENTION_DAYS=30:\n$out7a"
 grep -q "SEVERITY=INFO TYPE=window_exceeds_retention" <<<"$out7a" || fail "Case7 expected window_exceeds_retention INFO:\n$out7a"
 grep -q "^STATUS=OK$" <<<"$out7a" || fail "Case7 INFO must not raise STATUS:\n$out7a"
+grep -q "^ISSUE_COUNT=1$" <<<"$out7a" || fail "Case7 the INFO row must count in ISSUE_COUNT:\n$out7a"
+validate_block "Case7" "$out7a"
 echo '{"cleanupPeriodDays": 365}' > "$home7/.claude/settings.json"
 out7b="$(run_check --home-dir "$home7" --skills-dir "$skills7" --project-dir "$proj7" --window-days 90)"
 grep -q "^RETENTION_DAYS=365$" <<<"$out7b" || fail "Case7 expected RETENTION_DAYS=365 from user settings:\n$out7b"
 grep -q "window_exceeds_retention" <<<"$out7b" && fail "Case7 window within retention must not note:\n$out7b"
 pass "window wider than cleanupPeriodDays → INFO note"
+# Case 7c: the INFO row beside a WARN finding: REASON names the WARN row, and
+# its (+N more) tail counts the INFO row.
+rm -f "$home7/.claude/settings.json"
+make_skills "$skills7" never-used
+out7c="$(run_check --home-dir "$home7" --skills-dir "$skills7" --project-dir "$proj7" --window-days 90)"
+grep -q "^STATUS=WARN$" <<<"$out7c" || fail "Case7c expected STATUS=WARN:\n$out7c"
+grep -q "^ISSUE_COUNT=2$" <<<"$out7c" || fail "Case7c expected ISSUE_COUNT=2 (never_fired + INFO):\n$out7c"
+grep -q "^REASON=never_fired: .* (+1 more)$" <<<"$out7c" || fail "Case7c expected REASON=never_fired: … (+1 more):\n$out7c"
+validate_block "Case7c" "$out7c"
+pass "INFO row beside a WARN counts in ISSUE_COUNT and the REASON tail"
 rm -rf "$home7" "$skills7" "$proj7"
 
 # =============================================================================
@@ -419,16 +450,32 @@ grep -q "^STATUS=WARN$" <<<"$out15" || fail "Case15 expected STATUS=WARN:\n$out1
 grep -q "^REASON=never_fired: " <<<"$out15" || fail "Case15 expected REASON=never_fired: …:\n$out15"
 reason15="$(key_of "$out15" REASON)"
 [ "${#reason15}" -le 200 ] || fail "Case15 REASON longer than 200 chars:\n$reason15"
-# The repo's runtime contract validator, when this runs inside the repo.
-contract="${script_dir}/../../../../../scripts/check-structured-output-contract.sh"
-if [ -f "$contract" ]; then
-  for block in "$out14" "$out15"; do
-    bash "$contract" --validate - <<<"$block" >/dev/null 2>&1 \
-      || fail "Case15 output fails check-structured-output-contract.sh --validate:\n$block"
-  done
-fi
+validate_block "Case15 OK" "$out14"
+validate_block "Case15 WARN" "$out15"
 pass "REASON= on WARN, absent on OK"
 rm -rf "$home14" "$skills14" "$proj14"
+
+# -----------------------------------------------------------------------------
+# Case 16: bash older than 4.3 fails loudly instead of exiting 0 mid-run
+# -----------------------------------------------------------------------------
+old_bash=""
+for candidate in /bin/bash /usr/bin/bash; do
+  # shellcheck disable=SC2016 # the candidate shell expands it, not this one
+  if [ -x "$candidate" ] && [ "$("$candidate" -c 'echo "${BASH_VERSINFO[0]}"')" -lt 4 ]; then
+    old_bash="$candidate"; break
+  fi
+done
+if [ -n "$old_bash" ]; then
+  home16="$(sandbox)"; make_home "$home16"; proj16="$(sandbox)"
+  out16="$(env -u CLAUDE_CODE_PLUGIN_CACHE_DIR "$old_bash" "$check_script" --home-dir "$home16" --project-dir "$proj16")"; rc16=$?
+  [ "$rc16" -eq 1 ] || fail "Case16 expected exit 1 under $old_bash (rc=$rc16):\n$out16"
+  grep -q "TYPE=bash_too_old" <<<"$out16" || fail "Case16 expected TYPE=bash_too_old:\n$out16"
+  validate_block "Case16" "$out16"
+  pass "bash < 4 gives STATUS=ERROR TYPE=bash_too_old, exit 1"
+  rm -rf "$home16" "$proj16"
+else
+  echo "SKIP: case 16 needs a bash older than 4 (none at /bin/bash or /usr/bin/bash)"
+fi
 
 if [ "$fail_count" -gt 0 ]; then
   echo "FAILED: ${fail_count} assertion(s)" >&2

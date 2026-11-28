@@ -2,6 +2,9 @@
 # Check MCP Server Configuration
 # Validates MCP servers from .mcp.json and settings files.
 # Usage: bash check-mcp.sh --home-dir <path> --project-dir <path> [--verbose]
+#
+# With no server configured it reports STATUS=OK with CONFIGURED=false
+# (formerly STATUS=N_A, #3580); an invalid .mcp.json still reports ERROR.
 
 set -uo pipefail
 
@@ -21,6 +24,9 @@ done
 : "${home_dir:=$HOME}"
 : "${project_dir:=$(pwd)}"
 
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/summary.sh"
+
 echo "=== MCP SERVERS ==="
 
 issue_count=0
@@ -35,6 +41,7 @@ seen_servers=""
 if ! command -v jq >/dev/null 2>&1; then
   echo "JQ_AVAILABLE=false"
   echo "STATUS=ERROR"
+  echo "REASON=missing_tool: jq is required but not installed"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_tool MSG=jq is required but not installed"
@@ -47,7 +54,7 @@ fi
 # Claude Code also loads .mcp.json from directories ABOVE the project (observed
 # behaviour, undocumented upstream — issue #2666), so a repo inside a workspace
 # whose servers live in the workspace root used to report SERVER_COUNT=0 /
-# STATUS=N_A. Walk from --project-dir upward, including every ancestor's
+# CONFIGURED=false. Walk from --project-dir upward, including every ancestor's
 # .mcp.json, and stop after --home-dir or the filesystem root. The list is
 # NEAREST-FIRST so a nearer definition of a server name shadows an outer one,
 # and every server is reported with the file it came from (file=) so the output
@@ -177,18 +184,16 @@ for settings_file in "${settings_files[@]}"; do
   fi
 done
 
+# Nothing configured is not a failure: STATUS stays OK (or the ERROR an
+# invalid .mcp.json set) and CONFIGURED=false carries the nuance (#3580).
 if [ "$server_count" -eq 0 ]; then
   echo "MCP_CONFIGURED=false"
-  check_status="N_A"
+  echo "CONFIGURED=false"
 else
   echo "MCP_CONFIGURED=true"
+  echo "CONFIGURED=true"
 fi
 
 echo "SERVER_COUNT=${server_count}"
-echo "STATUS=${check_status}"
-echo "ISSUE_COUNT=${issue_count}"
-if [ -n "$issues_list" ]; then
-  echo "ISSUES:"
-  echo -e "$issues_list" | sed '/^$/d'
-fi
+emit_summary "$check_status" "$(echo -e "$issues_list")"
 echo "=== END MCP SERVERS ==="

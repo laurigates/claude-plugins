@@ -24,6 +24,9 @@ done
 : "${home_dir:=$HOME}"
 : "${project_dir:=$(pwd)}"
 
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/summary.sh"
+
 echo "=== PLUGIN REGISTRY ==="
 
 registry_file="${home_dir}/.claude/plugins/installed_plugins.json"
@@ -37,6 +40,7 @@ issues_list=""
 if ! command -v jq >/dev/null 2>&1; then
   echo "JQ_AVAILABLE=false"
   echo "STATUS=ERROR"
+  echo "REASON=missing_tool: jq is required but not installed"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_tool MSG=jq is required but not installed"
@@ -49,6 +53,7 @@ if [ ! -f "$registry_file" ]; then
   echo "REGISTRY_EXISTS=false"
   echo "REGISTRY_PATH=${registry_file}"
   echo "STATUS=WARN"
+  echo "REASON=missing_registry: Plugin registry file not found"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=WARN TYPE=missing_registry MSG=Plugin registry file not found"
@@ -60,13 +65,9 @@ echo "REGISTRY_EXISTS=true"
 echo "REGISTRY_PATH=${registry_file}"
 
 # Validate JSON syntax
-json_error=$(jq empty "$registry_file" 2>&1)
-if [ $? -ne 0 ]; then
+if ! json_error=$(jq empty "$registry_file" 2>&1); then
   echo "REGISTRY_VALID=false"
-  echo "STATUS=ERROR"
-  echo "ISSUE_COUNT=1"
-  echo "ISSUES:"
-  echo "  - SEVERITY=ERROR TYPE=invalid_json MSG=${json_error}"
+  emit_summary ERROR "  - SEVERITY=ERROR TYPE=invalid_json MSG=${json_error}"
   echo "=== END PLUGIN REGISTRY ==="
   exit 1
 fi
@@ -171,11 +172,6 @@ if [ "$fix_mode" = true ] && [ "$orphaned_count" -gt 0 ]; then
   echo "FIX_ORPHANS_REMOVED=${orphaned_count}"
 fi
 
-echo "STATUS=${check_status}"
-echo "ISSUE_COUNT=${issue_count}"
-if [ -n "$issues_list" ]; then
-  echo "ISSUES:"
-  echo -e "$issues_list" | sed '/^$/d'
-fi
+emit_summary "$check_status" "$(echo -e "$issues_list")"
 echo "FIX_SUPPORTED=true"
 echo "=== END PLUGIN REGISTRY ==="
