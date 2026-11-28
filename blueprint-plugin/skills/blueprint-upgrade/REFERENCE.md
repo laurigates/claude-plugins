@@ -22,7 +22,6 @@ Reference templates for `/blueprint:upgrade`: the v3.0.0 manifest schema produce
     "has_adrs": "[detected]",
     "has_prps": "[detected]",
     "has_work_orders": true,
-    "has_ai_docs": "[detected]",
     "has_modular_rules": "[preserved]",
     "has_document_detection": "[based on user choice]",
     "claude_md_mode": "[preserved]"
