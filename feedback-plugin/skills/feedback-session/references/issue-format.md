@@ -1,5 +1,12 @@
 # feedback-session: issue format, finding format, and summary
 
+**Every issue carries the type label of its `## Category`**: Bug → `bug`,
+Enhancement → `enhancement`, Positive feedback → `positive-feedback`. The
+filer sets it because nothing else can: git-plugin's `issue-labels.py` derives
+no type from a `feedback(<plugin>): …` title (#3783), since the same title
+form carries defects, enhancements and success reports, and its weekly audit
+reports an issue with no type label.
+
 **Labels** (when not `$SKIP_SESSION_LABELS`):
 - Bugs: `session-feedback`, `bug`
 - Enhancements: `session-feedback`, `enhancement`
@@ -8,7 +15,9 @@
 **Labels** (when `$SKIP_SESSION_LABELS=true`):
 - Bugs: `bug`
 - Enhancements: `enhancement`
-- Positive: *(no label — omit the `--label` flag)*
+- Positive: `positive-feedback` when the repo already has it
+  (`gh label list --limit 500 --json name --jq '.[].name'` lists it);
+  otherwise no label, and omit the `--label` flag
 
 **The label is the routing key.** The weekly `friction-learner` agent
 (`feedback-plugin/agents/friction-learner.md`, Step 0) fetches open

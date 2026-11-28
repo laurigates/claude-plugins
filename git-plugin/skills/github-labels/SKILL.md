@@ -113,7 +113,9 @@ one. A word inside the parentheses, or before the colon after a bracket
 (`[Chore] ci: ...`), is always a scope. A bracket word that is not a type word
 is a scope too, so an issue form's `[GitHub Repo]: ...` title is routed by a
 taxonomy entry with the scope `github repo`. `[Bench]` and `hw(...)` map to
-`enhancement`.
+`enhancement`, `[Task]` and `task(...)` to `chore`. A `feedback(<plugin>): ...`
+title maps to no type: feedback-plugin's `feedback-session` sets `bug`,
+`enhancement` or `positive-feedback` itself when it files the issue.
 
 An issue with no routing label from its title scope is routed by the repo paths
 its body quotes; a scope whose label the repo lacks counts as no scope. A PR

@@ -1285,7 +1285,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--type-map",
         default=(
             "bug=bug,fix;enhancement=feature,enhancement,feat,perf,bench,hw;"
-            "chore=chore,test,build,ci;docs=docs;refactor=refactor"
+            "chore=chore,task,test,build,ci;docs=docs;refactor=refactor"
         ),
         help="label=keyword,... per type, ';'-separated; keywords are the "
         "[Bracket] word or the conventional-commit type of a title",

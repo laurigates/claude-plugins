@@ -30,7 +30,9 @@
 # scope, a scope hit on a missing label hiding the body paths, uncapped PR
 # routing labels, an absent taxonomy reported as empty, a merge:/dependencies
 # label renamed into build:/area:, an unmapped [Bench]/hw( keyword, a malformed
-# unblock response losing the handled rows, and a trailing backslash on a path.
+# unblock response losing the handled rows, and a trailing backslash on a path;
+# an unmapped [Task] keyword and feedback-session filing without a type label
+# (#3783).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -192,6 +194,20 @@ is "the bracket word is offered beside the scope after it" "$(brk)" "build:roboc
 item "[Bug]: lid does not close" ""
 is "a type-word bracket is not a scope by default" "$(brk)" "bug"
 is "control: type_words_as_scope offers it" "$(brk "$TMP/tax-bracket-words.json")" "bug,area:triage"
+
+echo "=== task and feedback title keywords (#3783) ==="
+item "[Task] robocar-unified: map the wheels" ""
+is "[Task] -> chore by default" "$(cls)" "chore,build:robocar"
+item "task(balancebot): reflow the carrier" ""
+is "task(...) -> chore by default" "$(cls)" "chore,build:balancebot"
+# feedback-session adds the type label itself when it files (#3783 option 1),
+# because a feedback(...) title can be a defect, an enhancement or a success
+# report; one fixed type would be wrong for part of them.
+item "feedback(git-plugin): merge-chain.sh cannot run in cloud sessions" ""
+out=$(python3 "$TOOL" classify --fixture "$TMP/item.json" --taxonomy "$FX/taxonomy.json" --repo-labels "$FX/repo-labels.json")
+is "feedback(...) derives no type label" \
+    "$(jq -r '[.derived[] | select(.source | startswith("title:"))] | length' <<<"$out")" "0"
+is "feedback(...) adds nothing from its title" "$(jq -r '.add | join(",")' <<<"$out")" ""
 
 echo "=== bench and hw title keywords map to a type (#3587 gap 8) ==="
 item "[Bench] robocar-unified: measure the mic" ""
@@ -856,6 +872,19 @@ grep -Eq -- '--limit [0-9]{1,2}([^0-9]|$)' <<<"$labels_skill$writing_skill" &&
 grep -F 'gh label list -' <<<"$labels_skill$writing_skill" | grep -vqF -- '--limit 500' &&
     notok "a 'gh label list' command without --limit 500 is in a skill" || ok "every 'gh label list' command in the two skills passes --limit 500"
 hasnt "github-issue-writing dropped the priority: example" "$writing_skill" "priority:"
+
+echo "=== feedback-session sets the type label classify will not derive (#3783) ==="
+# classify derives no type from a feedback(<plugin>): title, so the filer is the
+# only source of one; this pins the half of #3783 that lives in feedback-plugin.
+feedback_format=$(cat "$SCRIPT_DIR/../../../feedback-plugin/skills/feedback-session/references/issue-format.md")
+has "feedback-session names the type label as required" "$feedback_format" 'Every issue carries the type label of its `## Category`'
+for pair in 'Bug → `bug`' 'Enhancement → `enhancement`' 'Positive feedback → `positive-feedback`'; do
+    has "feedback-session maps $pair" "$feedback_format" "$pair"
+done
+skip_block=$(sed -n '/when `$SKIP_SESSION_LABELS=true`/,/^$/p' <<<"$feedback_format")
+has "the skip-session-labels case still sets bug" "$skip_block" '- Bugs: `bug`'
+has "and enhancement" "$skip_block" '- Enhancements: `enhancement`'
+has "and positive-feedback where the repo has it" "$skip_block" '- Positive: `positive-feedback` when the repo already has it'
 
 echo "PASSED=$PASS FAILED=$FAIL"
 [ "$FAIL" -eq 0 ]
