@@ -5,7 +5,7 @@ allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/workflow-capture-surv
 argument-hint: "--dry-run | --orchestrated | --plugins-repo owner/name | --usage"
 args: "[--dry-run] [--orchestrated] [--plugins-repo <owner/name>] [--usage [--all-projects]]"
 created: 2026-11-14
-modified: 2026-11-15
+modified: 2026-11-28
 reviewed: 2026-11-14
 ---
 
@@ -59,9 +59,9 @@ Reuse a digest session-end already passed.
 With `--usage`, run `workflow-capture-survey.sh --usage` (add `--all-projects`),
 report the `WORKFLOW USAGE` counts, and stop.
 
-`STATUS=SKIP` means no transcript was reachable. Judge from the conversation
-alone. If the session ran no Workflow and no workflow caused friction, say so
-in one line and end.
+On `STATUS=SKIP` (no transcript) or `WARN` (layout moved; report the `REASON`),
+judge from the conversation alone. If the session ran no Workflow and no
+workflow caused friction, say so in one line and end.
 
 ### Step 2: Judge the findings
 

@@ -37,6 +37,8 @@ and loads any `*.js` from `.claude/workflows/` (project) and
 | | `SAVED_*_COUNT`, `PLUGIN_REGISTERED_COUNT`, `BUNDLED_TEMPLATE_COUNT` | Distinct names per scope. Plugins are read only at the version Claude Code loads: the `installPath` in `~/.claude/plugins/installed_plugins.json` (a project-scope entry for this project first, else the user entry), or the newest cached version when the registry cannot be read. The cache keeps every old version, so scanning it whole would count each template once per version |
 | `SUMMARY` | `CAPTURE_CANDIDATE_COUNT` | Workflows whose origin is `authored` or `adapted` |
 | | `FRICTION_SIGNAL_COUNT` | Workflows with at least one signal |
+| | `WORKFLOW_RESULT_COUNT` | Distinct `runId`s among the transcript's Workflow tool results (needs `jq`; `0` without it) |
+| | `STATUS`, `REASON` | `WARN` with `REASON=layout_unrecognized: ...` when `WORKFLOW_RESULT_COUNT` > 0 but no run script and no journal sits at the paths in the "Where the data comes from" table, which is what a release that moves them looks like; `OK` otherwise. A run script present for any run, or a journal for any result `runId`, counts as a recognised layout |
 
 `--summary` prints only the survey header and `SUMMARY`, which is what
 `session-plugin:session-end` reads to decide whether the pass qualifies.
