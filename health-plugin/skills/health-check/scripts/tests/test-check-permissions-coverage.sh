@@ -5,8 +5,11 @@
 # rule form, so a project whose rules use the `Bash(<tool> *)` form this repo
 # teaches read every tool as MISSING. The script must accept both forms plus
 # bare `Bash` / `Bash(*)`, read user, project and project-local settings, scan
-# justfile/Makefile/.pre-commit-config.yaml, and keep the OK (0) / WARN (1-3) /
-# ERROR (4+) thresholds.
+# justfile/Makefile/.pre-commit-config.yaml, and score OK (0) / WARN (1+).
+# Any number of missing rules caps at WARN (#3578): under auto mode a command
+# with no allow rule goes to the classifier instead of prompting, so a missing
+# rule costs latency, not correctness. ERROR is kept for the script failing to
+# run (bash_too_old, missing jq).
 #
 # Accuracy repairs (cases J-M), each failing against the first version:
 #   J  ~/.claude/settings.local.json was read as coverage for every project,
@@ -135,14 +138,19 @@ out="$(run_check "$c")"
 grep -q 'TOOL=npm .*npm install' <<<"$out" && pass "Bash(npm run *) does not cover npm install" \
   || fail "case D expected npm install to be missing:\n$out"
 
-# --- Case E: no settings at all -> every tool missing; 4+ -> ERROR, exit 1
+# --- Case E: no settings at all -> every tool missing; capped at WARN, exit 0
+# (#3578: the old 4+ -> ERROR threshold turned the rollup red on repos that
+# work under auto mode)
 c="$(new_case e)"
 printf '%s' "$JUSTFILE_BODY" > "$c/proj/justfile"
 out="$(run_check "$c")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '^STATUS=ERROR$' <<<"$out" && grep -q '^TOOLS_MISSING=5$' <<<"$out" \
+[ "$rc" -eq 0 ] && grep -q '^STATUS=WARN$' <<<"$out" && grep -q '^TOOLS_MISSING=5$' <<<"$out" \
   && grep -q '^ISSUE_COUNT=5$' <<<"$out" \
-  && pass "no-settings project with 5 tools gives ERROR, exit 1" \
-  || fail "case E expected ERROR, 5 missing, exit 1 (rc=$rc):\n$out"
+  && pass "no-settings project with 5 tools gives WARN (capped), exit 0" \
+  || fail "case E expected WARN, 5 missing, exit 0 (rc=$rc):\n$out"
+grep -q 'SEVERITY=ERROR' <<<"$out" \
+  && fail "case E: a missing rule must never carry SEVERITY=ERROR:\n$out" \
+  || pass "missing-rule rows carry SEVERITY=WARN only"
 grep -q '^PROJECT_SETTINGS=MISSING$' <<<"$out" && pass "missing project settings reported" \
   || fail "case E expected PROJECT_SETTINGS=MISSING:\n$out"
 grep -q '^REASON=.* (+4 more)$' <<<"$out" && pass "REASON carries the (+N more) tail" \

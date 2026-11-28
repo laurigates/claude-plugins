@@ -31,11 +31,14 @@
 # shell keywords/builtins are not counted.
 #
 # Scoring (distinct tools with at least one unmatched command):
-#   0 -> OK, 1-3 -> WARN, 4+ -> ERROR.
+#   0 -> OK, 1+ -> WARN. A missing rule never scores ERROR (#3578): under auto
+#   mode a command with no allow rule goes to the classifier instead of
+#   prompting, so it costs latency, not correctness. ERROR is reserved for the
+#   script failing to run (bash older than 4, jq missing).
 # Allow rules in the project files whose tool no scanned file runs are listed
 # as UNUSED_RULE (informational, never a finding).
 #
-# Exit 0 on OK/WARN, 1 on ERROR.
+# Exit 0 on OK/WARN, 1 on ERROR (the script could not run).
 # Usage: bash check-permissions-coverage.sh --home-dir <path> --project-dir <path> [--verbose]
 
 set -uo pipefail
@@ -446,11 +449,7 @@ if [ "$missing_count" -eq 0 ]; then
   exit 0
 fi
 
-if [ "$missing_count" -ge 4 ]; then
-  check_status="ERROR"
-else
-  check_status="WARN"
-fi
+check_status="WARN"
 
 issues_out=""
 first_reason=""
@@ -473,6 +472,4 @@ echo "ISSUE_COUNT=${missing_count}"
 echo "ISSUES:"
 printf '%s' "$issues_out"
 echo "=== END PERMISSIONS COVERAGE ==="
-
-[ "$check_status" = "ERROR" ] && exit 1
 exit 0
