@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.52.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.52.0...blueprint-plugin-v3.52.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** retire structure.has_ai_docs from templates and upgrade ([#3877](https://github.com/laurigates/claude-plugins/issues/3877)) ([8913c3e](https://github.com/laurigates/claude-plugins/commit/8913c3e4373ecec41368f21895fd8527dd663f01)), closes [#3610](https://github.com/laurigates/claude-plugins/issues/3610)
+
 ## [3.52.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.51.11...blueprint-plugin-v3.52.0) (2026-11-17)
 
 

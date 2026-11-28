@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.77.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.77.1...git-plugin-v2.77.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** accept $HOME paths and inert heredocs in external-pr-merge-guard ([#3881](https://github.com/laurigates/claude-plugins/issues/3881)) ([a545099](https://github.com/laurigates/claude-plugins/commit/a5450999aa26490f001d1d14a4e5860fcc3863ff)), closes [#3533](https://github.com/laurigates/claude-plugins/issues/3533)
+
 ## [2.77.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.77.0...git-plugin-v2.77.1) (2026-11-27)
 
 

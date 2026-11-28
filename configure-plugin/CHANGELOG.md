@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.45.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.44.2...configure-plugin-v1.45.0) (2026-11-28)
+
+
+### Features
+
+* **configure-plugin:** report stacks one directory down as candidate stacks ([7bbc06f](https://github.com/laurigates/claude-plugins/commit/7bbc06f7761437dfb7be80f835265af7c8fb7813)), closes [#3728](https://github.com/laurigates/claude-plugins/issues/3728)
+
+
+### Bug Fixes
+
+* **configure-plugin:** choose the review workflow layout by probing &lt;owner&gt;/.github ([643f003](https://github.com/laurigates/claude-plugins/commit/643f003fb0a79f116b85d0e8dfe8704171786ad6)), closes [#3536](https://github.com/laurigates/claude-plugins/issues/3536)
+* **configure-plugin:** resolve CI failure in Plugin: PR checks ([3fef44a](https://github.com/laurigates/claude-plugins/commit/3fef44a549159bb36b1daae763bba6f4ba18b912))
+
+
+### Documentation
+
+* **configure-plugin:** correct the auto-mode claim and the reusable-workflow gotcha ([8315afd](https://github.com/laurigates/claude-plugins/commit/8315afdfe8bb8feff2f05ef425de32a8fdfcccf8)), closes [#3536](https://github.com/laurigates/claude-plugins/issues/3536)
+
 ## [1.44.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.44.1...configure-plugin-v1.44.2) (2026-11-26)
 
 

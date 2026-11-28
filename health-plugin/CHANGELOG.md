@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.10](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.9...health-plugin-v1.24.10) (2026-11-28)
+
+
+### Bug Fixes
+
+* **health-plugin:** cap missing allow rules at WARN in permissions coverage check ([#3878](https://github.com/laurigates/claude-plugins/issues/3878)) ([54c5acb](https://github.com/laurigates/claude-plugins/commit/54c5acb3828bcb8f3fd7347c90fa4e9cf7903da5)), closes [#3578](https://github.com/laurigates/claude-plugins/issues/3578)
+
 ## [1.24.9](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.8...health-plugin-v1.24.9) (2026-11-15)
 
 
