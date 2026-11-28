@@ -6,9 +6,14 @@
 # blueprint check. It is a behavioral cue (ADR-0017), not a gate: the edit has
 # already happened, and it degrades to silence on any error.
 #
+# Silent in a project with no docs/blueprint/manifest.json (#3799): without a
+# blueprint there are no PRDs or ADRs for the named commands to act on.
+#
 # Mechanism: PostToolUse {"decision":"block","reason":"<cue>"} with
 # continueOnBlock:true in hooks.json, so the model sees the cue and the turn
 # continues - the same channel code-quality-preflight-cue.sh uses for this event.
+# The harness labels this channel "hook blocking error", so the reason opens with
+# "Advisory (edit applied):" to tell the model the edit landed (#3799).
 #
 # Why not hookSpecificOutput.updatedToolOutput (the pre-#2275 mechanism): that
 # field is validated against the TOOL'S OWN output shape. Write/Edit's shape is
@@ -136,20 +141,26 @@ esac
 
 [ "$is_structural" -eq 0 ] && exit 0
 
-# --- Which blueprint tasks may the cue name? (#3648) ---
-# A repo can disable a task in docs/blueprint/manifest.json
-# (task_registry.<task>.enabled: false); naming it would recommend a command the
-# repo has turned off. Only an explicit `false` drops a task. No manifest, no
-# jq, an unparsable manifest, or no task_registry all keep both names, so the
-# cue degrades to its pre-#3648 text rather than to silence.
-cue_tasks="derive-plans adr-validate"
+# --- Is this a blueprint project? (#3799) ---
+# No docs/blueprint/manifest.json means no PRDs or ADRs to keep current, so the
+# cue would name commands with nothing to act on. Exit before the dedup marker,
+# like the all-disabled case below.
 project_dir="${CLAUDE_PROJECT_DIR:-}"
 if [ -z "$project_dir" ]; then
     project_dir=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null || echo "")
 fi
 project_dir="${project_dir:-$PWD}"
 manifest_path="${project_dir}/docs/blueprint/manifest.json"
-if [ -f "$manifest_path" ] && command -v jq >/dev/null 2>&1; then
+[ -f "$manifest_path" ] || exit 0
+
+# --- Which blueprint tasks may the cue name? (#3648) ---
+# A repo can disable a task in docs/blueprint/manifest.json
+# (task_registry.<task>.enabled: false); naming it would recommend a command the
+# repo has turned off. Only an explicit `false` drops a task. With a manifest
+# present, no jq, an unparsable manifest, or no task_registry all keep both
+# names, so the cue degrades to its pre-#3648 text rather than to silence.
+cue_tasks="derive-plans adr-validate"
+if command -v jq >/dev/null 2>&1; then
     if registry_tasks=$(jq -r '
             (try .task_registry catch null) as $reg
             | ["derive-plans", "adr-validate"]
@@ -184,7 +195,8 @@ cue="Structural change detected (manifest / public API). Consider ${cue_commands
 # the turn continues with the reason fed back to the model. Deliberately does NOT
 # echo tool_response back - the Write/Edit response carries the file's content,
 # and re-emitting it here would both bloat the transcript and risk the model
-# reading hook text as file text.
-jq -n --arg reason "[blueprint] ${cue}" '{"decision":"block","reason":$reason}'
+# reading hook text as file text. The "Advisory (edit applied):" opener (#3799)
+# follows the harness's "hook blocking error" label directly.
+jq -n --arg reason "Advisory (edit applied): [blueprint] ${cue}" '{"decision":"block","reason":$reason}'
 
 exit 0
