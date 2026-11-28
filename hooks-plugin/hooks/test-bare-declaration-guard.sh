@@ -15,8 +15,8 @@
 #     print an exported canary when run with its variables unset; a line the
 #     hook allows must not. This is what ties the hook's pattern to what the
 #     shells do, so a pattern change that drifts from the behaviour fails here.
-#     bash is always run; zsh is run when installed, and skipped with a note
-#     when not.
+#     bash is always run; zsh is run when installed. Without zsh the suite
+#     still runs everything else, then reports itself as a SKIP (see below).
 #   - The fixes the block message prints are themselves allowed, or a block
 #     becomes a retry loop.
 #   - Which files count as shell files: extension, rc-file name, chezmoi
@@ -26,6 +26,25 @@
 #   - The `# allow-bare-decl` comment, the opt-out variable, other tools, and
 #     input the hook cannot parse.
 set -uo pipefail
+
+# Without zsh the zsh column cannot run, and four rows (`local $names`, which
+# lists parameters in zsh only) then have no shell behind them. This suite is
+# listed in scripts/required-to-run-tests.txt and the `Test: Skill scripts`
+# workflow installs zsh for it (#3629), so it re-runs itself with every line
+# indented and ends on ONE unindented SKIP line, which
+# scripts/run-skill-script-tests.sh reports as a skip (an ERROR for a required
+# suite) rather than a pass over the bash half. BARE_DECL_TEST_NO_ZSH=1 hides
+# zsh for test-bare-declaration-guard-zsh-floor.sh.
+if [ -z "${BARE_DECL_SUITE_INNER:-}" ] && {
+    [ "${BARE_DECL_TEST_NO_ZSH:-}" = 1 ] || ! command -v zsh >/dev/null 2>&1
+}; then
+    suite_rc=0
+    suite_out=$(BARE_DECL_SUITE_INNER=1 bash "$0" "$@" 2>&1) || suite_rc=$?
+    printf '%s\n' "$suite_out" | sed 's/^/  /'
+    [ "$suite_rc" -eq 0 ] || exit "$suite_rc"
+    echo "SKIP: zsh is not installed (or BARE_DECL_TEST_NO_ZSH=1); the zsh column of the fixture table did not run"
+    exit 0
+fi
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/bare-declaration-guard.sh"
 PASS=0
@@ -148,7 +167,7 @@ prints_canary() {
 echo ""
 echo "Fixture table: what the shells do"
 HAVE_ZSH=0
-command -v zsh >/dev/null 2>&1 && HAVE_ZSH=1
+[ "${BARE_DECL_TEST_NO_ZSH:-}" != 1 ] && command -v zsh >/dev/null 2>&1 && HAVE_ZSH=1
 [ "$HAVE_ZSH" -eq 1 ] || echo "  NOTE: zsh is not installed; the zsh column is not run"
 
 # Control: the method can see a listing and can see its absence.

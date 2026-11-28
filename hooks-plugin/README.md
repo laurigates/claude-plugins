@@ -363,7 +363,7 @@ Which shells print the listing was measured with an exported canary variable (ba
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_BARE_DECLARATION_GUARD=1` in your shell environment. An inline prefix does not reach the hook.
 
-**Tests:** `bash hooks-plugin/hooks/test-bare-declaration-guard.sh` (bash always; the zsh column when `zsh` is installed, and the make and just rows when those tools are; the summary line says when the zsh column did not run).
+**Tests:** `bash hooks-plugin/hooks/test-bare-declaration-guard.sh` (bash always; the zsh column when `zsh` is installed, and the make and just rows when those tools are). Without `zsh` the suite still runs the bash half, indents its output and ends on one `SKIP:` line. The `Test: Skill scripts` workflow installs `zsh` and lists the suite in `scripts/required-to-run-tests.txt`, so in CI a missing `zsh` is an error rather than a pass over the bash half (#3629). `bash hooks-plugin/hooks/test-bare-declaration-guard-zsh-floor.sh` pins that behaviour; `BARE_DECL_TEST_NO_ZSH=1` hides `zsh` from the suite.
 
 ### external-pr-merge-guard.sh
 
