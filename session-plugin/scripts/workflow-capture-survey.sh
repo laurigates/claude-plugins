@@ -38,6 +38,9 @@
 #   Workflow tool_use input keys: script | scriptPath | name, resumeFromRunId, args
 #   Workflow toolUseResult keys:  runId, scriptPath, workflowName, transcriptDir,
 #     status (the launch status, e.g. async_launched, not the run's outcome)
+# When the transcript holds Workflow results but no run script and no journal
+# sits at these paths, session mode reports STATUS=WARN with
+# REASON=layout_unrecognized: a moved layout must not read as RUN_COUNT=0 OK.
 set -uo pipefail
 
 project_dir=""
@@ -507,6 +510,23 @@ session_mode() {
   [ -n "$run_rows" ] && run_count=$(wc -l <<<"$run_rows")
   run_count=$((run_count + 0))
 
+  # Layout check (#3683): the transcript recorded Workflow results, yet neither
+  # a persisted script nor a journal sits where the layout above puts them. A
+  # release that moved those paths would otherwise read as a session that ran
+  # no Workflow. Needs jq, like the transcript join it reuses.
+  local result_ids result_count=0 layout_reason="" rid_chk journal_found=false
+  result_ids=$(cut -f1 <<<"$calls_by_run" | sed '/^$/d' | sort -u)
+  [ -n "$result_ids" ] && result_count=$(wc -l <<<"$result_ids")
+  result_count=$((result_count + 0))
+  if [ "$result_count" -gt 0 ] && [ "$run_count" -eq 0 ]; then
+    while IFS= read -r rid_chk; do
+      [ -n "$session_dir" ] && [ -f "${session_dir}/subagents/workflows/${rid_chk}/journal.jsonl" ] && { journal_found=true; break; }
+    done <<<"$result_ids"
+    if [ "$journal_found" = false ]; then
+      layout_reason="layout_unrecognized: ${result_count} Workflow result(s) in the transcript, but no run script under workflows/scripts/ and no journal under subagents/workflows/<runId>/"
+    fi
+  fi
+
   if [ "$summary_mode" = false ]; then
     echo "=== SESSION RUNS ==="
     echo "RUN_COUNT=${run_count}"
@@ -590,8 +610,15 @@ session_mode() {
   echo "WORKFLOW_COUNT=${wf_count}"
   echo "CAPTURE_CANDIDATE_COUNT=${candidates}"
   echo "FRICTION_SIGNAL_COUNT=${friction}"
-  echo "STATUS=OK"
-  echo "ISSUE_COUNT=0"
+  echo "WORKFLOW_RESULT_COUNT=${result_count}"
+  if [ -n "$layout_reason" ]; then
+    echo "STATUS=WARN"
+    echo "REASON=${layout_reason:0:200}"
+    echo "ISSUE_COUNT=1"
+  else
+    echo "STATUS=OK"
+    echo "ISSUE_COUNT=0"
+  fi
   echo "=== END SUMMARY ==="
 }
 

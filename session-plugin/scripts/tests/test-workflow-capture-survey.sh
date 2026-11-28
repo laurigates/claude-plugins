@@ -8,7 +8,8 @@
 # matched by bytes), meta.name parsing (single-line meta, double quotes with an
 # apostrophe), signals, owning-repo lookup from a plugin manifest, the calling
 # repo from git, the plugins-repo settings override, SKIP on a missing session,
-# --summary shape, and --usage counts.
+# --summary shape, --usage counts, and STATUS=WARN when the transcript has
+# Workflow results but the on-disk layout is not found (#3683).
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -340,6 +341,72 @@ OUT=$(WORKFLOW_CAPTURE_PROJECTS_DIR="$H3/.claude/projects" WORKFLOW_CAPTURE_PLUG
         bash "$COLLECTOR" --home-dir "$H3" --project-dir "$P4" --session-id "$SID3")
 check "F user-scope entry for another project" "$OUT" "BUNDLED_TEMPLATE_COUNT=1"
 check_absent "F user scope skips the project pin" "$OUT" "old-only"
+
+# === TEST G: Workflow results with no recognised on-disk layout warn (#3683) =========
+# A release that moves the persisted scripts and journals must not read as a
+# session that ran no Workflow (RUN_COUNT=0 with STATUS=OK).
+P5="$SANDBOX/p5"; H5="$SANDBOX/h5"; PR5="$H5/.claude/projects"; SL5="$PR5/-p5"
+mkdir -p "$P5" "$SL5"
+run5() { WORKFLOW_CAPTURE_PROJECTS_DIR="$PR5" WORKFLOW_CAPTURE_PLUGIN_CACHE="$H5/cache" \
+           bash "$COLLECTOR" --home-dir "$H5" --project-dir "$P5" "$@"; }
+SID5="55555555-5555-5555-5555-555555555555"
+{ tu g1 '{"script":"..."}'; tr_ g1 wf_9999aaaa-001 moved-flow; } > "$SL5/$SID5.jsonl"
+# The session dir exists, but the script sits where 2.1.325 never put it.
+mkdir -p "$SL5/$SID5/workflows/runs"
+printf "return 1\n" > "$SL5/$SID5/workflows/runs/moved-flow-wf_9999aaaa-001.js"
+OUT=$(run5 --session-id "$SID5"); rc=$?
+check "G exit 0 on WARN" "rc=$rc" "rc=0"
+check "G no runs found" "$OUT" "RUN_COUNT=0"
+check "G result count" "$OUT" "WORKFLOW_RESULT_COUNT=1"
+check "G warns" "$OUT" "STATUS=WARN"
+check "G issue count" "$OUT" "ISSUE_COUNT=1"
+REASON=$(value_of "$OUT" REASON)
+case "$REASON" in
+  layout_unrecognized:*) pass=$((pass + 1)) ;;
+  *) fail=$((fail + 1)); echo "FAIL: G reason names the cause (got: ${REASON:-none})" ;;
+esac
+if [ "${#REASON}" -le 200 ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: G reason over 200 chars"; fi
+OUT=$(run5 --session-id "$SID5" --summary)
+check "G --summary warns too" "$OUT" "STATUS=WARN"
+# The transcript alone, with no session dir at all, is the same failure.
+SID6="66666666-6666-6666-6666-666666666666"
+{ tu g2 '{"name":"x"}'; tr_ g2 wf_9999bbbb-002 x; } > "$SL5/$SID6.jsonl"
+OUT=$(run5 --session-id "$SID6" --summary)
+check "G transcript only warns" "$OUT" "STATUS=WARN"
+# Controls: a session with no Workflow result stays OK at zero, and the layout
+# that matches (TEST A's session) stays OK without a reason.
+SID7="77777777-7777-7777-7777-777777777777"
+printf '{"type":"assistant","message":{"content":[{"type":"text","text":"no tool"}]}}\n' > "$SL5/$SID7.jsonl"
+mkdir -p "$SL5/$SID7"
+OUT=$(run5 --session-id "$SID7")
+check "G no results stays OK" "$OUT" "STATUS=OK"
+check "G no results count" "$OUT" "WORKFLOW_RESULT_COUNT=0"
+check_absent "G no reason on OK" "$OUT" "REASON="
+# A journal for a result runId is a recognised layout even when the scripts dir
+# has moved: no run script is found, yet the session stays OK.
+SID8="88888888-8888-8888-8888-888888888888"
+{ tu g3 '{"name":"j"}'; tr_ g3 wf_9999cccc-003 j; } > "$SL5/$SID8.jsonl"
+mkdir -p "$SL5/$SID8/subagents/workflows/wf_9999cccc-003"
+printf '{"type":"launched"}\n' > "$SL5/$SID8/subagents/workflows/wf_9999cccc-003/journal.jsonl"
+OUT=$(run5 --session-id "$SID8")
+check "G journal only: no runs found" "$OUT" "RUN_COUNT=0"
+check "G journal only: result count" "$OUT" "WORKFLOW_RESULT_COUNT=1"
+check "G journal only stays OK" "$OUT" "STATUS=OK"
+check_absent "G journal only has no reason" "$OUT" "REASON="
+# A run script under workflows/scripts/ is a recognised layout even when no
+# result runId has a journal: the run_count guard keeps this session OK.
+SID9="99999999-9999-9999-9999-999999999999"
+{ tu g4 '{"name":"s"}'; tr_ g4 wf_9999dddd-004 s; } > "$SL5/$SID9.jsonl"
+mkdir -p "$SL5/$SID9/workflows/scripts"
+printf "return 1\n" > "$SL5/$SID9/workflows/scripts/scripted-flow-wf_9999dddd-004.js"
+OUT=$(run5 --session-id "$SID9")
+check "G scripts only: run found" "$OUT" "RUN_COUNT=1"
+check "G scripts only stays OK" "$OUT" "STATUS=OK"
+check_absent "G scripts only has no reason" "$OUT" "REASON="
+OUT=$(run --session-id "$SID")
+check "G recognised layout stays OK" "$OUT" "STATUS=OK"
+check "G recognised layout result count" "$OUT" "WORKFLOW_RESULT_COUNT=5"
+check_absent "G recognised layout has no reason" "$OUT" "REASON="
 
 echo ""
 echo "workflow-capture-survey: $pass passed, $fail failed"

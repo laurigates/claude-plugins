@@ -39,7 +39,9 @@
 #   private_term      ERROR   -        --deny-file and private_terms: entries
 #   repo_name         WARN    -        the calling repo's bare name as a word
 #   checkout_dir      WARN    -        the checkout directory name as a word
-#   ip_address        WARN    WARN     IPv4 outside loopback and the documentation ranges
+#   ip_address        WARN    WARN     IPv4 outside loopback and the documentation ranges; a
+#                                      four-part version (v1.2.3.4, version 22.11.0.4, an
+#                                      octet over 255, a -rc1/-beta2/+build7 suffix) is skipped
 #   internal_host     WARN    -        *.internal, *.local, *.lan, *.corp, *.intra, *.svc
 #   relative_link     WARN    -        a markdown link into ../ or ./ (dead in another repo)
 #   ticket_link       WARN    -        Jira-style /browse/KEY-123 links
@@ -195,12 +197,33 @@ while IFS= read -r line; do
   add "$s_mail" email "${line%%:*}" "email address ($(show "${line#*:}"))"
 done <<<"$mail_hits"
 s_ip=$(sev WARN WARN)
-ip_hits=$(grep -noE '(^|[^0-9.])([0-9]{1,3}\.){3}[0-9]{1,3}($|[^0-9.])' "$draft" 2>/dev/null || true)
+# A dotted quad is a version, not an address, when an octet exceeds 255, when
+# a lone v/V sits right before it (v22.11.0.4), when the word before it is
+# version/ver/release/build, or when a pre-release tag (-rc1, -alpha, -beta2,
+# -pre, -dev, -snapshot) or a +<alnum> suffix follows (22.11.0.4+build7). Each
+# match carries the word before it and any suffix so those can be read; a bare
+# quad stays a WARN (#3683). Not skipped: user@10.1.2.3 (ssh, scp, git remotes,
+# URL userinfo) and 10.0.0.1-eth0, which are addresses. Known gap: a word rule
+# reads only the word right before a quad, so "10.1.2.3 build 10.4.5.6" skips
+# the second address.
+is_version_quad() { # match-text ip
+  local m="$1" ip="$2" pre post o
+  for o in ${ip//./ }; do [ $((10#$o)) -gt 255 ] && return 0; done
+  pre=$(tr '[:upper:]' '[:lower:]' <<<"${m%%"$ip"*}")
+  post=${m#*"$ip"}
+  post=$(tr '[:upper:]' '[:lower:]' <<<"$post")
+  [[ "$pre" =~ (^|[^a-z])v$ ]] && return 0
+  [[ "$pre" =~ (^|[^a-z])(version|ver|release|build)[[:space:]]*[:=]?[[:space:]]*$ ]] && return 0
+  [[ "$post" =~ ^(-(rc|alpha|beta|pre|dev|snapshot)[0-9]*([^0-9a-z]|$)|\+[0-9a-z]) ]] && return 0
+  return 1
+}
+ip_hits=$(grep -noE '(^|[^0-9.])([A-Za-z]+[[:space:]]*[:=]?[[:space:]]*)?([0-9]{1,3}\.){3}[0-9]{1,3}([-+][0-9A-Za-z]+)?($|[^0-9.])' "$draft" 2>/dev/null || true)
 while IFS= read -r line; do
   [ -n "$line" ] || continue
   ip=$(grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' <<<"${line#*:}")
   ip=${ip%%$'\n'*}
   case "$ip" in 127.*|0.0.0.0|192.0.2.*|198.51.100.*|203.0.113.*) continue ;; esac
+  is_version_quad "${line#*:}" "$ip" && continue
   add "$s_ip" ip_address "${line%%:*}" "IPv4 address ($ip)"
 done <<<"$ip_hits"
 scan internal_host "$(sev WARN -)" '[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.(internal|local|lan|corp|intra|svc)\.?([^A-Za-z0-9.-]|$)' "internal hostname"

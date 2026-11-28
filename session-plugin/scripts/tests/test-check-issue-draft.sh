@@ -5,7 +5,8 @@
 # Every leak class is paired with a clean counterpart so the suite fails both a
 # scanner that misses the class and one that flags everything: home paths vs
 # ~/.claude config paths, real emails vs noreply/example, private IPs vs the
-# documentation ranges, the calling repo vs the same repo as target. Also:
+# documentation ranges and four-part version strings, the calling repo vs the
+# same repo as target. Also:
 # audience severities (public vs project), private terms from settings (inline
 # and block lists) and a deny file, a stubbed gitleaks (rows added, duplicates
 # with the regex set suppressed), usage errors, and the structured-output
@@ -233,6 +234,38 @@ OUT=$(bash "$SCANNER" --draft "$D" --audience public --project-dir "$PROJ4" --ho
 check "J no remote warns" "$OUT" "SEVERITY=WARN TYPE=calling_repo_unknown"
 OUT=$(bash "$SCANNER" --draft "$D" --audience project --project-dir "$PROJ4" --home-dir "$HOME_DIR" --target-repo acme/plugs)
 check_absent "J no remote: project audience silent" "$OUT" "calling_repo_unknown"
+
+# === TEST K: a four-part version string is not an IPv4 address (#3683) ==================
+D=$(draft \
+  "Upgraded to version 22.11.0.4 today" \
+  "Version: 22.11.0.4 and release=22.11.0.4 and build 22.11.0.4" \
+  "Pinned v22.11.0.4 and V22.11.0.4" \
+  "Agent 4.2.1.512 shipped" \
+  "Tagged 22.11.0.4-rc1, 22.11.0.4-beta2 and 22.11.0.4+build7")
+OUT=$(scan public "$D" --target-repo acme/plugs)
+check_absent "K version strings raise no ip_address row" "$OUT" "TYPE=ip_address"
+check "K version strings OK" "$OUT" "STATUS=OK"
+# Controls: a bare address still warns, and a version earlier on a line does not
+# hide an address after it.
+D=$(draft "server at 22.11.0.4 answered" "version 22.11.0.4 on host 10.1.2.3")
+OUT=$(scan public "$D" --target-repo acme/plugs)
+check "K bare address still warns" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=1 MSG=IPv4 address (22.11.0.4)"
+check "K address after a version on the same line" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=2 MSG=IPv4 address (10.1.2.3)"
+check_absent "K the version itself is not reported" "$OUT" "LINE=2 MSG=IPv4 address (22.11.0.4)"
+# Controls: an address after user@ (ssh, scp, git remotes, URL userinfo) or with an
+# interface suffix is an address, not a version, and still warns.
+D=$(draft \
+  "ssh root@10.1.2.3" \
+  "scp file deploy@192.168.1.20:/tmp" \
+  "clone from git@10.0.0.5:org/repo.git" \
+  "curl http://user@172.16.0.9/api" \
+  "router 10.0.0.1-eth0 down")
+OUT=$(scan public "$D" --target-repo acme/plugs)
+check "K user@address warns (ssh)" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=1 MSG=IPv4 address (10.1.2.3)"
+check "K user@address warns (scp)" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=2 MSG=IPv4 address (192.168.1.20)"
+check "K user@address warns (remote)" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=3 MSG=IPv4 address (10.0.0.5)"
+check "K user@address warns (URL userinfo)" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=4 MSG=IPv4 address (172.16.0.9)"
+check "K interface suffix warns" "$OUT" "SEVERITY=WARN TYPE=ip_address LINE=5 MSG=IPv4 address (10.0.0.1)"
 
 # === TEST I: structured-output contract ==================================================
 if [ -f "$CONTRACT" ]; then

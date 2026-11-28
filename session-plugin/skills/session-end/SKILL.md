@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Runs reversible wrap/distill/taskwarrior work at once, asks once for outward filings. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-11-26
+modified: 2026-11-28
 reviewed: 2026-06-24
 ---
 
@@ -97,7 +97,7 @@ failure mode.
 |---|---|
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (Step 1): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
-| Workflow capture | `CAPTURE_CANDIDATE_COUNT` or `FRICTION_SIGNAL_COUNT` ≥ 1 in the workflow-capture summary, or the conversation shows a saved or plugin-bundled workflow costing the session (reruns, a resume, a schema rejection); and either a pattern candidate passes `session-workflow-capture`'s reusability questions or a friction finding has a cause in the conversation. Under `STATUS=SKIP`, judge from the conversation alone |
+| Workflow capture | `CAPTURE_CANDIDATE_COUNT` or `FRICTION_SIGNAL_COUNT` ≥ 1 in the workflow-capture summary, or the conversation shows a saved or plugin-bundled workflow costing the session (reruns, a resume, a schema rejection); and either a pattern candidate passes `session-workflow-capture`'s reusability questions or a friction finding has a cause in the conversation. Under `STATUS=SKIP`, or `STATUS=WARN` with `REASON=layout_unrecognized` (the harness moved the files the collector reads, so its zero counts mean nothing), judge from the conversation alone |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
 | Taskwarrior sync | `TASK_AVAILABLE=true`, `TASK_STORE_REACHABLE=true`, AND ≥1 **session-linked task**: one this session worked on, created, or made closeable (its `TASK_n_GHID` PR/issue merged or closed, or the conversation shows it done). Open tasks the session never touched — the project backlog, `RECENT_TASK_*` rows from other projects — never qualify the pass; see [Backlog is reported, never walked](#backlog-is-reported-never-walked) |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
