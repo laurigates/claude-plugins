@@ -1456,6 +1456,12 @@ repos:
         language: system
         files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
         pass_filenames: false
+      - id: test-terraform-lock-pipe-guard
+        name: terraform state-lock pipe guard — block direct, nudge wrappers (#3849)
+        entry: bash ./terraform-plugin/hooks/test-terraform-lock-pipe-guard.sh
+        language: system
+        files: '^terraform-plugin/hooks/(terraform-lock-pipe-guard\.sh|test-terraform-lock-pipe-guard\.sh)$'
+        pass_filenames: false
       # kubernetes-plugin ships its own PreToolUse hook, outside hooks-plugin.
       - id: test-inject-kubectl-dry-run
         name: kubectl dry-run injector — flag on the parsed node, no allow on compound commands (#2734)
