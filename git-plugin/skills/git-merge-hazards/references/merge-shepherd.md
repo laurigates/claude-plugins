@@ -40,6 +40,51 @@ back and requires `MERGED`.
 Several repositories in one sweep: one `merge-chain.sh` invocation per
 repository, run as background Bash. Do not dispatch one agent per repository.
 
+## No `gh` (cloud session)
+
+In a Claude Code cloud session the GitHub proxy refuses GraphQL and passes
+REST. `gh pr view`, `gh pr update-branch`, `gh pr merge` and the §6 guard's
+commit query all use GraphQL, so the script cannot run there. It probes once
+before touching any PR and stops with `STATUS=ERROR`, `TYPE=CLOUD_RESTRICTED`
+and every PR in `REMAINING=`. Re-running does not help; `session-survey.sh`
+reports the same condition as `GH_FAIL_REASON=cloud-restricted`.
+
+Merge the list through the GitHub MCP tools instead, one PR at a time in
+`--prs` order (laurigates/comfyui-nodes, 2026-11-20: 10 PRs, each landing about
+a minute after its required check finished):
+
+1. Read the head SHA (`mcp__github__pull_request_read`, or REST
+   `gh api repos/OWNER/REPO/pulls/N --jq .head.sha`).
+2. `mcp__github__update_pull_request_branch` with `expectedHeadSha` set to that
+   SHA, so a push since the read is refused instead of merged.
+3. `mcp__github__enable_pr_auto_merge` with `mergeMethod` from
+   `pr-merge-method.py`'s rule table. The tool does nothing when the PR is
+   already mergeable (clean status); merge that PR with
+   `mcp__github__merge_pull_request` instead.
+4. Block until it lands: poll `git ls-remote origin refs/heads/main` every 10 s
+   until the SHA changes from the previous merge's. There is no `gh pr checks`
+   or `gh run watch` to block on, and polling `pull_request_read` adds every
+   response to the context.
+
+Gaps against `merge-chain.sh` (from that one run; unverified whether they
+bite in practice):
+
+| Gap | Effect | Partial cover |
+|---|---|---|
+| No §6 guard | Nothing checks for a commit pushed after review before auto-merge fires | The REST commit read below, before step 3. A push after that read still lands |
+| A red required check | Auto-merge keeps waiting; the `ls-remote` wait times out without naming the check | The REST check-run read below, on timeout |
+| Update adds a merge commit | A multi-commit PR that would rebase becomes merge-synced, so the rule table squashes it | None needed: squash is the rule table's answer for a merge-synced branch. Choose `mergeMethod` after step 2, not before |
+
+Both reads go through REST, which the proxy passes. The §6 read must print
+nothing; it applies the script's exemption (two or more parents and committer
+`noreply@github.com`). The check-run read also lists runs a newer run of the
+same check superseded; only the latest run per name counts:
+
+```bash
+gh api 'repos/OWNER/REPO/pulls/N/commits?per_page=100' --jq '.[] | select(.commit.committer.date > "REVIEW_TS") | select((.parents | length) < 2 or .commit.committer.email != "noreply@github.com") | "\(.sha[0:8]) \(.commit.message | split("\n")[0])"'
+gh api 'repos/OWNER/REPO/commits/HEAD_SHA/check-runs?per_page=100' --jq '.check_runs[] | select(.status == "completed" and (.conclusion as $c | ["success", "neutral", "skipped"] | index($c) | not)) | .name'
+```
+
 ## Read the result
 
 Each PR gets an `=== PR <n> ===` section with `STATUS=` and, unless this
