@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-11-24
+modified: 2026-11-28
 reviewed: 2026-04-21
 ---
 
@@ -87,10 +87,6 @@ Claude Code plugin collection providing skills and agents for development workfl
 ## Authoring Skills and Plugins
 
 Invoke `/marketplace-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
-
-## Git Workflow
-
-**Commits and PR titles MUST follow conventional commit format** — `<type>(<scope>): <subject>`, scope = the plugin directory name. release-please parses them, and a squash-merge lands the PR title on `main`. Types, bumps, issue footers and merge-method detail: `.claude/rules/conventional-commits.md`.
 
 ## Local-model export
 

@@ -8,7 +8,9 @@ it links to that file instead of restating it (`.claude/rules/context-engineerin
 restatements that drifted.
 
 The `CLAUDE.md` Rules table lists every file with a one-line purpose. This page
-adds the grouping and the owners.
+adds the grouping and the owners. How the rules sit beside hooks, check
+scripts, pre-commit, CI and the decision records is in
+[How the Pieces Fit](architecture.md).
 
 ## Clusters
 
