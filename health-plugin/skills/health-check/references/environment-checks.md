@@ -29,7 +29,7 @@ Each line is split on `&&`, `||`, `;` and `|` outside quotes. A quoted string th
 | `TYPE=missing_permission` row | One per missing tool: `TOOL=`, `FILE=`, and the first unmatched command in `MSG=` |
 | `UNUSED_RULE_COUNT=` (`UNUSED_RULE=` with `--verbose`) | Project or project-local rules whose tool no scanned file runs. Informational, never a finding |
 
-Scoring: OK with no missing tool, WARN for 1–3, ERROR for 4 or more (exit 1). The script needs bash 4 or later; under macOS `/bin/bash` 3.2 it reports `STATUS=ERROR` with `TYPE=bash_too_old` rather than a coverage result. The check is read-only and has no `--fix` path.
+Scoring: OK with no missing tool, WARN for one or more, however many (exit 0). A missing rule never scores ERROR: under auto mode a command with no allow rule goes to the classifier instead of prompting, so it costs latency rather than breaking the setup (#3578). ERROR (exit 1) means the script could not run: jq missing (`TYPE=missing_tool`), or bash older than 4. The script needs bash 4 or later; under macOS `/bin/bash` 3.2 it reports `STATUS=ERROR` with `TYPE=bash_too_old` rather than a coverage result. The check is read-only and has no `--fix` path.
 
 ### 1e. Marketplace enrollment (`check-marketplace-enrollment.sh`)
 
