@@ -57,7 +57,7 @@ jobs:
       # with `gh label create --force` (idempotent, and a real auth failure
       # still fails the step).
       - name: Stranded-work audit
-        uses: ./.github/actions/script-to-issue
+        uses: laurigates/.github/.github/actions/script-to-issue@main
         with:
           label: stranded-work
           color: fbca04

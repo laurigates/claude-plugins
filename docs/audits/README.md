@@ -28,7 +28,7 @@ frontmatter, rendered diagram SVG, README skill rows). It is wired in three
 places:
 
 - **`docs-index` job in `.github/workflows/scheduled-audits.yml`** — scheduled
-  monthly (`cron: '19 9 1 * *'`), auto-opening a `docs-index`-labelled issue when
+  monthly (`cron: '19 9 1 * *'`), auto-opening a `drift:docs-index`-labelled issue when
   drift is found and filing nothing when clean.
 - **`.github/workflows/plugin-pr-checks.yml`** — `--strict`, ungated, on every
   PR, so **ERROR-severity** drift cannot merge. `--strict` exits non-zero only
