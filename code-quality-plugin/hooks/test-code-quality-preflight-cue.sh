@@ -821,6 +821,23 @@ else
   cq_pass "(q) skills/ cue omits the unresolvable /evaluate:evaluate-skill"
 fi
 
+# --- (r) Reason opens with "Advisory (edit applied):" on both branches (#3799) ---
+# The harness labels the decision:block channel "hook blocking error", which read
+# as a failed edit. The reason itself must say the edit applied, first thing.
+# Reuses (q)'s two probes, whose firing (q)'s guard already asserts.
+echo "--- Test (r): reason opens with the advisory prefix (#3799) ---"
+CQ_R_PREFIX="Advisory (edit applied): [code-quality] "
+if [ "${CQ_Q1_REASON#"$CQ_R_PREFIX"}" != "$CQ_Q1_REASON" ]; then
+  cq_pass "(r) non-skill cue starts with '$CQ_R_PREFIX'"
+else
+  cq_fail "(r) non-skill cue should start with '$CQ_R_PREFIX'; got: $CQ_Q1_REASON"
+fi
+if [ "${CQ_Q2_REASON#"$CQ_R_PREFIX"}" != "$CQ_Q2_REASON" ]; then
+  cq_pass "(r) skills/ cue starts with '$CQ_R_PREFIX'"
+else
+  cq_fail "(r) skills/ cue should start with '$CQ_R_PREFIX'; got: $CQ_Q2_REASON"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== RESULTS ==="

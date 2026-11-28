@@ -316,6 +316,8 @@ case "$cq_file_path" in
     *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality-plugin:code-lint as a pre-flight (or this repo's own linter/formatter if that skill is unavailable) once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
 esac
 
-jq -n --arg reason "$cq_cue" '{"decision":"block","reason":$reason}'
+# The harness labels this channel "hook blocking error", so the reason opens with
+# "Advisory (edit applied):" to tell the model the edit landed (#3799).
+jq -n --arg reason "Advisory (edit applied): ${cq_cue}" '{"decision":"block","reason":$reason}'
 
 exit 0

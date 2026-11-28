@@ -24,12 +24,23 @@ BSC_PASS=0
 BSC_FAIL=0
 
 BSC_TEST_CACHE_DIR="$(mktemp -d)"
-# Default project dir for every case: empty, so no docs/blueprint/manifest.json.
-# Without this seam the hook would read the manifest of whatever checkout the
-# suite runs from (this repo's disables derive-plans, #3648).
+# Default project dir for every case: a blueprint project whose manifest has no
+# task_registry, so the cue fires and names both tasks. Without this seam the
+# hook would read the manifest of whatever checkout the suite runs from (this
+# repo's disables derive-plans, #3648). A project with NO manifest is silent
+# (#3799), so the default must carry one or every "fires" case goes quiet.
 BSC_TEST_PROJECT_DIR="$(mktemp -d)"
+mkdir -p "${BSC_TEST_PROJECT_DIR}/docs/blueprint"
+printf '%s\n' '{"format_version": "3.3.0"}' > "${BSC_TEST_PROJECT_DIR}/docs/blueprint/manifest.json"
+# A project with no docs/blueprint/manifest.json at all (#3799).
+BSC_TEST_NO_BLUEPRINT_DIR="$(mktemp -d)"
 BSC_TEST_FIXTURE_ROOT="$(mktemp -d)"
-trap 'rm -rf "$BSC_TEST_CACHE_DIR" "$BSC_TEST_PROJECT_DIR" "$BSC_TEST_FIXTURE_ROOT"' EXIT
+trap 'rm -rf "$BSC_TEST_CACHE_DIR" "$BSC_TEST_PROJECT_DIR" "$BSC_TEST_NO_BLUEPRINT_DIR" "$BSC_TEST_FIXTURE_ROOT"' EXIT
+
+# Every emitted reason starts with this, so the model reads the cue as advice on
+# an edit that already applied, not as a failed edit (#3799). The harness still
+# labels the decision:block channel "hook blocking error".
+BSC_ADVISORY_PREFIX="Advisory (edit applied): "
 
 bsc_pass() { echo "  PASS: $1"; BSC_PASS=$((BSC_PASS + 1)); }
 bsc_fail() { echo "  FAIL: $1"; BSC_FAIL=$((BSC_FAIL + 1)); }
@@ -114,10 +125,10 @@ else
     bsc_fail "expected decision:block; got: ${BSC_OUT_CONTRACT:-<empty>}"
 fi
 
-if printf '%s' "$BSC_OUT_CONTRACT" | jq -e '.reason | startswith("[blueprint]")' >/dev/null 2>&1; then
-    bsc_pass "reason is prefixed [blueprint]"
+if printf '%s' "$BSC_OUT_CONTRACT" | jq -e --arg p "${BSC_ADVISORY_PREFIX}[blueprint] " '.reason | startswith($p)' >/dev/null 2>&1; then
+    bsc_pass "reason starts with 'Advisory (edit applied): [blueprint] ' (#3799)"
 else
-    bsc_fail "reason missing [blueprint] prefix; got: ${BSC_OUT_CONTRACT:-<empty>}"
+    bsc_fail "reason missing 'Advisory (edit applied): [blueprint] ' prefix; got: ${BSC_OUT_CONTRACT:-<empty>}"
 fi
 
 if printf '%s' "$BSC_OUT_CONTRACT" | jq -e '.reason | contains("derive-plans") and contains("adr-validate")' >/dev/null 2>&1; then
@@ -378,13 +389,14 @@ else
 fi
 
 # Fallbacks: anything other than an explicit enabled:false keeps today's text.
-BSC_TODAY_REASON="[blueprint] Structural change detected (manifest / public API). Consider /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current."
+BSC_TODAY_REASON="${BSC_ADVISORY_PREFIX}[blueprint] Structural change detected (manifest / public API). Consider /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current."
 
-BSC_OUT_NO_MANIFEST="$(bsc_run_in "$BSC_TEST_PROJECT_DIR" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-5)")"
-if printf '%s' "$BSC_OUT_NO_MANIFEST" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
-    bsc_pass "no manifest -> cue text unchanged"
+BSC_PROJ_EMPTY="$(bsc_make_project empty-object '{}')"
+BSC_OUT_EMPTY="$(bsc_run_in "$BSC_PROJ_EMPTY" "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' reg-5)")"
+if printf '%s' "$BSC_OUT_EMPTY" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "empty-object manifest -> full cue text"
 else
-    bsc_fail "no manifest should keep today's text; got: ${BSC_OUT_NO_MANIFEST:-<empty>}"
+    bsc_fail "empty-object manifest should keep the full text; got: ${BSC_OUT_EMPTY:-<empty>}"
 fi
 
 BSC_PROJ_BAD="$(bsc_make_project malformed '{"task_registry": {"derive-plans": {"enabled": fal')"
@@ -410,6 +422,75 @@ if printf '%s' "$BSC_OUT_BOTH_ON" | jq -e --arg r "$BSC_TODAY_REASON" '.reason =
     bsc_pass "both enabled -> cue text unchanged"
 else
     bsc_fail "both enabled should keep today's text; got: ${BSC_OUT_BOTH_ON:-<empty>}"
+fi
+
+# --- #3799: no blueprint manifest, no cue ---
+#
+# Pre-fix a missing docs/blueprint/manifest.json kept the full cue (#3648 chose
+# that fallback), so a plain Rust CLI with no blueprint got "Consider
+# /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current"
+# on an ordinary Edit, though it has no PRDs or ADRs. Each case below feeds a
+# payload that FIRES in a blueprint project and asserts silence in a project
+# without a manifest; the paired control runs the same payload with a manifest.
+echo ""
+echo "no docs/blueprint/manifest.json -> silent (#3799):"
+
+bsc_assert_silent_without_manifest() {
+    local bsc_desc="$1" bsc_payload_json="$2" bsc_sid="$3" bsc_out bsc_exit=0
+    bsc_out="$(bsc_run_in "$BSC_TEST_NO_BLUEPRINT_DIR" "$bsc_payload_json" 2>&1)" || bsc_exit=$?
+    if [ -z "$bsc_out" ] && [ "$bsc_exit" -eq 0 ]; then
+        bsc_pass "$bsc_desc"
+    else
+        bsc_fail "$bsc_desc (expected silence, exit 0; exit=$bsc_exit got: ${bsc_out:-<empty>})"
+    fi
+    if [ ! -f "${BSC_TEST_CACHE_DIR}/${bsc_sid}" ]; then
+        bsc_pass "$bsc_desc: no dedup marker written"
+    else
+        bsc_fail "$bsc_desc: dedup marker written although no cue was emitted"
+    fi
+}
+
+# The issue's repro: an Edit to src/config.rs adding pub fn lines, in a Rust CLI
+# with no blueprint.
+BSC_REPRO_EDIT="$(bsc_payload Edit src/config.rs 'pub fn load() -> Config {
+    Config::default()
+}' '' nobp-1)"
+bsc_assert_silent_without_manifest "Edit adding pub fn in src/config.rs (issue #3799 repro)" \
+    "$BSC_REPRO_EDIT" nobp-1
+bsc_assert_silent_without_manifest "Write of a plugin.json manifest" \
+    "$(bsc_payload Write foo-plugin/.claude-plugin/plugin.json '' '{}' nobp-2)" nobp-2
+bsc_assert_silent_without_manifest "Write of an export line in a .ts file" \
+    "$(bsc_payload Write src/index.ts '' 'export function foo() {}' nobp-3)" nobp-3
+
+# Payload cwd fallback: no CLAUDE_PROJECT_DIR, cwd names the manifest-less repo.
+BSC_CWD_PAYLOAD="$(printf '%s' "$(bsc_payload Edit src/lib.rs 'pub struct Config {}' '' nobp-4)" \
+    | jq -c --arg cwd "$BSC_TEST_NO_BLUEPRINT_DIR" '. + {cwd: $cwd}')"
+BSC_CWD_OUT="$(env -u CLAUDE_PROJECT_DIR BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR="$BSC_TEST_CACHE_DIR" \
+    bash "$BSC_SCRIPT" <<<"$BSC_CWD_PAYLOAD")"
+if [ -z "$BSC_CWD_OUT" ]; then
+    bsc_pass "payload cwd without a manifest -> silent"
+else
+    bsc_fail "payload cwd without a manifest should be silent; got: $BSC_CWD_OUT"
+fi
+
+# Controls: the same payloads fire once a manifest exists, so the silence above
+# comes from the missing manifest and not from a hook that went quiet everywhere.
+BSC_REPRO_CTL="$(bsc_run_in "$BSC_TEST_PROJECT_DIR" "$(bsc_payload Edit src/config.rs 'pub fn load() -> Config {
+    Config::default()
+}' '' nobp-ctl-1)")"
+if printf '%s' "$BSC_REPRO_CTL" | jq -e --arg r "$BSC_TODAY_REASON" '.reason == $r' >/dev/null 2>&1; then
+    bsc_pass "control: the repro Edit fires in a project with a manifest"
+else
+    bsc_fail "control: the repro Edit should fire with a manifest; got: ${BSC_REPRO_CTL:-<empty>}"
+fi
+BSC_CWD_CTL_PAYLOAD="$(printf '%s' "$(bsc_payload Edit src/lib.rs 'pub struct Config {}' '' nobp-ctl-2)" \
+    | jq -c --arg cwd "$BSC_TEST_PROJECT_DIR" '. + {cwd: $cwd}')"
+BSC_CWD_CTL_OUT="$(env -u CLAUDE_PROJECT_DIR BLUEPRINT_STRUCTURAL_CUE_CACHE_DIR="$BSC_TEST_CACHE_DIR" \
+    bash "$BSC_SCRIPT" <<<"$BSC_CWD_CTL_PAYLOAD")"
+if printf '%s' "$BSC_CWD_CTL_OUT" | jq -e '.decision == "block"' >/dev/null 2>&1; then
+    bsc_pass "control: payload cwd with a manifest fires"
+else
+    bsc_fail "control: payload cwd with a manifest should fire; got: ${BSC_CWD_CTL_OUT:-<empty>}"
 fi
 
 # --- hooks.json registration gate ---

@@ -270,7 +270,7 @@ this plugin's hooks and resolves each ID against the skills/agents on disk.
   - **Accepted true-positive loss**: in a session that edits *one* file repeatedly at sub-TTL intervals and never returns to it after a quiet period, the cue can never fire for that file — every edit refreshes the recency marker, and PostToolUse only runs when an edit happens, so no invocation ever observes the quiet gap. Issue #2272's shape (1) takes this trade knowingly.
   - **Cache hygiene**: the debounce writes one marker per (session, file touched) plus a directory per session, so a sweep prunes markers untouched for `CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL` minutes (default 1440) and the emptied session directories. A `.last-sweep` sentinel gates it to at most hourly, so the hot path costs one `find` on the sentinel (~3ms) rather than the three prune passes. `CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL=0` is rejected rather than honoured — unlike `…_DEBOUNCE_TTL`, where 0 disables, 0 here would mean "prune anything a minute old" and disarm live debounces, so it falls back to the default.
 - **Once per session**: after firing, a marker file under `~/.cache/code-quality-preflight-cue/<session_id>` prevents re-firing in the same session
-- **ADR-0017 compliance**: uses `{"decision":"block","reason":"..."}` with `continueOnBlock: true` — the reason is fed back to the model and the turn continues
+- **ADR-0017 compliance**: uses `{"decision":"block","reason":"..."}` with `continueOnBlock: true` — the reason is fed back to the model and the turn continues. The harness labels this channel "hook blocking error", so the reason opens with `Advisory (edit applied):` to say the edit landed (issue #3799)
 
 ### Bypass
 
