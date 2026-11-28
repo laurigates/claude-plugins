@@ -486,7 +486,9 @@
         "issue-types",
         "custom-fields",
         "fork",
-        "upstream"
+        "upstream",
+        "issue-search",
+        "social-preview"
       ],
       "category": "development"
     },
@@ -506,7 +508,8 @@
         "workflows",
         "automation",
         "auto-fix",
-        "reusable-workflows"
+        "reusable-workflows",
+        "workflow-monitoring"
       ],
       "category": "ci-cd"
     },

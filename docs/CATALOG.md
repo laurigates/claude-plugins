@@ -23,7 +23,7 @@
 | [blueprint-plugin](../blueprint-plugin/) | 35 | 0 | Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking |
 | [comfyui-plugin](../comfyui-plugin/) | 17 | 0 | ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots |
 | [foundryvtt-plugin](../foundryvtt-plugin/) | 2 | 0 | FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR |
-| [git-plugin](../git-plugin/) | 51 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
+| [git-plugin](../git-plugin/) | 52 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
 | [home-assistant-plugin](../home-assistant-plugin/) | 4 | 0 | Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations |
 | [kernel-plugin](../kernel-plugin/) | 4 | 0 | Linux kernel development workflows - source history across tags, lore mailing-list research, standalone reproducers, and reporting to kernel lists |
 | [kitty-plugin](../kitty-plugin/) | 3 | 0 | kitty terminal for agents — safe read-only remote control, showing images to the user in a labelled tab, and macOS session snapshot/restore |
@@ -63,7 +63,7 @@
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [finops-plugin](../finops-plugin/) | 7 | 0 | GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification |
-| [github-actions-plugin](../github-actions-plugin/) | 12 | 0 | GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix |
+| [github-actions-plugin](../github-actions-plugin/) | 11 | 0 | GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix |
 
 ## Infrastructure
 

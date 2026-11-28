@@ -297,7 +297,7 @@ magick test-image.jpg -resize 50% test-output.jpg
 | Use this skill when... | Use other skills instead when... |
 |---|---|
 | Converting an image between standard formats (PNG/JPG/WebP/AVIF/GIF/HEIC) | Producing a brand-new image from a text prompt — use `generate-image` |
-| Resizing, compressing, or adjusting quality of an existing image | Generating a repository social preview — use `github-actions-plugin:github-social-preview` |
+| Resizing, compressing, or adjusting quality of an existing image | Generating a repository social preview — use `git-plugin:github-social-preview` |
 | Running batch processing or thumbnail generation across many files | Advanced photo editing or complex filters (use GIMP, Photoshop, or dedicated tools) |
 | Performing basic transformations (rotate, crop, flip) at scale | Video processing (use FFmpeg) or vector graphics (use Inkscape) |
 

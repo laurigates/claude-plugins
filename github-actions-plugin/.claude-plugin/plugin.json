@@ -13,6 +13,7 @@
     "ci-cd",
     "workflows",
     "automation",
-    "auto-fix"
+    "auto-fix",
+    "workflow-monitoring"
   ]
 }

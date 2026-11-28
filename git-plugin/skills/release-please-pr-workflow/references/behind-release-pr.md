@@ -19,7 +19,7 @@ gh pr merge <N> --squash --delete-branch --match-head-commit "$sha"
 `--match-head-commit` refuses the merge if the head moved after the checks ran,
 for example when a release-please run rewrote the branch in the meantime.
 `gh pr checks --watch` can exit early before the new head's checks register;
-`git-plugin:gh-workflow-monitoring` has the wait-for-registration guard.
+`github-actions-plugin:gh-workflow-monitoring` has the wait-for-registration guard.
 
 A `DIRTY` / `CONFLICTING` release PR does not take this path: close it and let
 release-please recreate it (SKILL.md § Handle Conflicts,

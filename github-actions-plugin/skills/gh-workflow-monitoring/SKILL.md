@@ -4,7 +4,7 @@ description: "`gh run watch` — block until a GitHub Actions run finishes, no p
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-11-27
+modified: 2026-11-28
 reviewed: 2026-04-25
 ---
 
@@ -14,10 +14,10 @@ reviewed: 2026-04-25
 
 | Use this skill when... | Use the alternative when... |
 |---|---|
-| Watching a workflow run until it completes via blocking `gh run watch` | Use `gh-cli-agentic` for one-shot JSON queries of run/PR check state |
-| Waiting for CI after a push, or triggering a workflow and following progress | Use `git-fix-pr` to diagnose AND auto-correct failing checks on a PR |
+| Watching a workflow run until it completes via blocking `gh run watch` | Use `git-plugin:gh-cli-agentic` for one-shot JSON queries of run/PR check state |
+| Waiting for CI after a push, or triggering a workflow and following progress | Use `git-plugin:git-fix-pr` to diagnose AND auto-correct failing checks on a PR |
 | Chaining on a run's outcome with `gh run watch --exit-status` | Use `github-actions-plugin:github-actions-inspection` to read a finished run's logs and stack traces |
-| Finding the latest in-progress run for a workflow | Use `gh-cli-agentic` to list completed runs by status filter |
+| Finding the latest in-progress run for a workflow | Use `git-plugin:gh-cli-agentic` to list completed runs by status filter |
 
 Watch and monitor GitHub Actions workflow runs using `gh run watch` - a blocking command that follows runs until completion without needing timeouts or polling.
 
@@ -306,5 +306,5 @@ Use in command frontmatter:
 
 ## See Also
 
-- **gh-cli-agentic** - General GitHub CLI patterns
-- **git-branch-pr-workflow** - PR and branch workflows
+- **git-plugin:gh-cli-agentic** - General GitHub CLI patterns
+- **git-plugin:git-branch-pr-workflow** - PR and branch workflows

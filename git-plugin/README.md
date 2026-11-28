@@ -61,7 +61,6 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-branch-naming` | Branch names: type prefix (feat/, fix/, chore/), issue number, kebab-case |
 | `git-cli-agentic` | Machine-readable git output for scripts — `status --porcelain=v2`, `diff --numstat`, `log --format`, ahead/behind counts; not for making commits |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
-| `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Commit-message and staging conventions (type/scope/subject, logical grouping, explicit-path staging); makes no commit |
 | `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
@@ -80,6 +79,8 @@ Three composable skills that can be invoked individually or combined based on us
 | `worktree-stale-base-merge` | A parallel worktree-agent branch's green CI is about a `main` that no longer exists — merge-base equality as the gate, and the `update-branch` vs rebase choice |
 | `github-issue-autodetect` | Fixes/Closes/Refs keywords for a change — match the staged diff against open issues by path, label and title |
 | `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
+| `github-issue-search` | Search GitHub issues for solutions and workarounds to errors in open-source libraries |
+| `github-social-preview` | Generate 1280x640 social preview (Open Graph) images for a repository with nano-banana-pro |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues; the type / `build:` / `area:` / `core:` / `needs:` taxonomy, who sets and clears `needs:` and `blocked`, and `scripts/issue-labels.py` (`provision`, `classify`, `validate`, `unblock`, `audit`) |
 | `github-pr-title` | PR title only — the `type(scope): subject` line that squash-merge lands and release-please parses |
 | `git-derive-docs` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |

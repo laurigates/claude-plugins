@@ -10,7 +10,7 @@ flowchart TD
     SEC --> COMMIT[Stage 3: Commit<br/>git-commit<br/>git-commit-workflow<br/>git-commit-trailers]
     COMMIT --> PUSH[Stage 4: Push<br/>git-push]
     PUSH --> PR[Stage 5: Pull Request<br/>git-pr / git-api-pr<br/>github-pr-title<br/>github-labels]
-    PR --> MON[Stage 6: Monitor<br/>gh-workflow-monitoring<br/>git-fix-pr<br/>git-pr-feedback]
+    PR --> MON[Stage 6: Monitor<br/>github-actions-plugin:gh-workflow-monitoring<br/>git-fix-pr<br/>git-pr-feedback]
     MON --> CONF{conflicts?}
     CONF -->|yes| RES[git-conflicts]
     CONF -->|no| DONE[Merged]
@@ -57,7 +57,7 @@ flowchart TD
 | Commit | `git-commit`, `git-commit-workflow`, `git-commit-trailers` |
 | Push | `git-push` |
 | Pull Request | `git-pr`, `git-api-pr`, `github-pr-title`, `github-labels` |
-| Monitor | `gh-workflow-monitoring`, `git-fix-pr`, `git-pr-feedback` |
+| Monitor | `github-actions-plugin:gh-workflow-monitoring`, `git-fix-pr`, `git-pr-feedback` |
 | Conflicts | `git-conflicts` |
 | Issues (side) | `git-issue`, `git-issue-manage`, `git-issue-hierarchy`, `github-issue-writing`, `github-issue-autodetect` |
 | Release-please (side) | `release-please-configuration`, `release-please-protection`, `release-please-pr-workflow` |

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-11-28
 reviewed: 2026-09-02
 allowed-tools: Read, Write, Edit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 args: "[--max-cycles <n>] [--focus <bug|feature|test>]"
@@ -20,7 +20,7 @@ Automated development loop with issue creation, TDD, and CI monitoring.
 |------------------------|----------------------|
 | Running a continuous loop that turns test failures into issues, then resolves them | Inspecting an existing workflow run or debugging CI failures (`/workflow:github-actions-inspection`) |
 | Automating the full issue → branch → PR → green-CI cycle through the backlog | Generating a reusable auto-fix workflow file for multiple repos (`/workflow:github-workflow-auto-fix --reusable`) |
-| Wanting Claude to pick the next issue and drive it through TDD without user input | Searching upstream OSS issues for known errors or workarounds (`/workflow:github-issue-search`) |
+| Wanting Claude to pick the next issue and drive it through TDD without user input | Searching upstream OSS issues for known errors or workarounds (`git-plugin:github-issue-search`) |
 
 ## Context
 
