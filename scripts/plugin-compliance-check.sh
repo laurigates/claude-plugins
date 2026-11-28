@@ -729,7 +729,7 @@ check_skill_body() {
       fi
       for ccp_rule in 'Bash(git:*)' 'Bash(gh:*)' 'Bash(python3:*)'; do
         if grep -qF -- "$ccp_rule" "$skill_file" "$settings_ref"; then
-          issues+=("❌ ${plugin}/${skill_name}: the permissions baseline lists broad permission '${ccp_rule}', which auto mode drops; use narrow subcommand rules (issue #3536)")
+          issues+=("❌ ${plugin}/${skill_name}: the permissions baseline lists broad permission '${ccp_rule}' (git/gh wildcards grant every subcommand; auto mode drops interpreter wildcards); use narrow subcommand rules (issue #3536)")
           has_errors=true
         fi
       done
