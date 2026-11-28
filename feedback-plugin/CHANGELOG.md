@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.17.1...feedback-plugin-v1.18.0) (2026-11-28)
+
+
+### Features
+
+* **feedback-plugin:** key auto-mode classifier denials by reason ([67a9605](https://github.com/laurigates/claude-plugins/commit/67a96058fbfa8581ac1d206016a91fd28c4f19dd)), closes [#3365](https://github.com/laurigates/claude-plugins/issues/3365)
+
 ## [1.17.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.17.0...feedback-plugin-v1.17.1) (2026-11-25)
 
 

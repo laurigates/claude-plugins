@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.8...hooks-plugin-v2.22.9) (2026-11-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** accept $HOME paths and inert heredocs in external-pr-merge-guard ([#3881](https://github.com/laurigates/claude-plugins/issues/3881)) ([a545099](https://github.com/laurigates/claude-plugins/commit/a5450999aa26490f001d1d14a4e5860fcc3863ff)), closes [#3533](https://github.com/laurigates/claude-plugins/issues/3533)
+
 ## [2.22.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.22.7...hooks-plugin-v2.22.8) (2026-11-27)
 
 
