@@ -16,7 +16,6 @@ css-plugin/lightning-css
 hooks-plugin/hooks-permission-request-hook
 kubernetes-plugin/kubectl-debugging
 project-plugin/project-skill-scripts
-terraform-plugin/infrastructure-terraform
 tools-plugin/binary-analysis
 typescript-plugin/bun-lockfile-update
 typescript-plugin/nodejs-development
