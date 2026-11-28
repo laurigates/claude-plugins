@@ -32,7 +32,9 @@
 # label renamed into build:/area:, an unmapped [Bench]/hw( keyword, a malformed
 # unblock response losing the handled rows, and a trailing backslash on a path;
 # a bare docs:/ci: title falling to its body (#3768), an unmapped [Task] keyword
-# and feedback-session filing without a type label (#3783).
+# and feedback-session filing without a type label (#3783), and apply-audit or
+# backfill writing what they should not, or a batch of unclassifiable issues
+# holding the backfill queue (#3761).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -825,6 +827,128 @@ rc=0
 out=$(python3 "$TOOL" audit --repo o/r --now "$NOW" --json) || rc=$?
 is "with --json the error is JSON too" "$rc|$(jq -r '"\(.status)|\(.findings)"' <<<"$out")" "1|ERROR|null"
 
+# ── apply-audit ───────────────────────────────────────────────────────────────
+
+echo "=== apply-audit: blocked follows the open dependency links (#3761) ==="
+# audit_scenario: #5 is blocked with every blocker closed (blocked_resolved);
+# #6 and #13 have an open blocker and no blocked label (open_link_not_blocked);
+# #4 is blocked with no link, which stays a person's call.
+audit_scenario
+cp "$FX/repo-labels.json" "$STUB/labels.json"
+rc=0
+out=$(python3 "$TOOL" apply-audit --repo o/r) || rc=$?
+is "apply-audit exits 0" "$rc" "0"
+is "it removes blocked from #5 and adds it to #6 and #13, nothing else" "$(writes)" \
+    "api -X DELETE repos/o/r/issues/5/labels/blocked
+api -X POST repos/o/r/issues/6/labels -f labels[]=blocked
+api -X POST repos/o/r/issues/13/labels -f labels[]=blocked"
+for row in "NUMBER=5 ACTION=remove REASON=blocked_resolved" "NUMBER=6 ACTION=add REASON=open_link_not_blocked" \
+    "NUMBER=13 ACTION=add REASON=open_link_not_blocked" "ADD=2" "REMOVE=1" "APPLIED=3" "STATUS=OK" "DRY_RUN=false"; do
+    has "$row" "$out" "$row"
+done
+hasnt "a blocked label with no link is left alone" "$(writes)" "issues/4/"
+hasnt "a blocked issue with an open blocker is left alone" "$(writes)" "issues/7/"
+hasnt "needs: labels are not read: no events are fetched" "$(cat "$LOG")" "/events"
+
+audit_scenario
+cp "$FX/repo-labels.json" "$STUB/labels.json"
+out=$(python3 "$TOOL" apply-audit --repo o/r --dry-run)
+is "--dry-run writes nothing" "$(writes)" ""
+has "--dry-run still lists the actions" "$out" "NUMBER=6 ACTION=add REASON=open_link_not_blocked"
+has "--dry-run reports APPLIED=0" "$out" "APPLIED=0"
+
+audit_scenario
+cp "$FX/repo-labels.json" "$STUB/labels.json"
+python3 "$TOOL" audit --repo o/r --now "$NOW" >/dev/null
+is "control: audit itself stays read-only" "$(writes)" ""
+
+echo "=== apply-audit: refusals and failures ==="
+audit_scenario
+jq '[.[] | select(.name != "blocked")]' "$FX/repo-labels.json" >"$STUB/labels.json"
+out=$(python3 "$TOOL" apply-audit --repo o/r)
+hasnt "a blocked label the repo lacks is not added (the API would create it)" "$(writes)" "POST"
+has "and the add is reported as skipped" "$out" "NUMBER=6 ACTION=skip REASON=missing_in_repo"
+
+audit_scenario
+cp "$FX/repo-labels.json" "$STUB/labels.json"
+printf '%s\n' 'gh: Label does not exist (HTTP 404)' >"$STUB/fail-DELETE-issues-5-labels-blocked"
+echo '[{"name": "bug"}, {"name": "build:x"}]' >"$STUB/issues-5-labels.json"
+rc=0
+out=$(python3 "$TOOL" apply-audit --repo o/r) || rc=$?
+is "a label another run already removed is not an error" "$rc" "0"
+has "and is reported as already_removed" "$out" "NUMBER=5 ACTION=skip REASON=already_removed"
+has "the adds after it still run" "$(writes)" "api -X POST repos/o/r/issues/13/labels -f labels[]=blocked"
+
+audit_scenario
+cp "$FX/repo-labels.json" "$STUB/labels.json"
+touch "$STUB/fail-writes"
+rc=0
+out=$(python3 "$TOOL" apply-audit --repo o/r) || rc=$?
+is "a failed write exits 1 with STATUS=ERROR and APPLIED=0" \
+    "$rc|$(grep -c '^STATUS=ERROR$' <<<"$out")|$(grep -c '^APPLIED=0$' <<<"$out")" "1|1|1"
+has "and names the issue" "$out" "TYPE=write_failed NUMBER=5 "
+hasnt "the run stops at the failure" "$out" "NUMBER=6 "
+
+stub_reset
+rc=0
+out=$(python3 "$TOOL" apply-audit --repo o/r) || rc=$?
+is "an unreadable issue list is an ERROR and writes nothing" "$rc|$(grep -c '^STATUS=ERROR$' <<<"$out")|$(writes)" "1|1|"
+
+# ── backfill ──────────────────────────────────────────────────────────────────
+
+echo "=== backfill: unlabelled issues, oldest first; unclassifiable ones do not hold the queue (#3761) ==="
+# bf_issue <number> <title> <labels json> <created_at> [pr]
+bf_issue() {
+    jq -cn --argjson n "$1" --arg t "$2" --argjson l "$3" --arg c "$4" --arg pr "${5:-}" \
+        '{number: $n, title: $t, body: "", created_at: $c, labels: [$l[] | {name: .}]}
+         + (if $pr == "" then {} else {pull_request: {}} end)'
+}
+backfill_scenario() {
+    stub_reset
+    cp "$FX/repo-labels.json" "$STUB/labels.json"
+    {
+        printf '[%s,' "$(bf_issue 21 '[Bug] robocar-unified: wheel stalls' '[]' 2026-03-01T00:00:00Z)"
+        printf '%s,' "$(bf_issue 22 'Dependency Dashboard' '[]' 2026-01-01T00:00:00Z)"
+        printf '%s,' "$(bf_issue 23 'fix(kicad): close the gaps' '["bug"]' 2026-02-01T00:00:00Z)"
+        printf '%s]' "$(bf_issue 24 'fix(kicad): labelled' '["bug", "area:cad"]' 2025-11-01T00:00:00Z)"
+        printf '[%s,' "$(bf_issue 25 'fix(kicad): a pull request' '[]' 2025-10-01T00:00:00Z pr)"
+        printf '%s,' "$(bf_issue 26 'chore(balancebot): bump' '[]' 2026-04-01T00:00:00Z)"
+        printf '%s]' "$(bf_issue 27 'Notes from the call' '[]' 2025-12-01T00:00:00Z)"
+    } >"$STUB/issues.json"
+}
+backfill_scenario
+rc=0
+out=$(python3 "$TOOL" backfill --repo o/r --taxonomy "$FX/taxonomy.json" --max-issues 2) || rc=$?
+is "backfill exits 0" "$rc" "0"
+for kv in OPEN_ISSUES=6 UNLABELLED=5 MAX_ISSUES=2 CANDIDATES=2 UNCLASSIFIABLE=2 REMAINING=1 STATUS=OK; do
+    grep -qx "$kv" <<<"$out" && ok "$kv" || notok "$kv not in: $(grep -E '^[A-Z_]+=' <<<"$out" | tr '\n' ' ')"
+done
+is "candidates are the oldest classifiable ones, past two older unclassifiable issues" \
+    "$(grep -E '^  - NUMBER=' <<<"$(sed -n '/^CANDIDATES_DETAIL:/,/^UNCLASSIFIABLE_DETAIL:/p' <<<"$out")")" \
+    "  - NUMBER=23 MISSING=routing ADD=area:carrier-pcb
+  - NUMBER=21 MISSING=type,routing ADD=bug,build:robocar"
+is "the unclassifiable issues are listed once, apart, oldest first" \
+    "$(grep -E '^  - NUMBER=' <<<"$(sed -n '/^UNCLASSIFIABLE_DETAIL:/,/^STATUS=/p' <<<"$out")")" \
+    "  - NUMBER=27 MISSING=type,routing
+  - NUMBER=22 MISSING=type,routing"
+hasnt "a fully labelled issue is not listed" "$out" "NUMBER=24 "
+hasnt "a pull request is not listed" "$out" "NUMBER=25 "
+hasnt "the run stops once max-issues candidates are found" "$out" "NUMBER=26 "
+is "backfill writes nothing" "$(writes)" ""
+hasnt "it classifies from the listing, with no read per issue" "$(cat "$LOG")" "issues/2"
+
+backfill_scenario
+out=$(python3 "$TOOL" backfill --repo o/r --taxonomy "$FX/taxonomy.json" --json)
+is "--json, default max-issues: every candidate in age order" \
+    "$(jq -r '"\(.status)|\(.max_issues)|\([.candidates[].number] | join(","))|\([.unclassifiable[].number] | join(","))|\(.remaining)"' <<<"$out")" \
+    "OK|25|23,21,26|27,22|0"
+is "--json carries the labels to add" "$(jq -r '.candidates[0].add | join(",")' <<<"$out")" "area:carrier-pcb"
+
+stub_reset
+rc=0
+out=$(python3 "$TOOL" backfill --repo o/r --taxonomy "$FX/taxonomy.json" --json) || rc=$?
+is "an unreadable issue list is an ERROR, not an empty list" "$rc|$(jq -r '"\(.status)|\(.candidates)"' <<<"$out")" "1|ERROR|null"
+
 # ── pure functions ────────────────────────────────────────────────────────────
 
 echo "=== path candidates and globs ==="
@@ -869,7 +993,7 @@ labels_skill=$(cat "$SKILLS/github-labels/SKILL.md")
 writing_skill=$(cat "$SKILLS/github-issue-writing/SKILL.md")
 for needle in ".github/issue-labels.json" "gh label list --limit 500" "issue-labels.py" \
     "build:" "area:" "core:" "needs:hardware" "needs:decision" "needs:human" "blocked" \
-    "provision" "classify" "validate" "unblock" "audit"; do
+    "provision" "classify" "validate" "unblock" "audit" "apply-audit" "backfill"; do
     has "github-labels names $needle" "$labels_skill" "$needle"
 done
 for needle in ".github/issue-labels.json" "gh label list --limit 500"; do

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-23
+modified: 2026-11-28
 reviewed: 2026-11-10
 name: github-labels
 description: "GitHub labels via gh CLI and the build:/area:/needs: taxonomy. Use when labeling a PR or issue, checking which labels a repo has, or creating a label."
@@ -96,6 +96,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `validate --issue <N> --labels-file <file>` | Filters labels a model proposed: type labels and `build:`/`area:`/`core:`/`needs:` names that exist in the repo. A `needs:` label is kept only with a quote found in the issue, and of two type labels only the first | Nothing |
 | `unblock --issue <N>` | After issue N closes, removes `blocked` from each open issue it was blocking whose `blocked_by` issues are all closed | Removes `blocked` |
 | `audit` | Lists open issues with no type label, no routing label, `blocked` without a link, an open `blocked_by` link without `blocked`, or a `needs:` label older than `--needs-stale-days` (30) | Nothing |
+| `apply-audit` | Adds `blocked` for `open_link_not_blocked`, removes it for `blocked_resolved`; never adds a label the repo lacks. `--dry-run` | Adds or removes `blocked` |
+| `backfill` | Lists open issues missing a type or routing label, oldest first, with `classify`'s labels, up to `--max-issues` (25). Ones it derives nothing for are listed apart and do not count. `--json` | Nothing |
 
 `classify` reads a title in three forms:
 
