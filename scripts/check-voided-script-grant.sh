@@ -18,11 +18,20 @@
 #   - one inline code span (its own delimiters are not part of the command).
 # An element is an invocation when it names a script reached through
 # ${CLAUDE_SKILL_DIR} or ${CLAUDE_PLUGIN_ROOT} (braced or not, quoted or not,
-# placeholder path segments such as <name> included). It is flagged when the
-# element also holds `$(` or a backtick, wherever on the line, because the
-# permission check reads the whole command. Prose outside code is not checked,
-# and tests/ and fixtures/ directories are skipped (they hold the broken text on
-# purpose).
+# a quote closed before the slash as in "${CLAUDE_SKILL_DIR}"/scripts/a.sh,
+# placeholder path segments such as <name> included). A script is a path that
+# ends in a script extension (.sh .bash .py .js .mjs .ts .rb .pl) or whose last
+# segment has no extension at all (scripts/check, bin/run); a path to another
+# file type (.md, .json) is not one (#3666). It is flagged when the element also
+# holds `$(` or a backtick, wherever on the line, because the permission check
+# reads the whole command. Prose outside code is not checked, and tests/ and
+# fixtures/ directories are skipped (they hold the broken text on purpose).
+#
+# A ```markdown (or ```md) fence holds markdown, not shell: its backticks
+# delimit inline code. Its content is parsed again as markdown, and the inline
+# spans and fenced lines found there are checked at their source line numbers,
+# so `!`bash ${CLAUDE_SKILL_DIR}/scripts/x.sh`` in a markdown example is not
+# read as a backtick substitution (#3666).
 #
 # Markdown structure comes from `scripts/lib/extract-md-elements.py`
 # (tree-sitter), not a hand-rolled fence toggle (#2009).
@@ -139,25 +148,103 @@ printf '%s\n' "${md_files[@]}" > "$work_dir/files"
 
 # FAIL CLOSED: a parser that dies yields no rows, which would read as a clean run.
 if ! "$helper" --types fence_line,inline_code --files-from "$work_dir/files" \
-    > "$work_dir/rows" 2> "$work_dir/err"; then
+    > "$work_dir/pending" 2> "$work_dir/err"; then
   emit_error parser_failed "extract-md-elements.py exited non-zero: $(head -c 120 "$work_dir/err")"
 fi
+
+# Lines of a ```markdown / ```md fence are markdown, not shell (#3666). Write
+# each such block (dedented, so a fence inside a list item does not turn into an
+# indented code block) to its own file, parse it again, and map the rows back to
+# the source file and line. Repeat for markdown fences nested in those; the cap
+# only bounds a pathological file, and anything left is checked as plain lines.
+: > "$work_dir/rows"
+level=0
+while [ -s "$work_dir/pending" ]; do
+  : > "$work_dir/md_lines"
+  awk -F'\t' -v lim="$level" -v md="$work_dir/md_lines" -v rows="$work_dir/rows" '
+    $1 == "fence_line" && tolower($4) ~ /^(markdown|md)$/ && lim < 4 { print > md; next }
+    { print >> rows }
+  ' "$work_dir/pending"
+  [ -s "$work_dir/md_lines" ] || break
+  emb_dir="$work_dir/emb$level"
+  mkdir -p "$emb_dir"
+  sort -t "$(printf '\t')" -k2,2 -k3,3n "$work_dir/md_lines" | awk -F'\t' -v dir="$emb_dir" '
+    function close_block(   i, out, t) {
+      if (n == 0) return
+      out = dir "/" blocks ".md"
+      for (i = 1; i <= n; i++) {
+        t = buf[i]
+        if (min_ind > 0 && t ~ /[^[:space:]]/) t = substr(t, min_ind + 1)
+        print t > out
+      }
+      close(out)
+      printf "%s\t%s\t%d\n", out, blk_file, blk_first - 1 > (dir "/map")
+      n = 0
+    }
+    {
+      if (!(n > 0 && $2 == blk_file && $3 == last + 1)) {
+        close_block()
+        blocks++; blk_file = $2; blk_first = $3; min_ind = -1
+      }
+      buf[++n] = $5; last = $3
+      if ($5 ~ /[^[:space:]]/) {
+        match($5, /^[ ]*/)
+        if (min_ind < 0 || RLENGTH < min_ind) min_ind = RLENGTH
+      }
+    }
+    END { close_block(); close(dir "/map") }
+  '
+  awk -F'\t' '{ print $1 }' "$emb_dir/map" > "$emb_dir/files"
+  if ! "$helper" --types fence_line,inline_code --files-from "$emb_dir/files" \
+      > "$emb_dir/rows" 2> "$work_dir/err"; then
+    emit_error parser_failed "extract-md-elements.py exited non-zero on a markdown fence: $(head -c 120 "$work_dir/err")"
+  fi
+  awk -F'\t' -v OFS='\t' '
+    NR == FNR { src[$1] = $2; off[$1] = $3; next }
+    ($2 in src) { $3 = $3 + off[$2]; $2 = src[$2]; print }
+  ' "$emb_dir/map" "$emb_dir/rows" > "$work_dir/pending"
+  level=$((level + 1))
+done
 
 # Rows: fence_line <file> <line> <lang> <text> / inline_code <file> <line>
 # <container> <in_bq> <is_bang> <text>. Sorting by file then line puts a fenced
 # block's lines in order, so backslash continuations can be joined.
 sort -t "$(printf '\t')" -k2,2 -k3,3n "$work_dir/rows" | awk -F'\t' '
-  function script_path(s,   m) {
-    # A script reached through ${CLAUDE_SKILL_DIR} / ${CLAUDE_PLUGIN_ROOT}.
-    if (match(s, /[$][{]?CLAUDE_(SKILL_DIR|PLUGIN_ROOT)[}]?\/[^[:space:]"'"'"';|&()`]*[.](sh|bash|py|js|mjs|ts|rb|pl)/))
-      return substr(s, RSTART, RLENGTH)
-    return ""
+  # next_script(s): find the first script reached through ${CLAUDE_SKILL_DIR}
+  # or ${CLAUDE_PLUGIN_ROOT} in s. Sets SP (its text) and SP_END (index in s of
+  # its last character); returns 0 when there is none. The anchor may close a
+  # quote before the slash ("${CLAUDE_SKILL_DIR}"/scripts/a.sh). The path is a
+  # script when it ends in a script extension, or when its last segment has no
+  # extension (scripts/check); a .md or .json path is not one (#3666).
+  function next_script(s,   off, a_start, a_len, rest, tok, seg) {
+    off = 0
+    while (match(s, /[$][{]?CLAUDE_(SKILL_DIR|PLUGIN_ROOT)[}]?["'"'"']?\//)) {
+      a_start = RSTART; a_len = RLENGTH
+      rest = substr(s, a_start + a_len)
+      match(rest, /^[^[:space:]"'"'"';|&()`]*/)
+      tok = substr(rest, 1, RLENGTH)
+      if (match(tok, /^.*[.](sh|bash|py|js|mjs|ts|rb|pl)/)) {
+        tok = substr(tok, 1, RLENGTH)
+      } else {
+        seg = tok; sub(/.*\//, "", seg)
+        if (seg == "" || index(seg, ".")) tok = ""
+      }
+      if (tok != "") {
+        SP = substr(s, a_start, a_len) tok
+        SP_END = off + a_start + a_len + length(tok) - 1
+        return 1
+      }
+      off += a_start + a_len - 1
+      s = substr(s, a_start + a_len)
+    }
+    return 0
   }
+  function script_path(s) { return next_script(s) ? SP : "" }
   function count_scripts(s,   n) {
     n = 0
-    while (match(s, /[$][{]?CLAUDE_(SKILL_DIR|PLUGIN_ROOT)[}]?\/[^[:space:]"'"'"';|&()`]*[.](sh|bash|py|js|mjs|ts|rb|pl)/)) {
+    while (next_script(s)) {
       n++
-      s = substr(s, RSTART + RLENGTH)
+      s = substr(s, SP_END + 1)
     }
     return n
   }

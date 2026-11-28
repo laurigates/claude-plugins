@@ -205,5 +205,63 @@ assert "G3 exits 1" "$(is "$RC" 1)"
 assert "G4 output passes the structured-output contract" \
   "$(printf '%s\n' "$OUT" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
 
+##########
+# H. Shapes the first version missed (#3666): a quote closed before the slash,
+#    an extensionless script, and a ```markdown fence whose lines are markdown
+#    (inline-code backticks), not shell.
+##########
+echo "=== H: quoted anchor, extensionless script, markdown fence ==="
+h="$sandbox/h"
+write_md "$h" "v-plugin/skills/shapes/SKILL.md" '# Shapes
+```bash
+bash "${CLAUDE_SKILL_DIR}"/scripts/a.sh --project-dir "$(pwd)"
+bash "$CLAUDE_PLUGIN_ROOT"/scripts/b.sh --x `pwd`
+bash ${CLAUDE_SKILL_DIR}/scripts/check --project-dir "$(pwd)"
+"${CLAUDE_PLUGIN_ROOT}/skills/s/bin/run" "$(git rev-parse --show-toplevel)"
+grep -c "$(whoami)" "${CLAUDE_SKILL_DIR}/references/notes.md"
+bash "${CLAUDE_SKILL_DIR}"/scripts/a.sh --home-dir "$HOME"
+```
+| inline quoted anchor | `bash "${CLAUDE_SKILL_DIR}"/scripts/a.sh --x "$(pwd)"` |'
+write_md "$h" "v-plugin/skills/embedded/SKILL.md" '# Embedded
+```markdown
+## Execution
+
+Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
+
+Then run `bash ${CLAUDE_SKILL_DIR}/scripts/a.sh --x "$(pwd)"` by hand.
+
+Prose bash ${CLAUDE_SKILL_DIR}/scripts/a.sh "$(pwd)" outside code.
+```
+
+````markdown
+Context: !`bash "${CLAUDE_SKILL_DIR}"/scripts/helper.sh`
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/a.sh" --project-dir "$(pwd)"
+```
+````
+
+```md
+- item: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/x.sh --ok`
+```'
+run_check "$h"
+assert "H1 quote closed before the slash, \${CLAUDE_SKILL_DIR}" "$(flagged shapes/SKILL.md 3)"
+assert "H2 quote closed before the slash, unbraced \$CLAUDE_PLUGIN_ROOT, backtick" "$(flagged shapes/SKILL.md 4)"
+assert "H3 extensionless script under scripts/" "$(flagged shapes/SKILL.md 5)"
+assert "H4 extensionless script run directly, quoted whole path" "$(flagged shapes/SKILL.md 6)"
+assert "H5 a non-script file (.md) under the anchor is not an invocation" "$(is "$(flagged shapes/SKILL.md 7)" false)"
+assert "H6 clean quoted-anchor line is not flagged" "$(is "$(flagged shapes/SKILL.md 8)" false)"
+assert "H7 inline span, quote closed before the slash" "$(flagged shapes/SKILL.md 10)"
+assert "H8 markdown fence: a !\`cmd\` line is not a substitution" "$(is "$(flagged embedded/SKILL.md 5)" false)"
+assert "H9 markdown fence: an inline span with \$(…) is flagged" "$(flagged embedded/SKILL.md 7)"
+assert "H10 markdown fence: prose outside code is not checked" "$(is "$(flagged embedded/SKILL.md 9)" false)"
+assert "H11 nested markdown fence: quoted-anchor !\`cmd\` is not flagged" "$(is "$(flagged embedded/SKILL.md 13)" false)"
+assert "H12 nested markdown fence: inner bash line keeps its source line" "$(flagged embedded/SKILL.md 16)"
+assert "H13 md fence: a !\`cmd\` list item is not flagged" "$(is "$(flagged embedded/SKILL.md 21)" false)"
+assert "H14 ISSUE_COUNT is the 7 flagged elements" "$(is "$(field ISSUE_COUNT)" 7)"
+assert "H15 INVOCATIONS counts the 11 script elements (the .md read and the prose are not)" "$(is "$(field INVOCATIONS)" 11)"
+assert "H16 output passes the structured-output contract" \
+  "$(printf '%s\n' "$OUT" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+
 echo "PASSED=${pass_count} FAILED=${fail_count}"
 [ "$fail_count" -eq 0 ]
