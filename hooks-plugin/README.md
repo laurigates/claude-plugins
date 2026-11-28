@@ -443,7 +443,14 @@ Command substitutions inside double quotes and inside an unquoted heredoc
 herestring is a plain redirection, so the lines after it are still scanned.
 The rest of a heredoc body is prose: a body line such as `` `$GH api graphql` ``
 under `cat <<'EOF'` is not a command word, and the line after the closing
-delimiter is scanned as a command of its own (#3355).
+delimiter is scanned as a command of its own (#3355). The delimiter is the
+whole word after `<<` with its quotes removed, and any quote or backslash in it
+makes the body literal, as in `bash-safety.sh` (#3363): `<<'EOF'`, `<<"EOF"`,
+`<<\EOF` and `<<E"OF"` all end at a line `EOF`, and `<<EOF-X` at `EOF-X`. A
+body is scanned as commands, split at `;`, `&&`, `|` and parentheses like any
+command text, when a shell reads it (`bash <<EOF`) or when the command that
+owns the `<<` is a pipeline stage (`cat <<'EOF' | bash`, `| xargs sh -c '{}'`),
+since the pipe may hand it to a shell (#3533).
 MCP `owner`/`repo`/`pullNumber` values carrying a newline or the hook's
 internal `\036`/`\037` separators are denied.
 
@@ -460,17 +467,27 @@ every PR before the script runs: `merge-chain.sh --repo OWNER/REPO --prs
 219,220 …` is checked like `gh pr merge 219 -R OWNER/REPO && gh pr merge 220 -R
 OWNER/REPO`, and one disallowed author denies the whole command, naming that
 PR. It is recognised as `merge-chain.sh …`, `./…/merge-chain.sh …`, a quoted
-path built from `${CLAUDE_PLUGIN_ROOT}` or `$HOME`, `bash|sh|zsh <path>/merge-chain.sh
+path built from `${CLAUDE_PLUGIN_ROOT}` or `$HOME`, an unquoted `$HOME/…`,
+`${HOME}/…` or `~/…` path, `bash|sh|zsh <path>/merge-chain.sh
 …`, `source …`, behind a wrapper, or inside `bash -c '…'`; a mention in prose, a
-quoted argument or a heredoc body is not an invocation. The arguments are read
+quoted argument or a quoted heredoc body that no shell or pipe reads is not an
+invocation. An unquoted `$HOME` is expanded to your `HOME` and judged as that
+literal path, only when `HOME` is absolute with no blank, glob or quote
+character and the command does not assign or read into `HOME`; no other
+unquoted variable is expanded (#3533). The arguments are read
 as the script reads them: separate words, `--prs` comma-separated with spaces
 dropped and a leading `#` allowed. Denied as unverifiable: no `--repo` or
 `--prs`, a non-integer entry, a variable or command substitution in `--prs` or
-`--repo`, an unquoted expansion or glob in any word (the script path included —
-quote `"$HOME/…/merge-chain.sh"`), an argument the script does not accept
-(`--repo=x` included), xargs, and a script path that is a variable or glob given
-a `--prs` list. `-h`/`--help` is allowed. Each listed PR costs one `gh pr view`,
-run sequentially inside the hook's 20 s timeout.
+`--repo`, an unquoted expansion or glob in any word (the script path included,
+`$S/merge-chain.sh` for example, apart from the `$HOME` expansion in this paragraph), an
+argument the script does not accept (`--repo=x` included), xargs, and a script
+path that is a variable or glob given a `--prs` list. Each such refusal names
+the accepted form: the path spelled as an absolute path, `~/…` or `$HOME/…`
+(the installed copy is
+`~/.claude/plugins/cache/<marketplace>/git-plugin/<version>/skills/git-merge-hazards/scripts/merge-chain.sh`)
+with literal `--repo`/`--prs`/`--review-ts` values. `-h`/`--help` is allowed.
+Each listed PR costs one `gh pr view`, run sequentially inside the hook's 20 s
+timeout.
 
 **Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
 'pr merge'`, then `gh mm 5`) and any other script or binary that merges
@@ -497,6 +514,10 @@ while gh merged someone else's).
 | `git checkout`/`switch` or `gh pr checkout`, for a merge with no PR selector | **Denied** — the current-branch PR the hook can see is not the one gh merges |
 | `GH_HOST`, `GH_CONFIG_DIR`, `XDG_CONFIG_HOME` or `HOME` set (even with `-R`) | **Denied** — gh would talk to a different host or account |
 
+A denial for another cd shape spells out the one it follows (`cd <literal dir>
+&& gh pr merge <number> [flags]`, with no quote, `$`, redirection, pipe,
+comment or `VAR=` prefix after the `&&`) next to the `-R OWNER/REPO` retry
+(#3533).
 When the lookup fails and no `--repo` was given, the denial names the directory
 it resolved the repository from and suggests retrying with `-R OWNER/REPO`. The
 hazard scan reads the command text before the merge, so a commit message that
@@ -515,7 +536,7 @@ is reached through:
 
 The counterpart narrowing: a **mention** of the phrase, or of the
 `pulls/N/merge` route, is not an invocation. Prose, a quoted `--body` value, a
-`$(cat <<EOF)` body, a non-shell heredoc, and an `rg`/`grep`/`echo` of the API
+`$(cat <<EOF)` body, a non-shell heredoc that is not piped, and an `rg`/`grep`/`echo` of the API
 route are all allowed — the api route now requires a command word that can
 actually call it (`gh`/`curl`/`wget`/`http`/`xh`/`hurl`). One narrow false
 positive is accepted deliberately: unquoted prose directly behind a wrapper
