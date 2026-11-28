@@ -201,7 +201,7 @@ body goes through `--body-file`:
 gh issue create --title "feedback(<plugin>): <desc>" --label "<labels>" --body-file "$BODY_DIR/<n>.md"
 ```
 
-Append `-R $TARGET_REPO` when set. Omit `--label` if no labels apply (positive + `$SKIP_SESSION_LABELS`).
+Append `-R $TARGET_REPO` when set. `<labels>` always includes the finding's type label (`bug`, `enhancement` or `positive-feedback`). Omit `--label` only when no label applies: a positive finding under `$SKIP_SESSION_LABELS` in a repo without `positive-feedback`.
 
 ### Step 6: Report summary
 

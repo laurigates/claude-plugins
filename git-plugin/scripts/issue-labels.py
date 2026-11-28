@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Provision, derive, validate and audit a repository's issue labels.
 
-One taxonomy, five subcommands. The label vocabulary and its lifecycle are
+One taxonomy, seven subcommands. The label vocabulary and its lifecycle are
 described in ``skills/github-labels/SKILL.md``; this file is the executable
 copy, so change both together. A reusable workflow fetches this script by
 sparse checkout at a pinned commit, so it uses the Python standard library
@@ -15,6 +15,8 @@ Usage::
     issue-labels.py validate  --repo OWNER/NAME --issue 12 --labels-file labels.json
     issue-labels.py unblock   --repo OWNER/NAME --issue 12 [--dry-run]
     issue-labels.py audit     --repo OWNER/NAME [--needs-stale-days 30] [--json]
+    issue-labels.py apply-audit --repo OWNER/NAME [--dry-run]
+    issue-labels.py backfill  --repo OWNER/NAME [--max-issues 25] [--json]
 
 Taxonomy file (JSON, by default ``.github/issue-labels.json`` on the default
 branch)::
@@ -36,7 +38,8 @@ also matches the directory itself.
 
 Two top-level settings change how ``classify`` reads an item.
 ``type_words_as_scope`` (default false) offers a title's type word ("docs" in
-"docs(robot): ...") as a scope too, so it can select a ``docs`` entry.
+"docs(robot): ...") as a scope too, so it can select a ``docs`` entry. A bare
+type word with no parenthesised scope ("docs: ...") is offered either way.
 ``max_routing_labels`` (default 3) caps the routing labels a pull request
 takes; the title's count first, and the changed-file labels matching the most
 files fill the rest.
@@ -54,10 +57,19 @@ label that most of the paths quoted in its body match; a body token is a path
 only when it has a slash or a dot, so the word "docs" in a sentence is not
 one. It only adds: a prefix that already has a label on the item is skipped.
 
+``audit`` only reads. ``apply-audit`` acts on two of its findings: it adds
+the blocked label to an issue with an open ``blocked_by`` link
+(``open_link_not_blocked``) and removes it from one whose ``blocked_by`` issues
+are all closed (``blocked_resolved``). ``backfill`` lists the open issues that
+lack a type or a routing label, oldest first, with the labels ``classify``
+derives for each; it stops after ``--max-issues`` such candidates, and lists
+the issues ``classify`` derives nothing for once, apart, without counting them
+toward that limit, so they cannot hold the queue. It writes nothing.
+
 Output: ``classify`` and ``validate`` print one JSON object. ``provision``,
-``unblock`` and ``audit`` print a KEY=VALUE block
-(.claude/rules/structured-script-output.md); ``audit --json`` prints its
-findings as JSON instead.
+``unblock``, ``audit``, ``apply-audit`` and ``backfill`` print a KEY=VALUE block
+(.claude/rules/structured-script-output.md); ``audit --json`` and
+``backfill --json`` print JSON instead.
 
 Exit codes: 0 when the subcommand ran (``audit`` findings are STATUS=WARN and
 still exit 0), 1 on an error (unreadable input, malformed taxonomy, failed
@@ -321,7 +333,6 @@ def parse_title(
     title: str,
     type_keywords: frozenset[str],
     type_words_as_scope: bool = DEFAULT_TYPE_WORDS_AS_SCOPE,
-    _after_bracket: bool = False,
 ) -> Title:
     """The type keyword and scope candidates a title carries, by its form.
 
@@ -331,27 +342,28 @@ def parse_title(
                   "[Chore] ci: run the check"             keyword chore, scope ci
     conventional  "fix(kicad): close the gaps"            keyword fix, scope kicad
                   "hw(robot): reflow the carrier"         keyword hw, scope robot
-                  "ci: run the check"                     keyword ci, no scope
+                  "ci: run the check"                     keyword ci, scope ci
     scope         "balancebot: read the divider"          scope balancebot
                   "Parts registry: tariff code per part"  scope "parts registry"
     none          "Dependency Dashboard"
 
     A title is conventional when its leading word carries a parenthesised
     scope or is one of ``type_keywords``. The leading word is offered as a
-    scope too when it is not a type keyword, or when ``type_words_as_scope``
-    is set: only then can "ci(robot): ..." select a ci entry as well as a
-    robot one. A word inside the parentheses is the author's scope and always
-    offered. What follows a bracket is read for its scopes in the same forms,
-    except that a bare "word:" there stands where "[Type] scope:" puts the
-    scope, so it is offered whatever it is. The bracket word stays the
-    keyword, and is offered as a scope under the same rule as the leading
-    word: "[DNS]: add a record" offers "dns", "[GitHub Repo]: x" offers
+    scope too when it is not a type keyword, when it has no parenthesised
+    scope beside it, or when ``type_words_as_scope`` is set: only then can
+    "ci(robot): ..." select a ci entry as well as a robot one, while a bare
+    "ci: ..." has no other scope and always offers "ci". A word inside the
+    parentheses is the author's scope and always offered. What follows a
+    bracket is read for its scopes in the same forms, so "[Chore] ci: ..."
+    offers "ci". The bracket word stays the keyword, and is offered as a
+    scope when it is not a type keyword or when ``type_words_as_scope`` is
+    set: "[DNS]: add a record" offers "dns", "[GitHub Repo]: x" offers
     "github repo", and "[Bug]: x" offers nothing unless
     ``type_words_as_scope`` is set.
     """
     m = BRACKET.match(title)
     if m:
-        rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope, True)
+        rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope)
         keyword = norm(m.group("kw"))
         scopes = list(rest.scopes)
         if type_words_as_scope or keyword not in type_keywords:
@@ -365,7 +377,7 @@ def parse_title(
         if (
             type_words_as_scope
             or keyword not in type_keywords
-            or (_after_bracket and m.group("scope") is None)
+            or m.group("scope") is None
         ):
             scopes.append(keyword)
         return Title("conventional", keyword, tuple(dict.fromkeys(scopes)))
@@ -1143,6 +1155,27 @@ def cmd_provision(a: argparse.Namespace, cfg: Config) -> int:
     return 1 if failure else 0
 
 
+def remove_label(issue_path: str, label: str) -> bool:
+    """DELETE ``label`` from an issue; False when it was already gone.
+
+    Another run (two blockers closing together, or an unblock beside an
+    apply-audit) may have removed the label first; GitHub then answers 404.
+    The labels are read back rather than trusting the error text. Any other
+    failure, or labels that cannot be read back, raises the DELETE's error.
+    """
+    try:
+        gh("api", "-X", "DELETE", f"{issue_path}/labels/{quote(label, safe='')}")
+    except Error as delete_failed:
+        try:
+            now = label_names({"labels": gh_list(f"{issue_path}/labels")})
+        except Error:
+            raise delete_failed from None
+        if label.lower() in {n.lower() for n in now}:
+            raise
+        return False
+    return True
+
+
 def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
     name = "ISSUE LABELS UNBLOCK"
     repo = resolve_repo(a.repo)
@@ -1176,21 +1209,7 @@ def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
                     gh_list(f"{issue_path}/dependencies/blocked_by")
                 )
             if action == "unblock" and not a.dry_run:
-                label = quote(cfg.blocked_label, safe="")
-                try:
-                    gh("api", "-X", "DELETE", f"{issue_path}/labels/{label}")
-                except Error as delete_failed:
-                    # Another run unblocking the same dependent (two of its
-                    # blockers closed together) may have removed the label
-                    # first; GitHub then answers 404. Read the labels back
-                    # rather than trusting the error text. Any other failure
-                    # reports the DELETE's error.
-                    try:
-                        now = label_names({"labels": gh_list(f"{issue_path}/labels")})
-                    except Error:
-                        raise delete_failed from None
-                    if cfg.blocked_label.lower() in {n.lower() for n in now}:
-                        raise
+                if not remove_label(issue_path, cfg.blocked_label):
                     action, reason = "skip", "already_removed"
         except (Error, AttributeError, TypeError, ValueError) as e:
             # A response that is not JSON, or not the shape read here, stops the
@@ -1211,13 +1230,26 @@ def cmd_unblock(a: argparse.Namespace, cfg: Config) -> int:
     return 1 if failure else 0
 
 
-def cmd_audit(a: argparse.Namespace, cfg: Config) -> int:
-    name = "ISSUE LABELS AUDIT"
-    repo = resolve_repo(a.repo)
-    now = epoch(a.now) if a.now else time.time()
-    issues = [
+def open_issues(repo: str) -> list[dict]:
+    """The repository's open issues; the listing's pull requests are left out."""
+    return [
         i for i in gh_list(f"repos/{repo}/issues?state=open") if "pull_request" not in i
     ]
+
+
+def audit_findings(
+    repo: str,
+    issues: list[dict],
+    cfg: Config,
+    now: float,
+    stale_days: int,
+    read_needs: bool = True,
+) -> list[dict]:
+    """Every finding for ``issues``, sorted by finding type, then number.
+
+    With ``read_needs`` false no events are read and no needs_stale finding
+    is made, for a caller that acts only on the blocked findings.
+    """
     findings: list[dict] = []
     for issue in issues:
         labels = label_names(issue)
@@ -1231,13 +1263,26 @@ def cmd_audit(a: argparse.Namespace, cfg: Config) -> int:
             if linked or is_blocked
             else []
         )
-        needs = [lb for lb in labels if has_prefix(lb, cfg.needs_prefix)]
+        needs = (
+            [lb for lb in labels if has_prefix(lb, cfg.needs_prefix)]
+            if read_needs
+            else []
+        )
         events = (
             gh_list(f"repos/{repo}/issues/{issue['number']}/events") if needs else []
         )
         since = {lb: label_since(lb, events, issue["created_at"]) for lb in needs}
-        findings += audit_issue(issue, blockers, since, now, a.needs_stale_days, cfg)
+        findings += audit_issue(issue, blockers, since, now, stale_days, cfg)
     findings.sort(key=lambda f: (FINDING_TYPES.index(f["type"]), f["number"]))
+    return findings
+
+
+def cmd_audit(a: argparse.Namespace, cfg: Config) -> int:
+    name = "ISSUE LABELS AUDIT"
+    repo = resolve_repo(a.repo)
+    now = epoch(a.now) if a.now else time.time()
+    issues = open_issues(repo)
+    findings = audit_findings(repo, issues, cfg, now, a.needs_stale_days)
     counts = {t: sum(f["type"] == t for f in findings) for t in FINDING_TYPES}
     if a.json:
         print(
@@ -1265,6 +1310,172 @@ def cmd_audit(a: argparse.Namespace, cfg: Config) -> int:
     return 2 if findings and a.exit_code else 0
 
 
+# The audit findings apply-audit acts on; the others are left to a person.
+APPLIED_FINDINGS = ("blocked_resolved", "open_link_not_blocked")
+
+
+def plan_apply_audit(
+    findings: list[dict], repo_labels: list[str] | None, cfg: Config
+) -> list[dict]:
+    """One action per blocked finding: remove, add, or skip with a reason.
+
+    ``repo_labels`` is None when no add is planned (the list was not read).
+    The blocked label is never added when the repository lacks it: the REST
+    API would create it.
+    """
+    have = {n.lower() for n in repo_labels or []}
+    actions: list[dict] = []
+    for f in findings:
+        if f["type"] == "blocked_resolved":
+            actions.append({"number": f["number"], "op": "remove", "reason": f["type"]})
+        elif f["type"] == "open_link_not_blocked":
+            missing = cfg.blocked_label.lower() not in have
+            actions.append(
+                {
+                    "number": f["number"],
+                    "op": "skip" if missing else "add",
+                    "reason": "missing_in_repo" if missing else f["type"],
+                }
+            )
+    return actions
+
+
+def cmd_apply_audit(a: argparse.Namespace, cfg: Config) -> int:
+    name = "ISSUE LABELS APPLY AUDIT"
+    repo = resolve_repo(a.repo)
+    issues = open_issues(repo)
+    findings = [
+        f
+        for f in audit_findings(repo, issues, cfg, 0.0, 0, read_needs=False)
+        if f["type"] in APPLIED_FINDINGS
+    ]
+    adds = any(f["type"] == "open_link_not_blocked" for f in findings)
+    repo_labels = [lb["name"] for lb in fetch_labels(repo)] if adds else None
+    actions = plan_apply_audit(findings, repo_labels, cfg)
+    applied = 0
+    rows: list[str] = []
+    failure: list[dict] = []
+    for action in actions:
+        number, op, reason = action["number"], action["op"], action["reason"]
+        issue_path = f"repos/{repo}/issues/{number}"
+        # A failed call stops the run, and the report still lists the
+        # actions taken before it.
+        if op != "skip" and not a.dry_run:
+            try:
+                if op == "add":
+                    gh(
+                        "api",
+                        "-X",
+                        "POST",
+                        f"{issue_path}/labels",
+                        "-f",
+                        f"labels[]={cfg.blocked_label}",
+                    )
+                    applied += 1
+                elif remove_label(issue_path, cfg.blocked_label):
+                    applied += 1
+                else:
+                    op, reason = "skip", "already_removed"
+            except Error as e:
+                failure = [{"type": "write_failed", "number": number, "msg": str(e)}]
+                rows.append(f"  - NUMBER={number} ACTION=error REASON=gh_failed")
+                break
+        rows.append(f"  - NUMBER={number} ACTION={op} REASON={reason}")
+    lines = [
+        f"REPO={repo}",
+        f"DRY_RUN={'true' if a.dry_run else 'false'}",
+        f"OPEN_ISSUES={len(issues)}",
+        f"ADD={sum(x['op'] == 'add' for x in actions)}",
+        f"REMOVE={sum(x['op'] == 'remove' for x in actions)}",
+        f"APPLIED={applied}",
+        *(["ACTIONS:", *rows] if rows else []),
+    ]
+    print(block(name, [*lines, *status_lines(failure, "ERROR")]))
+    return 1 if failure else 0
+
+
+def missing_groups(issue: dict, cfg: Config) -> list[str]:
+    """Which of 'type' and 'routing' an issue has no label for."""
+    groups = {label_group(lb, cfg) for lb in label_names(issue)}
+    missing = []
+    if "type" not in groups:
+        missing.append("type")
+    if not groups & set(cfg.routing_prefixes):
+        missing.append("routing")
+    return missing
+
+
+def cmd_backfill(a: argparse.Namespace, cfg: Config) -> int:
+    name = "ISSUE LABELS BACKFILL"
+    if a.max_issues < 1:
+        raise Error("max_issues: --max-issues must be at least 1")
+    repo = resolve_repo(a.repo)
+    issues = open_issues(repo)
+    # Oldest first; the listing's own order is not relied on.
+    unlabelled = [
+        (issue, missing)
+        for issue in sorted(
+            issues, key=lambda i: (i.get("created_at") or "", i.get("number") or 0)
+        )
+        if (missing := missing_groups(issue, cfg))
+    ]
+    tax = load_taxonomy(a)
+    repo_labels = load_repo_labels(a)
+    candidates: list[dict] = []
+    unclassifiable: list[dict] = []
+    scanned = 0
+    for issue, missing in unlabelled:
+        if len(candidates) >= a.max_issues:
+            break
+        scanned += 1
+        add = classify(
+            normalize_item(issue, False), tax, repo_labels, cfg, ignore_existing=False
+        )["add"]
+        row = {"number": issue.get("number"), "missing": missing}
+        if add:
+            candidates.append(row | {"add": add})
+        else:
+            unclassifiable.append(row)
+    remaining = len(unlabelled) - scanned
+    if a.json:
+        print(
+            json.dumps(
+                {
+                    "status": "OK",
+                    "repo": repo,
+                    "open_issues": len(issues),
+                    "unlabelled": len(unlabelled),
+                    "max_issues": a.max_issues,
+                    "candidates": candidates,
+                    "unclassifiable": unclassifiable,
+                    "remaining": remaining,
+                },
+                indent=1,
+            )
+        )
+        return 0
+
+    def row(r: dict) -> str:
+        add = f" ADD={','.join(r['add'])}" if "add" in r else ""
+        return f"  - NUMBER={r['number']} MISSING={','.join(r['missing'])}{add}"
+
+    lines = [
+        f"REPO={repo}",
+        f"OPEN_ISSUES={len(issues)}",
+        f"UNLABELLED={len(unlabelled)}",
+        f"MAX_ISSUES={a.max_issues}",
+        f"CANDIDATES={len(candidates)}",
+        f"UNCLASSIFIABLE={len(unclassifiable)}",
+        f"REMAINING={remaining}",
+        "CANDIDATES_DETAIL:",
+        *(row(r) for r in candidates),
+        "UNCLASSIFIABLE_DETAIL:",
+        *(row(r) for r in unclassifiable),
+    ]
+    print(block(name, [*lines, *status_lines([], "WARN")]))
+    return 0
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 
@@ -1285,7 +1496,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--type-map",
         default=(
             "bug=bug,fix;enhancement=feature,enhancement,feat,perf,bench,hw;"
-            "chore=chore,test,build,ci;docs=docs;refactor=refactor"
+            "chore=chore,task,test,build,ci;docs=docs;refactor=refactor"
         ),
         help="label=keyword,... per type, ';'-separated; keywords are the "
         "[Bracket] word or the conventional-commit type of a title",
@@ -1381,6 +1592,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--exit-code", action="store_true", help="exit 2 when there are findings"
     )
     p.set_defaults(run=cmd_audit, block="ISSUE LABELS AUDIT")
+
+    p = sub.add_parser(
+        "apply-audit",
+        parents=[vocab, repo],
+        help="add or remove the blocked label as the dependency links say",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true", help="print the actions without writing"
+    )
+    p.set_defaults(run=cmd_apply_audit, block="ISSUE LABELS APPLY AUDIT")
+
+    p = sub.add_parser(
+        "backfill",
+        parents=[vocab, repo, tax],
+        help="list open issues lacking a type or routing label, oldest first",
+    )
+    p.add_argument(
+        "--max-issues",
+        type=int,
+        default=25,
+        help="stop after this many issues classify derives labels for",
+    )
+    p.add_argument(
+        "--repo-labels", help="read the repository's labels from JSON instead of gh"
+    )
+    p.add_argument("--json", action="store_true", help="print the listing as JSON")
+    p.set_defaults(run=cmd_backfill, block="ISSUE LABELS BACKFILL")
     return ap
 
 

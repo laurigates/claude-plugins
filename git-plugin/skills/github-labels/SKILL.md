@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-23
+modified: 2026-11-28
 reviewed: 2026-11-10
 name: github-labels
 description: "GitHub labels via gh CLI and the build:/area:/needs: taxonomy. Use when labeling a PR or issue, checking which labels a repo has, or creating a label."
@@ -96,6 +96,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `validate --issue <N> --labels-file <file>` | Filters labels a model proposed: type labels and `build:`/`area:`/`core:`/`needs:` names that exist in the repo. A `needs:` label is kept only with a quote found in the issue, and of two type labels only the first | Nothing |
 | `unblock --issue <N>` | After issue N closes, removes `blocked` from each open issue it was blocking whose `blocked_by` issues are all closed | Removes `blocked` |
 | `audit` | Lists open issues with no type label, no routing label, `blocked` without a link, an open `blocked_by` link without `blocked`, or a `needs:` label older than `--needs-stale-days` (30) | Nothing |
+| `apply-audit` | Adds `blocked` for `open_link_not_blocked`, removes it for `blocked_resolved`; never adds a label the repo lacks. `--dry-run` | Adds or removes `blocked` |
+| `backfill` | Lists open issues missing a type or routing label, oldest first, with `classify`'s labels, up to `--max-issues` (25). Ones it derives nothing for are listed apart and do not count. `--json` | Nothing |
 
 `classify` reads a title in three forms:
 
@@ -107,13 +109,17 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/issue-labels.py" <subcommand> --repo <own
 | `[DNS]: add a record` | none | `dns` (the bracket word) |
 
 A type word (`docs`, `ci`, `fix`, ...) leading a conventional title is not a
-scope, so `docs(parser): ...` selects `parser` and not `core:docs`. Set
-`"type_words_as_scope": true` at the top of the taxonomy file to offer it as
-one. A word inside the parentheses, or before the colon after a bracket
+scope when a parenthesised scope follows it, so `docs(parser): ...` selects
+`parser` and not `core:docs`. Set `"type_words_as_scope": true` at the top of
+the taxonomy file to offer it as one. A bare type word with no parenthesised
+scope (`docs: ...`, `ci: ...`) is the title's only scope and is offered either
+way. A word inside the parentheses, or before the colon after a bracket
 (`[Chore] ci: ...`), is always a scope. A bracket word that is not a type word
 is a scope too, so an issue form's `[GitHub Repo]: ...` title is routed by a
 taxonomy entry with the scope `github repo`. `[Bench]` and `hw(...)` map to
-`enhancement`.
+`enhancement`, `[Task]` and `task(...)` to `chore`. A `feedback(<plugin>): ...`
+title maps to no type: feedback-plugin's `feedback-session` sets `bug`,
+`enhancement` or `positive-feedback` itself when it files the issue.
 
 An issue with no routing label from its title scope is routed by the repo paths
 its body quotes; a scope whose label the repo lacks counts as no scope. A PR
