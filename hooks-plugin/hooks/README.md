@@ -595,6 +595,15 @@ inline bypass attempt is still classified as the `rm` it is. Safety blocks
 deliberately fire inside compound commands and pipelines — only the
 context-budget read-blocks were narrowed to whole-command scope (#2148).
 
+An operand that references a variable assigned **earlier in the same command**
+to a literal path is substituted and checked like a literal operand (#3801):
+`B=/abs/path; git -C $B status; rm -rf "$B"` blocks exactly as
+`rm -rf /abs/path` would. A literal value holds no `$` and no backtick; the
+assignment is a statement of bare `NAME=value` words or `export NAME=value`,
+sequenced with `;`, `&&`, `||` or a newline. The newest assignment wins, and a
+later non-literal assignment, `unset`, `read` or `for` on the name hides it
+again.
+
 ### Safe Commands (Not Blocked)
 
 - `rm -rf node_modules` / `dist` / any path **inside** a repo — not a repo root.
@@ -613,7 +622,7 @@ full:
 
 | Gap | Why |
 |-----|-----|
-| Unresolvable operands — `$VAR`, `$(…)`, backticks, `{}` from `find -exec` | The hook cannot know the target, so it declines to guess |
+| Unresolvable operands — `$(…)`, backticks, `{}` from `find -exec`, and any `$VAR` without a literal assignment earlier in the same command: an inherited variable, `B=$(mktemp -d)`, `B=$HOME/x`, an assignment inside `( … )`, a pipeline stage or after the `rm`, a prefix `B=x rm …`, `${B:-…}` | The hook cannot know the target, so it declines to guess (#3801 resolves only same-command literal assignments) |
 | Globs — `rm -rf repo/*` | Without `dotglob`, `*` does not match `.git`, so history survives; but `rm -rf repo/.[!.]*` therefore **slips through**. Accepted |
 | Symlinks | `rm` removes the link, not the repo |
 | Remote-exec commands | The deletion targets a filesystem this hook cannot inspect |
@@ -648,7 +657,7 @@ rm -rf "$T"
 echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf node_modules"},"cwd":"'"$PWD"'"}' \
   | bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?                                          # 0
 
-bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 83 passed, 0 failed
+bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 110 passed, 0 failed
 ```
 
 ### Exit Codes
