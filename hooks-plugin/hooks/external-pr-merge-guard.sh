@@ -54,7 +54,11 @@
 #     never sees, so the command is checked as one merge per listed PR against
 #     --repo, BEFORE the script runs: one disallowed author denies the whole
 #     command, naming that PR. Detection is positional, as above, so a mention
-#     in prose, a quoted argument or a heredoc body is not an invocation. The
+#     in prose, a quoted argument or a quoted heredoc body that no shell or
+#     pipe reads is not an invocation. An unquoted `$HOME/…` or `${HOME}/…`
+#     path is judged as the literal path it expands to when HOME is a plain
+#     absolute path the command does not touch; `~/…` already is; no other
+#     variable is expanded (issue #3533). The
 #     arguments are read exactly as the script reads them (separate words;
 #     `--prs` comma-separated, spaces dropped, a leading `#` allowed). DENIED as
 #     unverifiable: no --repo or --prs, a non-integer entry, a `$var` or
@@ -215,8 +219,14 @@ case "$TOOL_NAME" in
     # -----------------------------------------------------------------------
     # The scan, as a function of (text, enclosing prefix, enclosing background
     # flag) so it can be re-run over command substitutions it hands back.
+    # The operator's HOME, for expanding a `$HOME/…/merge-chain.sh` path
+    # (issue #3533): only an absolute value made of characters that neither
+    # split nor glob, so the expansion is exactly one literal word.
+    SAFEHOME=""
+    SAFEHOME_RE='^/[A-Za-z0-9._/@,:%=+-]*$'
+    if [[ "${HOME:-}" =~ $SAFEHOME_RE ]]; then SAFEHOME="$HOME"; fi
     detect_scan() {
-      printf '%s' "$1" | OUTERPRE="$2" OUTERBG="$3" awk '
+      printf '%s' "$1" | OUTERPRE="$2" OUTERBG="$3" SAFEHOME="$SAFEHOME" awk '
       # scan(t): read one shell word the way the shell would, WITHOUT running
       # anything. Sets SV (the word with quotes and escapes removed — what the
       # program receives when nothing expands), SDYN (a `$` or backtick outside
@@ -550,7 +560,9 @@ case "$TOOL_NAME" in
       # chain_stmt(ci, …): token ci of statement s names the script. Emit one
       # merge record per listed PR, or one chain record saying why not.
       function chain_stmt(ci, nt, s, a, b, off, wrapped, trunc, concat,   gpos, pq, pud, pre, script, pa, k, e, unv, prevc) {
-        scan(TO[ci]); pq = (SV ~ QCH); pud = (SUDYN || SGLOB)
+        # `$HOME/…/merge-chain.sh` is judged as the literal path it expands
+        # to; any other variable in the path still splits (issue #3533).
+        scan(home_word(TO[ci])); pq = (SV ~ QCH); pud = (SUDYN || SGLOB)
         gpos = a + off + TP[ci] - 1
         pre = substr(buf, a, gpos - a)
         CN = 0; for (k = ci + 1; k <= nt; k++) { CN++; CAO[CN] = TO[k]; CAM[CN] = TM[k] }
@@ -605,8 +617,42 @@ case "$TOOL_NAME" in
         }
         return 0
       }
+      # seg_piped(p, e): the command around the `<<` at mask offset p (up to
+      # offset e, the end of its line) is a stage of a pipeline. Its segment
+      # runs from the `;`, `&&`, `||`, lone `&` or newline before p to the
+      # next one after it, as in bash-safety.sh (#3363); a `|` or `|&` in it
+      # is a pipe, `>|` and `>&`/`&>` are redirections. Quoted text is masked,
+      # so a quoted `|` does not count.
+      function seg_piped(p, e,   k, ch, pv, nx) {
+        for (k = p - 1; k >= 1; k--) {
+          ch = substr(m, k, 1); pv = (k > 1) ? substr(m, k - 1, 1) : ""; nx = substr(m, k + 1, 1)
+          if (ch == "\n" || ch == ";") break
+          if (ch == "|") { if (pv == "|" || nx == "|") break; if (pv == ">") continue; return 1 }
+          if (ch == "&") { if (pv == "&" || nx == "&") break; if (pv == ">" || pv == "<" || nx == ">") continue; if (pv == "|") return 1; break }
+        }
+        for (k = p + 2; k < e; k++) {
+          ch = substr(m, k, 1); pv = substr(m, k - 1, 1); nx = substr(m, k + 1, 1)
+          if (ch == "\n" || ch == ";") break
+          if (ch == "|") { if (pv == "|" || nx == "|") break; if (pv == ">") continue; return 1 }
+          if (ch == "&") { if (pv == "&" || nx == "&") break; if (pv == ">" || pv == "<" || nx == ">") continue; break }
+        }
+        return 0
+      }
+      # home_word(t): t with a leading unquoted `$HOME/` or `${HOME}/`
+      # replaced by the HOME of the operator, which the caller passes in only when
+      # it is absolute and holds no blank, glob or quote character, so the
+      # expansion is one literal word (issue #3533, decision 1B: $HOME and ~
+      # only). Nothing is expanded when the command assigns or reads into
+      # HOME anywhere (HOMEDIRTY), so the value here is the one the shell uses.
+      function home_word(t) {
+        if (SAFEHOME == "" || HOMEDIRTY) return t
+        if (substr(t, 1, 6) == "$HOME/") return SAFEHOME substr(t, 6)
+        if (substr(t, 1, 8) == "${HOME}/") return SAFEHOME substr(t, 8)
+        return t
+      }
       BEGIN {
         SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
+        SAFEHOME = ENVIRON["SAFEHOME"]
         QCH = "[" DQ SQ "\\\\]"
         split("--repo --prs --review-ts --method --timeout --fetch-dir", cv, " ")
         for (k in cv) CVAL[cv[k]] = 1
@@ -633,6 +679,11 @@ case "$TOOL_NAME" in
       { buf = (NR > 1 ? buf "\n" $0 : $0) }
       END {
         SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
+        # HOME named other than as a `$HOME`/`${HOME}` read (`HOME=…`,
+        # `export HOME`, `for HOME in`, `read HOME`, `${HOME:-…}`) turns off
+        # the $HOME expansion in home_word.
+        hd_t = OUTERPRE buf; gsub(/\$\{HOME\}|\$HOME/, "", hd_t)
+        HOMEDIRTY = (hd_t ~ /(^|[^A-Za-z0-9_])HOME([^A-Za-z0-9_]|$)/)
         split("eval bash sh zsh ksh dash nix-shell", sl, " "); for (k in sl) shcmd[sl[k]] = 1
         # Commands that run a STRING argument as a command line, so a quoted
         # argument of theirs is command text exactly like `bash -c "…"`:
@@ -675,14 +726,21 @@ case "$TOOL_NAME" in
                 # more of the statement the body started (issue #3355).
                 if (st[ns] != i + 1) { st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0 }
                 hsub = 0; hbt = 0
-                if (pn > 0) { hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]; hd_unq = hdu[1]
-                              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1] }
+                if (pn > 0) { hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = (hdn[1] || hdp[1]); hd_unq = hdu[1]
+                              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1]; hdp[k] = hdp[k+1] }
                               pn-- }
                 else { in_hd = 0; hd_nomask = 0 }
               }
               i++; continue
             }
             mc = (hd_nomask ? c : "X")
+            # A body a shell runs is command text, so its operators separate
+            # statements exactly as at the top level: `bash <<EOF` + `true &&
+            # gh pr merge 5` merges (issue #3533; only newlines split it).
+            if (hd_nomask && (index(";&|()", c) || c == BT)) {
+              m = m c; curline = curline c; st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0
+              i++; continue
+            }
             # An UNQUOTED heredoc (<<EOF, not <<"EOF") still runs $(…) and `…`
             # in its body — markdown code spans included — so those regions
             # are command text, not prose: `cat <<EOF` + `gh pr merge 5` merges.
@@ -743,8 +801,13 @@ case "$TOOL_NAME" in
           if (c == ";" || c == "&" || c == "|" || c == "(" || c == ")" || c == BT || c == "\n") {
             m = m c; st[++ns] = i + 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0; ptime = 0
             if (c == "\n" && pn > 0) {                   # queued heredoc starts here
-              hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]; hd_unq = hdu[1]
-              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1] }
+              # hdp: the command that owns the `<<` is part of a pipeline, so
+              # its output may reach a shell (`| bash`, `| xargs sh -c {}`)
+              # and the body is scanned as command text — the "no pipe"
+              # condition of bash-safety.sh (#3363), issue #3533.
+              for (k = 1; k <= pn; k++) hdp[k] = seg_piped(hpos[k], i)
+              hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = (hdn[1] || hdp[1]); hd_unq = hdu[1]
+              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1]; hdp[k] = hdp[k+1] }
               pn--; in_hd = 1; curline = ""
             }
             i++; continue
@@ -781,19 +844,38 @@ case "$TOOL_NAME" in
             j = i + 2; strip = 0
             if (substr(buf, j, 1) == "-") { strip = 1; j++ }
             while (substr(buf, j, 1) == " " || substr(buf, j, 1) == "\t") j++
-            qc = substr(buf, j, 1); delim = ""
-            if (qc == SQ || qc == DQ) {
-              j++
-              while (j <= n && substr(buf, j, 1) != qc) { delim = delim substr(buf, j, 1); j++ }
-              j++
-            } else {
-              while (j <= n && substr(buf, j, 1) ~ /[A-Za-z0-9_]/) { delim = delim substr(buf, j, 1); j++ }
+            # The delimiter is the WHOLE word after `<<`, read as the shell
+            # reads it: quotes and backslashes removed, and any of them makes
+            # the body literal (a single-quoted EOF, `<<"EOF"`, `<<\EOF`,
+            # `<<E"OF"`).
+            # Reading only a leading [A-Za-z0-9_] run, or only a leading
+            # quoted part, took `E` for `E"OF"` and `EOF` for `EOF-X`, so the
+            # real terminator never matched and every later line — a merge
+            # included — was masked as body (issue #3533).
+            delim = ""; dqt = 0; dq = 0
+            while (j <= n) {
+              ch = substr(buf, j, 1)
+              if (dq == 1) { if (ch == SQ) dq = 0; else delim = delim ch; j++; continue }
+              if (dq == 2) {
+                if (ch == DQ) { dq = 0; j++; continue }
+                if (ch == "\\" && index("$" BT DQ "\\", substr(buf, j + 1, 1))) { delim = delim substr(buf, j + 1, 1); j += 2; continue }
+                delim = delim ch; j++; continue
+              }
+              if (ch == SQ) { dq = 1; dqt = 1; j++; continue }
+              if (ch == DQ) { dq = 2; dqt = 1; j++; continue }
+              if (ch == "\\") { dqt = 1; if (substr(buf, j + 1, 1) != "\n") delim = delim substr(buf, j + 1, 1); j += 2; continue }
+              if (ch == " " || ch == "\t" || ch == "\n" || index(";&|<>()", ch)) break
+              delim = delim ch; j++
             }
+            # An unterminated quote is not a delimiter the shell would accept.
+            if (dq) delim = ""
             # hdn: is this body script text? `bash <<EOF … EOF` feeds a shell,
             # so its body is scanned exactly as `bash -c "…"` already is;
             # `cat <<EOF` / `gh pr create --body-file - <<EOF` feed prose.
+            # hpos: where the `<<` is, for the pipeline test (seg_piped) made
+            # once the line ends and the body starts.
             if (delim != "") { pn++; hdq[pn] = delim; hds[pn] = strip; hdn[pn] = nest
-                               hdu[pn] = !(qc == SQ || qc == DQ)
+                               hdu[pn] = !dqt; hpos[pn] = i; hdp[pn] = 0
                                m = m substr(buf, i, j - i); i = j; continue }
           }
           m = m c
@@ -1241,7 +1323,7 @@ check_record() {
       unknown)    why="'${detail}' is not an argument this hook can read (it accepts only separate words: --repo OWNER/REPO --prs N,M --review-ts T [--method M] [--timeout S] [--fetch-dir P])" ;;
       *)          why="its arguments could not be parsed (a command substitution or unterminated quote cut them off)" ;;
     esac
-    deny "Refusing to merge with merge-chain.sh: ${why}. ${what_chain}, and it cannot do that here. 'Cannot verify' is not 'safe'. ${NOT_PERMITTED} Retry with literal values: merge-chain.sh --repo OWNER/REPO --prs 219,220 --review-ts <UTC timestamp>"
+    deny "Refusing to merge with merge-chain.sh: ${why}. ${what_chain}, and it cannot do that here. 'Cannot verify' is not 'safe'. ${NOT_PERMITTED} Retry with the script path spelled literally — an absolute path, ~/…, \$HOME/… or \"\$HOME/…\" (the installed copy is ~/.claude/plugins/cache/<marketplace>/git-plugin/<version>/skills/git-merge-hazards/scripts/merge-chain.sh) — and literal values: bash <that path> --repo OWNER/REPO --prs 219,220 --review-ts <UTC timestamp>"
   fi
 
   # A bare backtick or `(` truncated the merge statement mid-argument (see the
@@ -1298,7 +1380,7 @@ check_record() {
     esac
     if [ -z "$CD_DIR" ]; then
       case "$flags" in *,dirchg*)
-        deny "Refusing to merge ${WHAT}: something before the merge can change which repository gh resolves — a cd/pushd/popd in a shape this hook does not follow (only a leading literal \`cd <dir> && gh pr merge …\` is), env -C, GIT_DIR/GIT_WORK_TREE, a git remote/config/worktree change, gh repo set-default, a gh function or alias, a sourced script, or a redirection into a .git path. No --repo/-R was given, so this hook would look the PR up in the repository of ${GH_DIR_SHOWN}, which may not be where gh merges. ${NOT_PERMITTED} Retry naming the repository explicitly, as its own command: gh pr merge ${PR_SELECTOR:-<number>} -R OWNER/REPO" ;;
+        deny "Refusing to merge ${WHAT}: something before the merge can change which repository gh resolves — a cd/pushd/popd in a shape this hook does not follow (only a leading literal \`cd <dir> && gh pr merge …\` is), env -C, GIT_DIR/GIT_WORK_TREE, a git remote/config/worktree change, gh repo set-default, a gh function or alias, a sourced script, or a redirection into a .git path. No --repo/-R was given, so this hook would look the PR up in the repository of ${GH_DIR_SHOWN}, which may not be where gh merges. ${NOT_PERMITTED} The one cd shape this hook follows is the whole command \`cd <literal dir> && gh pr merge <number> [flags]\`: an absolute, ./, ../ or ~/ directory that exists, with no quotes, \$, options or globs, and after the && no quote, \$, backtick, redirection, pipe, # comment, background & or VAR= prefix. Otherwise retry naming the repository explicitly, as its own command: gh pr merge ${PR_SELECTOR:-<number>} -R OWNER/REPO" ;;
       esac
     fi
     if [ -z "$PR_SELECTOR" ]; then

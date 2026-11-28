@@ -96,7 +96,9 @@ is resolved.
 
 The PreToolUse `external-pr-merge-guard` hook reads `--repo` and `--prs` from
 the command and checks every listed PR's author before the script runs, so pass
-the numbers as literals; a list it cannot read is denied. The script repeats the
+the numbers as literals; a list it cannot read is denied. Spell the script path
+as an absolute path, `~/…`, `$HOME/…` or `"${CLAUDE_SKILL_DIR}/…"`; the hook
+expands no other unquoted variable, so `$S/merge-chain.sh` is denied. The script repeats the
 check inside as a second layer, failing closed: it merges only PRs authored by
 the authenticated user (`gh api user`) or by a bot, skips a PR whose author
 login cannot be read, and stops before touching any PR when its own login

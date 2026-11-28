@@ -1125,7 +1125,9 @@ ck_chain '--repo "$R"'                       DENY "$MC_SELF" 'merge-chain.sh --r
 ck_chain "non-integer entry"                 DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs 219,abc --review-ts 2026-10-27T08:00:00Z' "'abc'"
 ck_chain "--repo= form (the script rejects it)" DENY "$MC_SELF" 'merge-chain.sh --repo=laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z' "not an argument"
 ck_chain "unquoted \$ARGS"                   DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs 219 $EXTRA' "unquoted"
-ck_chain "unquoted \$HOME path"              DENY "$MC_SELF" "\$HOME/merge-chain.sh $MC_ARGS" "unquoted"
+# An unquoted $HOME path is expanded since #3533 (see that section); any other
+# unquoted variable in the path is still refused.
+ck_chain "unquoted \$P path"                 DENY "$MC_SELF" "\$P/merge-chain.sh $MC_ARGS" "unquoted"
 ck_chain "variable script path with --prs"   DENY "$MC_SELF" "\"\$MC\" $MC_ARGS" "cannot tell whether it is merge-chain.sh"
 ck_chain "bash + variable script path"       DENY "$MC_SELF" "bash \"\$MC\" $MC_ARGS" "cannot tell whether it is merge-chain.sh"
 ck_chain "globbed script name"               DENY "$MC_SELF" "./m?rge-chain.sh $MC_ARGS" "cannot tell whether it is merge-chain.sh"
@@ -1253,6 +1255,87 @@ ck "variables form of updateIssue passes"    ALLOW "$(run "$(bash_json 'gh api g
 run "$(bash_json 'gh api graphql -f query='"'"'mutation($id:ID!){mergePullRequest(input:{pullRequestId:$id}){clientMutationId}}'"'"' -f id="$ID"')" >/dev/null
 ck "variables form of mergePullRequest is denied" DENY "$LAST_VERDICT"
 ck_reason "merge by variable gets the node-id refusal" "it names the PR by node id"
+
+echo "== issue #3533: \$HOME script paths, inert heredocs, refusal messages =="
+# Decision on #3533 (2026-11-21, 1B/2A/3A): expand $HOME and ~ only in a
+# merge-chain.sh path; ignore mentions in quoted heredoc bodies unless the
+# heredoc feeds a shell or a pipe (bash-safety.sh's #3363 rule); accept no cd
+# shape wider than the literal one, but name it in the refusal.
+H33="$TMPDIR/home3533"
+mkdir -p "$H33"
+MC_CACHE='.claude/plugins/cache/laurigates-claude-plugins/git-plugin/2.75.0/skills/git-merge-hazards/scripts/merge-chain.sh'
+# ck_chain_home <desc> <expected> <authors> <HOME> <command> [reason substring]
+ck_chain_home() {
+    HOME="$4" STUB_PR_AUTHORS="$3" run "$(bash_json "$5")" >/dev/null
+    ck "$1" "$2" "$LAST_VERDICT"
+    if [ -n "${6:-}" ]; then ck_reason "$1 — reason names it" "$6"; fi
+}
+echo "-- \$HOME and ~ in the script path are expanded, nothing else"
+ck_chain_home "unquoted \$HOME cache path, self"      ALLOW "$MC_SELF"     "$H33" "\$HOME/$MC_CACHE $MC_ARGS"
+ck_chain_home "unquoted \$HOME cache path, stranger"  DENY  "$MC_STRANGER" "$H33" "\$HOME/$MC_CACHE $MC_ARGS" "#220"
+ck_chain_home "unquoted \${HOME} cache path, self"    ALLOW "$MC_SELF"     "$H33" "\${HOME}/$MC_CACHE $MC_ARGS"
+ck_chain_home "unquoted \${HOME} cache path, stranger" DENY "$MC_STRANGER" "$H33" "\${HOME}/$MC_CACHE $MC_ARGS" "#220"
+ck_chain_home "bash \$HOME cache path, self"          ALLOW "$MC_SELF"     "$H33" "bash \$HOME/$MC_CACHE $MC_ARGS"
+ck_chain_home "bash \$HOME cache path, stranger"      DENY  "$MC_STRANGER" "$H33" "bash \$HOME/$MC_CACHE $MC_ARGS" "#220"
+# shellcheck disable=SC2088  # the literal ~ is the fixture: the hook must see it unexpanded
+ck_chain_home "~ cache path, self"                    ALLOW "$MC_SELF"     "$H33" "~/$MC_CACHE $MC_ARGS"
+# shellcheck disable=SC2088  # same fixture, stranger in the list
+ck_chain_home "~ cache path, stranger"                DENY  "$MC_STRANGER" "$H33" "~/$MC_CACHE $MC_ARGS" "#220"
+ck_chain_home "quoted \"\$HOME/…\" cache path, self"  ALLOW "$MC_SELF"     "$H33" "\"\$HOME/$MC_CACHE\" $MC_ARGS"
+ck_chain_home "quoted \"\$HOME/…\" cache path, stranger" DENY "$MC_STRANGER" "$H33" "\"\$HOME/$MC_CACHE\" $MC_ARGS" "#220"
+# Still refused: any other variable, a glob after $HOME, a HOME the shell would
+# split or that is not absolute, and a HOME reassigned in the command.
+ck_chain_home "unquoted \$S path"                     DENY "$MC_SELF" "$H33" "\$S/merge-chain.sh $MC_ARGS" "unquoted"
+ck_chain_home "\$S refusal names the literal form"    DENY "$MC_SELF" "$H33" "\$S/merge-chain.sh $MC_ARGS" "skills/git-merge-hazards/scripts/merge-chain.sh"
+ck_chain_home "bash \$S path"                         DENY "$MC_SELF" "$H33" "bash \$S/merge-chain.sh $MC_ARGS" "unquoted"
+ck_chain_home "\$HOMEX is not \$HOME"                 DENY "$MC_SELF" "$H33" "\$HOMEX/merge-chain.sh $MC_ARGS"
+ck_chain_home "\$HOME followed by \$S"                DENY "$MC_SELF" "$H33" "\$HOME\$S/merge-chain.sh $MC_ARGS"
+ck_chain_home "\$HOME/\$S path"                       DENY "$MC_SELF" "$H33" "\$HOME/\$S/merge-chain.sh $MC_ARGS"
+ck_chain_home "\${HOME:-/x} default form"             DENY "$MC_SELF" "$H33" "\${HOME:-/x}/merge-chain.sh $MC_ARGS"
+ck_chain_home "glob after \$HOME"                     DENY "$MC_SELF" "$H33" "\$HOME/x*/merge-chain.sh $MC_ARGS"
+ck_chain_home "HOME holds a blank"                    DENY "$MC_SELF" "$TMPDIR/a b" "\$HOME/merge-chain.sh $MC_ARGS"
+ck_chain_home "HOME is relative"                      DENY "$MC_SELF" "rel/home" "\$HOME/merge-chain.sh $MC_ARGS"
+ck_chain_home "HOME reassigned earlier"               DENY "$MC_SELF" "$H33" "HOME=/tmp; \$HOME/merge-chain.sh $MC_ARGS"
+ck_chain_home "\$HOME path, --prs still literal-only" DENY "$MC_SELF" "$H33" "\$HOME/merge-chain.sh --repo laurigates/claude-plugins --prs \$P --review-ts x" "unquoted"
+
+echo "-- quoted heredoc bodies are inert unless a shell or a pipe reads them"
+# The delimiter is the whole word after << with its quotes removed, as the
+# shell reads it. Reading only `E` of `E"OF"` (or `EOF` of `EOF-X`) masked
+# every line after the real terminator as body, so a merge there went
+# unchecked.
+export STUB_AUTHOR=joshua-trustabl STUB_NUM=2231
+ck "merge after <<E\"OF\" heredoc"    DENY  "$(run "$(bash_json "$(printf '%s\n' 'cat <<E"OF"' 'hi' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+ck "merge after <<'E'OF heredoc"      DENY  "$(run "$(bash_json "$(printf '%s\n' "cat <<'E'OF" 'hi' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+ck "merge after <<EOF-X heredoc"      DENY  "$(run "$(bash_json "$(printf '%s\n' 'cat <<EOF-X' 'hi' 'EOF-X' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+ck "own merge after <<E\"OF\" heredoc" ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "$(printf '%s\n' 'cat <<E"OF"' 'gh pr merge 1 -R x/y' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
+# <<\PY quotes the delimiter exactly as <<'PY' does.
+ck "<<\\PY body: gh pr merge mention" ALLOW "$(run "$(bash_json "$(printf '%s\n' 'python3 - <<\PY' 'gh pr merge 2231 -R laurigates/claude-plugins' 'PY')")")"
+ck_chain "<<\\PY body: merge-chain.sh mention" ALLOW "$MC_STRANGER" "$(printf '%s\n' 'python3 - <<\PY' "merge-chain.sh $MC_ARGS" 'PY')"
+ck_chain "<<'PY' body: merge-chain.sh mention" ALLOW "$MC_STRANGER" "$(printf '%s\n' "python3 - <<'PY'" "merge-chain.sh $MC_ARGS" 'PY')"
+ck "bash <<\\EOF body is a script"    DENY  "$(run "$(bash_json "$(printf '%s\n' 'bash <<\EOF' 'gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck_chain "quoted heredoc piped to bash: chain checked" DENY "$MC_SELF" "$(printf '%s\n' "cat <<'EOF' | bash" "merge-chain.sh $MC_ARGS" 'EOF')"
+# A pipe can hand the body to a shell indirectly, so a piped body is scanned.
+ck "piped body run by xargs sh -c"    DENY  "$(run "$(bash_json "$(printf '%s\n' "cat <<'EOF' | xargs -I{} sh -c '{}'" 'gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck "own merge in a piped body"        ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "$(printf '%s\n' "cat <<'EOF' | xargs -I{} sh -c '{}'" 'gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck "piped body read by python3"       DENY  "$(run "$(bash_json "$(printf '%s\n' "cat <<'EOF' | python3" 'gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+# A body a shell runs splits at ;, &&, ( like any command text. Only newlines
+# split it before, so a merge after one of these ran unchecked.
+ck "bash <<EOF body: merge after ;"   DENY  "$(run "$(bash_json "$(printf '%s\n' 'bash <<EOF' 'echo hi; gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck "bash <<'EOF' body: merge after &&" DENY "$(run "$(bash_json "$(printf '%s\n' "bash <<'EOF'" 'true && gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck "bash <<'EOF' body: merge in ( )"  DENY  "$(run "$(bash_json "$(printf '%s\n' "bash <<'EOF'" '(gh pr merge 2231 -R laurigates/claude-plugins)' 'EOF')")")"
+ck "bash <<'EOF' body: own merge after &&" ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "$(printf '%s\n' "bash <<'EOF'" 'true && gh pr merge 2231 -R laurigates/claude-plugins' 'EOF')")")"
+ck "piped prose that only mentions it" ALLOW "$(run "$(bash_json "$(printf '%s\n' "cat <<'EOF' | gh pr create --title x --body-file -" "Run gh pr merge after review; don't call merge-chain.sh --prs 5 yet." 'EOF')")")"
+unset STUB_AUTHOR STUB_NUM
+
+echo "-- a refused cd prefix names the accepted shape"
+mkdir -p "$TMPDIR/cd3533"
+STUB_AUTHOR=laurigates run "$(bash_json "cd $TMPDIR/cd3533 && gh pr merge 5 --squash --subject \"x\"")" >/dev/null
+ck "quoted argument after a literal cd" DENY "$LAST_VERDICT"
+ck_reason "cd refusal shows the accepted shape" "cd <literal dir> && gh pr merge <number>"
+ck_reason "cd refusal names -R as the alternative" "-R OWNER/REPO"
+ck "literal absolute cd, plain flags"  ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "cd $TMPDIR/cd3533 && gh pr merge 5 --squash --delete-branch")")"
+ck "cd \"\$D\" stays refused"          DENY  "$(STUB_AUTHOR=laurigates run "$(bash_json 'cd "$D" && gh pr merge 5 --squash')")"
+ck "cd \$(…) stays refused"            DENY  "$(STUB_AUTHOR=laurigates run "$(bash_json 'cd $(git rev-parse --show-toplevel) && gh pr merge 5 --squash')")"
 
 echo "== operator escape hatch =="
 out=$(printf '%s' "$(bash_json 'gh pr merge 2231 --squash')" \
