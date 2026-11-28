@@ -263,5 +263,94 @@ assert "H15 INVOCATIONS counts the 11 script elements (the .md read and the pros
 assert "H16 output passes the structured-output contract" \
   "$(printf '%s\n' "$OUT" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
 
+##########
+# I. Repair round (#3666): the extension ends at a boundary (config.json is not
+#    config.js), the reported SCRIPT leaves out a quote closed before the slash,
+#    markdown fences re-parse past one nesting level, a fence deep in a nested
+#    list item is dedented before re-parsing, every script on a line counts,
+#    and a parser failure on a markdown fence fails closed.
+##########
+echo "=== I: extension boundary, SCRIPT field, deep nesting, dedent, counting, fail-closed ==="
+i="$sandbox/i"
+write_md "$i" "u-plugin/skills/ext/SKILL.md" '# Ext
+```bash
+jq . "${CLAUDE_SKILL_DIR}/references/config.json" > "$(mktemp)"
+plutil -p "${CLAUDE_SKILL_DIR}/assets/x.plist" "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/a.sh.bak" "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}"/scripts/a.sh --project-dir "$(pwd)"
+bash ${CLAUDE_SKILL_DIR}/scripts/a.sh>"$(mktemp)"
+```'
+write_md "$i" "u-plugin/skills/deep/SKILL.md" '# Deep
+``````markdown
+`````markdown
+````markdown
+Run: !`bash ${CLAUDE_SKILL_DIR}/scripts/h.sh`
+
+Then `bash ${CLAUDE_SKILL_DIR}/scripts/a.sh --x "$(pwd)"` by hand.
+````
+`````
+``````'
+write_md "$i" "u-plugin/skills/listfence/SKILL.md" '# List fence
+
+- outer
+  - inner
+
+    ```markdown
+    Run: !`bash ${CLAUDE_SKILL_DIR}/scripts/h.sh`
+
+    Then `bash ${CLAUDE_SKILL_DIR}/scripts/a.sh --x "$(pwd)"` by hand.
+    ```'
+run_check "$i"
+# script_of <file suffix> <line>: the SCRIPT field of that finding row
+script_of() { grep -E "FILE=[^ ]*$1 LINE=$2 " <<<"$OUT" | sed -n 's/.* SCRIPT=\([^ ]*\) MSG=.*/\1/p'; }
+assert "I1 a .json path under the anchor is not a .js script" "$(is "$(flagged ext/SKILL.md 3)" false)"
+assert "I2 a .plist path under the anchor is not a .pl script" "$(is "$(flagged ext/SKILL.md 4)" false)"
+assert "I3 a.sh.bak is not a.sh" "$(is "$(flagged ext/SKILL.md 5)" false)"
+assert "I4 quoted-anchor line is flagged" "$(flagged ext/SKILL.md 6)"
+assert "I5 SCRIPT leaves out the quote closed before the slash" \
+  "$(is "$(script_of ext/SKILL.md 6)" '${CLAUDE_SKILL_DIR}/scripts/a.sh')"
+assert "I6 a redirect right after the extension is trimmed from SCRIPT" \
+  "$(is "$(script_of ext/SKILL.md 7)" '${CLAUDE_SKILL_DIR}/scripts/a.sh')"
+assert "I7 triple-nested markdown fence: !\`cmd\` is not flagged" "$(is "$(flagged deep/SKILL.md 5)" false)"
+assert "I8 triple-nested markdown fence: inline \$(…) span keeps its source line" "$(flagged deep/SKILL.md 7)"
+assert "I9 markdown fence in a nested list item: !\`cmd\` is not flagged" "$(is "$(flagged listfence/SKILL.md 7)" false)"
+assert "I10 markdown fence in a nested list item: inline \$(…) span is flagged (dedent)" "$(flagged listfence/SKILL.md 9)"
+assert "I11 ISSUE_COUNT is the 4 flagged elements" "$(is "$(field ISSUE_COUNT)" 4)"
+assert "I12 INVOCATIONS counts 6 script elements (no .json, .plist or .bak)" "$(is "$(field INVOCATIONS)" 6)"
+
+i_count="$sandbox/i_count"
+write_md "$i_count" "u-plugin/skills/count/SKILL.md" '# Count
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/a.sh && bash ${CLAUDE_SKILL_DIR}/scripts/b.sh && bash ${CLAUDE_SKILL_DIR}/scripts/c.sh
+cat ${CLAUDE_SKILL_DIR}/references/x.md; bash "${CLAUDE_SKILL_DIR}"/scripts/a.sh; bash ${CLAUDE_SKILL_DIR}/scripts/b
+cat --number --squeeze-blank --show-ends ${CLAUDE_SKILL_DIR}/references/x.md; bash ${CLAUDE_SKILL_DIR}/scripts/a.sh
+```'
+# Line 5: the prefix before the non-script anchor is longer than the script
+# token, so a SCRIPT end computed without that offset lands before the
+# script's own anchor and the script would be counted twice.
+run_check "$i_count"
+assert "I13 every script on a line counts once: 3 + 2 + 1 INVOCATIONS" "$(is "$(field INVOCATIONS)" 6)"
+assert "I14 clean count corpus STATUS=OK" "$(is "$(field STATUS)" OK)"
+
+# Fail closed when the parser dies on the SECOND run (the markdown-fence re-parse):
+# a copy of the checker whose helper is a stub that delegates once, then fails.
+stub_root="$sandbox/stub"
+mkdir -p "$stub_root/scripts/lib"
+cp "$CHECK" "$stub_root/scripts/check-voided-script-grant.sh"
+stub="$stub_root/scripts/lib/extract-md-elements.py"
+counter="$sandbox/stub-calls"
+printf '#!/usr/bin/env bash\nn=$(cat %q 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > %q\nif [ "$n" -ge 2 ]; then echo "stub: run $n fails" >&2; exit 3; fi\nexec %q "$@"\n' \
+  "$counter" "$counter" "$repo_root/scripts/lib/extract-md-elements.py" > "$stub"
+chmod +x "$stub"
+assert "I15 the parser stub is executable" "$([ -x "$stub" ] && echo true || echo false)"
+OUT="$(bash "$stub_root/scripts/check-voided-script-grant.sh" --project-dir "$i" 2>/dev/null)"; RC=$?
+assert "I16 the stub ran twice (it, not the real parser, served both runs)" "$(is "$(cat "$counter" 2>/dev/null)" 2)"
+assert "I17 a second-run parser failure is STATUS=ERROR" "$(is "$(field STATUS)" ERROR)"
+assert "I18 REASON is parser_failed on a markdown fence" \
+  "$(grep -qE '^REASON=parser_failed: .*markdown fence' <<<"$OUT" && echo true || echo false)"
+assert "I19 a second-run parser failure exits 1" "$(is "$RC" 1)"
+assert "I20 output passes the structured-output contract" \
+  "$(printf '%s\n' "$OUT" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+
 echo "PASSED=${pass_count} FAILED=${fail_count}"
 [ "$fail_count" -eq 0 ]

@@ -20,9 +20,10 @@
 # ${CLAUDE_SKILL_DIR} or ${CLAUDE_PLUGIN_ROOT} (braced or not, quoted or not,
 # a quote closed before the slash as in "${CLAUDE_SKILL_DIR}"/scripts/a.sh,
 # placeholder path segments such as <name> included). A script is a path that
-# ends in a script extension (.sh .bash .py .js .mjs .ts .rb .pl) or whose last
-# segment has no extension at all (scripts/check, bin/run); a path to another
-# file type (.md, .json) is not one (#3666). It is flagged when the element also
+# ends in a script extension (.sh .bash .py .js .mjs .ts .rb .pl), the extension
+# followed by the end of the path, or whose last segment has no extension at all
+# (scripts/check, bin/run); a path to another file type (.md, .json, .plist) is
+# not one (#3666). It is flagged when the element also
 # holds `$(` or a backtick, wherever on the line, because the permission check
 # reads the whole command. Prose outside code is not checked, and tests/ and
 # fixtures/ directories are skipped (they hold the broken text on purpose).
@@ -153,8 +154,9 @@ if ! "$helper" --types fence_line,inline_code --files-from "$work_dir/files" \
 fi
 
 # Lines of a ```markdown / ```md fence are markdown, not shell (#3666). Write
-# each such block (dedented, so a fence inside a list item does not turn into an
-# indented code block) to its own file, parse it again, and map the rows back to
+# each such block (dedented: fence_line text is the raw source line, so a fence
+# 4+ columns deep in a nested list item would otherwise re-parse as an indented
+# code block and hide its spans) to its own file, parse it again, and map the rows back to
 # the source file and line. Repeat for markdown fences nested in those; the cap
 # only bounds a pathological file, and anything left is checked as plain lines.
 : > "$work_dir/rows"
@@ -213,24 +215,31 @@ sort -t "$(printf '\t')" -k2,2 -k3,3n "$work_dir/rows" | awk -F'\t' '
   # next_script(s): find the first script reached through ${CLAUDE_SKILL_DIR}
   # or ${CLAUDE_PLUGIN_ROOT} in s. Sets SP (its text) and SP_END (index in s of
   # its last character); returns 0 when there is none. The anchor may close a
-  # quote before the slash ("${CLAUDE_SKILL_DIR}"/scripts/a.sh). The path is a
-  # script when it ends in a script extension, or when its last segment has no
-  # extension (scripts/check); a .md or .json path is not one (#3666).
-  function next_script(s,   off, a_start, a_len, rest, tok, seg) {
+  # quote before the slash ("${CLAUDE_SKILL_DIR}"/scripts/a.sh); SP leaves that
+  # quote out. The path is a script when a script extension ends at a boundary,
+  # or when its last segment has no extension (scripts/check); a .md, .json or
+  # .plist path is not one (#3666).
+  function next_script(s,   off, a_start, a_len, rest, tok, seg, anchor) {
     off = 0
     while (match(s, /[$][{]?CLAUDE_(SKILL_DIR|PLUGIN_ROOT)[}]?["'"'"']?\//)) {
       a_start = RSTART; a_len = RLENGTH
       rest = substr(s, a_start + a_len)
       match(rest, /^[^[:space:]"'"'"';|&()`]*/)
       tok = substr(rest, 1, RLENGTH)
-      if (match(tok, /^.*[.](sh|bash|py|js|mjs|ts|rb|pl)/)) {
+      # The extension must end at a boundary: config.json is not config.js,
+      # x.plist is not x.pl, a.sh.bak is not a.sh. The boundary character
+      # (one that is not a word character or a dot) is matched, then trimmed.
+      if (match(tok, /^.*[.](sh|bash|py|js|mjs|ts|rb|pl)([^[:alnum:]_.]|$)/)) {
         tok = substr(tok, 1, RLENGTH)
+        if (tok ~ /[^[:alnum:]_]$/) tok = substr(tok, 1, length(tok) - 1)
       } else {
         seg = tok; sub(/.*\//, "", seg)
         if (seg == "" || index(seg, ".")) tok = ""
       }
       if (tok != "") {
-        SP = substr(s, a_start, a_len) tok
+        # Report the anchor without the quote closed before the slash.
+        anchor = substr(s, a_start, a_len); gsub(/["'"'"']/, "", anchor)
+        SP = anchor tok
         SP_END = off + a_start + a_len + length(tok) - 1
         return 1
       }
