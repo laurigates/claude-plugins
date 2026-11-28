@@ -31,8 +31,8 @@
 # routing labels, an absent taxonomy reported as empty, a merge:/dependencies
 # label renamed into build:/area:, an unmapped [Bench]/hw( keyword, a malformed
 # unblock response losing the handled rows, and a trailing backslash on a path;
-# an unmapped [Task] keyword and feedback-session filing without a type label
-# (#3783).
+# a bare docs:/ci: title falling to its body (#3768), an unmapped [Task] keyword
+# and feedback-session filing without a type label (#3783).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -122,11 +122,12 @@ expect 825 conventional "chore,area:carrier-pcb" "test(kicad):"
 # A type word is not a scope unless the taxonomy sets type_words_as_scope
 # (#3587 gap 1): ci(balancebot) selects only the balancebot entry.
 expect 1065 conventional "chore,build:balancebot" "ci(balancebot):"
-# With no scope, "docs:" and "ci:" route by their bodies. Both were labelled
-# core:docs / core:ci by hand, so the default trades agreement on these two for
-# the docs(robocar-unified) case; type_words_as_scope restores them.
-expect 704 conventional "docs,build:robocar" "docs:"
-expect 693 conventional "chore,core:agent,core:ci,core:quality" "ci:"
+# A bare type word with no parenthesised scope is the title's only scope, so it
+# routes even with type_words_as_scope off (#3768): both were labelled core:docs
+# / core:ci by hand, and before the fix fell to their bodies (build:robocar, and
+# a three-way core:agent,core:ci,core:quality tie).
+expect 704 conventional "docs,core:docs" "docs:"
+expect 693 conventional "chore,core:ci" "ci:"
 # hw maps to enhancement (#3587 gap 8); the parenthesised scope still routes.
 expect 352 conventional "enhancement,build:lego-boost" "hw(lego-boost-xbox-fw):"
 
@@ -194,6 +195,16 @@ is "the bracket word is offered beside the scope after it" "$(brk)" "build:roboc
 item "[Bug]: lid does not close" ""
 is "a type-word bracket is not a scope by default" "$(brk)" "bug"
 is "control: type_words_as_scope offers it" "$(brk "$TMP/tax-bracket-words.json")" "bug,area:triage"
+
+echo "=== bare type-word titles route by that word (#3768) ==="
+item "ci: run the check" 'Touches `.claude/rules/a.md` and `.pre-commit-config.yaml`.'
+is "bare ci: routes to core:ci and the body is not read" "$(cls)" "chore,core:ci"
+item "docs: refresh the board notes" 'See `packages/robocar/a.c`.'
+is "bare docs: routes to core:docs" "$(cls)" "docs,core:docs"
+item "docs(robocar-unified): document the wheel map" ""
+is "control: with a parenthesised scope the type word is still not a scope" "$(cls)" "docs,build:robocar"
+item "docs: refresh the board notes" 'See `packages/robocar/a.c`.' '["core:ci"]'
+is "a bare type word adds nothing over a routing label already set" "$(cls)" "docs"
 
 echo "=== task and feedback title keywords (#3783) ==="
 item "[Task] robocar-unified: map the wheels" ""

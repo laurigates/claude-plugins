@@ -36,7 +36,8 @@ also matches the directory itself.
 
 Two top-level settings change how ``classify`` reads an item.
 ``type_words_as_scope`` (default false) offers a title's type word ("docs" in
-"docs(robot): ...") as a scope too, so it can select a ``docs`` entry.
+"docs(robot): ...") as a scope too, so it can select a ``docs`` entry. A bare
+type word with no parenthesised scope ("docs: ...") is offered either way.
 ``max_routing_labels`` (default 3) caps the routing labels a pull request
 takes; the title's count first, and the changed-file labels matching the most
 files fill the rest.
@@ -321,7 +322,6 @@ def parse_title(
     title: str,
     type_keywords: frozenset[str],
     type_words_as_scope: bool = DEFAULT_TYPE_WORDS_AS_SCOPE,
-    _after_bracket: bool = False,
 ) -> Title:
     """The type keyword and scope candidates a title carries, by its form.
 
@@ -331,27 +331,28 @@ def parse_title(
                   "[Chore] ci: run the check"             keyword chore, scope ci
     conventional  "fix(kicad): close the gaps"            keyword fix, scope kicad
                   "hw(robot): reflow the carrier"         keyword hw, scope robot
-                  "ci: run the check"                     keyword ci, no scope
+                  "ci: run the check"                     keyword ci, scope ci
     scope         "balancebot: read the divider"          scope balancebot
                   "Parts registry: tariff code per part"  scope "parts registry"
     none          "Dependency Dashboard"
 
     A title is conventional when its leading word carries a parenthesised
     scope or is one of ``type_keywords``. The leading word is offered as a
-    scope too when it is not a type keyword, or when ``type_words_as_scope``
-    is set: only then can "ci(robot): ..." select a ci entry as well as a
-    robot one. A word inside the parentheses is the author's scope and always
-    offered. What follows a bracket is read for its scopes in the same forms,
-    except that a bare "word:" there stands where "[Type] scope:" puts the
-    scope, so it is offered whatever it is. The bracket word stays the
-    keyword, and is offered as a scope under the same rule as the leading
-    word: "[DNS]: add a record" offers "dns", "[GitHub Repo]: x" offers
+    scope too when it is not a type keyword, when it has no parenthesised
+    scope beside it, or when ``type_words_as_scope`` is set: only then can
+    "ci(robot): ..." select a ci entry as well as a robot one, while a bare
+    "ci: ..." has no other scope and always offers "ci". A word inside the
+    parentheses is the author's scope and always offered. What follows a
+    bracket is read for its scopes in the same forms, so "[Chore] ci: ..."
+    offers "ci". The bracket word stays the keyword, and is offered as a
+    scope when it is not a type keyword or when ``type_words_as_scope`` is
+    set: "[DNS]: add a record" offers "dns", "[GitHub Repo]: x" offers
     "github repo", and "[Bug]: x" offers nothing unless
     ``type_words_as_scope`` is set.
     """
     m = BRACKET.match(title)
     if m:
-        rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope, True)
+        rest = parse_title(m.group("rest"), type_keywords, type_words_as_scope)
         keyword = norm(m.group("kw"))
         scopes = list(rest.scopes)
         if type_words_as_scope or keyword not in type_keywords:
@@ -365,7 +366,7 @@ def parse_title(
         if (
             type_words_as_scope
             or keyword not in type_keywords
-            or (_after_bracket and m.group("scope") is None)
+            or m.group("scope") is None
         ):
             scopes.append(keyword)
         return Title("conventional", keyword, tuple(dict.fromkeys(scopes)))
