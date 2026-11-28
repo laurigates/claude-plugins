@@ -1,5 +1,5 @@
 {
-  "description": "terraform-plugin hooks - apply gate requiring plan-first workflow",
+  "description": "terraform-plugin hooks - apply gate requiring plan-first workflow; state-lock pipe guard",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,6 +8,11 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-terraform-apply.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/terraform-lock-pipe-guard.sh\"",
             "timeout": 5
           }
         ]

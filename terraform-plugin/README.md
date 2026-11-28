@@ -60,6 +60,33 @@ count as one), and named **literally** — a `$VAR`, `$(…)` or backtick operan
 cannot be resolved here, could expand to `-auto-approve`, and is treated as an
 unreviewed apply.
 
+### State-lock pipe guard
+
+`terraform-lock-pipe-guard.sh` is a second PreToolUse hook on the Bash tool
+(#3849). `plan`, `apply`, `destroy`, `refresh`, `import` and the writing `state`
+subcommands hold the remote backend lock for their whole run. A reader that
+exits early closes the pipe, SIGPIPE kills tofu/terraform mid-run, and the lock
+is left behind until a manual `force-unlock`. Until then it blocks every later
+plan and CI apply.
+
+| Command | Verdict |
+|---------|---------|
+| `tofu plan \| head -20`, `cd infra && terraform plan 2>&1 \| grep -m1 Plan`, `tofu plan \| sed 30q`, `tofu plan \| tee log \| grep -q x` | Blocked: the message prescribes `mkdir -p tmp && <stage> > tmp/tf-<subcommand>.txt 2>&1`, then Read |
+| `just plan \| head`, `make plan \| head`, `mise run tf:plan \| head`, `terragrunt plan \| head` | Nudge (exit 0 with `additionalContext`): the hook cannot see the recipe body |
+| `tofu plan > tmp/plan.txt 2>&1 && head tmp/plan.txt` | Allowed: tofu is not in the pipe |
+| `tofu plan \| tail`, `tofu plan \| grep Plan`, `tofu plan \| tee log` | Allowed: the reader consumes all input |
+| `tofu plan -lock=false \| head`, `tofu state list \| head`, `tofu validate \| head` | Allowed: no lock is taken |
+| The phrase quoted in a PR body, `echo`, or heredoc | Allowed |
+
+It decides command position with `ast-grep`, as the apply gate does, but reads
+the pipe from the source text between two command nodes rather than from
+tree-sitter's `pipeline` node. tree-sitter-bash parses `a && b | c` as
+`(a && b) | c`, while bash runs `a && (b | c)`. Known gaps: a tofu stage that is
+not the last command of a group before the pipe (`(tofu plan; echo) | head`),
+process substitution, and readers other than `head`, `sed …q` and `grep -m/-q`.
+Like the apply gate, it **fails open where `ast-grep` is not installed**.
+Recovering an orphaned lock is covered in the `infrastructure-terraform` skill.
+
 ## Prerequisites
 
 All skills require a Terraform Cloud API token:

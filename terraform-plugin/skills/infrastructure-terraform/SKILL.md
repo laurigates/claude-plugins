@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-28
 reviewed: 2026-04-25
 name: infrastructure-terraform
 description: "Terraform IaC: HCL, state management, modules, plan-apply workflows. Use when the user mentions Terraform, HCL, terraform plan/apply, tfstate, or IaC provisioning."
@@ -36,6 +36,36 @@ Expert knowledge for Infrastructure as Code using Terraform with focus on declar
 3. **Secure State**: Use remote backends with locking to protect state file
 4. **Parameterize**: Use variables and outputs for flexible and configurable infrastructure
 5. **Destroy with Caution**: Double-check plan before running `terraform destroy`
+
+## Plan Output and the State Lock
+
+`plan`, `apply`, `destroy`, `refresh`, `import` and the writing `state`
+subcommands (`mv`, `rm`, `push`, `replace-provider`) hold the remote backend
+lock for their whole run (`-lock=true` is the default). Never pipe them into a
+reader that exits early (`head`, `sed -n …q`, `grep -m N`, `grep -q`). The
+reader closes the pipe, SIGPIPE kills terraform mid-run, and the lock is left
+behind. Every later plan fails, CI applies included, until someone unlocks it
+by hand. Wrappers such as `just plan | head` do the same.
+
+```bash
+# Instead of: terraform plan | head -20
+mkdir -p tmp && terraform plan -no-color > tmp/tf-plan.txt 2>&1
+# then Read tmp/tf-plan.txt, or head/grep the finished file
+```
+
+terraform-plugin's `terraform-lock-pipe-guard.sh` hook blocks a direct
+`tofu`/`terraform` invocation piped this way. For a wrapper it only warns,
+because it cannot see the recipe body.
+
+**Recovering an orphaned lock** (`Error acquiring the state lock`):
+
+1. Confirm no run still holds it: `pgrep -x terraform` (or `pgrep -x tofu`).
+   Do not use `pgrep -f`: it matches unrelated processes whose environment
+   strings contain the word.
+2. Check the lock's `Who` in the error. Unlock only a lock whose `Who` is your
+   own `user@host`; anyone else's may belong to a live run.
+3. `terraform force-unlock -force <LOCK_ID>` (or `tofu force-unlock -force <LOCK_ID>`),
+   with the ID from the error message.
 
 ## Essential Commands
 
