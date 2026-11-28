@@ -21,13 +21,15 @@ label blueprint-health
 label golden-set-eval
 label changelog-review
 label stranded-work
+label drift:fleet
 label fleet-drift
+label drift:config
 label config-drift
 label positive-feedback
 label session-feedback
 label workflow-capture
 label audit-liveness
-label docs-index
+label drift:docs-index
 label workflow-model-audit
 title ^Dependency Dashboard$
 # The standing verification queue (#3868): a checklist of live and hands-on

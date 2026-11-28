@@ -8,7 +8,8 @@
 # `## Processing` section into the body it files. This check keeps it there.
 #
 # Checked sites (every `.github/workflows/*.yml`, parsed with PyYAML):
-#   - a `uses: ./.github/actions/script-to-issue` step with a `script:`
+#   - a `uses:` step of the script-to-issue action (the shared
+#     laurigates/.github one, or a local copy) with a `script:`
 #     (full mode, so it files an issue) must pass `processing:` containing a
 #     `## Processing` heading
 #   - a step whose `with.prompt` asks Claude to run `gh issue create` must carry
@@ -71,7 +72,8 @@ EXEMPT_SITES = {
         "files actionable follow-up issues for work its PR leaves out; closed by the PR that does it",
 }
 
-SCRIPT_TO_ISSUE = "./.github/actions/script-to-issue"
+# The shared action at any ref, or a local copy (the pre-2026-11 location).
+SCRIPT_TO_ISSUE = re.compile(r"^(\./\.github/actions/script-to-issue|laurigates/\.github/\.github/actions/script-to-issue@\S+)$")
 FEEDBACK_TEMPLATE = "feedback-plugin/skills/feedback-session/references/issue-format.md"
 # Skill-shipped issue body templates. The workflow-capture one files pattern and
 # friction issues into the calling repo or the plugins repo.
@@ -131,7 +133,7 @@ for name in workflow_files:
             site = f"{rel}:{job_id}:{step.get('name') or step.get('id') or idx}"
             kind = None
             text = ""
-            if str(step.get("uses", "")).strip() == SCRIPT_TO_ISSUE and str(with_.get("script", "")).strip():
+            if SCRIPT_TO_ISSUE.match(str(step.get("uses", "")).strip()) and str(with_.get("script", "")).strip():
                 kind, text = "processing input", str(with_.get("processing", ""))
             elif CREATE_IN_PROMPT.search(str(with_.get("prompt", ""))):
                 kind, text = "prompt", str(with_.get("prompt", ""))

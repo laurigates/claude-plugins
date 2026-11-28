@@ -30,7 +30,7 @@ Pick `--exhaustive` for repos that need a self-documenting, drift-resistant plug
 Always include these common entries:
 
 ```json
-"Bash(git:*)", "Bash(gh:*)", "Bash(pre-commit:*)", "Bash(gitleaks:*)", "Bash(python3:*)"
+"Bash(git status *)", "Bash(git diff *)", "Bash(gh pr *)", "Bash(gh issue *)", "Bash(pre-commit:*)", "Bash(gitleaks:*)"
 ```
 
 Add stack-specific entries based on detected project type:
@@ -45,7 +45,7 @@ Add stack-specific entries based on detected project type:
 | ESP-IDF / embedded | `"Bash(idf.py:*)"`, `"Bash(esptool:*)"`, `"Bash(clang-format:*)"`, `"Bash(cppcheck:*)"`, `"Bash(docker:*)"`, `"Bash(docker compose:*)"`, `"Bash(just:*)"`, `"Bash(make:*)"` |
 | ESPHome | `"Bash(esphome:*)"`, `"Bash(uv:*)"`, `"Bash(uvx:*)"` |
 
-Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
+Use narrow subcommand patterns only. Auto mode drops broad and interpreter allow rules (`Bash(bash *)`, a `python3` wildcard), so the baseline names the git and gh subcommands an agent runs most, and anything else falls through to the normal permission prompt or classifier.
 
 ## Applying the repo baseline policy
 
@@ -57,7 +57,7 @@ Rename legacy aliases first, then deep-merge `settings.floor`, then add `stacks[
 |---|---|
 | `settings.legacyMarketplaceAliases` | Each is an old `extraKnownMarketplaces` key for the same marketplace (an entry whose `source.repo` is `laurigates/claude-plugins`). Rename the key **and** every `<plugin>@<alias>` suffix in `enabledPlugins` to the floor's key together. On a collision (both `<plugin>@<alias>` and `<plugin>@laurigates-claude-plugins` exist, or both marketplace keys), keep the canonical key and its value, drop the alias entry, and report the collision |
 | `settings.floor` | Deep-merge: objects merge key by key and lists are unioned. Where the floor names a key, the floor's value wins: the marketplace stanza ends with the floor's `source` and `autoUpdate: true` even if the repo had `autoUpdate: false` or another source. A key the floor does not name, inside the stanza or elsewhere, is kept |
-| `stacks[].detect` | Evaluated against the repo **root** listing only: `files` = exact names, `globs` = fnmatch on root names, `cargoDependency` = the name appears under `[dependencies]` or `[workspace.dependencies]` in the root `Cargo.toml` |
+| `stacks[].detect` | Auto-selection reads the repo **root** listing only: `files` = exact names, `globs` = fnmatch on root names, `cargoDependency` = the name appears under `[dependencies]` or `[workspace.dependencies]` in the root `Cargo.toml`. The same rules applied to each top-level directory (`<dir>/<file>`, with `cargoDependency` read from `<dir>/Cargo.toml`) only produce candidate stacks: reported in Step 6, never added. Skip directories git ignores |
 | `stacks[].plugins` | Added as `true` only where the key is absent. An explicit `false` is never flipped |
 
 The marketplace key and every `@laurigates-claude-plugins` suffix are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.

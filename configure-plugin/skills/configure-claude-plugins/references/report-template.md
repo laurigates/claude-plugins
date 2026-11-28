@@ -16,16 +16,19 @@ Repository: <repo-name>
   Marketplace:         laurigates/claude-plugins (extraKnownMarketplaces)
   Plugins pinned:      <N> total (<E> enabled, <D> disabled)   # exhaustive only
   Enabled plugins:     <list>
+  Candidate stacks:    <none | <stack-id> (<dir>/<file>) → <plugins>, ...>   # matched one level down, not enabled
 
 Git remote:            <PRESENT|MISSING>
 
 .github/workflows/claude.yml:
   Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
+  Layout:              <CALLER (<owner>/.github reusable-claude.yml)|INLINE>
   Marketplace:         laurigates/claude-plugins
   Plugins:             <list>
 
 .github/workflows/claude-code-review.yml:
   Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
+  Layout:              <CALLER (<owner>/.github reusable-claude-review.yml)|INLINE>
   Trigger:             PR opened/synchronize/reopened
 
 Next Steps:
@@ -37,4 +40,6 @@ Next Steps:
      get an explicit `false` rather than inheriting the global toggle
   5. (no remote) When you add a GitHub remote later, re-run with `--workflows`
      to scaffold the workflows that were skipped
+  6. (candidate stacks) To opt in, add the listed plugins to `enabledPlugins`
+     as `true`, or re-run with `--plugins` naming the full set you want
 ```

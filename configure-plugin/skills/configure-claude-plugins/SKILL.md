@@ -1,6 +1,6 @@
 ---
 created: 2026-01-23
-modified: 2026-11-25
+modified: 2026-11-27
 compatibility: claude-code
 reviewed: 2026-11-25
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
@@ -55,10 +55,13 @@ Parse from command arguments:
 3. Check for existing `.github/workflows/claude-code-review.yml`
 4. Detect project type (language, framework) from file indicators
 5. Check for a git remote with `git remote -v`: `has_remote = true` when non-empty, else `false`. This gates workflow scaffolding in Steps 4 and 5 (no remote → no GitHub Actions → do not scaffold by default).
+6. With a GitHub remote, take `<owner>` from it and list `<owner>/.github`'s workflows with one `gh api repos/<owner>/.github/contents/.github/workflows` call. A listed `reusable-claude.yml` / `reusable-claude-review.yml` makes Steps 4 / 5 emit a caller; anything else (a missing file, 404, no GitHub remote) makes them emit the inline template ([layout table](references/workflow-templates.md#choose-the-layout-reusable-caller-or-inline)).
 
 ### Step 2: Select plugins
 
 If `--plugins` is not specified, add the plugins of every [policy](../../policy/repo-baseline.json) stack whose `detect` matches the repo root, then the workflow plugins per indicator from [references/plugin-selection.md](references/plugin-selection.md); with no indicator, use the default set (`git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin`).
+
+Then evaluate each stack's `detect` one directory level down (Glob `*/<file>` for each `files` entry, `*/<glob>` for each `globs` entry). A stack that matches there but not at the root is a **candidate stack**: add none of its plugins, and list it in the Step 6 report with the directory that matched and the plugins it would add, so the user can opt in ([detect rules](references/settings-json.md#applying-the-repo-baseline-policy)).
 
 Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
@@ -70,7 +73,7 @@ Create or merge into `.claude/settings.json` (permissions, marketplace enrollmen
 
 Pick the mode: the default writes only the recommended plugins as `true` (lean, but globally-toggled plugins leak in); `--exhaustive` pins every marketplace plugin as `true`/`false` (drift-resistant). Rationale and mode table: [references/settings-json.md](references/settings-json.md).
 
-1. **Permissions** — always include the common baseline (`Bash(git:*)`, `Bash(gh:*)`, `Bash(pre-commit:*)`, `Bash(gitleaks:*)`, `Bash(python3:*)`) plus the stack-specific entries for the detected stack. Use granular patterns only — do not add `Bash(bash *)` for CLI tools. Per-stack table: same file.
+1. **Permissions** — always include the common baseline (`Bash(git status *)`, `Bash(git diff *)`, `Bash(gh pr *)`, `Bash(gh issue *)`, `Bash(pre-commit:*)`, `Bash(gitleaks:*)`) plus the stack-specific entries for the detected stack. Use narrow subcommand patterns: auto mode drops broad and interpreter rules such as `Bash(bash *)` or a `python3` wildcard, so they do nothing there. Per-stack table: same file.
 2. **Policy floor + `enabledPlugins`** — deep-merge the [policy's](../../policy/repo-baseline.json) `settings.floor`, then add the selected plugins as `<plugin>@laurigates-claude-plugins: true` ([merge rules](references/settings-json.md#applying-the-repo-baseline-policy)).
 3. **Exhaustive mode** (`--exhaustive` only) — enumerate both marketplaces, derive each boolean from repo context, preserve existing project values, and show the diff before writing. Signal table, baseline set, LSP list, diff format: [references/exhaustive-mode.md](references/exhaustive-mode.md).
 
@@ -92,13 +95,13 @@ If `.claude/settings.json` already exists, **MERGE** without duplicating entries
 
 When the decision is **skip**, do not write the file, and surface `STATUS=SKIPPED (no git remote)` in the Step 6 report so the omission is visible.
 
-When the decision is **scaffold**, create `.github/workflows/claude.yml` as a thin caller of the org's reusable Claude workflow, with the marketplace and plugin list as inputs; `plugins:` entries use the `@laurigates-claude-plugins` suffix (marketplace `name`, NOT the Step 3 key). Read the reusable workflow's live inputs and `permissions:` first. The caller template, the live-read commands, and the standalone inline template for repos that cannot call the org workflows (SHA-pinned actions, explicit `--model` and `--effort`) are in [references/workflow-templates.md](references/workflow-templates.md#claudeyml-step-4).
+When the decision is **scaffold**, create `.github/workflows/claude.yml` in the layout the Step 1 probe chose: a thin caller of `<owner>/.github`'s `reusable-claude.yml` with a job-level `permissions:` block, or the standalone inline template (SHA-pinned actions, explicit `--model` and `--effort`). Either way the marketplace and plugin list are inputs, and `plugins:` entries use the `@laurigates-claude-plugins` suffix (marketplace `name`, NOT the Step 3 key). For a caller, read the reusable workflow's live inputs and `permissions:` first. Both templates and the live-read commands: [references/workflow-templates.md](references/workflow-templates.md#claudeyml-step-4).
 
 ### Step 5: Configure .github/workflows/claude-code-review.yml
 
 **Apply the same git-remote gate from Step 4.** Reuse the user's answer (or the `--workflows` / `--no-workflows` flag) — do not re-prompt. If Step 4 skipped, skip Step 5 as well and record `STATUS=SKIPPED (no git remote)`.
 
-When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews as a caller of the org's reusable review workflow, from the template in [references/workflow-templates.md](references/workflow-templates.md#claude-code-reviewyml-step-5). The reusable workflow skips release-please and bot-authored PRs by default; the standalone inline template keeps a job-level `if: github.event.pull_request.user.type != 'Bot'` for the same reason (claude-code-action fails on a Bot-authored PR unless the bot is in `allowed_bots`).
+When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews in the layout the Step 1 probe chose: a caller of `<owner>/.github`'s `reusable-claude-review.yml`, or the standalone inline template with `--max-turns 50`, from [references/workflow-templates.md](references/workflow-templates.md#claude-code-reviewyml-step-5). The reusable workflow skips release-please and bot-authored PRs by default; the standalone inline template keeps a job-level `if: github.event.pull_request.user.type != 'Bot'` for the same reason (claude-code-action fails on a Bot-authored PR unless the bot is in `allowed_bots`).
 
 ### Step 6: Report results
 

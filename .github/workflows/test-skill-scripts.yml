@@ -69,10 +69,8 @@ on:
       # scripts/tests/test-obsidian-cli-changelog-transcript.sh pins this
       # workflow's transcript redact + upload steps (#2765).
       - '.github/workflows/obsidian-cli-changelog.yml'
-      # Case I of scripts/tests/test-script-to-issue-guard.sh reads the
-      # action's script wiring and workflow-model-audit's prefix/--title, so a
-      # PR touching only either file must still run it.
-      - '.github/actions/script-to-issue/**'
+      # scripts/tests/test-close-superseded-reports.sh covers the closer that
+      # workflow-model-audit calls directly.
       - '.github/workflows/workflow-model-audit.yml'
       # scripts/tests/test-model-suitability-audit-workflow.sh runs the repo-internal
       # audit harness against a stub runtime; a PR editing only the harness must run it.
@@ -131,7 +129,6 @@ on:
       # field, which no other entry here matches (#3684).
       - 'evaluate-plugin/.claude-plugin/plugin.json'
       - '**/evals.json'
-      - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
       - '.github/workflows/auto-resolve-conflicts.yml'
       - '.github/workflows/obsidian-cli-changelog.yml'

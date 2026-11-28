@@ -335,5 +335,68 @@ bash4="$(grep -vE '^[[:space:]]*#' "$SCRIPT" \
     | grep -nE 'declare -A|mapfile|readarray|\$\{[A-Za-z_][A-Za-z0-9_]*(,,|\^\^|@Q)\}|declare -n' || true)"
 assert_eq "case11: no bash-4+ constructs (macOS /bin/bash is 3.2)" "" "$bash4"
 
+# ── CASE 12: retired structure.has_ai_docs is deleted (issue #3610) ─────────
+# The v3.0.0 upgrade template and the v1.0→v1.1 migration used to write
+# `structure.has_ai_docs`; the closed manifest schema has no such key, so a
+# manifest that went through them fails /blueprint:status Step 2a. The any-
+# version upgrade step (this script) must delete it. SEMANTIC: the fixture must
+# FAIL the real schema checker before the apply and PASS after it.
+CHECKER="${SCRIPT_DIR}/../check-manifest-schema.py"
+LIVE_MANIFEST="${SCRIPT_DIR}/../../../docs/blueprint/manifest.json"
+proj="$(make_project)"
+proj="$(cd -P -- "$proj" && pwd -P)" || { echo "FATAL: cannot resolve $proj" >&2; exit 1; }
+man="$proj/docs/blueprint/manifest.json"
+if [ -f "$LIVE_MANIFEST" ]; then
+    jq '.format_version = "3.4.0" | .structure.has_ai_docs = false' "$LIVE_MANIFEST" >"$man"
+else
+    jq '.format_version = "3.4.0" | .structure.has_ai_docs = false' "$man" >"$man.new" && mv "$man.new" "$man"
+fi
+have_uv=false
+command -v uv >/dev/null 2>&1 && have_uv=true
+if $have_uv; then
+    out="$(uv run --quiet --script "$CHECKER" --project-dir "$proj" 2>&1)"
+    rc=$?
+    assert_eq "case12: schema checker rejects structure.has_ai_docs before the delete" "1" "$rc"
+    assert_contains "case12: the rejection names has_ai_docs" "has_ai_docs" "$out"
+fi
+before="$(cat "$man")"
+out="$(bash "$SCRIPT" --project-dir "$proj" --dry-run 2>&1)"
+rc=$?
+assert_eq "case12: dry-run exits 0" "0" "$rc"
+assert_contains "case12: dry-run reports the retired key" "TYPE=retired_structure_key KEY=structure.has_ai_docs" "$out"
+assert_contains "case12: dry-run counts it" "RETIRED_STRUCTURE_KEYS=1" "$out"
+assert_contains "case12: dry-run is STATUS=WARN" "STATUS=WARN" "$out"
+assert_eq "case12: dry-run leaves the manifest byte-identical" "$before" "$(cat "$man")"
+out="$(bash "$SCRIPT" --project-dir "$proj" 2>&1)"
+rc=$?
+assert_eq "case12: apply exits 0" "0" "$rc"
+assert_contains "case12: apply reports the key removed" "RETIRED_REMOVED=1" "$out"
+assert_eq "case12: structure.has_ai_docs is gone" "false" "$(jq '.structure | has("has_ai_docs")' "$man")"
+assert_eq "case12: other structure keys are kept" \
+    "$(jq -c '.structure | del(.has_ai_docs)' <<<"$before")" "$(jq -c '.structure' "$man")"
+if $have_uv; then
+    out="$(uv run --quiet --script "$CHECKER" --project-dir "$proj" 2>&1)"
+    rc=$?
+    assert_eq "case12: schema checker passes after the delete" "0" "$rc"
+    assert_not_contains "case12: no has_ai_docs finding after the delete" "has_ai_docs" "$out"
+fi
+after_first="$(cat "$man")"
+out="$(bash "$SCRIPT" --project-dir "$proj" 2>&1)"
+assert_contains "case12: second run removes nothing" "RETIRED_REMOVED=0" "$out"
+assert_eq "case12: second run leaves the manifest byte-identical" "$after_first" "$(cat "$man")"
+rm -rf "$proj"
+
+# A manifest whose generated.rules is absent (the early-exit path) still gets
+# the retired key reported and removed.
+proj="$(make_project)"
+man="$proj/docs/blueprint/manifest.json"
+jq 'del(.generated) | .structure.has_ai_docs = "[detected]"' "$man" >"$man.new" && mv "$man.new" "$man"
+out="$(bash "$SCRIPT" --project-dir "$proj" --dry-run 2>&1)"
+assert_contains "case12: no generated.rules, dry-run still reports the key" "TYPE=retired_structure_key" "$out"
+assert_contains "case12: no generated.rules, dry-run is STATUS=WARN" "STATUS=WARN" "$out"
+bash "$SCRIPT" --project-dir "$proj" >/dev/null 2>&1
+assert_eq "case12: no generated.rules, apply removes the key" "false" "$(jq '.structure | has("has_ai_docs")' "$man")"
+rm -rf "$proj"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

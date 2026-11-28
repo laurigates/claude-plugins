@@ -14,19 +14,27 @@ each issue stands alone, so none is grouped under an epic.
 
 ## Types
 
+Drift audits file under one label family, `drift:<surface>` (`drift:config`,
+`drift:fleet`, `drift:docs-index`, and `drift:rules` / `drift:docs` in
+laurigates/repos-claude-config and laurigates/dotfiles). The workflow applies
+that label to its own report only, so it is never a routing tag on related
+work, and the weekly context-diet routine reads the open `drift:*` issues as
+extra candidates.
+
 | Type (label) | Generator | Processed by | Completed means | Closes |
 |---|---|---|---|---|
 | `session-feedback` | `feedback-session` ([issue format](../feedback-plugin/skills/feedback-session/references/issue-format.md)) | `friction-learner` reads it weekly as corroboration; the fix comes from the daily Routine or Lauri | A PR that fixes it has merged, or it was closed with a stated reason | When that PR merges (`Fixes #N`) |
 | `positive-feedback` | `feedback-session` | `friction-learner` Step 0 ([agent](../feedback-plugin/agents/friction-learner.md)) | A weekly `friction-learner` PR cites it under `## Fast-loop signal` | `friction-learner` closes it after citing it. It keeps reading positive issues in any state from the last 6 months, so a closed one still guards the behaviour it praises |
 | `workflow-capture` | `session-workflow-capture` ([issue format](../session-plugin/skills/session-workflow-capture/references/issue-format.md)), run by `session-end` or by hand | The daily Routine or Lauri: a pattern issue is a proposal to save or template a Workflow script, a friction issue a fix request for a workflow saved in this repo | A PR adding or changing the workflow has merged, or it was closed with a stated reason | When that PR merges (`Fixes #N`) |
 | `research-radar` | [`research-radar.yml`](../.github/workflows/research-radar.yml) (weekly) | The daily Routine or Lauri | Every candidate has a verdict comment (adopt, or reject with a one-line reason), and every adopted candidate is merged, one PR per target file | When the last adopted candidate merges. Radars are not superseded: each week lists different papers |
-| `agentic-audit`, `infra-compliance`, `blueprint-health`, `audit-liveness`, `docs-index` | [`scheduled-audits.yml`](../.github/workflows/scheduled-audits.yml) (monthly) | Lauri, or an agent asked to act on it | Superseded by the next month's report | The generator closes it when the next month's report opens, and that report carries forward the items still open. A next run that finds nothing closes it too |
+| `agentic-audit`, `infra-compliance`, `blueprint-health`, `audit-liveness`, `drift:docs-index` | [`scheduled-audits.yml`](../.github/workflows/scheduled-audits.yml) (monthly) | Lauri, or an agent asked to act on it | Superseded by the next month's report | The generator closes it when the next month's report opens, and that report carries forward the items still open. A next run that finds nothing closes it too |
 | `golden-set-eval` | [`golden-set-evaluation.yml`](../.github/workflows/golden-set-evaluation.yml) (monthly) | Lauri | Superseded by the next month's sweep | As above |
 | `workflow-model-audit` | [`workflow-model-audit.yml`](../.github/workflows/workflow-model-audit.yml) (monthly) | Lauri | Superseded by the next month's audit | As above |
 | `stranded-work` | [`stranded-work-audit.yml`](../.github/workflows/stranded-work-audit.yml) (weekly) | Lauri | Every listed branch has been landed, deleted, or kept on purpose | By hand once processed. The audit files no new report while this one is open |
-| `fleet-drift` | [`fleet-drift-audit.yml`](../.github/workflows/fleet-drift-audit.yml) (weekly) | Lauri | Every listed divergence has been fixed or accepted as intended | By hand once processed. The audit files no new report while this one is open |
+| `drift:fleet` | [`fleet-drift-audit.yml`](../.github/workflows/fleet-drift-audit.yml) (weekly) | Lauri | Every listed divergence has been fixed or accepted as intended | By hand once processed. The audit files no new report while this one is open |
 | `changelog-review` | [`changelog-review.yml`](../.github/workflows/changelog-review.yml), body written by `laurigates/.github` `reusable-changelog-review.yml` | Lauri | Every listed action has been applied, filed or dismissed | By hand once processed |
-| `config-drift` | [`config-drift-audit.yml`](../.github/workflows/config-drift-audit.yml) (twice weekly) | Lauri reads each run's comment | Each finding is fixed or waived (`health-plugin/README.md`) | Never: it is a rolling issue. If it is closed, the next run with findings opens a new one |
+| `drift:config` | [`config-drift-audit.yml`](../.github/workflows/config-drift-audit.yml) (twice weekly) | Lauri reads each run's comment | Each finding is fixed or waived (`health-plugin/README.md`) | Never: it is a rolling issue. If it is closed, the next run with findings opens a new one |
+| `fleet-drift`, `config-drift` | The same audits, before 2026-11-28 | As the `drift:` rows above | As above | Still exempt so reports filed under the old names are not grouped. `fleet-drift` stays a routing label for related work; the audits read only `drift:<surface>` |
 | Dependency Dashboard (title) | Renovate | Renovate | Not applicable | Never; Renovate owns it |
 | `Verification queue:` (title prefix) | By hand, from the 2026-11-26 convergence pass (#3868) | Lauri, or a session with the needed machine or account | Each line is ticked with a comment giving its evidence | When every line is ticked; new verification-only checks are added as lines, not filed as issues |
 
@@ -42,17 +50,17 @@ turns that around.
 
 | Step | Mechanism |
 |---|---|
-| Only this period's report blocks the run | `scripts/script-to-issue-guard.sh --current-title`, through the composite's `supersede: 'true'` input or the workflow's own guard |
+| Only this period's report blocks the run | The guard of the shared `script-to-issue` action in `laurigates/.github` (`guard.sh --current-title`), through its `supersede: 'true'` input or the workflow's own guard |
 | Script-built reports carry forward by recomputation | The audit script re-detects whatever is still wrong, so an unfixed item reappears in the new report |
 | Claude-written reports carry forward explicitly | The workflow writes the previous report to `previous-report.md`, and the prompt lists its still-open recommendations under `### Carried forward from #N` |
-| Earlier reports close after the new one is filed | `scripts/close-superseded-reports.sh`, which closes nothing if the new report is missing, and closes them with `--clean` when the run found nothing |
+| Earlier reports close after the new one is filed | `scripts/close-superseded-reports.sh` here (the shared action carries its own copy), which closes nothing if the new report is missing, and closes them with `--clean` when the run found nothing |
 
 A finding that needs more than a month of work belongs in its own issue, filed
 from the report, so it does not depend on being carried forward.
 
 ## Open questions
 
-- The weekly reports (`stranded-work`, `fleet-drift`, `changelog-review`) keep
+- The weekly reports (`stranded-work`, `drift:fleet`, `changelog-review`) keep
   the close-by-hand rule. Whether the supersede rule also applies to them is
   not decided.
 - The `changelog-review` body is written in `laurigates/.github`, so its

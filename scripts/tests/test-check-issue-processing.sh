@@ -8,6 +8,7 @@
 #
 #   A  the real repository passes
 #   B  a script-to-issue caller without `processing` fails; with it, passes
+#   M  the same through the shared laurigates/.github action reference
 #   C  a Claude prompt that files an issue without `## Processing` fails
 #   D  a `run:` step that files an issue without `## Processing` fails
 #   E  a label on the exempt list missing from docs/issue-lifecycle.md fails
@@ -140,6 +141,23 @@ run "$tmp/b"
 assert "B missing processing exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "B names the site" "$(contains "$OUT" 'TYPE=missing_processing.*report.yml:scripted:Audit')"
 B_OUT="$OUT"
+
+# --- M: the shared laurigates/.github action is checked like the local one ----
+# Callers moved to `uses: laurigates/.github/.github/actions/script-to-issue@main`.
+# A guard that only knew the local path would count none of them and pass.
+make_project "$tmp/m"
+python3 - "$tmp/m/.github/workflows/report.yml" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+s = s.replace("uses: ./.github/actions/script-to-issue", "uses: laurigates/.github/.github/actions/script-to-issue@main")
+start = s.index("          processing: |")
+end = s.index("      - name: Guard only")
+open(p, "w").write(s[:start] + s[end:])
+PY
+run "$tmp/m"
+assert "M shared action without processing exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "M names the site" "$(contains "$OUT" 'TYPE=missing_processing.*report.yml:scripted:Audit')"
 
 # --- C: prompt without the section --------------------------------------------
 make_project "$tmp/c"
