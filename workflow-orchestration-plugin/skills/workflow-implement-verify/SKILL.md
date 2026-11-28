@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(git *), Bash(gh *), Read, TodoWrite
 model: opus
 created: 2026-10-26
-modified: 2026-11-24
+modified: 2026-11-28
 reviewed: 2026-10-26
 ---
 
@@ -94,6 +94,7 @@ session then pushes and opens the PRs ([references/landing.md](references/landin
 |---|---|---|
 | `PASS` | verifier passed it first time | yes |
 | `REPAIRED_PASS` | one repair, then a fresh re-verify passed it | yes |
+| `HELD_PR_BODY` | `implement-verify` only: passed, but the clearing verdict lists a defect whose `where` names the PR body; fix the body, then land by hand | no |
 | `FIX_NEEDED` | still failing after the allowed rounds; feed it to `repair-round` | no |
 | `REJECTED` | verifier judged the approach wrong; a human decides | no |
 | `UNVERIFIED` | the verifier returned nothing | no |
@@ -114,6 +115,11 @@ Both finalise briefs apply the same rule against `head_sha` before pushing.
 The template stops and reports rather than opening a follow-up PR: to carry the findings forward,
 pass them to the next run as a new unit cut from `base`. Observed 2026-11-10: a repairer told to
 continue on a branch whose PR had merged found the remote branch deleted and opened a second PR.
+
+The repair brief passes in the author's `pr_body`, drafted before any verifier ran, and asks for it
+rewritten for the repaired branch; the rewrite replaces it. A verifier reports a body claim the
+branch contradicts with `where: "pr_body"`, which holds the unit (`HELD_PR_BODY`). Observed
+2026-11-11: two repaired units' bodies kept pre-repair test counts (#3650).
 
 Each row carries the author's report (`fix`, including `followups` and
 `decisions_for_user`) and every verdict, so a re-dispatch starts from the state

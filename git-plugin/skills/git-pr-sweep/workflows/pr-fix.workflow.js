@@ -127,7 +127,7 @@ const VERDICT_SCHEMA = {
         additionalProperties: false,
         properties: {
           severity: { type: 'string', enum: ['blocker', 'major', 'minor'] },
-          where: { type: 'string', description: 'file:line' },
+          where: { type: 'string', description: 'file:line, or "pr_body" for a claim in the author\'s PR body' },
           problem: { type: 'string' },
           fix: { type: 'string' },
           evidence: { type: 'string', description: 'the command you ran or the line you read' },
@@ -229,12 +229,13 @@ Required checks:
 2. For each new or changed test, prove it bites: cp-snapshot the fixed file, revert the fix, run the test, restore from the snapshot (never git checkout --). Record in mutant_replays.
 3. Check the change fixes the cause the brief describes, not a symptom, and look for other sites of the same defect (sweep_gaps).
 4. Look for wrong logic, missed call sites, negative controls that can never fail, and docs that now contradict the code.
+5. Read the author's pr_body against the branch: a test count, gate result or claim in it the branch contradicts is a new_defects entry with where "pr_body".
 
 Verdict: "pass" only when every claimed gate reproduces and no blocker/major defect remains.
 "fix-needed" when it is repairable on this branch. "reject" when the approach is wrong.
 A claim that does not reproduce ranks above any code defect, and on its own means "fix-needed".`
 
-const FIX_PROMPT = (ctx, u, findings) => `You repair unit ${u.id} on the EXISTING branch \`${u.branch}\`.
+const FIX_PROMPT = (ctx, u, findings, prBody = '') => `You repair unit ${u.id} on the EXISTING branch \`${u.branch}\`.
 
 ${common(ctx)}
 
@@ -262,7 +263,12 @@ ${listOr(findings.map((f, i) => `${f.id ?? `F${i + 1}`} [${f.severity ?? '?'}] $
 
 Pin each fix with a test that fails without it. Add NEW commits only: never amend, rebase or force.
 Stage explicit paths. Run the gates: ${[...ctx.gates, ...u.gates].join('; ') || 'the project gates'}.
-${ctx.trailer ? `End every commit message with exactly these lines:\n${ctx.trailer}\n` : ''}Do not push or touch GitHub — a later sequential stage does that.
+${prBody ? `The author drafted this PR body before the verifier ran, so its test counts, gate results and claims describe the branch before your commits:
+<<<
+${prBody}
+>>>
+Return pr_body: that body rewritten for the branch as it now stands. Keep its structure, correct every figure your commits changed, and say what this repair fixed.
+` : ''}${ctx.trailer ? `End every commit message with exactly these lines:\n${ctx.trailer}\n` : ''}Do not push or touch GitHub — a later sequential stage does that.
 Finally run \`git switch --detach\` so this worktree no longer holds the branch.
 Return one items[] row per finding.`
 
@@ -281,7 +287,9 @@ const rowStatus = (fix, verdict, repaired) => {
 
 // Combine an author's report with a repairer's. Arrays accumulate and the PR
 // text survives: a repairer that returns an empty pr_title or fixes_issues must
-// not erase what the author drafted. The repairer's head_sha and status win.
+// not erase what the author drafted. The repairer's head_sha and status win, and
+// so does its pr_body, which FIX_PROMPT asks it to rewrite for the repaired
+// branch (#3650).
 const mergeRepair = (fix, rep) => ({
   ...fix,
   ...rep,

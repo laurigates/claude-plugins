@@ -221,7 +221,51 @@ const units = (ids) =>
     briefs.every((l) => { const p = sub.sent[l]?.prompt ?? ''; return p.includes(mcp) && !p.includes('gh issue view') }),
     briefs.map((l) => sub.sent[l]?.prompt))
 }
+// 17. A repair rewrites the PR body (#3650): the author drafts pr_body before its
+// verifier runs, so after a repair it can describe the branch before the repair
+// commit (stale test counts on mcu-tinkering-lab #1119 and #1121). The repair
+// brief carries the author's body and asks for it rewritten; mergeRepair prefers
+// the rewrite. The verifier brief names the convention the hold reads.
+{
+  const stale = 'AUTHOR-BODY: 802 tests, 8 failures and 3 errors at base'
+  const r = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) =>
+    k === first ? fix(u, { pr_title: 'fix(a): t', pr_body: stale })
+      : k === 'verify' ? verdict(u, 'fix-needed')
+      : k === 'repair' ? fix(u, { head_sha: 'def5678', pr_body: 'REWRITTEN: 803 tests' })
+      : verdict(u, 'pass'))
+  const p = r.sent['repair:a']?.prompt ?? ''
+  check('repair prompt carries the author\'s pr_body', p.includes(stale), p)
+  check('repair prompt asks for pr_body rewritten for the branch as it now stands',
+    /pr_body[^\n]*rewritten for the branch as it now stands/.test(p), p)
+  const row = r.result.rows.find((x) => x.unit === 'a')
+  check('mergeRepair prefers the repairer\'s rewritten pr_body', row.fix.pr_body === 'REWRITTEN: 803 tests', row.fix)
+  const v = r.sent['verify:a']?.prompt ?? ''
+  check('verify prompt checks pr_body and reports a stale one with where "pr_body"',
+    /pr_body[^\n]*where "pr_body"/.test(v), v)
+}
 if (isImpl) {
+  // 12. Finalise holds a unit whose clearing verdict flags the PR body (#3650,
+  // decision option 3): the rewrite in the repair brief catches most stale
+  // bodies; this hold stops the rest from being opened as drafted.
+  {
+    const bodyDefect = { severity: 'minor', where: 'pr_body', problem: 'says 802 tests; the suite has 803', fix: 'update the count' }
+    const codeDefect = { severity: 'minor', where: 'a.js:1', problem: 'p', fix: 'f' }
+    const r = await run(units(['a', 'b', 'c']), (k, u) =>
+      k === 'implement' ? fix(u, { pr_body: 'body' })
+        : k === 'verify' ? (u === 'c' ? { ...verdict(u, 'pass'), new_defects: [bodyDefect] } : verdict(u, 'fix-needed'))
+        : k === 'repair' ? fix(u, { head_sha: 'def5678' })
+        : k === 'reverify' ? { ...verdict(u, 'pass'), new_defects: [u === 'a' ? bodyDefect : codeDefect] }
+        : k === 'finalise' ? { prs: [] } : undefined)
+    check('re-verifier flags pr_body → HELD_PR_BODY', statuses(r).a === 'HELD_PR_BODY', statuses(r))
+    check('first verifier flags pr_body on a PASS → HELD_PR_BODY', statuses(r).c === 'HELD_PR_BODY', statuses(r))
+    check('a non-body minor defect still lands', statuses(r).b === 'REPAIRED_PASS', statuses(r))
+    check('held units are not in finalisePlan', r.result.finalisePlan.map((p) => p.unit).join() === 'b', r.result.finalisePlan)
+    check('finalise brief never sees a held unit', !/"unit": "(a|c)"/.test(r.sent.finalise?.prompt ?? ''), r.sent.finalise?.prompt)
+    // Only held units: no finalise agent at all.
+    const only = await run(units(['a', 'b']), (k, u) =>
+      k === 'implement' ? fix(u) : k === 'verify' ? { ...verdict(u, 'pass'), new_defects: [{ ...bodyDefect, where: 'PR body' }] } : { prs: [] })
+    check('all units held → no finalise agent', !only.calls.includes('finalise') && only.result.finalisePlan.length === 0, only.calls)
+  }
   // 8. no-change is its own outcome and skips the verifier.
   const r = await run(units(['a', 'b']), (k, u) => (k === 'implement' ? fix(u, { status: 'no-change' }) : verdict(u, 'pass')))
   check('no-change → NO_CHANGE, unverified', statuses(r).a === 'NO_CHANGE' && !r.calls.some((c) => c.startsWith('verify')), r.calls)
