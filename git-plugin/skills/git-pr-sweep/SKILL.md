@@ -121,7 +121,9 @@ A red check on a PR you mean to merge goes through `git-plugin:git-merge-hazards
 5. For each draft in `plan.ready`, one literal number per call:
    `gh pr ready 12 -R <owner>/<repo>`, then confirm with `gh pr view 12 -R <owner>/<repo> --json isDraft`.
 6. For each `plan.merge` chunk, in a background Bash call, `--repo` and `--prs` as literals; before
-   each later chunk, repeat steps 2–3 and drop PRs that no longer pass:
+   each later chunk, repeat steps 2–3 and drop PRs that no longer pass. Right before every call,
+   read each PR's head, `gh pr view 12 -R <owner>/<repo> --json headRefOid`, and drop (report as head
+   moved) any whose head differs from its gated roster `head_sha` (#3748):
 
    ```bash
    bash ${CLAUDE_SKILL_DIR}/../git-merge-hazards/scripts/merge-chain.sh --repo <owner>/<repo> --prs 12,15,19 --review-ts <ts> --fetch-dir <root>
