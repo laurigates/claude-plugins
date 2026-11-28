@@ -16,6 +16,10 @@
 #     INSIDE a repo, linked worktrees, symlinks, non-repos, globs,
 #     unresolvable $VAR / $(…) / {} operands, remote-exec (#1900), and the
 #     command text appearing inside a quoted string
+#   - Literal variable assignments earlier in the same command (#3801):
+#     `B=/abs/path; … rm -rf "$B"` is substituted and checked, on a fixture
+#     whose branch commits sit on no remote-tracking ref (the incident shape);
+#     every non-literal or out-of-scope `$` operand still fails open
 #   - Tier 2 (opt-in `ask` on a remote-backed but dirty repo), default-off
 #   - The block message's post-#2454 shape: preflight findings (REAL counts, not
 #     a fixed template) + the single in-band tar escape + a pointer to
@@ -117,6 +121,29 @@ git -C "$WORK/no-commits" config user.name "Test"
 
 # link: a symlink to a remote-less repo.
 ln -s "$WORK/lonely" "$WORK/link"
+
+# pruned: the #3801 incident shape. An `origin` remote is configured, and the
+# local branches hold commits that are on no remote-tracking ref: their remote
+# branches were deleted (as on squash-merge) and a pruning fetch dropped the
+# tracking refs. Built with real pushes, deletes and a prune, so the hook sees
+# the same refs/remotes state the incident checkout had.
+mkdir -p "$WORK/pruned"; new_repo "$WORK/pruned"
+git init -q --bare "$WORK/pruned-origin.git"
+git -C "$WORK/pruned" remote add origin "$WORK/pruned-origin.git"
+for br in feat/a feat/b; do
+    git -C "$WORK/pruned" switch -q -c "$br" main
+    git -C "$WORK/pruned" commit -q --allow-empty -m "work on $br"
+    git -C "$WORK/pruned" push -q origin "$br"
+    git --git-dir="$WORK/pruned-origin.git" branch -q -D "$br"
+done
+git -C "$WORK/pruned" switch -q main
+git -C "$WORK/pruned" fetch -q --prune origin
+PRUNED_UNPUSHED=$(git -C "$WORK/pruned" log --oneline --branches --not --remotes | wc -l | tr -d '[:space:]')
+PRUNED_TRACKING=$(git -C "$WORK/pruned" for-each-ref refs/remotes | wc -l | tr -d '[:space:]')
+if [ "$PRUNED_UNPUSHED" -lt 2 ] || [ "$PRUNED_TRACKING" -ne 0 ]; then
+    echo "FATAL: pruned fixture has $PRUNED_UNPUSHED unpushed commits and $PRUNED_TRACKING tracking refs (want >=2 and 0)" >&2
+    exit 1
+fi
 
 # A PATH containing jq but NOT git, for the degradation assertion.
 ln -s "$(command -v jq)" "$NOGIT_BIN/jq"
@@ -383,6 +410,54 @@ assert_exit "a separator inside a quoted string does not split" 0 \
     "$(make_json "git commit -m \"cleanup; rm -rf $WORK/lonely\"")"
 assert_exit "temp-dir exemption (default on) allows a remote-less repo" 0 \
     "$(make_json "rm -rf $WORK/lonely")" CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=1
+
+# ── Literal variable assignments in the same command (#3801) ──────────────────
+# An operand that references a variable assigned EARLIER in the same command to
+# a literal path is substituted and checked like a literal operand. Every other
+# `$` operand stays fail-open. The literal-operand control comes first: without
+# it, a block below could not be told apart from a fixture that blocks for some
+# unrelated reason.
+echo ""
+echo "variables assigned to a literal earlier in the same command (#3801):"
+P="$WORK/pruned"
+assert_exit "control: the literal operand on the pruned repo blocks" 2 "$(make_json "rm -rf $P")"
+assert_exit "B=<literal>; rm -rf \"\$B\" blocks" 2 "$(make_json "B=$P; rm -rf \"\$B\"")"
+assert_exit "the verbatim #3801 incident command blocks" 2 "$(make_json "B=$P; git -C \$B status --porcelain | wc -l; git -C \$B log --oneline --branches --not --remotes | wc -l; git -C \$B stash list | wc -l; rm -rf \"\$B\" && echo \"removed old copy\"")"
+assert_exit "\${B} brace form blocks" 2 "$(make_json "B=$P; rm -rf \"\${B}\"")"
+assert_exit "unquoted \$B blocks" 2 "$(make_json "B=$P && rm -rf \$B")"
+assert_exit "a path built on the variable blocks" 2 "$(make_json "B=$WORK; rm -rf \"\$B/pruned\"")"
+assert_exit "two variables in one operand block" 2 "$(make_json "D=$WORK; N=pruned; rm -rf \"\$D/\$N\"")"
+assert_exit "a double-quoted literal value blocks" 2 "$(make_json "B=\"$P\"; rm -rf \"\$B\"")"
+assert_exit "export B=<literal> blocks" 2 "$(make_json "export B=$P; rm -rf \"\$B\"")"
+assert_exit "newline-separated assignment blocks" 2 "$(make_json "B=$P
+rm -rf \"\$B\"")"
+assert_exit "the last literal assignment wins" 2 "$(make_json "B=$WORK/plain; B=$P; rm -rf \"\$B\"")"
+assert_exit "the remote-less repo blocks through a variable too" 2 "$(make_json "B=$WORK/lonely; rm -rf \"\$B\"")"
+assert_stderr_contains "the block names the resolved path" "'$P' is a git repository" \
+    "$(make_json "B=$P; rm -rf \"\$B\"")"
+
+# The substituted path goes through the NORMAL check, which is not a blanket
+# block: a remote-backed repo and a plain directory still pass.
+assert_exit "a variable naming a pushed repo is allowed" 0 "$(make_json "B=$WORK/backed; rm -rf \"\$B\"")"
+assert_exit "a variable naming a plain directory is allowed" 0 "$(make_json "B=$WORK/plain; rm -rf \"\$B\"")"
+assert_exit "temp-dir exemption still applies to a substituted path" 0 \
+    "$(make_json "B=$P; rm -rf \"\$B\"")" CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=1
+
+# Everything that is not a literal assignment earlier in the same command keeps
+# failing open.
+# shellcheck disable=SC2016  # literal $(…) / $VAR text is the point of these
+assert_exit "B=\$(mktemp -d); rm -rf \"\$B\" fails open" 0 "$(make_json 'B=$(mktemp -d); rm -rf "$B"')"
+assert_exit "a value holding \$OTHER fails open" 0 "$(make_json "B=\$OTHER/pruned; rm -rf \"\$B\"")"
+assert_exit "a later non-literal reassignment fails open" 0 "$(make_json "B=$P; B=\$(pwd); rm -rf \"\$B\"")"
+assert_exit "unset after the assignment fails open" 0 "$(make_json "B=$P; unset B; rm -rf \"\$B\"")"
+assert_exit "a prefix assignment (B=x rm …) fails open" 0 "$(make_json "B=$P rm -rf \"\$B\"")"
+assert_exit "an assignment AFTER the rm fails open" 0 "$(make_json "rm -rf \"\$B\"; B=$P")"
+assert_exit "an assignment inside a subshell fails open" 0 "$(make_json "(B=$P); rm -rf \"\$B\"")"
+assert_exit "an assignment in a pipeline stage fails open" 0 "$(make_json "B=$P | cat; rm -rf \"\$B\"")"
+assert_exit "an unassigned variable fails open" 0 "$(make_json "B=$P; rm -rf \"\$C\"")"
+assert_exit "a parameter-expansion operator fails open" 0 "$(make_json "B=$P; rm -rf \"\${B:-/nowhere}\"")"
+# shellcheck disable=SC2016
+assert_exit "an inherited \$TMPDIR operand fails open" 0 "$(make_json 'rm -rf "$TMPDIR/scratch"')"
 
 # ── macOS symlink-resolved temp paths (#2465) ─────────────────────────────────
 # Operands reach the exemption already resolved by `pwd -P`. On macOS /var is a

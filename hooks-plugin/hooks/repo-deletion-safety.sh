@@ -27,7 +27,10 @@
 #      word to be exactly `rm`, and require at least one recursion flag
 #      (-r/-R/-rf/-fr/--recursive). Safety blocks deliberately fire inside
 #      compound commands and pipelines — only the context-budget read-blocks
-#      were narrowed to whole-command scope (#2148).
+#      were narrowed to whole-command scope (#2148). Statements are walked in
+#      order, recording each literal assignment (`B=/abs/path`, `export B=…`,
+#      no `$` or backtick in the value) so a later `rm -rf "$B"` operand is
+#      substituted and checked like a literal one (#3801).
 #   5. Per operand that resolves to a real directory, decide whether deleting it
 #      destroys history: it must be a repo ROOT, i.e.
 #      `git rev-parse --absolute-git-dir` equals "<dir>/.git" or "<dir>". That
@@ -50,8 +53,11 @@
 #      dirty clones and worktrees constantly and no *history* is at risk there,
 #      so a default-on prompt would be pure tax.
 #
-# Fails OPEN by design. Never blocked: unresolvable operands ($VAR, $(...),
-# globs, `{}` from `find -exec`), symlinks (rm removes the link, not the
+# Fails OPEN by design. Never blocked: unresolvable operands — a $VAR that is
+# not assigned a literal earlier in the same command (inherited variables, a
+# value holding $(...) or another $VAR, an assignment made in a subshell, a
+# pipeline stage or after the rm, a `${VAR:-…}` operator), $(...), globs, `{}`
+# from `find -exec` — symlinks (rm removes the link, not the
 # target), non-directories, and — by default — anything under a temp directory
 # (this repo's own fixtures create remote-less repos under mktemp -d and clean
 # them up with `rm -rf`). Sibling deletion verbs (`git clean -xdff`, `trash`,
@@ -151,11 +157,14 @@ TMPROOT_REAL=$(cd "$TMPROOT" 2>/dev/null && pwd -P) || TMPROOT_REAL=""
 # Split $1 into statements on unquoted `;`, `&`, `|` runs and newlines.
 # Quote- and backslash-aware so that a separator inside a quoted argument
 # (`git commit -m "cleanup; rm -rf old"`) never manufactures a statement.
-# Result lands in the global array STATEMENTS.
+# Result lands in the global array STATEMENTS; SEPS[k] holds the separator run
+# that followed STATEMENTS[k] ("" after the last), which the literal-assignment
+# tracker reads to tell a sequential statement from a pipeline or `&` stage.
 split_statements() {
-    local s="$1" cur="" i=0 n c q=""
+    local s="$1" cur="" i=0 n c q="" sep
     n=${#s}
     STATEMENTS=()
+    SEPS=()
     while [ "$i" -lt "$n" ]; do
         c="${s:$i:1}"
         if [ -n "$q" ]; then
@@ -177,18 +186,20 @@ split_statements() {
                 cur+="$c"; i=$((i + 1))
                 [ "$i" -lt "$n" ] && { cur+="${s:$i:1}"; i=$((i + 1)); } ;;
             ';'|'&'|'|'|$'\n')
-                STATEMENTS+=("$cur"); cur=""
+                STATEMENTS+=("$cur"); cur=""; sep=""
                 while [ "$i" -lt "$n" ]; do
                     case "${s:$i:1}" in
-                        ';'|'&'|'|'|$'\n') i=$((i + 1)) ;;
+                        ';'|'&'|'|'|$'\n') sep+="${s:$i:1}"; i=$((i + 1)) ;;
                         *) break ;;
                     esac
-                done ;;
+                done
+                SEPS+=("$sep") ;;
             *)
                 cur+="$c"; i=$((i + 1)) ;;
         esac
     done
     STATEMENTS+=("$cur")
+    SEPS+=("")
 }
 
 # Split one statement into shell words, honoring quotes and backslashes and
@@ -223,6 +234,109 @@ tokenize() {
         esac
     done
     [ "$started" -eq 1 ] && TOKENS+=("$cur")
+    return 0
+}
+
+# ── Literal variable assignments (#3801) ──────────────────────────────────────
+#
+# `B=/abs/path; …; rm -rf "$B"` names its target in the command text itself, so
+# the hook substitutes it instead of failing open. Only a value with no `$` and
+# no backtick counts as literal. The record is append-only: the newest entry for
+# a name wins, and an entry with VAR_SET=0 (a non-literal assignment, `unset`,
+# `read`, …) hides every older literal one, so the operand fails open again.
+# Parallel indexed arrays, not an associative one: macOS /bin/bash is 3.2.
+VAR_NAMES=()
+VAR_VALUES=()
+VAR_SET=()
+SCOPE_MARKS=()
+
+record_var() { # $1 name, $2 value, $3 1 = literal | 0 = unknown
+    VAR_NAMES+=("$1"); VAR_VALUES+=("$2"); VAR_SET+=("$3")
+}
+
+is_identifier() {
+    case "$1" in ''|[0-9]*|*[!A-Za-z0-9_]*) return 1 ;; esac
+    return 0
+}
+
+# Record one `NAME=value` / `NAME+=value` word. An append is never literal.
+record_assignment() { # $1 word
+    local name="${1%%=*}" value="${1#*=}"
+    case "$name" in
+        *+) name="${name%+}"; is_identifier "$name" && record_var "$name" "" 0; return 0 ;;
+    esac
+    is_identifier "$name" || return 0
+    case "$value" in
+        *'$'*|*'`'*) record_var "$name" "" 0 ;;
+        *) record_var "$name" "$value" 1 ;;
+    esac
+}
+
+# Set LOOKUP to the literal value bound to $1, or return 1.
+lookup_var() { # $1 name
+    local i=${#VAR_NAMES[@]}
+    while [ "$i" -gt 0 ]; do
+        i=$((i - 1))
+        if [ "${VAR_NAMES[$i]}" = "$1" ]; then
+            [ "${VAR_SET[$i]}" = "1" ] || return 1
+            LOOKUP="${VAR_VALUES[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# A `(` subshell scope: assignments made inside it vanish when it closes.
+open_scope() { SCOPE_MARKS+=("${#VAR_NAMES[@]}"); }
+close_scope() {
+    local n=${#SCOPE_MARKS[@]} mark
+    [ "$n" -gt 0 ] || return 0
+    mark="${SCOPE_MARKS[$((n - 1))]}"
+    SCOPE_MARKS=(${SCOPE_MARKS[@]+"${SCOPE_MARKS[@]:0:$((n - 1))}"})
+    VAR_NAMES=(${VAR_NAMES[@]+"${VAR_NAMES[@]:0:$mark}"})
+    VAR_VALUES=(${VAR_VALUES[@]+"${VAR_VALUES[@]:0:$mark}"})
+    VAR_SET=(${VAR_SET[@]+"${VAR_SET[@]:0:$mark}"})
+}
+
+# True when separator run $1 sequences statements in the current shell (`;`,
+# `&&`, `||`, newline). A `|` or lone `&` puts the neighbour in a subshell,
+# where an assignment never reaches the next statement.
+is_seq_sep() { # $1 separator run
+    local s="${1//$'\n'/}"
+    s="${s//;/}"
+    case "$s" in ''|'&&'|'||') return 0 ;; esac
+    return 1
+}
+
+# Substitute every `$NAME` / `${NAME}` in $1 that has a literal binding. On any
+# other `$` form, or an unbound name, return 1 with EXPANDED set to $1
+# unchanged, so check_path still sees the `$` and fails open. Quote removal ran
+# before this, so a single-quoted `'$B'` is substituted too (accepted: it can
+# only add a block on a repo the command itself named).
+expand_vars() { # $1 operand
+    local s="$1" out="" i=0 n c rest name skip
+    case "$s" in *'$'*) ;; *) EXPANDED="$s"; return 0 ;; esac
+    n=${#s}
+    while [ "$i" -lt "$n" ]; do
+        c="${s:$i:1}"
+        if [ "$c" != '$' ]; then out+="$c"; i=$((i + 1)); continue; fi
+        rest="${s:$((i + 1))}"
+        case "$rest" in
+            '{'*)
+                name="${rest#\{}"; name="${name%%\}*}"
+                is_identifier "$name" || { EXPANDED="$1"; return 1; }
+                case "$rest" in "{$name}"*) ;; *) EXPANDED="$1"; return 1 ;; esac
+                skip=$((${#name} + 3)) ;;
+            [A-Za-z_]*)
+                name="${rest%%[!A-Za-z0-9_]*}"
+                skip=$((${#name} + 1)) ;;
+            *) EXPANDED="$1"; return 1 ;;
+        esac
+        lookup_var "$name" || { EXPANDED="$1"; return 1; }
+        out+="$LOOKUP"
+        i=$((i + skip))
+    done
+    EXPANDED="$out"
     return 0
 }
 
@@ -390,7 +504,9 @@ check_path() {
     case "$p" in --|-*) return 0 ;; esac
 
     # Unresolvable operands — $VAR, $(…), `…`, and `{}` from find -exec. The
-    # hook cannot know the target, so it fails open rather than guessing.
+    # hook cannot know the target, so it fails open rather than guessing. A
+    # $VAR with a literal binding earlier in the command was already
+    # substituted by expand_vars, so any `$` left here is unresolved.
     case "$p" in *'$'*|*'`'*) return 0 ;; esac
 
     # Globs. Without dotglob, `*` does not match `.git`, so `rm -rf repo/*`
@@ -451,40 +567,64 @@ check_path() {
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 STATEMENTS=()
+SEPS=()
 TOKENS=()
 split_statements "$COMMAND"
 
-for stmt in ${STATEMENTS[@]+"${STATEMENTS[@]}"}; do
-    # Trim leading whitespace and subshell parens.
-    while :; do
-        case "$stmt" in
-            [[:space:]]*|'('*) stmt="${stmt#?}" ;;
-            *) break ;;
-        esac
+# Track the literal assignments a statement makes (#3801). A statement made only
+# of `NAME=value` words assigns in the current shell, unless a pipe or `&` on
+# either side puts it in a subshell; `export NAME=value` assigns too. Commands
+# that set or clear a name some other way (`unset`, `read`, `for`, …) hide its
+# literal value. A leading `VAR=value` before a command word is NOT recorded:
+# it is scoped to that command, and `$VAR` in the same statement expands first.
+track_assignments() { # $1 statement index
+    local k="$1" t w prev=""
+    [ "$k" -gt 0 ] && prev="${SEPS[$((k - 1))]}"
+    for t in "${TOKENS[@]}"; do
+        case "$t" in [A-Za-z_]*=*) ;; *) w="$t"; break ;; esac
     done
-    case "$stmt" in *')') stmt="${stmt%)}" ;; esac
-    [ -n "$stmt" ] || continue
+    if [ -z "${w:-}" ]; then
+        is_seq_sep "$prev" && is_seq_sep "${SEPS[$k]}" || return 0
+        for t in "${TOKENS[@]}"; do record_assignment "$t"; done
+        return 0
+    fi
+    case "${TOKENS[0]}" in
+        export)
+            for t in "${TOKENS[@]:1}"; do
+                case "$t" in
+                    -*) ;;
+                    *=*) record_assignment "$t" ;;
+                esac
+            done ;;
+        unset|read|for|select|mapfile|readarray|getopts|printf|declare|typeset|local|readonly)
+            for t in "${TOKENS[@]:1}"; do
+                t="${t%%=*}"; t="${t%+}"
+                is_identifier "$t" && record_var "$t" "" 0
+            done ;;
+    esac
+    return 0
+}
 
-    tokenize "$stmt"
-    [ "${#TOKENS[@]}" -gt 0 ] || continue
+# Classify the tokenized statement in TOKENS and check each operand of a
+# recursive `rm`, after substituting literal variable bindings into it.
+check_rm_statement() {
+    local idx=0 j has_recursive=0 rest op
 
     # Strip leading `VAR=value` assignments and command wrappers so an inline
     # bypass attempt is still classified as the `rm` it is.
-    idx=0
     while [ "$idx" -lt "${#TOKENS[@]}" ]; do
         case "${TOKENS[$idx]}" in
             [A-Za-z_]*=*|sudo|command|env|nice) idx=$((idx + 1)) ;;
             *) break ;;
         esac
     done
-    [ "$idx" -lt "${#TOKENS[@]}" ] || continue
+    [ "$idx" -lt "${#TOKENS[@]}" ] || return 0
 
     # The statement's command word must be exactly `rm` — this is what makes a
     # quoted occurrence (`git commit -m "rm -rf old"`) inert.
-    [ "${TOKENS[$idx]}" = "rm" ] || continue
+    [ "${TOKENS[$idx]}" = "rm" ] || return 0
 
     # At least one recursion flag. `rm -f file` can never destroy a directory.
-    has_recursive=0
     j=$((idx + 1))
     while [ "$j" -lt "${#TOKENS[@]}" ]; do
         case "${TOKENS[$j]}" in
@@ -499,13 +639,57 @@ for stmt in ${STATEMENTS[@]+"${STATEMENTS[@]}"}; do
         esac
         j=$((j + 1))
     done
-    [ "$has_recursive" -eq 1 ] || continue
+    [ "$has_recursive" -eq 1 ] || return 0
 
     j=$((idx + 1))
     while [ "$j" -lt "${#TOKENS[@]}" ]; do
-        check_path "${TOKENS[$j]}"
+        op="${TOKENS[$j]}"
+        expand_vars "$op" && op="$EXPANDED"
+        check_path "$op"
         j=$((j + 1))
     done
+    return 0
+}
+
+k=-1
+for stmt in ${STATEMENTS[@]+"${STATEMENTS[@]}"}; do
+    k=$((k + 1))
+    # Trim leading whitespace and subshell parens; each `(` opens a scope whose
+    # assignments are dropped when its `)` closes.
+    while :; do
+        case "$stmt" in
+            [[:space:]]*) stmt="${stmt#?}" ;;
+            '('*) stmt="${stmt#?}"; open_scope ;;
+            *) break ;;
+        esac
+    done
+    # Trailing `)` close scopes, unless the statement opens a `(` of its own —
+    # then the `)` closes that (`$(…)`, `<(…)`) and no scope is left.
+    closes=0
+    case "$stmt" in
+        *'('*) ;;
+        *)
+            tail_s="$stmt"
+            while :; do
+                case "$tail_s" in
+                    *')') tail_s="${tail_s%)}"; closes=$((closes + 1)) ;;
+                    *[[:space:]]) tail_s="${tail_s%?}" ;;
+                    *) break ;;
+                esac
+            done ;;
+    esac
+    case "$stmt" in *')') stmt="${stmt%)}" ;; esac
+    if [ -z "$stmt" ]; then
+        while [ "$closes" -gt 0 ]; do close_scope; closes=$((closes - 1)); done
+        continue
+    fi
+
+    tokenize "$stmt"
+    if [ "${#TOKENS[@]}" -gt 0 ]; then
+        track_assignments "$k"
+        check_rm_statement
+    fi
+    while [ "$closes" -gt 0 ]; do close_scope; closes=$((closes - 1)); done
 done
 
 exit 0
