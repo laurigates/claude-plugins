@@ -8,8 +8,9 @@
 #
 # Read-only audit. Local-leaning by design: session history is local and
 # long-lived, so a fresh clone (remote/web sandbox) has little or no history.
-# When history is insufficient the script emits STATUS=SKIP rather than
-# reporting every enabled skill as "never fired".
+# When history is insufficient the script emits STATUS=OK with SKIPPED=true and
+# SKIP_REASON=<TYPE>: <text> (formerly STATUS=SKIP, ADR-0018 amendment, #3580)
+# rather than reporting every enabled skill as "never fired".
 #
 # Inventory (what counts as "enabled"):
 #   Default (INVENTORY_SOURCE=registry): the plugin registry. For every plugin
@@ -74,6 +75,19 @@ done
 source "$(dirname "${BASH_SOURCE[0]}")/lib/retention.sh"
 
 echo "=== USAGE TELEMETRY ==="
+
+# Associative arrays need bash 4+ and namerefs 4.3+. macOS /bin/bash is 3.2,
+# and an agent subshell can start with a /usr/bin:/bin PATH, so fail loudly
+# there instead of stopping mid-run with no STATUS line (#3580).
+if [ "${BASH_VERSINFO[0]:-0}" -lt 4 ] || { [ "${BASH_VERSINFO[0]:-0}" -eq 4 ] && [ "${BASH_VERSINFO[1]:-0}" -lt 3 ]; }; then
+  echo "STATUS=ERROR"
+  echo "REASON=bash_too_old: bash ${BASH_VERSION:-unknown} lacks associative arrays or namerefs; run with bash 4.3 or later"
+  echo "ISSUE_COUNT=1"
+  echo "ISSUES:"
+  echo "  - SEVERITY=ERROR TYPE=bash_too_old BASH_VERSION=${BASH_VERSION:-unknown} MSG=bash 4.3 or later is required; put a newer bash (e.g. Homebrew's) first on PATH"
+  echo "=== END USAGE TELEMETRY ==="
+  exit 1
+fi
 
 usage_issue_count=0
 usage_status="OK"
@@ -146,20 +160,22 @@ fi
 transcripts_scanned=$(tr -cd '\0' < "$transcript_list" | wc -c | tr -d ' ')
 echo "TRANSCRIPTS_SCANNED=${transcripts_scanned}"
 
-# --- SKIP when history is insufficient (fresh clone / remote sandbox) ---------
+# --- Skip when history is insufficient (fresh clone / remote sandbox) ---------
+# A skip is not a finding: STATUS=OK with SKIPPED=true, and the cause goes in
+# SKIP_REASON= (REASON= is reserved for WARN/ERROR by the output contract).
 if [ ! -d "$projects_dir" ] || [ "$transcripts_scanned" -lt "$min_transcripts" ]; then
   skip_msg="fewer than ${min_transcripts} session transcripts under ${projects_dir} (usage telemetry needs a long-running local install; skipped)"
   echo "HISTORY_AVAILABLE=false"
-  echo "STATUS=SKIP"
-  echo "REASON=insufficient_history: ${skip_msg:0:160}"
+  echo "SKIPPED=true"
+  echo "SKIP_REASON=insufficient_history: ${skip_msg:0:160}"
+  echo "STATUS=OK"
   echo "ISSUE_COUNT=0"
-  echo "ISSUES:"
-  echo "  - SEVERITY=INFO TYPE=insufficient_history MSG=${skip_msg}"
   echo "FIX_SUPPORTED=false"
   echo "=== END USAGE TELEMETRY ==="
   exit 0
 fi
 echo "HISTORY_AVAILABLE=true"
+echo "SKIPPED=false"
 
 now_epoch=$(date +%s)
 window_cutoff=$((now_epoch - window_days * 86400))
@@ -611,10 +627,15 @@ if [ "$agents_dormant" -gt 0 ]; then
   fi
 fi
 
+# The window_exceeds_retention INFO row is printed under ISSUES:, so it counts
+# in ISSUE_COUNT and in REASON's (+N more) tail (#3580).
+if [ -n "$retention_note" ]; then
+  usage_issues="${usage_issues}${retention_note}"
+  usage_issue_count=$((usage_issue_count + 1))
+fi
 echo "STATUS=${usage_status}"
 [ "$usage_status" != "OK" ] && emit_reason "$usage_issue_count"
 echo "ISSUE_COUNT=${usage_issue_count}"
-usage_issues="${usage_issues}${retention_note}"
 if [ -n "$usage_issues" ]; then
   echo "ISSUES:"
   echo -e "$usage_issues" | sed '/^$/d'

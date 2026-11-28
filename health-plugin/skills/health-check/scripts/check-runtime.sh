@@ -41,6 +41,8 @@ done
 
 # shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
 source "$(dirname "${BASH_SOURCE[0]}")/lib/retention.sh"
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/summary.sh"
 
 echo "=== RUNTIME STATE ==="
 
@@ -53,6 +55,7 @@ issues_list=""
 if ! command -v jq >/dev/null 2>&1; then
   echo "JQ_AVAILABLE=false"
   echo "STATUS=ERROR"
+  echo "REASON=missing_tool: jq is required but not installed"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_tool MSG=jq is required but not installed"
@@ -65,6 +68,7 @@ if [ ! -f "$runtime_file" ]; then
   echo "RUNTIME_EXISTS=false"
   echo "RUNTIME_PATH=${runtime_file}"
   echo "STATUS=WARN"
+  echo "REASON=missing_runtime: ~/.claude.json not found (no sessions recorded yet)"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=WARN TYPE=missing_runtime MSG=~/.claude.json not found (no sessions recorded yet)"
@@ -80,10 +84,7 @@ json_error=$(jq empty "$runtime_file" 2>&1)
 jq_rc=$?
 if [ $jq_rc -ne 0 ]; then
   echo "RUNTIME_VALID=false"
-  echo "STATUS=ERROR"
-  echo "ISSUE_COUNT=1"
-  echo "ISSUES:"
-  echo "  - SEVERITY=ERROR TYPE=invalid_json FILE=${runtime_file} MSG=${json_error}"
+  emit_summary ERROR "  - SEVERITY=ERROR TYPE=invalid_json FILE=${runtime_file} MSG=${json_error}"
   echo "=== END RUNTIME STATE ==="
   exit 1
 fi
@@ -353,12 +354,10 @@ else
   echo "CLEANUP_SUGGESTED=false"
 fi
 
-echo "STATUS=${check_status}"
-echo "ISSUE_COUNT=${issue_count}"
-if [ -n "$issues_list" ] || [ -n "$info_list" ]; then
-  echo "ISSUES:"
-  echo -e "${issues_list}${info_list}" | sed '/^$/d'
-fi
+# ISSUE_COUNT counts the rows printed under ISSUES: (INFO rows included, and a
+# non-verbose roll-up row counts once), per the structured-output contract;
+# the per-category totals stay in the *_DEAD / COUNT= fields (#3580).
+emit_summary "$check_status" "$(echo -e "${issues_list}${info_list}")"
 echo "FIX_SUPPORTED=false"
 echo "=== END RUNTIME STATE ==="
 [ "$check_status" = "ERROR" ] && exit 1

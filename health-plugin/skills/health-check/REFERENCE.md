@@ -67,8 +67,8 @@ Include a summary table in the Step 3 report, one row per check:
 |-------|--------|--------|
 | Plugin registry | OK/WARN/ERROR | ... |
 | Settings files | OK/WARN/ERROR | ... |
-| Hooks configuration | OK/WARN/ERROR | ... |
-| MCP servers | OK/WARN/ERROR | ... |
+| Hooks configuration | OK/WARN/ERROR ("not configured" when `CONFIGURED=false`) | ... |
+| MCP servers | OK/WARN/ERROR ("not configured" when `CONFIGURED=false`) | ... |
 | SessionStart smoke test | OK/WARN/ERROR | ... |
 | Pre-commit config | OK/WARN/ERROR/SKIP | ... |
 | Permissions coverage | OK/WARN/ERROR | ... |
@@ -77,7 +77,7 @@ Include a summary table in the Step 3 report, one row per check:
 | Stack audit | OK/WARN/ERROR | ... |
 | Agentic audit | OK/WARN/ERROR | ... |
 | Runtime audit | OK/WARN/ERROR | ... |
-| Usage audit | OK/WARN/ERROR/SKIP | ... |
+| Usage audit | OK/WARN/ERROR ("skipped" when `SKIPPED=true`, cause in `SKIP_REASON=`) | ... |
 
 ## Known Issues Database
 

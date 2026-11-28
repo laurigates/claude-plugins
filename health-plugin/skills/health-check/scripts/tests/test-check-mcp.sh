@@ -11,6 +11,7 @@ set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 check_script="${script_dir}/../check-mcp.sh"
+contract_script="${script_dir}/../../../../../scripts/check-structured-output-contract.sh"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -19,6 +20,14 @@ fail() {
 
 pass() {
   echo "PASS: $1"
+}
+
+# assert_contract <label> <output>: the block satisfies the structured-output
+# contract (canonical STATUS, ISSUE_COUNT = ISSUES rows, REASON iff non-OK).
+assert_contract() {
+  [ -f "$contract_script" ] || fail "contract checker not found at $contract_script"
+  bash "$contract_script" --validate - <<<"$2" >/dev/null \
+    || fail "$1: structured-output contract violated:\n$2"
 }
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -73,8 +82,11 @@ grep -q "^MCP_CONFIGURED=true$" <<<"$out_a" \
   || fail "parent-only layout must report MCP_CONFIGURED=true, got:\n$out_a"
 grep -q "^SERVER_COUNT=2$" <<<"$out_a" \
   || fail "parent-only layout must report SERVER_COUNT=2, got:\n$out_a"
-grep -q "^STATUS=N_A$" <<<"$out_a" \
-  && fail "parent-only layout must not report STATUS=N_A:\n$out_a"
+grep -q "^STATUS=OK$" <<<"$out_a" \
+  || fail "parent-only layout must report STATUS=OK:\n$out_a"
+grep -q "^CONFIGURED=true$" <<<"$out_a" \
+  || fail "parent-only layout must report CONFIGURED=true:\n$out_a"
+assert_contract "case A" "$out_a"
 grep -q "SERVER: name=podio-mcp file=${home_a}/ws/.mcp.json" <<<"$out_a" \
   || fail "expected podio-mcp attributed to ${home_a}/ws/.mcp.json, got:\n$out_a"
 grep -q "SERVER: name=github file=${home_a}/ws/.mcp.json" <<<"$out_a" \
@@ -84,7 +96,8 @@ grep -q "^MCP_SOURCE_COUNT=[1-9]" <<<"$out_a" \
 pass "ancestor .mcp.json is discovered and each server reports its source file"
 
 # -----------------------------------------------------------------------------
-# Case B: no .mcp.json anywhere under the fake home → still N_A (denominator)
+# Case B: no .mcp.json anywhere under the fake home → STATUS=OK with
+# CONFIGURED=false (formerly the non-canonical STATUS=N_A, #3580)
 # -----------------------------------------------------------------------------
 home_b="$(new_home home_b)"
 mkdir -p "${home_b}/ws/child"
@@ -92,10 +105,13 @@ mkdir -p "${home_b}/ws/child"
 out_b="$(bash "$check_script" --home-dir "$home_b" --project-dir "${home_b}/ws/child")"
 grep -q "^SERVER_COUNT=0$" <<<"$out_b" \
   || fail "no config anywhere must report SERVER_COUNT=0, got:\n$out_b"
-grep -q "^STATUS=N_A$" <<<"$out_b" \
-  || fail "no config anywhere must report STATUS=N_A, got:\n$out_b"
+grep -q "^STATUS=OK$" <<<"$out_b" \
+  || fail "no config anywhere must report STATUS=OK, got:\n$out_b"
+grep -q "^CONFIGURED=false$" <<<"$out_b" \
+  || fail "no config anywhere must report CONFIGURED=false, got:\n$out_b"
 grep -q "^MCP_CONFIGURED=false$" <<<"$out_b" \
   || fail "no config anywhere must report MCP_CONFIGURED=false, got:\n$out_b"
+assert_contract "case B" "$out_b"
 pass "walk does not invent servers when no .mcp.json exists"
 
 # -----------------------------------------------------------------------------
@@ -165,9 +181,8 @@ pass "walk stops at --home-dir"
 # Case G: invalid JSON in an ancestor goes through the same validation path as a
 # project/home file — it is read, reported VALID=false, and raises an
 # invalid_json issue naming the ancestor path.
-# (STATUS is deliberately not asserted here: check-mcp.sh has a pre-existing,
-# out-of-scope quirk where the server_count==0 branch overwrites check_status
-# with N_A, which predates and is independent of the ancestor walk.)
+# The server_count==0 branch used to overwrite the ERROR with N_A; it now
+# keeps the ERROR and only adds CONFIGURED=false (#3580).
 # -----------------------------------------------------------------------------
 home_g="$(new_home home_g)"
 mkdir -p "${home_g}/ws/child"
@@ -180,6 +195,11 @@ grep -q "SEVERITY=ERROR TYPE=invalid_json FILE=${home_g}/ws/.mcp.json" <<<"$out_
   || fail "expected invalid_json issue naming the ancestor file, got:\n$out_g"
 grep -q "^ISSUE_COUNT=1$" <<<"$out_g" \
   || fail "expected ISSUE_COUNT=1 for the malformed ancestor file, got:\n$out_g"
+grep -q "^STATUS=ERROR$" <<<"$out_g" \
+  || fail "an invalid .mcp.json with no servers must stay STATUS=ERROR, got:\n$out_g"
+grep -q "^REASON=invalid_json: " <<<"$out_g" \
+  || fail "expected REASON=invalid_json: ..., got:\n$out_g"
+assert_contract "case G" "$out_g"
 pass "ancestor files are validated like project and home files"
 
 # -----------------------------------------------------------------------------
@@ -202,5 +222,26 @@ grep -q "^  ENABLED: context7$" <<<"$out_h" \
 grep -q "ENABLED: 0=" <<<"$out_h" \
   && fail "verbose output must not print array indices (ENABLED: 0=…):\n$out_h"
 pass "enabledMcpjsonServers is read as an array of server names"
+
+# -----------------------------------------------------------------------------
+# Case I (#3580): WARN findings carry REASON= naming the first one, with the
+# (+N more) tail, and the block passes the contract validator.
+# -----------------------------------------------------------------------------
+home_i="$(new_home home_i)"
+mkdir -p "${home_i}/ws"
+cat > "${home_i}/ws/.mcp.json" <<'JSON'
+{
+  "mcpServers": {
+    "ghost": { "command": "definitely-not-a-real-command-3580" },
+    "needs-env": { "command": "bash", "env": { "MCP_TEST_UNSET_VAR_3580": "" } }
+  }
+}
+JSON
+out_i="$(MCP_TEST_UNSET_VAR_3580='' bash "$check_script" --home-dir "$home_i" --project-dir "${home_i}/ws")"
+grep -q "^STATUS=WARN$" <<<"$out_i" || fail "expected STATUS=WARN, got:\n$out_i"
+grep -q "^REASON=missing_command: .* (+1 more)$" <<<"$out_i" \
+  || fail "expected REASON=missing_command: ... (+1 more), got:\n$out_i"
+assert_contract "case I" "$out_i"
+pass "WARN findings carry REASON= and satisfy the output contract"
 
 echo "ALL TESTS PASSED"

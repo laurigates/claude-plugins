@@ -262,17 +262,22 @@ assert_contract "bad hooks files" "$out_bad"
 pass "missing and unwrapped plugin hooks files are flagged"
 
 # -----------------------------------------------------------------------------
-# Case 10: nothing configured is N_A; WARN output carries REASON=
+# Case 10: nothing configured is STATUS=OK + CONFIGURED=false (formerly the
+# non-canonical STATUS=N_A, #3580); WARN output carries REASON=
 # -----------------------------------------------------------------------------
 reset_sandbox
 out_none="$(run_check)"
 assert_has "none" "^HOOKS_CONFIGURED=false$" "$out_none"
-assert_has "none" "^STATUS=N_A$" "$out_none"
+assert_has "none" "^CONFIGURED=false$" "$out_none"
+assert_has "none" "^STATUS=OK$" "$out_none"
+assert_lacks "none" "^STATUS=N_A$" "$out_none"
 assert_lacks "none" "^REASON=" "$out_none"
+assert_contract "none" "$out_none"
+assert_has "configured" "^CONFIGURED=true$" "$(run_with_timeout ',"timeout":30')"
 assert_contract "timeout WARN" "$(run_with_timeout ',"timeout":300')"
 assert_has "timeout REASON" "^REASON=high_timeout: " "$(run_with_timeout ',"timeout":300')"
 assert_contract "OK" "$(run_with_timeout ',"timeout":30')"
-pass "N_A with no hooks; WARN carries REASON= and ISSUE_COUNT matches ISSUES rows"
+pass "OK + CONFIGURED=false with no hooks; WARN carries REASON= and ISSUE_COUNT matches ISSUES rows"
 
 # -----------------------------------------------------------------------------
 # Case 11: no enabledPlugins entry falls back to the manifest defaultEnabled

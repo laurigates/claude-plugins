@@ -14,9 +14,10 @@
 # Output keys: HOOKS_CONFIGURED, HOOK_COUNT (settings + plugin handlers),
 # SETTINGS_HOOK_COUNT, PLUGIN_HOOK_COUNT, PLUGINS_ENABLED (enabled plugins with
 # an install on disk, scanned for hooks; same definition as check-usage.sh),
-# PLUGINS_UNRESOLVED (set to true but no install for this project), STATUS (OK|WARN|ERROR, or N_A when nothing is configured
-# and nothing is wrong), REASON (WARN/ERROR only), ISSUE_COUNT, ISSUES.
-# Exit 0 on OK/WARN/N_A, 1 on ERROR (jq missing).
+# PLUGINS_UNRESOLVED (set to true but no install for this project), CONFIGURED
+# (false when no hook is configured; STATUS is then OK, formerly N_A, #3580),
+# STATUS (OK|WARN|ERROR), REASON (WARN/ERROR only), ISSUE_COUNT, ISSUES.
+# Exit 0 on OK/WARN, 1 on ERROR (jq missing).
 #
 # Usage: bash check-hooks.sh --home-dir <path> --project-dir <path> [--verbose]
 #
@@ -378,18 +379,20 @@ done <<<"$plugin_rows"
 # --- Summary ----------------------------------------------------------------
 total_hooks=$((settings_hook_count + plugin_hook_count))
 
+# Nothing configured is not a failure: STATUS stays OK and CONFIGURED=false
+# carries the nuance (#3580).
 if [ "$issue_count" -gt 0 ]; then
   check_status="WARN"
-elif [ "$total_hooks" -eq 0 ]; then
-  check_status="N_A"
 else
   check_status="OK"
 fi
 
 if [ "$total_hooks" -eq 0 ]; then
   echo "HOOKS_CONFIGURED=false"
+  echo "CONFIGURED=false"
 else
   echo "HOOKS_CONFIGURED=true"
+  echo "CONFIGURED=true"
 fi
 echo "HOOK_COUNT=${total_hooks}"
 echo "SETTINGS_HOOK_COUNT=${settings_hook_count}"

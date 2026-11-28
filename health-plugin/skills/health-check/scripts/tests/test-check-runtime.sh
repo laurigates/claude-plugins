@@ -11,12 +11,17 @@
 #   5. cleanupPeriodDays resolution: local > project > user > default 30;
 #      0 / non-integer → ERROR (it fails validation and pauses the sweep).
 #   6. history.jsonl over --history-warn-mb → WARN.
+#   7. Output contract (#3580): ISSUE_COUNT equals the rows under ISSUES:
+#      (INFO rows and a non-verbose roll-up row each count once), REASON= on
+#      WARN/ERROR names the first row at that severity; every case's block
+#      passes check-structured-output-contract.sh --validate.
 # Exit 0 on success, non-zero on failure.
 
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 check_script="${script_dir}/../check-runtime.sh"
+contract_script="${script_dir}/../../../../../scripts/check-structured-output-contract.sh"
 
 fail() { printf 'FAIL: %b\n' "$1" >&2; exit 1; }
 pass() { echo "PASS: $1"; }
@@ -38,6 +43,11 @@ reject() {  # $1 = output, $2 = regex, $3 = label
   grep -qE "$2" <<<"$1" && fail "$3: did not expect /$2/ in:\n$1"
   return 0
 }
+contract() {  # $1 = output, $2 = label
+  [ -f "$contract_script" ] || fail "contract checker not found at $contract_script"
+  bash "$contract_script" --validate - <<<"$1" >/dev/null \
+    || fail "$2: structured-output contract violated:\n$1"
+}
 
 # -----------------------------------------------------------------------------
 # Case 1: clean state
@@ -51,6 +61,7 @@ expect "$out1" '^LEGACY_PROJECT_HISTORY_ENTRIES=0$' "Case1"
 expect "$out1" '^HISTORY_JSONL_EXISTS=false$' "Case1"
 expect "$out1" '^CLEANUP_PERIOD_DAYS=30$' "Case1"
 expect "$out1" '^CLEANUP_PERIOD_SOURCE=default$' "Case1"
+contract "$out1" "Case1"
 pass "clean state → OK, default retention 30"
 
 # -----------------------------------------------------------------------------
@@ -62,6 +73,8 @@ out2="$(bash "$check_script" --home-dir "$home2" --project-dir "$tmp_root")"
 expect "$out2" '^STATUS=WARN$' "Case2"
 expect "$out2" '^PROJECTS_DEAD=1$' "Case2"
 expect "$out2" 'claude purge' "Case2 cleanup hint"
+expect "$out2" '^REASON=dead_projects: ' "Case2 REASON"
+contract "$out2" "Case2"
 pass "dead project → WARN with claude purge hint"
 
 # -----------------------------------------------------------------------------
@@ -75,7 +88,9 @@ expect "$out3" '^LEGACY_PROJECT_HISTORY_ENTRIES=3$' "Case3"
 expect "$out3" '^LEGACY_PROJECT_HISTORY_PROJECTS=1$' "Case3"
 expect "$out3" 'SEVERITY=INFO TYPE=legacy_project_history' "Case3"
 expect "$out3" '^STATUS=OK$' "Case3 (INFO must not raise STATUS)"
-expect "$out3" '^ISSUE_COUNT=0$' "Case3"
+expect "$out3" '^ISSUE_COUNT=1$' "Case3 (the INFO row is counted, #3580)"
+reject "$out3" '^REASON=' "Case3 (no REASON on OK)"
+contract "$out3" "Case3"
 pass "legacy projects[].history → INFO, STATUS stays OK"
 
 # -----------------------------------------------------------------------------
@@ -98,6 +113,7 @@ expect "$out4" '^HISTORY_JSONL_DEAD_PROJECT_ENTRIES=1$' "Case4"
 expect "$out4" '^HISTORY_JSONL_SWEPT=false$' "Case4 (not covered by cleanupPeriodDays)"
 expect "$out4" 'SEVERITY=INFO TYPE=history_dead_projects' "Case4"
 expect "$out4" '^STATUS=OK$' "Case4"
+contract "$out4" "Case4"
 pass "history.jsonl measured, dead/malformed counted, not swept"
 
 # -----------------------------------------------------------------------------
@@ -121,6 +137,8 @@ echo '{"cleanupPeriodDays": 0}' > "$proj5/.claude/settings.local.json"
 out5c="$(bash "$check_script" --home-dir "$home5" --project-dir "$proj5")"
 expect "$out5c" '^STATUS=ERROR$' "Case5 zero"
 expect "$out5c" 'SEVERITY=ERROR TYPE=invalid_cleanup_period' "Case5 zero"
+expect "$out5c" '^REASON=invalid_cleanup_period: ' "Case5 zero REASON"
+contract "$out5c" "Case5 zero"
 
 echo '{"cleanupPeriodDays": "thirty"}' > "$proj5/.claude/settings.local.json"
 out5d="$(bash "$check_script" --home-dir "$home5" --project-dir "$proj5")"
@@ -137,8 +155,25 @@ for _ in $(seq 1 1200); do echo "$line"; done > "$home6/.claude/history.jsonl"
 out6="$(bash "$check_script" --home-dir "$home6" --project-dir "$tmp_root" --history-warn-mb 1)"
 expect "$out6" 'SEVERITY=WARN TYPE=history_large' "Case6"
 expect "$out6" '^STATUS=WARN$' "Case6"
+contract "$out6" "Case6"
 out6b="$(bash "$check_script" --home-dir "$home6" --project-dir "$tmp_root")"
 reject "$out6b" 'TYPE=history_large' "Case6 default threshold"
 pass "history.jsonl over --history-warn-mb → WARN"
+
+# -----------------------------------------------------------------------------
+# Case 7: mixed WARN + ERROR rows: REASON names the first ERROR row, and the
+# (+N more) tail counts every row; two dead projects roll up into one row.
+# -----------------------------------------------------------------------------
+home7="${tmp_root}/h7"; proj7="${tmp_root}/p7"
+mkdir -p "$home7/.claude" "$proj7/.claude"
+jq -n '{projects: {"/nonexistent/gone-a": {}, "/nonexistent/gone-b": {}}}' > "$home7/.claude.json"
+echo '{"cleanupPeriodDays": 0}' > "$proj7/.claude/settings.local.json"
+out7="$(bash "$check_script" --home-dir "$home7" --project-dir "$proj7")"
+expect "$out7" '^STATUS=ERROR$' "Case7"
+expect "$out7" '^PROJECTS_DEAD=2$' "Case7"
+expect "$out7" '^ISSUE_COUNT=2$' "Case7 (one roll-up row + one ERROR row)"
+expect "$out7" '^REASON=invalid_cleanup_period: .* \(\+1 more\)$' "Case7 REASON"
+contract "$out7" "Case7"
+pass "mixed WARN/ERROR: REASON names the first ERROR row; ISSUE_COUNT = rows"
 
 echo "ALL PASS"

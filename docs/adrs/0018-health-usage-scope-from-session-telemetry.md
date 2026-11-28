@@ -2,18 +2,26 @@
 id: ADR-0018
 date: 2026-06-16
 created: 2026-06-16
-modified: 2026-11-10
+modified: 2026-11-28
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
 relates-to:
   - ADR-0016
-github-issues: []
+github-issues:
+  - 3580  # STATUS=SKIP replaced by STATUS=OK + SKIPPED=true, see Amendment (2026-11-28)
 ---
 
 # ADR-0018: Usage-Telemetry Scope for `health-plugin`
 
 > **Accepted (2026-11-02):** in effect. `health-check --scope=usage` and `health-plugin/skills/health-check/scripts/check-usage.sh` implement this decision.
+
+> **Amended in part (2026-11-28, issue #3580):** the insufficient-history path no
+> longer emits `STATUS=SKIP`. It emits `STATUS=OK` with `SKIPPED=true` and
+> `SKIP_REASON=insufficient_history: …`, because
+> `.claude/rules/structured-script-output.md` allows only `OK`/`WARN`/`ERROR`.
+> Passages that say `SKIP` are marked *(amended)*; the corrected contract is in
+> the [Amendment](#amendment-2026-11-28--skip-maps-onto-the-canonical-status-set).
 
 ## Context
 
@@ -91,8 +99,8 @@ The investigation also surfaced the load-bearing design constraint: this data is
 project directory per session, so `~/.claude/projects/<slug>/` held exactly **one**
 transcript and **no history** here. A usage scope is therefore only meaningful in
 a long-running **local** install; in a remote session it must degrade cleanly to
-`STATUS=SKIP` / "insufficient history" rather than reporting every skill as
-"never fired". This is the same local-leaning, read-only shape the existing
+`STATUS=SKIP` / "insufficient history" *(amended: now `STATUS=OK` +
+`SKIPPED=true`)* rather than reporting every skill as "never fired". This is the same local-leaning, read-only shape the existing
 `--scope=runtime` audit already adopts for `~/.claude.json`.
 
 ## Decision
@@ -100,8 +108,8 @@ a long-running **local** install; in a remote session it must degrade cleanly to
 **Add a read-only `--scope=usage` to `/health:check`, backed by a single
 deterministic script (`check-usage.sh`) that mines `~/.claude/projects/*/*.jsonl`
 for skill/tool invocation recency and emits the repo's standard structured
-output. It is local-leaning and degrades to `SKIP` when history is
-insufficient. It is read-only — there is no `--fix` path (consistent with
+output. It is local-leaning and degrades to `SKIP` *(amended: `STATUS=OK` +
+`SKIPPED=true`)* when history is insufficient. It is read-only — there is no `--fix` path (consistent with
 `--scope=runtime`).**
 
 The skill-listing-budget *sum* check and reference-graph cycle/orphan detection
@@ -155,8 +163,8 @@ ISSUES:
 | Flags | `--home-dir`, `--project-dir`, `--window-days N` (default 30), `--plugins-dir <path>`, `--skills-dir <path>`, `--min-transcripts N`, `--verbose` |
 | Inventory | Registry by default (`INVENTORY_SOURCE=registry`): the install record that applies to `--project-dir`, dropped when `enabledPlugins` sets it `false`; `--skills-dir` is the legacy filesystem scan, deduplicated by name |
 | Matching | Exact on `<plugin>:<name>`, the bare name, and `<ns>:<name>` / `<ns>:<rest>`; no substring matching |
-| Empty / no history | `HISTORY_AVAILABLE=false`, `STATUS=SKIP`, `ISSUE_COUNT=0`, exit 0 — never report all-never-fired on a fresh clone |
-| Remote sandbox | Same `SKIP` path triggers naturally (fresh clone → 1 transcript) — no `CLAUDE_CODE_REMOTE` branch needed, but documented |
+| Empty / no history | `HISTORY_AVAILABLE=false`, `SKIPPED=true`, `SKIP_REASON=insufficient_history: …`, `STATUS=OK`, `ISSUE_COUNT=0`, exit 0 — never report all-never-fired on a fresh clone *(amended; was `STATUS=SKIP`)* |
+| Remote sandbox | Same skip path triggers naturally (fresh clone → 1 transcript) — no `CLAUDE_CODE_REMOTE` branch needed, but documented |
 | Parallel-safe | `jq` over the JSONL set returns `[]`/0 and exits 0 on empty (`.claude/rules/parallel-safe-queries.md`) |
 | Read-only | No `--fix`; "never-fired" is **advisory** (a skill can be correct and rarely needed) |
 | Worktree prune | `find` excludes `*/.claude/worktrees/*` (the #1492 / #1548 prune class) |
@@ -183,7 +191,7 @@ This mirrors how `--scope=runtime` only *suggests* `jq` cleanups.
 
 ### Negative
 
-- **Local-only value** — near-useless in remote/web sessions (degrades to `SKIP`);
+- **Local-only value** — near-useless in remote/web sessions (degrades to a skip, `SKIPPED=true`);
   the headline feature only earns its keep on a long-running local install.
 - **Transcript-format coupling** — keys off the JSONL `tool_use name=="Skill"`
   shape, which is an undocumented harness internal that can change between Claude
@@ -198,6 +206,34 @@ This mirrors how `--scope=runtime` only *suggests* `jq` cleanups.
 | Auto-invoked (non-`/`) skills not captured if they register differently | Pilot validates capture against a known-invoked skill before trusting counts; documented as a known limitation if partial |
 | `jq` over hundreds of transcripts is slow | One batched `stat` plus a parallel `jq -R` stream joined by one `awk` (1,634 transcripts: 117 s before the change, 16–22 s after, measured 2026-11-10 on one machine); worktree clones pruned |
 | A recursive scan of the plugin cache counts every cached version and disabled plugins (5,756 enabled skills reported against 456 actually enabled, measured 2026-11-10) | Inventory from `installed_plugins.json` + `enabledPlugins`; regression cases 8–15 in `test-check-usage.sh` |
+
+## Amendment (2026-11-28) — SKIP maps onto the canonical status set
+
+Issue #3580 found that `STATUS=SKIP` broke the structured-output contract this ADR
+cites: `.claude/rules/structured-script-output.md` allows `OK`, `WARN` and `ERROR`
+only, and a rollup keyed on those three reads `SKIP` as unknown. Lauri chose on
+2026-11-21 to map onto the canonical set rather than extend the contract. The
+insufficient-history path now emits:
+
+```
+HISTORY_AVAILABLE=false
+SKIPPED=true
+SKIP_REASON=insufficient_history: fewer than 2 session transcripts under … (… skipped)
+STATUS=OK
+ISSUE_COUNT=0
+```
+
+| Key | Meaning |
+|---|---|
+| `SKIPPED=true` / `SKIPPED=false` | Whether the audit ran. A rollup shows "skipped" when it reads `SKIPPED=true`, not from `STATUS` |
+| `SKIP_REASON=` | `<TYPE>: <text>`, at most 160 characters of text. Not `REASON=`, which the contract reserves for `WARN`/`ERROR` and `check-structured-output-contract.sh --validate` rejects on `OK` |
+
+The former `SEVERITY=INFO TYPE=insufficient_history` row under `ISSUES:` is
+dropped, so `ISSUE_COUNT=0` equals the rows. In the same change the
+`window_exceeds_retention` INFO row is counted in `ISSUE_COUNT` and in the
+`REASON=` ` (+N more)` tail, and the script reports `STATUS=ERROR
+TYPE=bash_too_old` under bash older than 4.3 instead of stopping at
+`declare -A` with no `STATUS=` line.
 
 ### Follow-up (explicitly not in this ADR)
 

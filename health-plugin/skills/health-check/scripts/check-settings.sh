@@ -2,6 +2,9 @@
 # Check Settings Files
 # Validates JSON syntax and structure of all Claude Code settings files.
 # Usage: bash check-settings.sh --home-dir <path> --project-dir <path> [--verbose]
+#
+# Kept bash-3.2 safe (no associative arrays, no mapfile): an agent subshell
+# can start with a /usr/bin:/bin PATH, where `bash` is macOS's 3.2.
 
 set -uo pipefail
 
@@ -21,6 +24,9 @@ done
 : "${home_dir:=$HOME}"
 : "${project_dir:=$(pwd)}"
 
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/summary.sh"
+
 echo "=== SETTINGS FILES ==="
 
 issue_count=0
@@ -30,6 +36,7 @@ check_status="OK"
 if ! command -v jq >/dev/null 2>&1; then
   echo "JQ_AVAILABLE=false"
   echo "STATUS=ERROR"
+  echo "REASON=missing_tool: jq is required but not installed"
   echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_tool MSG=jq is required but not installed"
@@ -60,18 +67,21 @@ if [ ! -f "${project_dir}/.claude/settings.json" ]; then
   fi
 fi
 
-# Define settings files to check
-declare -A settings_files=(
-  ["USER_SETTINGS"]="${home_dir}/.claude/settings.json"
-  ["USER_LOCAL_SETTINGS"]="${home_dir}/.claude/settings.local.json"
-  ["PROJECT_SETTINGS"]="${project_dir}/.claude/settings.json"
-  ["PROJECT_LOCAL_SETTINGS"]="${project_dir}/.claude/settings.local.json"
-)
+# Map each reported key to its settings file (a case, not `declare -A`, so the
+# script runs under bash 3.2).
+settings_file_for() {
+  case "$1" in
+    USER_SETTINGS) echo "${home_dir}/.claude/settings.json" ;;
+    USER_LOCAL_SETTINGS) echo "${home_dir}/.claude/settings.local.json" ;;
+    PROJECT_SETTINGS) echo "${project_dir}/.claude/settings.json" ;;
+    PROJECT_LOCAL_SETTINGS) echo "${project_dir}/.claude/settings.local.json" ;;
+  esac
+}
 
 issues_list=""
 
 for settings_key in USER_SETTINGS USER_LOCAL_SETTINGS PROJECT_SETTINGS PROJECT_LOCAL_SETTINGS; do
-  settings_file="${settings_files[$settings_key]}"
+  settings_file="$(settings_file_for "$settings_key")"
 
   if [ ! -f "$settings_file" ]; then
     echo "${settings_key}=MISSING"
@@ -147,10 +157,5 @@ done
 echo "TOTAL_ALLOW_PATTERNS=${total_allow}"
 echo "TOTAL_DENY_PATTERNS=${total_deny}"
 
-echo "STATUS=${check_status}"
-echo "ISSUE_COUNT=${issue_count}"
-if [ -n "$issues_list" ]; then
-  echo "ISSUES:"
-  echo -e "$issues_list" | sed '/^$/d'
-fi
+emit_summary "$check_status" "$(echo -e "$issues_list")"
 echo "=== END SETTINGS FILES ==="

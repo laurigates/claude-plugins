@@ -74,7 +74,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/check-permissions-coverage.sh --home-dir "$HOME
 bash ${CLAUDE_SKILL_DIR}/scripts/check-marketplace-enrollment.sh --home-dir "$HOME"
 ```
 
-Parse `STATUS=`, `REASON=` (when present) and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`. Read each script's extra keys as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the file each finding came from: the settings or `.mcp.json` file, the plugin that declared a hook, the project path and both versions for `scope_lag`, the tool and task file for `missing_permission`.
+Parse `STATUS=`, `REASON=` (when present), `CONFIGURED=` (hooks, MCP) and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`. Read each script's extra keys as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the file each finding came from: the settings or `.mcp.json` file, the plugin that declared a hook, the project path and both versions for `scope_lag`, the tool and task file for `missing_permission`.
 
 #### 1b, 1c. SessionStart smoke test, pre-commit config
 
@@ -110,7 +110,7 @@ For `--scope=usage` or `all`:
 bash ${CLAUDE_SKILL_DIR}/scripts/check-usage.sh --home-dir "$HOME"
 ```
 
-Parse `STATUS=`, `REASON=` (when present), `ISSUES:` and the counts listed in [references/audit-scopes.md](references/audit-scopes.md#usage-scope), which also documents `--window-days` and `--verbose`. The audit is **read-only** and advisory (review candidates, not a delete list); it SKIPs on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it.
+Parse `STATUS=`, `REASON=` (when present), `ISSUES:` and the counts listed in [references/audit-scopes.md](references/audit-scopes.md#usage-scope), which also documents `--window-days` and `--verbose`. The audit is **read-only** and advisory (review candidates, not a delete list); it reports `SKIPPED=true` (cause in `SKIP_REASON=`) on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it.
 
 ### Step 3: Report findings
 
