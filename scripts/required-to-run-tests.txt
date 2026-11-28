@@ -59,6 +59,15 @@ git-plugin/hooks/test-check-branch-sync-on-push.sh
 git-plugin/hooks/test-check-pr-merge-method.sh
 hooks-plugin/hooks/test-secret-protection.sh
 
+# zsh  (workflow: "Install ripgrep, original-awk and zsh")
+#
+# The guard's fixture table runs every row in the real shells, and four rows
+# (`local $names`) list parameters in zsh only. Without zsh the suite runs the
+# bash half and ends on one SKIP line, so a skip here means those four rows
+# had no shell behind them (#3629). test-bare-declaration-guard-zsh-floor.sh
+# pins that this entry turns such a run into an ERROR.
+hooks-plugin/hooks/test-bare-declaration-guard.sh
+
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
 
