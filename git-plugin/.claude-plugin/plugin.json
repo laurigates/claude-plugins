@@ -54,6 +54,8 @@
     "release-as",
     "triage",
     "backlog",
-    "grooming"
+    "grooming",
+    "issue-search",
+    "social-preview"
   ]
 }

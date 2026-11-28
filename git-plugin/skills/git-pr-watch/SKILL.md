@@ -5,7 +5,7 @@ args: "[--unsubscribe] [<pr-number-or-url>]"
 argument-hint: "[--unsubscribe] [<pr-number-or-url>]"
 allowed-tools: mcp__github__subscribe_pr_activity, mcp__github__unsubscribe_pr_activity, Bash(gh pr view *), Read, TodoWrite
 created: 2026-06-17
-modified: 2026-08-21
+modified: 2026-11-28
 reviewed: 2026-06-17
 ---
 
@@ -21,14 +21,14 @@ unrelated work on top of unaddressed feedback.
 |------------------------|-----------------------------|
 | You just opened a PR and want to watch it for reviews / CI | You only need a one-time "is this branch stale?" check → `/git:pr-sync-check` |
 | The user says "watch / monitor / babysit / autofix this PR" | You want to process **already-pending** feedback across many PRs now → `/git:pr-feedback --all` |
-| You want to **stop** watching a PR (`--unsubscribe`) | You need a blocking wait on one CI run → `/git:gh-workflow-monitoring` |
+| You want to **stop** watching a PR (`--unsubscribe`) | You need a blocking wait on one CI run → `github-actions-plugin:gh-workflow-monitoring` |
 
 ## Availability
 
 PR-activity subscription is delivered by the GitHub MCP server and the harness's
 webhook routing — it is primarily a **remote / Claude Code on the web** capability
 (see `.claude/rules/sandbox-guidance.md`). If the `mcp__github__subscribe_pr_activity`
-tool is unavailable in this session, fall back to `/git:gh-workflow-monitoring`
+tool is unavailable in this session, fall back to `github-actions-plugin:gh-workflow-monitoring`
 (blocking `gh run watch`), and recommend the user run `/git:pr-feedback` for a
 one-off review-thread pass.
 
@@ -85,4 +85,4 @@ or **CLOSED**, or the user asks you to stop — then `--unsubscribe`.
 - `/git:pr-feedback` — the react-to-review-threads engine; user-invocable only, so recommend it rather than invoking it
 - `/git:pr-sync-check` — one-shot "is this branch still live and in sync?" check
 - `/git:fix-pr` — fix failing PR checks
-- `/git:gh-workflow-monitoring` — blocking `gh run watch` for a single CI run
+- `github-actions-plugin:gh-workflow-monitoring` — blocking `gh run watch` for a single CI run

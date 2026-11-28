@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agents. Use when querying PRs,
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-11-12
+modified: 2026-11-28
 reviewed: 2026-04-25
 ---
 
@@ -15,7 +15,7 @@ reviewed: 2026-04-25
 | Use this skill when... | Use the alternative when... |
 |---|---|
 | Querying PRs, issues, runs, or repo metadata with `gh` and need JSON output | Use `git-cli-agentic` for porcelain-mode local git queries (status, diff, log) |
-| Inspecting PR checks, mergeable status, or fetching failed CI logs | Use `gh-workflow-monitoring` to actively watch a run until it completes |
+| Inspecting PR checks, mergeable status, or fetching failed CI logs | Use `github-actions-plugin:gh-workflow-monitoring` to actively watch a run until it completes |
 | Resolving a github.com URL into an `gh api` call or working with sub-issues | Use `git-issue-hierarchy` for sub-issue add/remove/dependency-graph operations |
 | Looking up label, repo, or workflow metadata via `gh` JSON commands | Use `github-labels` to actually apply or create labels on issues/PRs |
 
@@ -113,7 +113,7 @@ RUN_ID=$(gh run list -L 1 --json databaseId --jq '.[0].databaseId')
 gh run watch $RUN_ID --compact --exit-status
 ```
 
-See **gh-workflow-monitoring** skill for comprehensive workflow watching patterns.
+Full watching patterns: `github-actions-plugin:gh-workflow-monitoring`.
 
 ### Failed Logs
 

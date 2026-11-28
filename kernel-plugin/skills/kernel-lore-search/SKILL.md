@@ -19,7 +19,7 @@ message.
 | Use this skill when... | Use something else when... |
 |---|---|
 | Checking whether a problem was reported or patched before | Reading the code itself at a tag: `/kernel:source-history` |
-| Verifying a quote before citing a maintainer | Searching GitHub issues of a userspace project: `github-actions-plugin:github-issue-search` |
+| Verifying a quote before citing a maintainer | Searching GitHub issues of a userspace project: `git-plugin:github-issue-search` |
 | Confirming your own message reached the archive | Writing or sending the report: `/kernel:list-report` |
 
 ## 1. Use the Mirror, Not the Web Interface

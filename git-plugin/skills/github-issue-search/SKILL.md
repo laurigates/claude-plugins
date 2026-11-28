@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-14
+modified: 2026-11-28
 reviewed: 2026-04-25
 name: github-issue-search
 description: "Search GitHub issues for solutions and workarounds. Use when encountering errors with OSS libraries, finding upstream bug workarounds, or researching known issues."
@@ -12,7 +12,7 @@ allowed-tools: Read, Grep, Glob
 
 ## When to Use This Skill
 
-| Use this skill when... | Use github-actions-inspection instead when... |
+| Use this skill when... | Use `github-actions-plugin:github-actions-inspection` instead when... |
 |---|---|
 | Looking up upstream bug reports for an OSS library error message | Investigating a failing workflow run in your own repository |
 | Finding closed-issue workarounds before filing a new bug | Pulling logs, statuses, or job conclusions from `gh run` |

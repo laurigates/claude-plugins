@@ -52,14 +52,13 @@ All skills are located in the `skills/` directory:
   - Performance timing analysis
   - Common failure pattern diagnosis
 
-#### GitHub Integration Skills
+- **gh-workflow-monitoring** - Watching a run until it finishes
+  - Blocking `gh run watch` instead of a polling loop or timeout
+  - `--exit-status` to chain on a run's outcome
+  - Finding the latest in-progress run for a workflow, and waiting for a pushed
+    head's checks to register before watching them
 
-- **github-issue-search** - Search for solutions in GitHub issues
-  - Error message-based searching
-  - Symptom and version-specific queries
-  - Workaround discovery
-  - Repository identification from stack traces
-  - Best practices for effective searching
+#### Auto-Fix Skills
 
 - **github-workflow-auto-fix** - Automated CI failure detection and fixing
   - Triggers on workflow failures via `workflow_run` events
@@ -70,13 +69,6 @@ All skills are located in the `skills/` directory:
   - `--reusable` / `--caller` generate a `workflow_call` template (customizable
     auto-fix criteria, fan-out across PRs, cross-repository usage) — see the
     skill's `REFERENCE.md`
-
-- **github-social-preview** - Generate repository social preview images
-  - Open Graph image creation for repositories
-  - 1280x640 optimized preview images
-  - Integration with nano-banana-pro
-  - Multiple design templates
-  - Post-generation optimization
 
 #### CI Diagnosis Skills
 
@@ -139,23 +131,11 @@ Located in `agents/`:
 ### Debugging and Monitoring
 
 - Inspect workflow run status and logs
+- Block until an in-progress run finishes with `gh run watch`
 - Analyze test failures and identify flaky tests
 - Extract error messages and stack traces
 - Monitor workflow performance
 - Compare working vs failing runs
-
-### Issue Management
-
-- Search GitHub issues for error solutions
-- Find workarounds for known bugs
-- Identify relevant discussions and fixes
-- Track upstream issues
-
-### Repository Enhancement
-
-- Generate professional social preview images
-- Create Open Graph images for better sharing
-- Optimize images for social media platforms
 
 ## Getting Started
 
@@ -209,19 +189,6 @@ gh run view <run-id> --log-failed
 # Extract errors
 gh run view <run-id> --log-failed | grep -i "error\|failed"
 ```
-
-### Searching for Solutions
-
-When encountering an error:
-
-1. Extract key terms from error message
-2. Identify repository from stack trace or package.json
-3. Search GitHub issues:
-   ```
-   "error keywords repo:org/repo is:closed"
-   ```
-4. Review high-priority results (recently updated, many comments)
-5. Extract and test workarounds
 
 ### Development Automation
 
@@ -289,20 +256,6 @@ jobs:
             - API design
             - Database optimization
             - Security vulnerabilities
-```
-
-### Issue Search Integration
-
-```javascript
-// In your debugging workflow
-const { searchIssues } = require('@octokit/plugin-search-issues');
-
-// Search for error in repository
-const results = await searchIssues({
-  query: "ENOENT no such file repo:nodejs/node is:closed",
-  sort: "updated",
-  order: "desc"
-});
 ```
 
 ## Configuration
@@ -385,7 +338,9 @@ gh run view <run-id> --log-failed | grep -E "FAIL|Error" -A 5
 
 This plugin works well with:
 
-- **git-plugin** - For Git operations and repository management
+- **git-plugin** - For Git operations and repository management; it also holds
+  `github-issue-search` (upstream issues for an error) and `github-social-preview`
+  (repository preview images), which moved there from this plugin
 - **testing-plugin** - For test execution and analysis
 - **code-quality-plugin** - For linting and code quality checks
 - **python-plugin** / **typescript-plugin** - For language-specific workflows

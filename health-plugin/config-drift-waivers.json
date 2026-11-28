@@ -275,7 +275,7 @@
   },
   {
    "kind": "review_staleness",
-   "path": "github-actions-plugin/skills/github-social-preview/SKILL.md",
+   "path": "git-plugin/skills/github-social-preview/SKILL.md",
    "hash": "d0f54a71650a916c",
    "reason": "Body changed by 23 line(s) since the review on 2025-12-16, all of it mechanical: the script path made repo-relative and use/don't-use bullets converted to a table. The reviewed content is otherwise intact.",
    "finding": "review_staleness: github-social-preview changed 179d after its declared reviewed:2025-12-16"

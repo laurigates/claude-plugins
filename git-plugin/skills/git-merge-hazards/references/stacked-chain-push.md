@@ -125,7 +125,7 @@ claude-plugins #1979→#1987):
   author is neither you nor a bot. To only wait, for a child pushed before its
   base merges or a PR someone else wrote, use
   `gh pr checks <n> --watch --fail-fast` (or `gh run watch`, per
-  `git-plugin:gh-workflow-monitoring`). It reports only the checks registered so
+  `github-actions-plugin:gh-workflow-monitoring`). It reports only the checks registered so
   far and does not pin the head SHA, so its exit 0 is not a merge gate: merge
   through `merge-chain.sh`.
 

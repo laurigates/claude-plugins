@@ -330,7 +330,7 @@ remaining members before keeping any of the unit's work.
   "does not close #12" closes it.
 - Open it ready for review, not draft. Do not merge it, and do not close the issue.
 - Verify CI: after opening, run `gh pr checks <n> --watch --fail-fast` (per
-  `git-plugin:gh-workflow-monitoring`) rather than polling the rollup by hand. It
+  `github-actions-plugin:gh-workflow-monitoring`) rather than polling the rollup by hand. It
   reports only the checks registered so far, so "no checks reported" right after a
   push means the jobs have not been created yet, not that they passed; run it
   again once they appear. If a check
