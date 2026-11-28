@@ -83,6 +83,32 @@ relist_row=$(grep -n '^| M[0-9] .*list-sweep-prs.sh --resolve-blockers' "$proc" 
 if [[ -n "$ts_row" && -n "$relist_row" && "$ts_row" -lt "$relist_row" ]]; then pass "merge-procedure takes the timestamp before the re-list"
 else bad "merge-procedure must order the timestamp row ($ts_row) before the re-list row ($relist_row)"; fi
 
+# Regression (#3748): M1 precedes the last re-list, and merge-chain.sh's guard compares commit
+# dates, so a commit dated before M1 but pushed after the last re-list merged unreviewed. Lauri
+# chose option 3: immediately before every merge-chain.sh call, read each chunk PR's live
+# headRefOid, compare it with the head G5 cleared (the roster head_sha, equal to G5's expected
+# head for a passing PR) and drop the PRs that moved. No merge-chain.sh or guard change.
+m6_row=$(grep -E '^\| M6 ' "$proc" | head -1)
+if grep -qF 'gh pr view <n> -R <owner>/<repo> --json headRefOid' <<<"$m6_row" \
+   && grep -qF 'head_sha' <<<"$m6_row" && grep -qiF 'drop' <<<"$m6_row" \
+   && grep -qiF 'every chunk, including the first' <<<"$m6_row" \
+   && [[ "$(grep -bo -- '--json headRefOid' <<<"$m6_row" | head -1 | cut -d: -f1)" -lt "$(grep -bo 'merge-chain.sh' <<<"$m6_row" | tail -1 | cut -d: -f1)" ]]; then
+  pass "merge-procedure M6 compares each PR's headRefOid with the gated head before every merge-chain.sh call"
+else bad "merge-procedure M6 must read each chunk PR's headRefOid, compare it with the roster head_sha G5 cleared, and drop moved PRs before every merge-chain.sh call, including the first"; fi
+if ! grep -qF 'still slips through' "$proc" && grep -qF 'head moved' "$proc"; then
+  pass "merge-procedure no longer leaves the pushed-after-re-list commit to the date guard"
+else bad "merge-procedure must replace the 'still slips through' residual with the head comparison"; fi
+step4_6=$(awk '/^6\. For each `plan.merge` chunk/{on=1} /^7\. /{on=0} on' <<<"$step4")
+hc=$(grep -n 'gh pr view 12 -R <owner>/<repo> --json headRefOid' <<<"$step4_6" | head -1 | cut -d: -f1 || true)
+mc=$(grep -n 'merge-chain.sh --repo' <<<"$step4_6" | head -1 | cut -d: -f1 || true)
+if [[ -n "$hc" && -n "$mc" && "$hc" -lt "$mc" ]]; then pass "SKILL Step 4.6 reads headRefOid before the merge-chain.sh call"
+else bad "SKILL Step 4.6 must read each PR's headRefOid (line $hc) before the merge-chain.sh call (line $mc)"; fi
+# The decision excludes a script or guard change: merge-chain.sh keeps its accepted flags.
+mch="$repo_root/git-plugin/skills/git-merge-hazards/scripts/merge-chain.sh"
+flags=$(grep -oE '^    --[a-z-]+(\|--[a-z-]+)*\)$' "$mch" | head -1 || true)
+if [[ "$flags" == '    --repo|--prs|--review-ts|--method|--timeout|--fetch-dir)' ]]; then pass "merge-chain.sh accepts exactly the flags the merge guard knows"
+else bad "merge-chain.sh flag set changed: $flags"; fi
+
 # Regression: Step 2 pooled every run's unverified claims into one verify-only re-run,
 # which aborts over pr-review's 6-PR cap, and its join example dropped review-2.json.
 step2=$(awk '/^### Step 2: Review/{on=1} /^### Step 3: Fix/{on=0} on' "$skill_md")

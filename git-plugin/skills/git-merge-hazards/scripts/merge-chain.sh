@@ -63,6 +63,12 @@
 # (base_is_upstream_pr_head), because merging it pushes into that upstream PR
 # (#3445). An unreadable repository or parent PR list is ERROR.
 #
+# Cloud sessions: before any PR, one `gh api graphql` probe. When a Claude Code
+# cloud session's proxy refuses it (its "GraphQL is not available" message, or
+# an HTTP 403 under CLAUDE_CODE_REMOTE=true), no PR is read: the summary is
+# STATUS=ERROR with TYPE=CLOUD_RESTRICTED, REMAINING= is every PR, and REASON=
+# points at references/merge-shepherd.md#no-gh-cloud-session, the MCP route.
+#
 # Exit: 0 when STATUS is OK or WARN, 1 on ERROR, 2 on a usage error.
 
 set -uo pipefail
@@ -431,16 +437,37 @@ process_pr() {
   result ERROR "not_merged_after_merge: gh pr merge exited 0 but the PR is not MERGED (merge queue or auto-merge?)"
 }
 
+# Cloud-session probe (#3757). A Claude Code cloud session's GitHub proxy
+# refuses GraphQL, which `gh pr view`, `gh pr update-branch`, `gh pr merge` and
+# the §6 guard all use, while REST (`gh api user`) still works. Without this
+# probe the first PR stops as ERROR read_failed, which reads like a flaky API.
+# Classified as session-survey.sh does (#3488): the proxy's own wording, or a
+# 403 under CLAUDE_CODE_REMOTE=true. Any other probe failure is left to the
+# per-PR reads, which fail closed on their own.
+mc_cloud_restricted() {
+  local err
+  err=$(gh api graphql -f query='{viewer{login}}' 2>&1 >/dev/null) && return 1
+  grep -qi 'GraphQL is not available' <<<"$err" && return 0
+  [ "${CLAUDE_CODE_REMOTE:-}" = true ] && grep -qE 'HTTP 403' <<<"$err"
+}
+MC_CLOUD_MSG="gh cannot use GitHub GraphQL here (Claude Code cloud session); merge by the MCP route in references/merge-shepherd.md#no-gh-cloud-session"
+
 # ---- main -----------------------------------------------------------------
 
-MC_SELF=$(gh api user --jq .login 2>/dev/null) || MC_SELF=""
 MC_MERGED=()
 MC_SKIPPED=()
 MC_ROWS=()
 MC_STOPPED_AT=""
 MC_REMAINING=""
+MC_SELF=""
 
-if [ -z "$MC_SELF" ]; then
+if mc_cloud_restricted; then
+  MC_STOPPED_AT="${MC_PR_LIST[0]}"
+  MC_ROWS+=("ERROR|CLOUD_RESTRICTED|${MC_PR_LIST[0]}|$MC_CLOUD_MSG")
+  MC_REMAINING=$(IFS=,; echo "${MC_PR_LIST[*]}")
+  echo "merge-chain.sh: $MC_CLOUD_MSG ($(cd "$(dirname "$0")/.." && pwd)/references/merge-shepherd.md)" >&2
+elif ! MC_SELF=$(gh api user --jq .login 2>/dev/null) || [ -z "$MC_SELF" ]; then
+  MC_SELF=""
   MC_STOPPED_AT="${MC_PR_LIST[0]}"
   MC_ROWS+=("ERROR|ERROR|${MC_PR_LIST[0]}|self_unknown: gh api user failed, so authorship cannot be checked")
   MC_REMAINING=$(IFS=,; echo "${MC_PR_LIST[*]}")

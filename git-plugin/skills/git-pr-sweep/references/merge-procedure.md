@@ -13,14 +13,18 @@ guards `gh pr ready`, so the author gate (G2) has already decided who may be rea
 | M3 | script | `merge-gate.sh roster.json review.json fix-<i>.json...` into `gate.json` |
 | M4 | pr-merge | only when `gate.json` has `ready` drafts: one reader per draft, then the rebuilt `plan.json` |
 | M5 | main session | `gh pr ready <n> -R <owner>/<repo>` for each `plan.ready`, one literal number per call, then `gh pr view <n> -R <owner>/<repo> --json isDraft` to confirm (readying makes no commit) |
-| M6 | main session | per `plan.merge` chunk, one background `merge-chain.sh` call with the M1 timestamp; before every chunk after the first, repeat M2–M3 and drop any PR that no longer passes |
+| M6 | main session | per `plan.merge` chunk: before every chunk after the first, repeat M2–M3 and drop any PR that no longer passes; then, before every chunk, including the first, run `gh pr view <n> -R <owner>/<repo> --json headRefOid` for each PR in it and drop every PR whose `headRefOid` differs from its `head_sha` in the roster M3 gated (for a passing PR, the head G5 cleared), reporting it for Lauri as head moved; then one background `merge-chain.sh` call with the M1 timestamp and the remaining PRs |
 | M7 | main session | read the `=== MERGE CHAIN ===` block |
 | M8 | conditional | one repair on CONFLICT or CI_RED, then resume the chunk |
 
 A timestamp taken after the re-list would leave a gap: a push between the re-list and the
 timestamp is older than it, and merge-chain.sh compares commits only with `--review-ts` and the head
 CI settled on, never with the head merge-gate.sh cleared. A commit dated before M1 but pushed after
-the last re-list still slips through; re-gating before each chunk keeps that window to seconds.
+the last re-list is older than the timestamp, so that guard passes it (#3748). M6's head comparison
+closes most of that window: the read happens just before the call, after pr-merge's readers and
+`gh pr ready`, and a PR whose head moved is dropped as head moved, never merged. A push landing
+between that read and merge-chain.sh's `update-branch` is still judged only by commit date; the
+window is the seconds between the two calls.
 
 ## merge-chain.sh invocation
 

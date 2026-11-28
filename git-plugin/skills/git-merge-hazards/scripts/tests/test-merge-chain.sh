@@ -119,6 +119,16 @@ case "$1 $2" in
     fi
     jq 'with_entries(select(.key | startswith("_") | not))' "$(f "$n")"; exit 0 ;;
   "api graphql")
+    # The GraphQL probe ({viewer{login}}) merge-chain.sh runs before any PR.
+    # STUB_GRAPHQL_BLOCKED: the cloud proxy's refusal, verbatim in shape (#3757);
+    # STUB_GRAPHQL_403: a bare 403 with no proxy wording.
+    if [[ "$*" == *viewer* ]]; then
+      if [ -n "${STUB_GRAPHQL_BLOCKED:-}" ]; then
+        echo "gh: GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...). (HTTP 403)" >&2; exit 1
+      fi
+      [ -n "${STUB_GRAPHQL_403:-}" ] && { echo "gh: Forbidden (HTTP 403)" >&2; exit 1; }
+      echo '{"data":{"viewer":{"login":"me"}}}'; exit 0
+    fi
     n=""; for a in "$@"; do case "$a" in number=*) n="${a#number=}" ;; esac; done
     [ -f "$(f "$n")" ] || { echo "GraphQL: Could not resolve to a PullRequest" >&2; exit 1; }
     if [ "$(jq -r '._fail_commits_read // false' "$(f "$n")")" = true ]; then
@@ -205,6 +215,9 @@ STUB
 chmod +x "$T/bin/method-stub"
 
 export PATH="$T/bin:$PATH"
+# A cloud session exports CLAUDE_CODE_REMOTE=true; the cases below set it
+# themselves, so the run does not depend on where the test runs (#3757).
+unset CLAUDE_CODE_REMOTE
 export STUB_STATE="$T/state" STUB_LOG="$T/gh.log" STUB_SELF=me
 export MERGE_CHAIN_POLL_SECONDS=0
 export MERGE_CHAIN_METHOD_CMD="$T/bin/method-stub"
@@ -630,6 +643,58 @@ run_chain 602
 unset STUB_SELF_FAIL
 expect_has "unknown self -> ERROR before any PR" "$(summary)" "^REASON=ERROR: #602 self_unknown"
 expect_no "no PR touched without a self login" "$LOG" "pr (view|update-branch|merge)"
+
+# #3757: in a Claude Code cloud session gh reaches REST only; the proxy refuses
+# GraphQL, which gh pr view / update-branch / merge and the §6 guard all use.
+# The script probes once before any PR and stops with a pointer to the MCP
+# route, instead of reading the first refusal as a per-PR read_failed.
+SHEP="$SKILL_DIR/references/merge-shepherd.md"
+mkpr 801
+mkpr 802
+export STUB_GRAPHQL_BLOCKED=1
+run_chain 801,802
+unset STUB_GRAPHQL_BLOCKED
+expect_line "cloud-restricted gh -> exit 1" "$RC" "1"
+expect_line "cloud-restricted gh -> STATUS=ERROR" "$(summary)" "STATUS=ERROR"
+expect_has "REASON names CLOUD_RESTRICTED and the merge-shepherd subsection" "$(summary)" \
+  "^REASON=CLOUD_RESTRICTED: #801 .*references/merge-shepherd\.md#no-gh-cloud-session"
+expect_line "every PR remains" "$(summary)" "REMAINING=801,802"
+expect_line "the stop is the first PR" "$(summary)" "STOPPED_AT=801"
+expect_line "nothing merged" "$(summary)" "MERGED="
+expect_has "the probe ran" "$LOG" "^STUB_GH api graphql .*viewer"
+expect_no "no PR read, updated or merged under a refused GraphQL" "$LOG" "pr (view|update-branch|merge)"
+expect_no "no per-PR section for an unread PR" "$OUT" "^=== PR 80[12] ===$"
+validate_summary "cloud-restricted summary passes the validator"
+
+# A bare 403 on the probe is the proxy only in a remote session, as
+# session-survey.sh reads it (#3488); locally it is not called cloud-restricted.
+export STUB_GRAPHQL_403=1
+mkpr 803
+CLAUDE_CODE_REMOTE=true run_chain 803
+expect_has "remote session + 403 on the probe -> CLOUD_RESTRICTED" "$(summary)" "^REASON=CLOUD_RESTRICTED: #803 "
+mkpr 804
+run_chain 804
+unset STUB_GRAPHQL_403
+expect_no "local 403 on the probe is not called cloud-restricted" "$OUT" "CLOUD_RESTRICTED"
+expect_line "local 403 on the probe leaves the per-PR paths to decide" "$(section 804)" "STATUS=MERGED"
+
+# Control: a working GraphQL probe runs before the first PR read and changes nothing.
+mkpr 805
+run_chain 805
+expect_line "working probe: the PR merges" "$(section 805)" "STATUS=MERGED"
+expect_line "the probe precedes the first PR read" \
+  "$(grep -oE 'api graphql -f query=\{viewer|pr view 805' <<<"$LOG" | head -n 2 | tr '\n' '|')" \
+  "api graphql -f query={viewer|pr view 805|"
+# The pointer resolves: merge-shepherd.md carries the heading the anchor names,
+# and that subsection names the MCP route and its gaps.
+# shellcheck disable=SC2016 # the backticks are literal markdown, not expansions
+if grep -qxF '## No `gh` (cloud session)' "$SHEP"; then ok "merge-shepherd.md has the 'No gh (cloud session)' heading the anchor points at"; else bad "merge-shepherd.md lacks the '## No \`gh\` (cloud session)' heading"; fi
+cloud_sec=$(awk '/^## No `gh` \(cloud session\)/{on=1; next} /^## /{on=0} on' "$SHEP")
+for want in 'mcp__github__update_pull_request_branch' 'expectedHeadSha' 'mcp__github__enable_pr_auto_merge' \
+  'git ls-remote origin refs/heads/main' '§6' 'squash'; do
+  if grep -qF -- "$want" <<<"$cloud_sec"; then ok "cloud subsection names $want"; else bad "cloud subsection does not name $want"; fi
+done
+if grep -qF '#no-gh-cloud-session' "$CHAIN"; then ok "merge-chain.sh carries the anchor"; else bad "merge-chain.sh does not point at #no-gh-cloud-session"; fi
 
 # ---- 8. usage ---------------------------------------------------------------
 echo "usage"
