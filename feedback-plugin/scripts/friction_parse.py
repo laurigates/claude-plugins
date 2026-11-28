@@ -78,7 +78,7 @@ INTERRUPT_RE = re.compile(r"^\[Request interrupted")
 # the same text behind "Error: "). Anchored at the start, so a failing command
 # whose OUTPUT quotes a denial (a grep over transcripts) stays a tool_error.
 CLASSIFIER_DENIAL_RE = re.compile(
-    r'^\W*(?:Error:\s*)?Permission for this action (?:was|has been) denied by '
+    r"^\W*(?:Error:\s*)?Permission for this action (?:was|has been) denied by "
     r"the Claude Code auto[- ]mode classifier",
     re.I,
 )

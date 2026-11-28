@@ -326,7 +326,9 @@ def test_plain_bash_error_still_classifies_as_error_bash():
 # --------------------------------------------------------------------------
 
 CLASSIFIER_FIXTURE = FIXTURES / "classifier_denial"
-CLASSIFIER_LEAD = "Permission for this action was denied by the Claude Code auto mode classifier"
+CLASSIFIER_LEAD = (
+    "Permission for this action was denied by the Claude Code auto mode classifier"
+)
 CLUSTER_SCRIPT = HERE.parent / "friction_cluster.py"
 
 
@@ -387,24 +389,34 @@ def test_classifier_needle_table_keeps_other_as_fallback():
     mod = _parser_module()
     lead = CLASSIFIER_LEAD + "."
     assert (
-        mod.canonical_signature("classifier_denial", "Bash", f"{lead} Reason: [Undermining Oversight].")
+        mod.canonical_signature(
+            "classifier_denial", "Bash", f"{lead} Reason: [Undermining Oversight]."
+        )
         == "classifier:undermining-oversight"
     )
     assert (
         mod.canonical_signature(
-            "classifier_denial", "Bash", f"{lead} Reason: [Destructive or Unwanted Actions]."
+            "classifier_denial",
+            "Bash",
+            f"{lead} Reason: [Destructive or Unwanted Actions].",
         )
         == "classifier:destructive-or-unwanted"
     )
     assert (
-        mod.canonical_signature("classifier_denial", "Bash", f"{lead} Reason: [Brand New].")
+        mod.canonical_signature(
+            "classifier_denial", "Bash", f"{lead} Reason: [Brand New]."
+        )
         == "classifier:other"
     )
-    assert mod.canonical_signature("classifier_denial", "Bash", lead) == "classifier:other"
+    assert (
+        mod.canonical_signature("classifier_denial", "Bash", lead) == "classifier:other"
+    )
     # Needle text outside the reason clause must not key the event.
     assert (
         mod.canonical_signature(
-            "classifier_denial", "Bash", f"{lead} Reason: [Brand New]. Undermining Oversight"
+            "classifier_denial",
+            "Bash",
+            f"{lead} Reason: [Brand New]. Undermining Oversight",
         )
         == "classifier:other"
     )
@@ -447,7 +459,13 @@ def test_dual_parser_classifier_split_moves_only_denials():
     """
     base_ref = os.environ.get("FRICTION_DUAL_PARSER_BASE", "origin/main")
     show = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "show", f"{base_ref}:{PARSER.relative_to(REPO_ROOT)}"],
+        [
+            "git",
+            "-C",
+            str(REPO_ROOT),
+            "show",
+            f"{base_ref}:{PARSER.relative_to(REPO_ROOT)}",
+        ],
         capture_output=True,
         text=True,
     )
@@ -466,7 +484,9 @@ def test_dual_parser_classifier_split_moves_only_denials():
         assert {k: o[k] for k in same} == {k: n[k] for k in same}, (o, n)
         if o == n:
             continue
-        assert n["kind"] == "classifier_denial" and n["signature"].startswith("classifier:"), n
+        assert n["kind"] == "classifier_denial" and n["signature"].startswith(
+            "classifier:"
+        ), n
         assert o["kind"] == "tool_error" and o["signature"].startswith("error:"), o
         moved += 1
     # Post-merge the baseline keys denials too and nothing moves.
