@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-11-14
+modified: 2026-11-28
 reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
@@ -93,9 +93,9 @@ Delegate to `skills/blueprint-migration/migrations/v3.2-to-v3.3.md` (summary: [r
 
 Delegate to `skills/blueprint-migration/migrations/v3.3-to-v3.4.md` (summary: [references/v3.3-to-v3.4-summary.md](references/v3.3-to-v3.4-summary.md)). In `$NONINTERACTIVE` mode take the suggested `autonomy_level`, never higher.
 
-### Step 3d: Re-key `generated.rules` lacking `.md` (any version, #2868)
+### Step 3d: Re-key `generated.rules` lacking `.md`; delete retired `structure` keys (any version, #2868, #3610)
 
-Dry-run only; nothing is written before Step 5:
+The same script also reports `structure.has_ai_docs`, which older templates wrote and the closed manifest schema rejects, as `TYPE=retired_structure_key`; applying it deletes the key. Dry-run only; nothing is written before Step 5:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --manifest "$MANIFEST" --dry-run
@@ -136,7 +136,7 @@ options:
 - For v3.2 → v3.3: Load `migrations/v3.2-to-v3.3.md` (see Step 3b summary)
 - For v3.3 → v3.4: Load `migrations/v3.3-to-v3.4.md` (see Step 3c summary)
 - For v3.4 → v3.5: Load `migrations/v3.4-to-v3.5.md` (see Step 3e)
-- If Step 3d reported findings: re-run its command without `--dry-run`; report `MIGRATED=` and `ISSUES:` in Step 10
+- If Step 3d reported findings: re-run its command without `--dry-run`; report `MIGRATED=`, `RETIRED_REMOVED=` and `ISSUES:` in Step 10
 - Execute each step with user confirmation for destructive operations
 
 ### Step 7: v1.x → v2.0 migration overview (from migration document)

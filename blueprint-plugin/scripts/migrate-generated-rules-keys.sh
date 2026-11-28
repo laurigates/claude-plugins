@@ -27,6 +27,11 @@
 #                          untouched, reported (WARN) for a human
 #   key_conflict           both `<key>` and `<key>.md` are registered -> left
 #                          untouched, reported (WARN) for a human
+#   retired_structure_key  `structure` carries a key the closed manifest schema
+#                          no longer lists (`has_ai_docs`, written by the
+#                          v3.0.0 upgrade template and the v1.0->v1.1
+#                          migration; issue #3610) -> deleted. Nothing reads
+#                          it. Runs whether or not generated.rules exists.
 #
 # An existing `content_hash` is never overwritten; rule files are never touched.
 #
@@ -35,11 +40,12 @@
 # Structured KEY=VALUE per .claude/rules/structured-script-output.md:
 #
 #   MANIFEST, RULES_DIR, MODE=dry-run|apply, ENTRIES,
-#   KEY_MISSING_EXTENSION, RECORD_MISSING_HASH, UNRESOLVED, CONFLICTS,
+#   KEY_MISSING_EXTENSION, RECORD_MISSING_HASH, RETIRED_STRUCTURE_KEYS,
+#   RETIRED_REMOVED (keys deleted; always 0 under --dry-run), UNRESOLVED, CONFLICTS,
 #   MIGRATED (records rewritten; always 0 under --dry-run),
 #   STATUS=OK|WARN|ERROR, REASON (non-OK only), ISSUE_COUNT, ISSUES:
 #
-# In dry-run every finding is an issue. In apply mode only what is left behind
+# In dry-run every finding (retired keys included) is an issue. In apply mode only what is left behind
 # (key_unresolved, key_conflict) is. Exit 0 on OK/WARN, 1 on ERROR, 2 on an
 # unknown argument (a swallowed flag on a WRITING script — say `--dryrun` —
 # would silently write; issue #2057).
@@ -56,7 +62,8 @@ usage() {
 Usage: migrate-generated-rules-keys.sh [--project-dir DIR] [--manifest PATH] [--dry-run]
 
 Re-keys pre-contract generated.rules entries (no .md extension) and backfills
-missing content_hash values. --dry-run reports without writing.
+missing content_hash values, and deletes retired structure keys (has_ai_docs).
+--dry-run reports without writing.
 USAGE
 }
 
@@ -142,6 +149,37 @@ sha256_of() { # <file>
     fi
 }
 
+# ── Retired structure keys (issue #3610) ─────────────────────────────────────
+# Keys older templates wrote into `structure` that the closed manifest schema
+# no longer accepts. Nothing reads them, so the fix is to delete them. This runs
+# before the generated.rules logic so it applies on every path, including a
+# manifest with no generated.rules at all.
+RETIRED_STRUCTURE_KEYS=(has_ai_docs)
+n_retired=0
+retired_findings=()
+for rk in ${RETIRED_STRUCTURE_KEYS[@]+"${RETIRED_STRUCTURE_KEYS[@]}"}; do
+    if jq -e --arg k "$rk" '(.structure | type) == "object" and (.structure | has($k))' "$manifest" >/dev/null 2>&1; then
+        n_retired=$((n_retired + 1))
+        retired_findings+=("SEVERITY=WARN TYPE=retired_structure_key KEY=structure.$rk MSG=not in the manifest schema (retired, #3610); delete it")
+    fi
+done
+retired_removed=0
+if ! $dry_run && [ "$n_retired" -gt 0 ]; then
+    tmp="${manifest}.tmp.$$"
+    at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    retired_json="$(printf '%s\n' ${RETIRED_STRUCTURE_KEYS[@]+"${RETIRED_STRUCTURE_KEYS[@]}"} | jq -R . | jq -sc .)"
+    if jq --argjson keys "$retired_json" --arg at "$at" '
+        .structure |= with_entries(select(.key as $k | $keys | index($k) | not))
+        | .updated_at = $at
+        ' "$manifest" >"$tmp" 2>/dev/null && [ -s "$tmp" ]; then
+        mv "$tmp" "$manifest"
+        retired_removed=$n_retired
+    else
+        rm -f "$tmp"
+        emit_fatal manifest_write_failed "jq update failed for $manifest"
+    fi
+fi
+
 rules_dir="$(jq -r '.structure.generated_rules_path // ".claude/rules/"' "$manifest" 2>/dev/null)"
 [ -n "$rules_dir" ] && [ "$rules_dir" != "null" ] || rules_dir=".claude/rules/"
 rules_dir="${rules_dir%/}"
@@ -155,16 +193,32 @@ if [ "$rules_type" != "object" ]; then
     printf 'RULES_DIR=%s\n' "$rules_dir"
     printf 'MODE=%s\n' "$mode"
     printf 'ENTRIES=0\n'
+    printf 'RETIRED_STRUCTURE_KEYS=%d\n' "$($dry_run && echo "$n_retired" || echo 0)"
+    printf 'RETIRED_REMOVED=%d\n' "$retired_removed"
     printf 'MIGRATED=0\n'
-    if [ "$rules_type" = "null" ]; then
+    early=()
+    $dry_run && early=(${retired_findings[@]+"${retired_findings[@]}"})
+    if [ "$rules_type" != "null" ]; then
+        early+=("SEVERITY=WARN TYPE=generated_rules_not_object MSG=generated.rules is a $rules_type, expected an object map")
+    fi
+    early_count=0
+    for issue in ${early[@]+"${early[@]}"}; do early_count=$((early_count + 1)); done
+    if [ "$early_count" -eq 0 ]; then
         printf 'STATUS=OK\n'
         printf 'ISSUE_COUNT=0\n'
     else
+        first="${early[0]}"
+        first_type="${first#*TYPE=}"; first_type="${first_type%% *}"
+        reason="${first_type}: ${first#*MSG=}"
+        reason="${reason:0:180}"
+        [ "$early_count" -gt 1 ] && reason="${reason} (+$((early_count - 1)) more)"
         printf 'STATUS=WARN\n'
-        printf 'REASON=generated_rules_not_object: generated.rules is a %s, expected an object map\n' "$rules_type"
-        printf 'ISSUE_COUNT=1\n'
+        printf 'REASON=%s\n' "$reason"
+        printf 'ISSUE_COUNT=%d\n' "$early_count"
         printf 'ISSUES:\n'
-        printf '  - SEVERITY=WARN TYPE=generated_rules_not_object MSG=generated.rules is a %s, expected an object map\n' "$rules_type"
+        for issue in ${early[@]+"${early[@]}"}; do
+            printf '  - %s\n' "$issue"
+        done
     fi
     printf '=== END %s ===\n' "$SECTION"
     exit 0
@@ -176,7 +230,7 @@ n_hash=0
 n_unresolved=0
 n_conflict=0
 plan='{}'          # { "<old key>": {"to": "<new key>", "hash": "<hex or empty>"} }
-findings=()        # dry-run issues (every finding)
+findings=(${retired_findings[@]+"${retired_findings[@]}"})  # dry-run issues (every finding)
 residual=()        # apply-mode issues (what is left behind)
 
 while IFS=$'\t' read -r key has_hash; do
@@ -251,7 +305,7 @@ $dry_run && migrated=0
 # empty case never touches an empty array at all.
 if $dry_run; then
     issues=(${findings[@]+"${findings[@]}"})
-    issue_count=$((n_ext + n_hash + n_unresolved + n_conflict))
+    issue_count=$((n_retired + n_ext + n_hash + n_unresolved + n_conflict))
 else
     issues=(${residual[@]+"${residual[@]}"})
     issue_count=$((n_unresolved + n_conflict))
@@ -270,6 +324,12 @@ else
     printf 'KEY_MISSING_EXTENSION=0\n'
     printf 'RECORD_MISSING_HASH=0\n'
 fi
+if $dry_run; then
+    printf 'RETIRED_STRUCTURE_KEYS=%d\n' "$n_retired"
+else
+    printf 'RETIRED_STRUCTURE_KEYS=0\n'
+fi
+printf 'RETIRED_REMOVED=%d\n' "$retired_removed"
 printf 'UNRESOLVED=%d\n' "$n_unresolved"
 printf 'CONFLICTS=%d\n' "$n_conflict"
 printf 'MIGRATED=%d\n' "$migrated"
