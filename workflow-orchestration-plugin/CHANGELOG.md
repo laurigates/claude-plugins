@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.20.1...workflow-orchestration-plugin-v1.20.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* **workflow-orchestration-plugin:** rewrite the PR body after a repair and hold a stale one ([#3884](https://github.com/laurigates/claude-plugins/issues/3884)) ([dd152fb](https://github.com/laurigates/claude-plugins/commit/dd152fb8b5d07f9b0f22fc54cabb1da868c1fd5c)), closes [#3650](https://github.com/laurigates/claude-plugins/issues/3650)
+
 ## [1.20.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.20.0...workflow-orchestration-plugin-v1.20.1) (2026-11-25)
 
 

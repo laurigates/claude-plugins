@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.77.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.77.2...git-plugin-v2.77.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* **workflow-orchestration-plugin:** rewrite the PR body after a repair and hold a stale one ([#3884](https://github.com/laurigates/claude-plugins/issues/3884)) ([dd152fb](https://github.com/laurigates/claude-plugins/commit/dd152fb8b5d07f9b0f22fc54cabb1da868c1fd5c)), closes [#3650](https://github.com/laurigates/claude-plugins/issues/3650)
+
 ## [2.77.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.77.1...git-plugin-v2.77.2) (2026-11-28)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.11](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.10...health-plugin-v1.24.11) (2026-11-28)
+
+
+### Bug Fixes
+
+* **health-plugin:** align health-check scripts with the structured-output contract ([#3879](https://github.com/laurigates/claude-plugins/issues/3879)) ([0ccabfd](https://github.com/laurigates/claude-plugins/commit/0ccabfd63b543e27687439937223c1d3093d9527))
+
 ## [1.24.10](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.24.9...health-plugin-v1.24.10) (2026-11-28)
 
 
