@@ -98,6 +98,24 @@ grep -qE -- '(^[[:space:]]*|register-generated-rules\.sh.*[[:space:]])--plugin-v
     && notok "B: blueprint-init passes --plugin-version (the script reads plugin.json itself)" \
     || ok "B: blueprint-init leaves --plugin-version to register-generated-rules.sh"
 
+# ---- C: blueprint-generate-rules, the other register-generated-rules.sh caller
+# Its Step 5 passed a literal `--plugin-version "3.4.0"` (the format version)
+# after #2950 fixed blueprint-init (#3666). Same shape check as A, then the same
+# no-flag check as above: the script records its own plugin.json version.
+GENRULES_SKILL="${PLUGIN_DIR}/skills/blueprint-generate-rules/SKILL.md"
+grep -qE "\-\-plugin-version[[:space:]=]+\"?${SEMVER}" "$GENRULES_SKILL" \
+    && notok "C: blueprint-generate-rules SKILL.md passes a literal --plugin-version" \
+    || ok "C: blueprint-generate-rules SKILL.md does not pass a literal --plugin-version"
+grep -qE "\"plugin_version\"[[:space:]]*:[[:space:]]*\"${SEMVER}\"" "$GENRULES_SKILL" \
+    && notok "C: blueprint-generate-rules SKILL.md shows a literal plugin_version in its record example" \
+    || ok "C: blueprint-generate-rules SKILL.md record example carries no literal plugin_version"
+grep -q 'register-generated-rules\.sh' "$GENRULES_SKILL" \
+    && ok "C: blueprint-generate-rules SKILL.md still calls register-generated-rules.sh" \
+    || notok "C: blueprint-generate-rules SKILL.md no longer calls register-generated-rules.sh (update this test)"
+grep -qE -- '(^[[:space:]]*|register-generated-rules\.sh.*[[:space:]])--plugin-version' "$GENRULES_SKILL" \
+    && notok "C: blueprint-generate-rules passes --plugin-version (the script reads plugin.json itself)" \
+    || ok "C: blueprint-generate-rules leaves --plugin-version to register-generated-rules.sh"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
 exit 0

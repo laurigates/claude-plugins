@@ -67,7 +67,6 @@ Workspace Rollups:
 
 ## Example output
 
-**Example Output**:
 ```
 Feature Tracker Status
 ======================
@@ -133,7 +132,6 @@ Note: 14 features ready to start. Run `/blueprint:feature-tracker-sync` before b
 
 ## Quick commands
 
-**Quick Commands** (shown at end):
 ```
 Quick commands for feature tracker:
 - jq '.statistics' docs/blueprint/feature-tracker.json
