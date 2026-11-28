@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-11-15
+modified: 2026-11-28
 reviewed: 2026-08-09
 description: (Re)generate path-scoped rules from PRDs into generated_rules_path, with hash-based conflict checks. Use when creating or refreshing rules from docs/prds/; for full setup use blueprint-development.
 allowed-tools: Read, Write, Glob, Bash(bash ${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh *), Bash(jq *), Bash(mkdir *), Bash(ls *), Bash(sha256sum *), Bash(date *), Bash(mv *), AskUserQuestion
@@ -146,13 +146,13 @@ computed (issue #2331):
 bash "${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh" \
   --source "docs/prds/*" \
   --source-hash "$PRD_AGGREGATE_SHA256" \
-  --plugin-version "3.4.0" \
   architecture-patterns.md testing-strategies.md implementation-guides.md quality-standards.md
 ```
 
 `--source-hash` is the bare hex sha256 over the aggregated PRD content; it is
 what Step 2 (and `/blueprint:sync` Step 2d) compares against to decide
-whether a rule has gone stale.
+whether a rule has gone stale. The script records the plugin version from its
+own `plugin.json`, so the call carries no `--plugin-version`.
 
 **Key form** — keys are filenames **relative** to `$RULES_DIR`, **including
 the `.md` extension**, so the registry stays stable when
@@ -171,7 +171,7 @@ The resulting `generated.rules` **object map** (per
         "source": "docs/prds/*",
         "source_hash": "e3b0c44298fc1c149afbf4c8996fb924...",
         "generated_at": "[ISO timestamp]",
-        "plugin_version": "3.4.0",
+        "plugin_version": "[plugin.json version]",
         "content_hash": "a3f5b1c9d2e4867011223344556677889...",
         "status": "current"
       },
