@@ -71,8 +71,8 @@ bite in practice):
 
 | Gap | Effect | Partial cover |
 |---|---|---|
-| No §6 guard | Nothing checks for a commit pushed after review before auto-merge fires | The REST commit read below, before step 3. A push after that read still lands |
-| A red required check | Auto-merge keeps waiting; the `ls-remote` wait times out without naming the check | The REST check-run read below, on timeout |
+| No §6 guard | Nothing checks for a commit pushed after review before auto-merge fires | The §6 REST commit read in the code block after this table, run before step 3. A push after that read still lands |
+| A red required check | Auto-merge keeps waiting; the `ls-remote` wait times out without naming the check | The REST check-run read in the code block after this table, run on timeout |
 | Update adds a merge commit | A multi-commit PR that would rebase becomes merge-synced, so the rule table squashes it | None needed: squash is the rule table's answer for a merge-synced branch. Choose `mergeMethod` after step 2, not before |
 
 Both reads go through REST, which the proxy passes. The §6 read must print
