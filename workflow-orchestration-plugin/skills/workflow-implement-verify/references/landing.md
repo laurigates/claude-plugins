@@ -51,7 +51,7 @@ args: {
 ```
 
 `land: 'local'` skips the finalise agent, whose brief runs `gh pr list` and `gh pr create`.
-The main session then pushes each landable branch with git and opens its PR through the MCP
+The main session then pushes each `finalisePlan` branch (it leaves out `HELD_PR_BODY` rows) with git and opens its PR through the MCP
 tool (`mcp__github__create_pull_request`), using the row's `pr_title`, `pr_body`, `fixes` and
 `refs`. `issueRead` covers issue reading only: the repair brief's PR-state read still names
 `gh pr list`; in `implement-verify` no PR exists yet, so that read guards only a reused branch name.
